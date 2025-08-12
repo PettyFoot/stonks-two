@@ -10,8 +10,12 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "TraderVue - Professional Trading Analytics Platform",
-  description: "Professional trading analytics and performance tracking",
+  title: "Trade Voyager - Professional Trading Analytics Platform",
+  description: "Professional trading analytics and performance tracking for serious traders. Track P&L, analyze performance, and improve your trading with comprehensive analytics.",
+  keywords: "trading analytics, trade tracking, P&L analysis, trading performance, stock trading, forex trading",
+  authors: [{ name: "Trade Voyager" }],
+  creator: "Trade Voyager",
+  publisher: "Trade Voyager",
 };
 
 export default function RootLayout({

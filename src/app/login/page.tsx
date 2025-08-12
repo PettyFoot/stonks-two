@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, TrendingUp, Shield, Users } from 'lucide-react';
@@ -14,10 +15,14 @@ export default function LoginPage() {
         <div className="space-y-8">
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#2563EB] to-[#7C3AED] rounded-lg flex items-center justify-center">
-                <BarChart3 className="h-6 w-6 text-white" />
-              </div>
-              <span className="text-2xl font-bold text-[#0B1220]">TraderVue</span>
+              <Image 
+                src="/trade-voyager-logo.png" 
+                alt="Trade Voyager Logo" 
+                width={40} 
+                height={40} 
+                className="rounded-lg"
+              />
+              <span className="text-2xl font-bold text-[#0B1220]">Trade Voyager</span>
             </div>
             <h1 className="text-4xl font-bold text-[#0B1220] leading-tight">
               Professional Trading<br />

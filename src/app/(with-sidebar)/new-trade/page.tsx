@@ -113,7 +113,7 @@ export default function NewTrade() {
             <h3 className="text-sm font-medium text-primary mb-2">Note!</h3>
             <p className="text-sm text-muted mb-2">
               This form creates a trade to be matched later with execution data imported from your broker. If you want to manually input your trade executions, the easiest way to do this is to use Excel. Go to the{' '}
-              <span className="text-[#2563EB] cursor-pointer hover:underline">Help</span> page, download the Sample Excel Template, and fill in your data. Then follow the instructions on that page to import your data into TraderVue.
+              <span className="text-[#2563EB] cursor-pointer hover:underline">Help</span> page, download the Sample Excel Template, and fill in your data. Then follow the instructions on that page to import your data into Trade Voyager.
             </p>
             <p className="text-sm text-muted">
               If you prefer, you can manually enter executions as well. To do this, open the trade, click the Advanced link, and then click the add execution button.

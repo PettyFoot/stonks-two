@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, TrendingUp, Shield, Users, ArrowRight, Play } from 'lucide-react';
@@ -13,10 +14,14 @@ export default function LandingPage() {
       <nav className="p-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#2563EB] to-[#7C3AED] rounded-lg flex items-center justify-center">
-              <BarChart3 className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold text-[#0B1220]">TraderVue</span>
+            <Image 
+              src="/trade-voyager-logo.png" 
+              alt="Trade Voyager Logo" 
+              width={40} 
+              height={40} 
+              className="rounded-lg"
+            />
+            <span className="text-2xl font-bold text-[#0B1220]">Trade Voyager</span>
           </div>
           <div className="flex items-center space-x-4">
             <Link href="/demo">
@@ -115,7 +120,7 @@ export default function LandingPage() {
             </h2>
             <p className="text-lg text-[#0369A1] mb-8 max-w-2xl mx-auto">
               Explore all features with sample trading data. No signup required - 
-              see exactly how TraderVue can improve your trading performance.
+              see exactly how Trade Voyager can improve your trading performance.
             </p>
             <div className="flex items-center justify-center space-x-4">
               <Link href="/demo">
@@ -135,13 +140,17 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-[#2563EB] to-[#7C3AED] rounded-lg flex items-center justify-center">
-                <BarChart3 className="h-5 w-5 text-white" />
-              </div>
-              <span className="font-bold text-[#0B1220]">TraderVue</span>
+              <Image 
+                src="/trade-voyager-logo.png" 
+                alt="Trade Voyager Logo" 
+                width={32} 
+                height={32} 
+                className="rounded-lg"
+              />
+              <span className="font-bold text-[#0B1220]">Trade Voyager</span>
             </div>
             <p className="text-sm text-[#6B7280]">
-              © 2025 TraderVue. Built for professional traders.
+              © 2025 Trade Voyager. Built for professional traders.
             </p>
           </div>
         </div>

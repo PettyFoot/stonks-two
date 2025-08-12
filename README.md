@@ -1,4 +1,4 @@
-# TraderVue - Professional Trading Analytics Platform
+# Trade Voyager - Professional Trading Analytics Platform
 
 A production-ready trading performance tracking and analytics platform with full user authentication, data persistence, and broker integration capabilities.
 
@@ -42,7 +42,7 @@ A production-ready trading performance tracking and analytics platform with full
 
 ## Design System
 
-The application follows the TraderVue-inspired design system:
+The application follows the Trade Voyager design system:
 
 ### Colors
 - Primary: `#0f172a` (dark navy)
@@ -190,7 +190,7 @@ src/
 ## Key Components
 
 ### Core Components
-- **Sidebar**: Navigation with TraderVue branding
+- **Sidebar**: Navigation with Trade Voyager branding
 - **TopBar**: Page headers with filters and controls
 - **FilterPanel**: Advanced filtering interface
 - **KPICards**: Daily performance cards
@@ -249,7 +249,7 @@ This project is built with modern React practices and includes:
 - Component-based architecture
 - Custom hooks for state management
 - Mock API endpoints for realistic development
-- Pixel-perfect recreation of TraderVue interface
+- Pixel-perfect recreation of Trade Voyager interface
 
 ## Future Enhancements
 

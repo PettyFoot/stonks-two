@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -37,12 +38,15 @@ export default function DemoSidebar() {
     <div className="flex h-screen w-64 flex-col bg-[#0f172a] text-white">
       {/* Logo and Brand */}
       <div className="flex items-center gap-3 px-6 py-6">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#16A34A]">
-          <TrendingUp className="h-5 w-5 text-white" />
-        </div>
+        <Image 
+          src="/trade-voyager-logo.png" 
+          alt="Trade Voyager Logo" 
+          width={32} 
+          height={32} 
+          className="rounded-lg"
+        />
         <div className="flex items-center gap-2">
-          <span className="text-lg font-semibold">Trader</span>
-          <span className="rounded bg-[#16A34A] px-2 py-0.5 text-xs font-medium">vue</span>
+          <span className="text-lg font-semibold">Trade Voyager</span>
         </div>
         <Badge variant="secondary" className="ml-2 text-xs bg-blue-600 text-white">
           Demo

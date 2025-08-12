@@ -12,8 +12,8 @@ export default function DemoCommunity() {
   const mockPosts = [
     {
       id: 1,
-      author: 'TraderMike23',
-      avatar: 'TM',
+      author: 'VoyagerMike23',
+      avatar: 'VM',
       time: '2h ago',
       title: 'Tech Stock Breakout Strategy - 73% Win Rate',
       content: 'Sharing my momentum strategy that\'s been working great in this tech rally. Focus on stocks breaking key resistance with volume...',
@@ -54,7 +54,7 @@ export default function DemoCommunity() {
     }
   ];
 
-  const topTraders = [
+  const topVoyagers = [
     { name: 'AlphaTrade', pnl: '+$12,450', winRate: '78%', followers: 1234 },
     { name: 'BetaStrategy', pnl: '+$9,870', winRate: '71%', followers: 987 },
     { name: 'GammaFlow', pnl: '+$8,320', winRate: '69%', followers: 756 }
@@ -156,7 +156,7 @@ export default function DemoCommunity() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Top Traders */}
+            {/* Top Voyagers */}
             <Card className="bg-surface border-default">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-medium text-primary flex items-center gap-2">
@@ -165,20 +165,20 @@ export default function DemoCommunity() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {topTraders.map((trader, index) => (
+                {topVoyagers.map((voyager, index) => (
                   <div key={index} className="flex items-center justify-between p-2 hover:bg-muted/20 rounded-lg cursor-pointer">
                     <div className="flex items-center gap-3">
                       <div className="text-lg font-bold text-muted">
                         #{index + 1}
                       </div>
                       <div>
-                        <div className="font-medium text-sm text-primary">{trader.name}</div>
-                        <div className="text-xs text-muted">{trader.followers} followers</div>
+                        <div className="font-medium text-sm text-primary">{voyager.name}</div>
+                        <div className="text-xs text-muted">{voyager.followers} followers</div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-semibold text-[#16A34A]">{trader.pnl}</div>
-                      <div className="text-xs text-muted">{trader.winRate} WR</div>
+                      <div className="text-sm font-semibold text-[#16A34A]">{voyager.pnl}</div>
+                      <div className="text-xs text-muted">{voyager.winRate} WR</div>
                     </div>
                   </div>
                 ))}
@@ -195,7 +195,7 @@ export default function DemoCommunity() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted">Active Traders</span>
+                  <span className="text-sm text-muted">Active Voyagers</span>
                   <span className="text-sm font-medium text-primary">2,847</span>
                 </div>
                 <div className="flex justify-between">
