@@ -1,0 +1,155 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  auth0Id       String         @unique
+  name          String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  // Relations
+  trades        Trade[]
+  dayData       DayData[]
+  journalEntries JournalEntry[]
+  importBatches ImportBatch[]
+  
+  @@map("users")
+}
+
+model Trade {
+  id          String      @id @default(cuid())
+  userId      String
+  date        DateTime
+  time        String      // Keep as string to match existing format
+  symbol      String
+  side        TradeType
+  volume      Int
+  executions  Int
+  pnl         Float
+  shared      Boolean     @default(false)
+  notes       String?
+  tags        String[]
+  
+  // Metadata
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  // Relations
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  journalEntryId String?
+  journalEntry JournalEntry? @relation(fields: [journalEntryId], references: [id])
+  importBatchId String?
+  importBatch ImportBatch? @relation(fields: [importBatchId], references: [id])
+  
+  @@index([userId, date])
+  @@index([userId, symbol])
+  @@map("trades")
+}
+
+model DayData {
+  id          String   @id @default(cuid())
+  userId      String
+  date        DateTime @unique
+  pnl         Float
+  trades      Int
+  volume      Int
+  winRate     Float?
+  commissions Float?
+  
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, date])
+  @@map("day_data")
+}
+
+model JournalEntry {
+  id           String    @id @default(cuid())
+  userId       String
+  date         DateTime
+  pnl          Float
+  totalTrades  Int
+  totalVolume  Int
+  winRate      Float?
+  mfeRatio     Float?
+  netPnl       Float?
+  commissions  Float?
+  notes        String?
+  chartImage   String?   // URL to stored image
+  
+  // Metadata
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  // Relations
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trades       Trade[]
+  
+  @@index([userId, date])
+  @@map("journal_entries")
+}
+
+model ImportBatch {
+  id            String      @id @default(cuid())
+  userId        String
+  filename      String
+  brokerType    BrokerType
+  status        ImportStatus
+  totalRecords  Int         @default(0)
+  successCount  Int         @default(0)
+  errorCount    Int         @default(0)
+  errors        Json?       // Store import errors as JSON
+  
+  // Metadata
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  // Relations
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trades        Trade[]
+  
+  @@index([userId, status])
+  @@map("import_batches")
+}
+
+// Enums
+enum TradeType {
+  LONG
+  SHORT
+  
+  @@map("trade_type")
+}
+
+enum BrokerType {
+  INTERACTIVE_BROKERS
+  TD_AMERITRADE
+  E_TRADE
+  CHARLES_SCHWAB
+  GENERIC_CSV
+  
+  @@map("broker_type")
+}
+
+enum ImportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  
+  @@map("import_status")
+}

@@ -10,7 +10,7 @@ interface TradesData {
   totalVolume: number;
 }
 
-export function useTradesData(filters: FilterOptions = {}) {
+export function useTradesData(filters: FilterOptions = {}, demo: boolean = false) {
   const [data, setData] = useState<TradesData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +27,7 @@ export function useTradesData(filters: FilterOptions = {}) {
         if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
         if (filters.dateTo) params.append('dateTo', filters.dateTo);
         if (filters.tags?.length) params.append('tags', filters.tags.join(','));
+        if (demo) params.append('demo', 'true');
         
         const response = await fetch(`/api/trades?${params}`);
         if (!response.ok) {
@@ -42,9 +43,13 @@ export function useTradesData(filters: FilterOptions = {}) {
     }
 
     fetchData();
-  }, [filters]);
+  }, [filters, demo]);
 
   const addTrade = async (tradeData: Partial<Trade>) => {
+    if (demo) {
+      throw new Error('Cannot add trades in demo mode');
+    }
+    
     try {
       const response = await fetch('/api/trades', {
         method: 'POST',
@@ -86,6 +91,7 @@ export function useTradesData(filters: FilterOptions = {}) {
     if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
     if (filters.dateTo) params.append('dateTo', filters.dateTo);
     if (filters.tags?.length) params.append('tags', filters.tags.join(','));
+    if (demo) params.append('demo', 'true');
     
     fetch(`/api/trades?${params}`)
       .then(res => res.json())

@@ -1,24 +1,44 @@
-# TraderVue - Trading Analytics Platform
+# TraderVue - Professional Trading Analytics Platform
 
-A complete trading analytics application inspired by TraderVue, built with Next.js, TypeScript, TailwindCSS, shadcn/ui, and Recharts.
+A production-ready trading performance tracking and analytics platform with full user authentication, data persistence, and broker integration capabilities.
 
-## Features
+## 🚀 Features
 
-- **Dashboard**: Comprehensive overview with daily P&L calendar, performance metrics, and analytics charts
-- **Reports**: Detailed reporting with multiple chart views and performance breakdowns
-- **Trades**: Complete trade management with filtering, sorting, and table views
-- **Journal**: Daily journal entries with integrated trade data and notes
-- **Search**: Full-text search across trades, journal entries, and comments
-- **New Trade**: Simple trade entry form for manual trade creation
+### **Core Analytics**
+- **📊 Performance Dashboard**: Real-time P&L tracking with comprehensive trading metrics
+- **📈 Interactive Charts**: Beautiful visualizations powered by Recharts
+- **📋 Trade Management**: Complete trade history with advanced filtering and sorting
+- **📝 Trading Journal**: Daily journal entries with integrated trade analysis
+- **🔍 Advanced Search**: Full-text search across trades, journal entries, and analytics
 
-## Tech Stack
+### **Authentication & Security**
+- **🔐 Auth0 Integration**: Secure authentication with social login support
+- **👤 User Isolation**: Complete data separation between user accounts
+- **🎯 Demo Mode**: Full-featured demo with sample data for new users
+- **🔒 Session Management**: Automatic session handling and security
 
-- **Next.js 15** with App Router
-- **TypeScript** for type safety
-- **TailwindCSS v4** for styling
-- **shadcn/ui** for UI components
-- **Recharts** for data visualization
-- **Lucide React** for icons
+### **Data Import & Management**
+- **📤 Broker Imports**: CSV import support for multiple brokers
+- **⚡ Real-time Processing**: Background import with progress tracking
+- **🛠️ Error Handling**: Comprehensive validation and error reporting
+- **💾 Data Persistence**: PostgreSQL database with Prisma ORM
+
+## 🏗️ Tech Stack
+
+### **Frontend**
+- **Next.js 15** with App Router and Server Components
+- **TypeScript** for full type safety
+- **TailwindCSS v4** for responsive styling
+- **shadcn/ui** for consistent, accessible components
+- **Recharts** for interactive data visualization
+- **Auth0 React SDK** for authentication
+
+### **Backend**
+- **PostgreSQL** database (AWS RDS ready)
+- **Prisma ORM** with type-safe database queries
+- **Next.js API Routes** with user authentication
+- **Papa Parse** for CSV processing
+- **Auth0** for user management and sessions
 
 ## Design System
 
@@ -47,45 +67,124 @@ The application follows the TraderVue-inspired design system:
 - Card-based content layout
 - Responsive grid system
 
-## Getting Started
+## 🛠️ Local Development Setup
 
 ### Prerequisites
-- Node.js 18+ 
-- npm or yarn
+- Node.js 18+
+- PostgreSQL database (AWS RDS: `stonkstwo-1`)
+- Auth0 account with application configured
 
-### Installation
+### 1. Install Dependencies
+```bash
+npm install
+```
 
-1. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+### 2. Environment Configuration
+Create `.env.local` with the following variables:
 
-2. **Start the development server:**
-   ```bash
-   npm run dev
-   ```
+```bash
+# Database
+DATABASE_URL="postgresql://username:password@stonkstwo-1.cluster-xxxxxx.us-east-1.rds.amazonaws.com:5432/stonkstwo?schema=public"
 
-3. **Open your browser:**
-   Navigate to [http://localhost:3000](http://localhost:3000)
+# Auth0 Configuration  
+AUTH0_SECRET='use [openssl rand -hex 32] to generate a 32 bytes value'
+AUTH0_BASE_URL='http://localhost:3000'
+AUTH0_ISSUER_BASE_URL='https://your-tenant.us.auth0.com'
+AUTH0_CLIENT_ID='your-auth0-client-id'
+AUTH0_CLIENT_SECRET='your-auth0-client-secret'
+```
 
-## Project Structure
+### 3. Database Setup
+```bash
+# Generate Prisma client
+npx prisma generate
+
+# Run database migrations
+npx prisma migrate deploy
+```
+
+### 4. Auth0 Configuration
+
+#### Application Settings:
+- **Application Type**: Single Page Application
+- **Allowed Callback URLs**: `http://localhost:3000/api/auth/callback`
+- **Allowed Logout URLs**: `http://localhost:3000`
+- **Allowed Web Origins**: `http://localhost:3000`
+
+### 5. Start Development Server
+```bash
+npm run dev
+```
+
+Visit `http://localhost:3000` to access the application.
+
+## 🔐 Authentication Flow
+
+### **Demo Mode** (Unauthenticated)
+```
+/ → /demo → Full UI with mock data → Sign up prompts
+```
+
+### **New User Registration**
+```  
+/ → /login → Auth0 signup → /dashboard (empty) → Import wizard
+```
+
+### **Returning User Login**
+```
+/ → /login → Auth0 login → /dashboard (personal data)
+```
+
+## 📊 Data Import
+
+### Supported Broker Formats
+
+#### Interactive Brokers
+```csv
+Date,Time,Symbol,Buy/Sell,Quantity,Price,Realized P&L
+2025-04-07,09:30:00,AAPL,BUY,100,150.00,250.50
+```
+
+#### TD Ameritrade  
+```csv
+DATE,TIME,SYMBOL,SIDE,QTY,PRICE,NET AMT
+04/07/2025,09:30:00,AAPL,B,100,150.00,15000.00
+```
+
+#### Generic CSV
+```csv
+date,time,symbol,side,volume,pnl
+2025-04-07,09:30:00,AAPL,long,100,250.50
+```
+
+## 🏠 Project Structure
 
 ```
 src/
 ├── app/                    # Next.js App Router pages
-│   ├── api/               # API routes
-│   ├── dashboard/         # Dashboard page
-│   ├── reports/           # Reports page
-│   ├── trades/            # Trades page
-│   ├── journal/           # Journal page
-│   ├── new-trade/         # New trade form
-│   └── search/            # Search functionality
-├── components/            # Reusable components
-│   ├── charts/           # Chart components
-│   └── ui/               # shadcn/ui components
-├── data/                 # Mock data
-├── hooks/                # Custom React hooks
-└── types/                # TypeScript type definitions
+│   ├── api/               # API routes with authentication
+│   │   ├── auth/          # Auth0 authentication endpoints
+│   │   ├── dashboard/     # Dashboard data with user isolation
+│   │   ├── trades/        # Trades CRUD with filtering
+│   │   └── import/        # CSV import processing
+│   ├── demo/              # Demo mode page
+│   ├── login/             # Authentication pages
+│   ├── import/            # Import interface
+│   ├── dashboard/         # Main dashboard
+│   ├── reports/           # Analytics reports
+│   ├── trades/            # Trade management
+│   └── journal/           # Trading journal
+├── components/            # Reusable UI components
+│   ├── ui/               # shadcn/ui base components
+│   └── charts/           # Chart components
+├── hooks/                # Custom React hooks with auth support
+├── lib/                  # Utility libraries
+│   ├── prisma.ts         # Database client
+│   ├── auth0.ts          # Authentication helpers
+│   └── brokerImporter.ts # CSV import logic
+├── types/                # TypeScript interfaces
+├── data/                 # Mock data for demo mode
+└── prisma/               # Database schema and migrations
 ```
 
 ## Key Components

@@ -18,7 +18,7 @@ interface DashboardData {
   };
 }
 
-export function useDashboardData(dateRange: string = '30') {
+export function useDashboardData(dateRange: string = '30', demo: boolean = false) {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +27,12 @@ export function useDashboardData(dateRange: string = '30') {
     async function fetchData() {
       try {
         setLoading(true);
-        const response = await fetch(`/api/dashboard?range=${dateRange}`);
+        const params = new URLSearchParams({ range: dateRange });
+        if (demo) {
+          params.append('demo', 'true');
+        }
+        
+        const response = await fetch(`/api/dashboard?${params.toString()}`);
         if (!response.ok) {
           throw new Error('Failed to fetch dashboard data');
         }
@@ -41,12 +46,17 @@ export function useDashboardData(dateRange: string = '30') {
     }
 
     fetchData();
-  }, [dateRange]);
+  }, [dateRange, demo]);
 
   const refetch = () => {
     setError(null);
     setLoading(true);
-    fetch(`/api/dashboard?range=${dateRange}`)
+    const params = new URLSearchParams({ range: dateRange });
+    if (demo) {
+      params.append('demo', 'true');
+    }
+    
+    fetch(`/api/dashboard?${params.toString()}`)
       .then(res => res.json())
       .then(setData)
       .catch(err => setError(err.message))

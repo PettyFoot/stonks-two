@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
+import { Providers } from './providers';
 
 const inter = Inter({
   variable: "--font-inter",
@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "TraderVue - Trading Analytics Platform",
+  title: "TraderVue - Professional Trading Analytics Platform",
   description: "Professional trading analytics and performance tracking",
 };
 
@@ -22,12 +22,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} antialiased`}>
-        <div className="flex h-screen bg-background">
-          <Sidebar />
-          <main className="flex-1 flex flex-col overflow-hidden">
-            {children}
-          </main>
-        </div>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

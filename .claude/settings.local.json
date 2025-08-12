@@ -2,7 +2,17 @@
   "permissions": {
     "allow": [
       "Bash(npm run dev:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(rm:*)",
+      "Bash(mv:*)",
+      "Bash(curl:*)",
+      "Bash(taskkill:*)",
+      "Bash(node:*)",
+      "Bash(npx prisma:*)",
+      "Bash(cat:*)",
+      "Bash(npx dotenv -e .env.local -- npx prisma db push:*)",
+      "Bash(DATABASE_URL=\"postgresql://stonkstwo:7EbBzoYuXgbdLGG3pJ@stonkstwo-1.c2n2u8ww2gj9.us-east-1.rds.amazonaws.com:5432/stonkstwo-1?schema=public\" npx prisma db push)"
     ],
     "deny": [],
     "ask": []
