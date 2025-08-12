@@ -1,103 +1,228 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import React from 'react';
+import TopBar from '@/components/TopBar';
+import KPICards from '@/components/KPICards';
+import EquityChart from '@/components/charts/EquityChart';
+import CustomPieChart from '@/components/charts/PieChart';
+import DistributionCharts, { GaugeChart } from '@/components/charts/DistributionCharts';
+import { mockDayData, mockCumulativePnl, mockGapPerformance, mockDayTypePerformance, mockKPIData } from '@/data/mockData';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+export default function Dashboard() {
+  // Prepare pie chart data for winning vs losing trades
+  const winLossData = [
+    { name: 'Winning', value: mockKPIData.totalPnl * 0.65, percentage: 65, color: '#16A34A' },
+    { name: 'Losing', value: mockKPIData.totalPnl * 0.35, percentage: 35, color: '#DC2626' }
+  ];
+
+  // Performance by day of week data
+  const dayOfWeekData = [
+    { range: 'Sun', value: 0, percentage: 0, count: 0 },
+    { range: 'Mon', value: 3.72, percentage: 100, count: 1 },
+    { range: 'Tue', value: 0, percentage: 0, count: 0 },
+    { range: 'Wed', value: 0, percentage: 0, count: 0 },
+    { range: 'Thu', value: 0, percentage: 0, count: 0 },
+    { range: 'Fri', value: 0, percentage: 0, count: 0 },
+    { range: 'Sat', value: 0, percentage: 0, count: 0 }
+  ];
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="flex flex-col h-full">
+      <TopBar 
+        title="Dashboard" 
+        subtitle="Aug 2025"
+        showEditLayout={true}
+        showTimeRangeFilters={true}
+      />
+      
+      <div className="flex-1 overflow-auto p-6">
+        {/* Daily Calendar Cards */}
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-primary mb-4">Aug 2025</h2>
+          <KPICards days={mockDayData} />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Charts Grid */}
+        <div className="grid grid-cols-12 gap-6">
+          {/* Cumulative P&L - Large Chart */}
+          <div className="col-span-8">
+            <EquityChart 
+              data={mockCumulativePnl}
+              title="Cumulative P&L"
+              height={350}
+            />
+          </div>
+
+          {/* Winning vs Losing Trades - Pie Chart */}
+          <div className="col-span-4">
+            <CustomPieChart 
+              data={winLossData}
+              title="Winning vs Losing Trades"
+              height={200}
+            />
+          </div>
+
+          {/* Win % Chart */}
+          <div className="col-span-4">
+            <Card className="bg-surface border-default">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-medium text-primary">Win %</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-48 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-4xl font-bold text-[#16A34A] mb-2">
+                      {mockKPIData.winRate}%
+                    </div>
+                    <div className="w-32 h-32 mx-auto bg-[#16A34A] rounded-full opacity-20"></div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Hold Time Winning Trades vs Losing Trades */}
+          <div className="col-span-4">
+            <Card className="bg-surface border-default">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-medium text-primary">Hold Time Winning Trades vs Losing Trades</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted">Half a minute</span>
+                    <div className="flex-1 mx-3 h-2 bg-gray-200 rounded">
+                      <div className="h-2 bg-[#16A34A] rounded" style={{width: '80%'}}></div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted">Less than 20 seconds</span>
+                    <div className="flex-1 mx-3 h-2 bg-gray-200 rounded">
+                      <div className="h-2 bg-[#DC2626] rounded" style={{width: '60%'}}></div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Average Winning Trade vs Losing Trade + Largest Gain vs Largest Loss */}
+          <div className="col-span-4">
+            <div className="grid grid-rows-2 gap-4 h-full">
+              <Card className="bg-surface border-default">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-primary">Average Winning Trade vs Losing Trade</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="text-lg font-bold text-[#16A34A]">${mockKPIData.avgWinningTrade.toFixed(2)}</div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-lg font-bold text-[#DC2626]">-${Math.abs(mockKPIData.avgLosingTrade).toFixed(2)}</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-surface border-default">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-primary">Largest Gain vs Largest Loss</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center">
+                    <GaugeChart 
+                      value={mockKPIData.bestDay}
+                      max={300}
+                      title=""
+                      height={80}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Performance By Day Of Week */}
+          <div className="col-span-4">
+            <DistributionCharts 
+              data={dayOfWeekData}
+              title="Performance By Day Of Week"
+            />
+          </div>
+
+          {/* Average MFE vs MAE */}
+          <div className="col-span-4">
+            <div className="grid grid-rows-2 gap-4 h-full">
+              <Card className="bg-surface border-default">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-primary">Average MFE vs MAE</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center">
+                    <GaugeChart 
+                      value={mockKPIData.avgPositionMfe}
+                      max={20}
+                      title=""
+                      height={80}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-surface border-default">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-primary">Performance By Duration</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Intraday</span>
+                      <span className="text-[#16A34A]">$437.28</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Multiday</span>
+                      <span className="text-muted">$0.00</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Max Consecutive Wins/Losses */}
+          <div className="col-span-4">
+            <div className="grid grid-rows-2 gap-4 h-full">
+              <Card className="bg-surface border-default">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-primary">Max Consecutive Wins</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center">
+                    <div className="text-4xl font-bold text-[#16A34A]">
+                      {mockKPIData.maxConsecutiveWins}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-surface border-default">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-primary">Max Consecutive Losses</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center">
+                    <div className="text-4xl font-bold text-[#DC2626]">
+                      {mockKPIData.maxConsecutiveLosses}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

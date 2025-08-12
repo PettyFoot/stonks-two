@@ -1,36 +1,162 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TraderVue - Trading Analytics Platform
+
+A complete trading analytics application inspired by TraderVue, built with Next.js, TypeScript, TailwindCSS, shadcn/ui, and Recharts.
+
+## Features
+
+- **Dashboard**: Comprehensive overview with daily P&L calendar, performance metrics, and analytics charts
+- **Reports**: Detailed reporting with multiple chart views and performance breakdowns
+- **Trades**: Complete trade management with filtering, sorting, and table views
+- **Journal**: Daily journal entries with integrated trade data and notes
+- **Search**: Full-text search across trades, journal entries, and comments
+- **New Trade**: Simple trade entry form for manual trade creation
+
+## Tech Stack
+
+- **Next.js 15** with App Router
+- **TypeScript** for type safety
+- **TailwindCSS v4** for styling
+- **shadcn/ui** for UI components
+- **Recharts** for data visualization
+- **Lucide React** for icons
+
+## Design System
+
+The application follows the TraderVue-inspired design system:
+
+### Colors
+- Primary: `#0f172a` (dark navy)
+- Accent Blue: `#2563EB`
+- Accent Purple: `#7C3AED`
+- Surface/Card BG: `#FFFFFF`
+- Page BG: `#F6F7FB`
+- Text Primary: `#0B1220`
+- Muted Text: `#6B7280`
+- Positive: `#16A34A` (green)
+- Negative: `#DC2626` (red)
+
+### Typography
+- Font: Inter
+- Headings: xl size, medium weight
+- Body: base size
+- Captions: sm size
+
+### Layout
+- Fixed left sidebar navigation
+- Top bar with filters and controls
+- Card-based content layout
+- Responsive grid system
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### Installation
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+
+3. **Open your browser:**
+   Navigate to [http://localhost:3000](http://localhost:3000)
+
+## Project Structure
+
+```
+src/
+├── app/                    # Next.js App Router pages
+│   ├── api/               # API routes
+│   ├── dashboard/         # Dashboard page
+│   ├── reports/           # Reports page
+│   ├── trades/            # Trades page
+│   ├── journal/           # Journal page
+│   ├── new-trade/         # New trade form
+│   └── search/            # Search functionality
+├── components/            # Reusable components
+│   ├── charts/           # Chart components
+│   └── ui/               # shadcn/ui components
+├── data/                 # Mock data
+├── hooks/                # Custom React hooks
+└── types/                # TypeScript type definitions
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Key Components
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Core Components
+- **Sidebar**: Navigation with TraderVue branding
+- **TopBar**: Page headers with filters and controls
+- **FilterPanel**: Advanced filtering interface
+- **KPICards**: Daily performance cards
+- **TradesTable**: Sortable, filterable trades table
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Charts
+- **EquityChart**: Line charts for P&L curves
+- **BarChart**: Volume and performance bars
+- **PieChart**: Distribution charts
+- **DistributionCharts**: Performance breakdown visuals
+- **GaugeChart**: MFE/MAE ratio displays
 
-## Learn More
+### Data Management
+- **Mock APIs**: RESTful endpoints for development
+- **Custom Hooks**: Data fetching and state management
+- **Type Safety**: Full TypeScript coverage
 
-To learn more about Next.js, take a look at the following resources:
+## Features Implementation
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Dashboard
+- Daily calendar view with P&L and trade counts
+- Multiple analytics charts (cumulative P&L, win rates, etc.)
+- Performance breakdowns by various metrics
+- Responsive grid layout
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Reports
+- Tabbed interface with multiple report types
+- Chart filtering and date range selection
+- Performance analysis across different dimensions
+- Export capabilities (UI ready)
 
-## Deploy on Vercel
+### Trades
+- Complete trade listing with sorting and filtering
+- Multiple view modes (table, charts, gross/net)
+- Real-time statistics
+- Bulk selection capabilities
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Journal
+- Daily journal entries with integrated trade data
+- Rich text notes with template support
+- Performance metrics integration
+- Tag management system
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Accessibility
+
+- Keyboard navigation support
+- ARIA labels and roles
+- High contrast color ratios (WCAG AA compliant)
+- Screen reader compatibility
+- Focus management
+
+## Development
+
+This project is built with modern React practices and includes:
+- Type-safe development with TypeScript
+- Component-based architecture
+- Custom hooks for state management
+- Mock API endpoints for realistic development
+- Pixel-perfect recreation of TraderVue interface
+
+## Future Enhancements
+
+- Real broker API integration
+- Advanced charting with TradingView
+- Real-time data updates
+- Export functionality
+- Mobile app version
+- Multi-user support
