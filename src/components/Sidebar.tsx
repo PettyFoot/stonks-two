@@ -3,8 +3,11 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useUser } from '@auth0/nextjs-auth0/client';
+import { useUserSync } from '@/hooks/useUserSync';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
   Home, 
   Calendar, 
@@ -14,11 +17,12 @@ import {
   Plus, 
   Users, 
   Search,
-  User
+  User,
+  LogOut
 } from 'lucide-react';
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: Home },
+  { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Calendar', href: '/calendar', icon: Calendar },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
   { name: 'Trades', href: '/trades', icon: TrendingUp },
@@ -30,6 +34,10 @@ const navigation = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { user, isLoading } = useUser();
+  
+  // Automatically sync user to database when logged in
+  useUserSync();
 
   return (
     <div className="flex h-screen w-64 flex-col bg-[#0f172a] text-white">
@@ -82,18 +90,46 @@ export default function Sidebar() {
 
       {/* User Profile */}
       <div className="flex items-center gap-3 px-4 py-4 border-t border-white/10">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-500">
-          <User className="h-5 w-5 text-white" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-white">lcorr</p>
-          <p className="text-xs text-gray-400">Plan: Free</p>
-        </div>
-        <button className="text-gray-400 hover:text-white">
-          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-          </svg>
-        </button>
+        {user ? (
+          <>
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={user.picture || ''} alt={user.name || ''} />
+              <AvatarFallback className="bg-[#16A34A] text-white">
+                {user.name?.charAt(0) || user.email?.charAt(0) || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white truncate">
+                {user.name || user.email || 'User'}
+              </p>
+              <p className="text-xs text-gray-400">Plan: Free</p>
+            </div>
+            <a 
+              href="/api/auth/logout" 
+              className="text-gray-400 hover:text-white transition-colors"
+              title="Logout"
+            >
+              <LogOut className="h-4 w-4" />
+            </a>
+          </>
+        ) : (
+          <>
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-500">
+              <User className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white">Guest</p>
+              <p className="text-xs text-gray-400">Not logged in</p>
+            </div>
+            <Link 
+              href="/api/auth/login" 
+              className="text-gray-400 hover:text-white transition-colors"
+              title="Login"
+            >
+              <User className="h-4 w-4" />
+            </Link>
+          </>
+        )}
       </div>
     </div>
   );
