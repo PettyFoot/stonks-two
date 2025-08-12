@@ -104,13 +104,13 @@ export default function Sidebar() {
               </p>
               <p className="text-xs text-gray-400">Plan: Free</p>
             </div>
-            <a 
+            <Link 
               href="/api/auth/logout" 
               className="text-gray-400 hover:text-white transition-colors"
               title="Logout"
             >
               <LogOut className="h-4 w-4" />
-            </a>
+            </Link>
           </>
         ) : (
           <>

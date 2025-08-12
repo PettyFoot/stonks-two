@@ -190,7 +190,7 @@ export default function DemoNewTrade() {
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="text-xs font-medium text-blue-800 mb-1">Demo Mode</div>
                 <div className="text-xs text-blue-600">
-                  This trade won't be saved to your account. Sign up to track real trades.
+                  This trade won&apos;t be saved to your account. Sign up to track real trades.
                 </div>
               </div>
             </CardContent>

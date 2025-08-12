@@ -2,6 +2,8 @@ import Papa from 'papaparse';
 import { prisma } from '@/lib/prisma';
 import { BrokerType, TradeType } from '@prisma/client';
 
+type CSVRow = Record<string, string | number | undefined>;
+
 export interface ImportResult {
   success: boolean;
   importBatchId?: string;
@@ -146,7 +148,7 @@ export class BrokerImporter {
 
       // Process each row
       for (let i = 0; i < parseResult.data.length; i++) {
-        const row = parseResult.data[i] as any;
+        const row = parseResult.data[i] as CSVRow;
         
         try {
           const trade = await this.parseTradeFromRow(row, i + 1);
@@ -173,7 +175,7 @@ export class BrokerImporter {
           status: errorCount === 0 ? 'COMPLETED' : 'COMPLETED',
           successCount,
           errorCount,
-          errors: errors.length > 0 ? errors : null
+          errors: errors.length > 0 ? errors : []
         }
       });
 
@@ -203,7 +205,7 @@ export class BrokerImporter {
     }
   }
 
-  private async parseTradeFromRow(row: any, rowNumber: number): Promise<{
+  private async parseTradeFromRow(row: CSVRow, rowNumber: number): Promise<{
     date: Date;
     time: string;
     symbol: string;
@@ -239,16 +241,16 @@ export class BrokerImporter {
 
     // Parse time (optional)
     const timeStr = cols.time ? row[cols.time] : '';
-    const time = timeStr || '00:00:00';
+    const time = String(timeStr || '00:00:00');
 
     // Parse side
-    const side = this.config.sideMapping[sideStr.toUpperCase()];
+    const side = this.config.sideMapping[String(sideStr).toUpperCase()];
     if (!side) {
       throw new Error(`Unknown side value: ${sideStr}`);
     }
 
     // Parse volume
-    const volume = parseInt(quantityStr);
+    const volume = parseInt(String(quantityStr));
     if (isNaN(volume) || volume <= 0) {
       throw new Error(`Invalid quantity: ${quantityStr}`);
     }
@@ -256,7 +258,7 @@ export class BrokerImporter {
     // Parse P&L (optional)
     let pnl = 0;
     if (cols.pnl && row[cols.pnl]) {
-      pnl = parseFloat(row[cols.pnl]);
+      pnl = parseFloat(String(row[cols.pnl]));
       if (isNaN(pnl)) {
         pnl = 0;
       }
@@ -265,7 +267,7 @@ export class BrokerImporter {
     return {
       date,
       time,
-      symbol: symbol.toUpperCase(),
+      symbol: String(symbol).toUpperCase(),
       side,
       volume,
       executions: 1, // Default to 1 execution per CSV row

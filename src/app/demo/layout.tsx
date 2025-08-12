@@ -16,7 +16,7 @@ export default function DemoLayout({
           <Info className="h-5 w-5" />
           <div>
             <h2 className="font-semibold">Demo Mode</h2>
-            <p className="text-sm opacity-90">You're viewing sample trading data</p>
+            <p className="text-sm opacity-90">You&apos;re viewing sample trading data</p>
           </div>
         </div>
         <div className="flex items-center space-x-3">

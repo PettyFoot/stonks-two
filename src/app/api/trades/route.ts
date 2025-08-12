@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { mockTrades } from '@/data/mockData';
 import { getCurrentUser } from '@/lib/auth0';
 import { prisma } from '@/lib/prisma';
-import { TradeType } from '@prisma/client';
+import { TradeType, Prisma } from '@prisma/client';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -59,7 +59,7 @@ export async function GET(request: Request) {
     }
 
     // Build where clause for filters
-    const where: any = {
+    const where: Prisma.TradeWhereInput = {
       userId: user.id
     };
 

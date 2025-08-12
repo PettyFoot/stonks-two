@@ -78,16 +78,16 @@ export async function GET(request: Request) {
       : 0;
 
     // Calculate cumulative P&L for chart
-    const cumulativePnl = [];
+    const cumulativePnl: { date: string; value: number }[] = [];
     let runningPnl = 0;
-    const tradesByDate = new Map();
+    const tradesByDate = new Map<string, typeof trades>();
     
     trades.forEach(trade => {
       const dateStr = trade.date.toISOString().split('T')[0];
       if (!tradesByDate.has(dateStr)) {
         tradesByDate.set(dateStr, []);
       }
-      tradesByDate.get(dateStr).push(trade);
+      tradesByDate.get(dateStr)!.push(trade);
     });
 
     tradesByDate.forEach((dayTrades, dateStr) => {

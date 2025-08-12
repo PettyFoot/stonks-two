@@ -66,7 +66,7 @@ export default function FilterPanel({
           {/* Side Filter */}
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-primary">Side</label>
-            <Select value={filters.side || 'All'} onValueChange={(value) => onFiltersChange({...filters, side: value as any})}>
+            <Select value={filters.side || 'All'} onValueChange={(value) => onFiltersChange({...filters, side: value as 'all' | 'long' | 'short'})}>
               <SelectTrigger className="w-24 h-8 text-sm">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
@@ -81,7 +81,7 @@ export default function FilterPanel({
           {/* Duration Filter */}
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-primary">Duration</label>
-            <Select value={filters.duration || 'All'} onValueChange={(value) => onFiltersChange({...filters, duration: value as any})}>
+            <Select value={filters.duration || 'All'} onValueChange={(value) => onFiltersChange({...filters, duration: value as 'all' | 'intraday' | 'multiday'})}>
               <SelectTrigger className="w-28 h-8 text-sm">
                 <SelectValue placeholder="All" />
               </SelectTrigger>

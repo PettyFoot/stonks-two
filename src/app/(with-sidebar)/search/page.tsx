@@ -59,7 +59,7 @@ export default function Search() {
                   <Checkbox 
                     id="trades"
                     checked={searchTrades}
-                    onCheckedChange={setSearchTrades}
+                    onCheckedChange={(checked) => setSearchTrades(!!checked)}
                   />
                   <label 
                     htmlFor="trades" 
@@ -73,7 +73,7 @@ export default function Search() {
                   <Checkbox 
                     id="journal"
                     checked={searchJournalEntries}
-                    onCheckedChange={setSearchJournalEntries}
+                    onCheckedChange={(checked) => setSearchJournalEntries(!!checked)}
                   />
                   <label 
                     htmlFor="journal" 
@@ -87,7 +87,7 @@ export default function Search() {
                   <Checkbox 
                     id="comments"
                     checked={searchComments}
-                    onCheckedChange={setSearchComments}
+                    onCheckedChange={(checked) => setSearchComments(!!checked)}
                   />
                   <label 
                     htmlFor="comments" 

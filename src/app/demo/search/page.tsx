@@ -7,10 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search as SearchIcon, Filter, Calendar, DollarSign } from 'lucide-react';
 import { mockTrades } from '@/data/mockData';
+import { Trade } from '@/types';
 
 export default function DemoSearch() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<Trade[]>([]);
 
   const handleSearch = () => {
     if (!searchTerm.trim()) {
@@ -118,7 +119,7 @@ export default function DemoSearch() {
                         </div>
                         <div className="flex items-center gap-2 text-sm text-muted">
                           <Calendar className="h-3 w-3" />
-                          {trade.entryTime}
+                          {trade.time}
                         </div>
                         <div className="flex items-center gap-1">
                           <span className={`px-2 py-1 text-xs rounded ${

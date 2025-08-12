@@ -6,7 +6,7 @@ import { FilterOptions } from '@/types';
 export function useFilters(initialFilters: FilterOptions = {}) {
   const [filters, setFilters] = useState<FilterOptions>(initialFilters);
 
-  const updateFilter = useCallback((key: keyof FilterOptions, value: any) => {
+  const updateFilter = useCallback((key: keyof FilterOptions, value: FilterOptions[keyof FilterOptions]) => {
     setFilters(prev => ({
       ...prev,
       [key]: value
