@@ -21,14 +21,15 @@ Avatar.displayName = "Avatar"
 
 const AvatarImage = React.forwardRef<
   HTMLImageElement,
-  React.ImgHTMLAttributes<HTMLImageElement>
->(({ className, alt = "Avatar", ...props }, ref) => (
+  React.ImgHTMLAttributes<HTMLImageElement> & { src?: string }
+>(({ className, alt = "Avatar", width, height, src, ...props }, ref) => (
   <Image
     ref={ref}
     className={cn("aspect-square h-full w-full", className)}
     alt={alt}
-    width={40}
-    height={40}
+    width={typeof width === 'number' ? width : typeof width === 'string' && width.match(/^\d+$/) ? (width as `${number}`) : 40}
+    height={typeof height === 'number' ? height : typeof height === 'string' && height.match(/^\d+$/) ? (height as `${number}`) : 40}
+    src={src || ''}
     {...props}
   />
 ))

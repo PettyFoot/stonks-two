@@ -1,6 +1,6 @@
 import Papa from 'papaparse';
 import { prisma } from '@/lib/prisma';
-import { BrokerType, TradeType } from '@prisma/client';
+import { BrokerType, TradeSide } from '@prisma/client';
 
 type CSVRow = Record<string, string | number | undefined>;
 
@@ -28,7 +28,7 @@ export interface BrokerConfig {
   };
   dateFormat?: string;
   sideMapping: {
-    [key: string]: TradeType;
+    [key: string]: TradeSide;
   };
 }
 
@@ -48,10 +48,10 @@ export const brokerConfigs: Record<string, BrokerConfig> = {
       commission: 'Commission'
     },
     sideMapping: {
-      'BUY': TradeType.LONG,
-      'SELL': TradeType.SHORT,
-      'BOT': TradeType.LONG,
-      'SLD': TradeType.SHORT
+      'BUY': TradeSide.LONG,
+      'SELL': TradeSide.SHORT,
+      'BOT': TradeSide.LONG,
+      'SLD': TradeSide.SHORT
     }
   },
   td_ameritrade: {
@@ -67,10 +67,10 @@ export const brokerConfigs: Record<string, BrokerConfig> = {
       pnl: 'NET AMT'
     },
     sideMapping: {
-      'BUY': TradeType.LONG,
-      'SELL': TradeType.SHORT,
-      'B': TradeType.LONG,
-      'S': TradeType.SHORT
+      'BUY': TradeSide.LONG,
+      'SELL': TradeSide.SHORT,
+      'B': TradeSide.LONG,
+      'S': TradeSide.SHORT
     }
   },
   generic_csv: {
@@ -85,14 +85,14 @@ export const brokerConfigs: Record<string, BrokerConfig> = {
       pnl: 'pnl'
     },
     sideMapping: {
-      'long': TradeType.LONG,
-      'short': TradeType.SHORT,
-      'buy': TradeType.LONG,
-      'sell': TradeType.SHORT,
-      'LONG': TradeType.LONG,
-      'SHORT': TradeType.SHORT,
-      'BUY': TradeType.LONG,
-      'SELL': TradeType.SHORT
+      'long': TradeSide.LONG,
+      'short': TradeSide.SHORT,
+      'buy': TradeSide.LONG,
+      'sell': TradeSide.SHORT,
+      'LONG': TradeSide.LONG,
+      'SHORT': TradeSide.SHORT,
+      'BUY': TradeSide.LONG,
+      'SELL': TradeSide.SHORT
     }
   },
   trade_voyager: {
@@ -107,10 +107,10 @@ export const brokerConfigs: Record<string, BrokerConfig> = {
     },
     dateFormat: 'MM/DD/YY HH:mm:ss',
     sideMapping: {
-      'B': TradeType.LONG,
-      'S': TradeType.SHORT,
-      'BUY': TradeType.LONG,
-      'SELL': TradeType.SHORT
+      'B': TradeSide.LONG,
+      'S': TradeSide.SHORT,
+      'BUY': TradeSide.LONG,
+      'SELL': TradeSide.SHORT
     }
   }
 };
@@ -173,9 +173,19 @@ export class BrokerImporter {
           
           await prisma.trade.create({
             data: {
-              ...trade,
               userId: this.userId,
-              importBatchId: importBatch.id
+              importBatchId: importBatch.id,
+              date: trade.date,
+              orderFilledTime: trade.date,
+              entryDate: trade.date,
+              symbol: trade.symbol,
+              side: trade.side,
+              volume: trade.volume,
+              quantityFilled: trade.volume,
+              executions: trade.executions,
+              pnl: trade.pnl,
+              notes: trade.notes,
+              tags: trade.tags
             }
           });
           
@@ -227,7 +237,7 @@ export class BrokerImporter {
     date: Date;
     time: string;
     symbol: string;
-    side: TradeType;
+    side: TradeSide;
     volume: number;
     executions: number;
     pnl: number;
@@ -258,7 +268,8 @@ export class BrokerImporter {
           const dateSegments = datePart.split('/');
           
           if (dateSegments.length === 3) {
-            const [month, day, year] = dateSegments;
+            const [month, day, yearStr] = dateSegments;
+            let year = yearStr;
             
             // Convert 2-digit year to 4-digit year
             if (year.length === 2) {

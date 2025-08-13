@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { mockTrades } from '@/data/mockData';
-import { TradeType, Prisma } from '@prisma/client';
+import { TradeSide, Prisma } from '@prisma/client';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -80,7 +80,7 @@ export async function GET(request: Request) {
     }
 
     if (side && side !== 'all') {
-      where.side = side.toUpperCase() as TradeType;
+      where.side = side.toUpperCase() as TradeSide;
     }
 
     if (dateFrom || dateTo) {
@@ -226,7 +226,7 @@ export async function POST(request: Request) {
         orderFilledTime: body.date ? new Date(body.date) : now,
         entryDate: body.date ? new Date(body.date) : now,
         symbol: body.symbol,
-        side: (body.side || 'long').toUpperCase() as TradeType,
+        side: (body.side || 'long').toUpperCase() as TradeSide,
         volume: body.volume || 0,
         quantityFilled: body.volume || 0,
         executions: body.executions || 1,

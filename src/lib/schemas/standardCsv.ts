@@ -6,7 +6,7 @@ export const StandardCsvRowSchema = z.object({
   Time: z.string().optional(),
   Symbol: z.string().min(1, 'Symbol is required'),
   'Buy/Sell': z.enum(['BUY', 'SELL', 'BOT', 'SLD', 'B', 'S'], {
-    errorMap: () => ({ message: 'Buy/Sell must be one of: BUY, SELL, BOT, SLD, B, S' })
+    message: 'Buy/Sell must be one of: BUY, SELL, BOT, SLD, B, S'
   }),
   Shares: z.string().min(1, 'Shares is required'),
   Price: z.string().optional(),

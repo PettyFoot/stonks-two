@@ -8,7 +8,7 @@ export async function middleware(request: NextRequest) {
   // Check if user is trying to access onboarding
   if (pathname === '/onboarding') {
     try {
-      const session = await getSession(request);
+      const session = await getSession();
       
       // If no session, redirect to signup
       if (!session) {

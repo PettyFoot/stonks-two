@@ -4,7 +4,6 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Edit, HelpCircle, User, LogOut } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import Link from 'next/link';
 import Image from 'next/image';

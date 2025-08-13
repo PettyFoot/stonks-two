@@ -1,10 +1,9 @@
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@auth0/nextjs-auth0';
-import { NextRequest } from 'next/server';
 
-export async function getCurrentUser(req?: NextRequest) {
+export async function getCurrentUser() {
   try {
-    const session = await getSession(req);
+    const session = await getSession();
   
     if (!session?.user?.sub) {
       return null;
@@ -32,8 +31,8 @@ export async function getCurrentUser(req?: NextRequest) {
   }
 }
 
-export async function requireAuth(req?: NextRequest) {
-  const user = await getCurrentUser(req);
+export async function requireAuth() {
+  const user = await getCurrentUser();
   if (!user) {
     throw new Error('Authentication required');
   }

@@ -234,7 +234,7 @@ export default function ColumnMappingModal({
                         <div>
                           <p className="text-sm font-medium">{header}</p>
                           <p className="text-xs text-gray-500">
-                            Sample: {sampleData[0]?.[header] || 'N/A'}
+                            Sample: {String(sampleData[0]?.[header] || 'N/A')}
                           </p>
                         </div>
 

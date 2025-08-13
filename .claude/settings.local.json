@@ -23,7 +23,8 @@
       "Bash(cmd /c:*)",
       "Bash(npx tsc:*)",
       "Bash(git push:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(npm run lint)"
     ],
     "deny": [],
     "ask": []

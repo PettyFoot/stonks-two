@@ -520,19 +520,19 @@ export default function EnhancedFileUpload({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="text-center p-3 bg-[#F9FAFB] rounded">
                     <div className="text-2xl font-bold text-[#16A34A]">
-                      {state.uploadResult.successCount}
+                      {String(state.uploadResult.successCount || 0)}
                     </div>
                     <div className="text-xs text-muted">Imported</div>
                   </div>
                   <div className="text-center p-3 bg-[#F9FAFB] rounded">
                     <div className="text-2xl font-bold text-[#DC2626]">
-                      {state.uploadResult.errorCount}
+                      {String(state.uploadResult.errorCount || 0)}
                     </div>
                     <div className="text-xs text-muted">Errors</div>
                   </div>
                 </div>
 
-                {state.uploadResult.requiresUserReview && (
+                {Boolean(state.uploadResult.requiresUserReview) && (
                   <div className="p-3 bg-[#FEF3C7] border border-[#FDE68A] rounded-lg">
                     <p className="text-sm font-medium text-[#F59E0B]">Review Required</p>
                     <p className="text-xs text-[#F59E0B] mt-1">

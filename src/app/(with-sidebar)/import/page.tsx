@@ -23,8 +23,15 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+interface ColumnMapping {
+  sourceColumn: string;
+  targetColumn: string;
+  confidence: number;
+  reasoning: string;
+}
+
 interface AiMappingResult {
-  mappings: Array<{ sourceColumn: string; targetColumn: string; confidence: number }>;
+  mappings: ColumnMapping[];
   overallConfidence: number;
   requiresUserReview: boolean;
   missingRequired: string[];
@@ -91,7 +98,7 @@ export default function EnhancedImportPage() {
     });
   };
 
-  const handleApplyMappings = async (mappings: Record<string, unknown>[]) => {
+  const handleApplyMappings = async (mappings: ColumnMapping[]) => {
     if (!mappingModal.importBatchId) return;
 
     setIsProcessingMapping(true);

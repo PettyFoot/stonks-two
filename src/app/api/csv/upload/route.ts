@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         error: 'Validation error',
-        details: error.errors
+        details: error.issues
       }, { status: 400 });
     }
 
@@ -131,7 +131,7 @@ export async function PUT(request: NextRequest) {
     const ingestionService = new CsvIngestionService();
     
     // Just validate, don't process
-    const validation = await ingestionService.validateCsvFile(fileContent, file.name);
+    const validation = await ingestionService.validateCsvFile(fileContent);
 
     // Include detected format information in response
     const response = {

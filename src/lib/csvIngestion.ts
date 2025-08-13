@@ -1,11 +1,11 @@
 import { parse } from 'csv-parse/sync';
 import { prisma } from '@/lib/prisma';
+import { BrokerType, OrderType, TimeInForce, OrderStatus, Prisma } from '@prisma/client';
 import { 
   StandardCsvRowSchema, 
   normalizeStandardCsvRow, 
   STANDARD_CSV_COLUMNS,
-  REQUIRED_COLUMNS,
-  type NormalizedTrade 
+  REQUIRED_COLUMNS
 } from '@/lib/schemas/standardCsv';
 import { 
   CsvAiMapper, 
@@ -17,6 +17,8 @@ import {
   type CsvFormat, 
   DATA_TRANSFORMERS 
 } from '@/lib/csvFormatRegistry';
+
+export type CustomCsvRow = Record<string, string>;
 
 // File size limits
 export const FILE_SIZE_LIMITS = {
@@ -107,7 +109,7 @@ export class CsvIngestionService {
     this.formatDetector = new CsvFormatDetector();
   }
 
-  async validateCsvFile(fileContent: string, fileName: string): Promise<CsvValidationResult> {
+  async validateCsvFile(fileContent: string): Promise<CsvValidationResult> {
     const fileSize = Buffer.byteLength(fileContent, 'utf8');
     
     if (fileSize > FILE_SIZE_LIMITS.MAX) {
@@ -154,7 +156,7 @@ export class CsvIngestionService {
           rowCount: totalTrades,
           errors: schwabResult.errors,
           fileSize,
-          detectedFormat: formatDetection.format,
+          detectedFormat: formatDetection.format || undefined,
           formatConfidence: formatDetection.confidence,
           formatReasoning: formatDetection.reasoning,
         };
@@ -180,7 +182,7 @@ export class CsvIngestionService {
         };
       }
 
-      const headers = Object.keys(records[0]);
+      const headers = Object.keys(records[0] as Record<string, unknown>);
       const sampleRows = records.slice(0, 5) as Record<string, unknown>[]; // Get first 5 rows for analysis
       
       // Try automatic format detection first
@@ -197,7 +199,7 @@ export class CsvIngestionService {
         rowCount: records.length,
         errors: [],
         fileSize,
-        detectedFormat: formatDetection.format,
+        detectedFormat: formatDetection.format || undefined,
         formatConfidence: formatDetection.confidence,
         formatReasoning: formatDetection.reasoning,
       };
@@ -240,7 +242,7 @@ export class CsvIngestionService {
   ): Promise<CsvIngestionResult> {
     
     // First validate the file
-    const validation = await this.validateCsvFile(fileContent, fileName);
+    const validation = await this.validateCsvFile(fileContent);
     if (!validation.isValid) {
       throw new Error(`CSV validation failed: ${validation.errors.join(', ')}`);
     }
@@ -361,22 +363,19 @@ export class CsvIngestionService {
             userId,
             importBatchId: importBatch.id,
             date: normalizedTrade.date,
-            time: normalizedTrade.time,
+            orderFilledTime: normalizedTrade.date,
+            entryDate: normalizedTrade.date,
             symbol: normalizedTrade.symbol,
             side: normalizedTrade.side,
             volume: normalizedTrade.volume,
+            quantityFilled: normalizedTrade.volume,
             executions: 1,
             pnl: normalizedTrade.pnl,
             price: normalizedTrade.price,
             commission: normalizedTrade.commission,
             fees: normalizedTrade.fees,
-            account: normalizedTrade.account,
             notes: normalizedTrade.notes,
             tags: normalizedTrade.tags,
-            // Required fields for enhanced schema
-            orderFilledTime: normalizedTrade.date,
-            entryDate: normalizedTrade.date,
-            quantityFilled: normalizedTrade.volume,
           },
         });
 
@@ -395,7 +394,7 @@ export class CsvIngestionService {
         status: errorCount === records.length ? 'FAILED' : 'COMPLETED',
         successCount,
         errorCount,
-        errors: errors.length > 0 ? errors : null,
+        errors: errors.length > 0 ? errors : undefined,
         processingCompleted: new Date(),
       },
     });
@@ -472,13 +471,13 @@ export class CsvIngestionService {
             orderId: normalizedOrder.orderId,
             parentOrderId: normalizedOrder.parentOrderId,
             symbol: normalizedOrder.symbol,
-            orderType: normalizedOrder.orderType,
+            orderType: normalizedOrder.orderType as OrderType,
             side: normalizedOrder.side,
-            timeInForce: normalizedOrder.timeInForce,
+            timeInForce: normalizedOrder.timeInForce as TimeInForce,
             orderQuantity: normalizedOrder.orderQuantity,
             limitPrice: normalizedOrder.limitPrice,
             stopPrice: normalizedOrder.stopPrice,
-            orderStatus: normalizedOrder.orderStatus,
+            orderStatus: normalizedOrder.orderStatus as OrderStatus,
             orderPlacedTime: normalizedOrder.orderPlacedTime,
             orderExecutedTime: normalizedOrder.orderExecutedTime,
             accountId: normalizedOrder.accountId,
@@ -503,7 +502,7 @@ export class CsvIngestionService {
         status: errorCount === records.length ? 'FAILED' : 'COMPLETED',
         successCount,
         errorCount,
-        errors: errors.length > 0 ? errors : null,
+        errors: errors.length > 0 ? errors : undefined,
         processingCompleted: new Date(),
       },
     });
@@ -545,7 +544,7 @@ export class CsvIngestionService {
       throw new Error('No data found in CSV file');
     }
 
-    const headers = Object.keys(records[0]);
+    const headers = Object.keys(records[0] as Record<string, unknown>);
     let mappingResult: AiMappingResult;
 
     if (userMappings) {
@@ -560,7 +559,7 @@ export class CsvIngestionService {
     } else {
       // Use AI to generate mappings
       await this.updateUploadLog(uploadLogId, 'MAPPED', 'AI_MAPPED');
-      mappingResult = await this.aiMapper.analyzeAndMapColumns(headers, records.slice(0, 10));
+      mappingResult = await this.aiMapper.analyzeAndMapColumns(headers, records.slice(0, 10) as CustomCsvRow[]);
     }
 
     // Create import batch
@@ -569,13 +568,13 @@ export class CsvIngestionService {
         userId,
         filename: fileName,
         fileSize,
-        brokerType: detectedFormat ? this.getBrokerTypeFromFormat(detectedFormat) : 'GENERIC_CSV',
+        brokerType: detectedFormat ? this.getBrokerTypeFromFormat(detectedFormat) : BrokerType.GENERIC_CSV,
         importType: 'CUSTOM',
         status: 'PROCESSING',
         totalRecords: records.length,
         aiMappingUsed: !userMappings,
         mappingConfidence: mappingResult.overallConfidence,
-        columnMappings: mappingResult.mappings,
+        columnMappings: mappingResult.mappings as unknown as Prisma.InputJsonValue,
         userReviewRequired: mappingResult.requiresUserReview,
       },
     });
@@ -602,7 +601,7 @@ export class CsvIngestionService {
 
     // Include detected format info in the mapping result if available
     if (detectedFormat && !userMappings) {
-      mappingResult.detectedFormat = detectedFormat;
+      mappingResult.detectedFormat = detectedFormat as unknown as Record<string, unknown>;
       mappingResult.formatConfidence = detectedFormat.confidence;
     }
 
@@ -612,7 +611,7 @@ export class CsvIngestionService {
     let errorCount = 0;
 
     try {
-      const normalizedTrades = this.aiMapper.applyMappings(records, mappingResult.mappings, accountTags);
+      const normalizedTrades = this.aiMapper.applyMappings(records as CustomCsvRow[], mappingResult.mappings, accountTags);
 
       for (const [index, trade] of normalizedTrades.entries()) {
         try {
@@ -621,22 +620,19 @@ export class CsvIngestionService {
               userId,
               importBatchId: importBatch.id,
               date: trade.date,
-              time: trade.time,
+              orderFilledTime: trade.date,
+              entryDate: trade.date,
               symbol: trade.symbol,
               side: trade.side,
               volume: trade.volume,
+              quantityFilled: trade.volume,
               executions: 1,
               pnl: trade.pnl,
               price: trade.price,
               commission: trade.commission,
               fees: trade.fees,
-              account: trade.account,
               notes: trade.notes,
               tags: trade.tags,
-              // Required fields for enhanced schema
-              orderFilledTime: trade.date,
-              entryDate: trade.date,
-              quantityFilled: trade.volume,
             },
           });
 
@@ -658,7 +654,7 @@ export class CsvIngestionService {
         status: errorCount === records.length ? 'FAILED' : 'COMPLETED',
         successCount,
         errorCount,
-        errors: errors.length > 0 ? errors : null,
+        errors: errors.length > 0 ? errors : undefined,
         processingCompleted: new Date(),
       },
     });
@@ -755,7 +751,6 @@ export class CsvIngestionService {
     importBatchId: string,
     userId: string,
     userMappings: ColumnMapping[],
-    accountTags: string[] = []
   ): Promise<CsvIngestionResult> {
     // Get the original import batch
     const importBatch = await prisma.importBatch.findFirst({
@@ -775,19 +770,19 @@ export class CsvIngestionService {
     throw new Error('Retry with user mappings requires storing original file content - not implemented in this demo');
   }
 
-  private getBrokerTypeFromFormat(format: CsvFormat): string {
-    const brokerMap: { [key: string]: string } = {
-      'interactive-brokers-flex': 'INTERACTIVE_BROKERS',
-      'td-ameritrade-history': 'TD_AMERITRADE',
-      'etrade-transactions': 'E_TRADE',
-      'fidelity-positions': 'FIDELITY',
-      'robinhood-statements': 'ROBINHOOD',
-      'custom-order-execution': 'GENERIC_CSV',
-      'trade-voyager-orders': 'GENERIC_CSV',
-      'schwab-todays-trades': 'CHARLES_SCHWAB',
+  private getBrokerTypeFromFormat(format: CsvFormat): BrokerType {
+    const brokerMap: { [key: string]: BrokerType } = {
+      'interactive-brokers-flex': BrokerType.INTERACTIVE_BROKERS,
+      'td-ameritrade-history': BrokerType.TD_AMERITRADE,
+      'etrade-transactions': BrokerType.E_TRADE,
+      'fidelity-positions': BrokerType.FIDELITY,
+      'robinhood-statements': BrokerType.ROBINHOOD,
+      'custom-order-execution': BrokerType.GENERIC_CSV,
+      'trade-voyager-orders': BrokerType.GENERIC_CSV,
+      'schwab-todays-trades': BrokerType.CHARLES_SCHWAB,
     };
     
-    return brokerMap[format.id] || 'GENERIC_CSV';
+    return brokerMap[format.id] || BrokerType.GENERIC_CSV;
   }
 
   private applyDetectedFormatMapping(row: Record<string, unknown>, format: CsvFormat, accountTags: string[]): NormalizedOrder {
@@ -803,7 +798,7 @@ export class CsvIngestionService {
         
         // Apply data transformers if specified
         if (mapping.transformer && DATA_TRANSFORMERS[mapping.transformer as keyof typeof DATA_TRANSFORMERS]) {
-          transformedValue = DATA_TRANSFORMERS[mapping.transformer as keyof typeof DATA_TRANSFORMERS](String(value));
+          transformedValue = DATA_TRANSFORMERS[mapping.transformer as keyof typeof DATA_TRANSFORMERS](String(value)) || value;
         }
         
         // Type conversion
@@ -1034,7 +1029,7 @@ export class CsvIngestionService {
         status: errorCount === totalTrades ? 'FAILED' : 'COMPLETED',
         successCount,
         errorCount,
-        errors: errors.length > 0 ? errors : null,
+        errors: errors.length > 0 ? errors : undefined,
         processingCompleted: new Date(),
       },
     });

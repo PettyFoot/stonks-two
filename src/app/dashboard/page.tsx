@@ -26,14 +26,16 @@ interface UserAnalytics {
     maxConsecutiveLosses: number;
   };
   performanceData: Array<{
-    date: Date;
+    date: string;
     pnl: number;
     cumulativePnl: number;
+    value: number;
   }>;
   dayData: Array<{
-    date: Date;
+    date: string;
     pnl: number;
     trades: number;
+    volume: number;
   }>;
 }
 

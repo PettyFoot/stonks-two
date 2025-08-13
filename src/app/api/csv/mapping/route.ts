@@ -34,8 +34,7 @@ export async function POST(request: NextRequest) {
     const result = await ingestionService.retryImportWithUserMappings(
       validatedData.importBatchId,
       user.id,
-      validatedData.mappings,
-      validatedData.accountTags
+      validatedData.mappings
     );
 
     return NextResponse.json(result);
@@ -46,7 +45,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         error: 'Validation error',
-        details: error.errors
+        details: error.issues
       }, { status: 400 });
     }
 
