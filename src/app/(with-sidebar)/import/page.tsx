@@ -10,10 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Upload, 
+ 
   FileText, 
   CheckCircle, 
-  AlertTriangle, 
+ 
   Download,
   BookOpen,
   Zap,
@@ -77,7 +77,7 @@ export default function EnhancedImportPage() {
     setMappingModal({
       isOpen: true,
       aiMappingResult: result.aiMappingResult as Record<string, unknown> | null,
-      originalHeaders: (result.aiMappingResult as any)?.mappings?.map((m: Record<string, unknown>) => m.sourceColumn) || [],
+      originalHeaders: (result.aiMappingResult as { mappings?: Array<{ sourceColumn: string }> })?.mappings?.map((m: { sourceColumn: string }) => m.sourceColumn) || [],
       sampleData: [], // Would need to be passed from the upload component
       importBatchId: result.importBatchId as string | null,
     });
