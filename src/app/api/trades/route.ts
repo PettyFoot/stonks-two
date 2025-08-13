@@ -187,10 +187,10 @@ export async function GET(request: Request) {
       .sort((a, b) => new Date(b.date + ' ' + b.time).getTime() - new Date(a.date + ' ' + a.time).getTime());
 
     return NextResponse.json({
-      trades: transformedTrades,
-      count: transformedTrades.length,
-      totalPnl: transformedTrades.reduce((sum, trade) => sum + trade.pnl, 0),
-      totalVolume: transformedTrades.reduce((sum, trade) => sum + trade.volume, 0)
+      trades: allTrades,
+      count: allTrades.length,
+      totalPnl: allTrades.reduce((sum, trade) => sum + trade.pnl, 0),
+      totalVolume: allTrades.reduce((sum, trade) => sum + trade.volume, 0)
     });
   } catch (error) {
     console.error('Trades API error:', error);
