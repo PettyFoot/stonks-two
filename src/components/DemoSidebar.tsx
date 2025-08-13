@@ -16,8 +16,7 @@ import {
   Plus, 
   Users, 
   Search,
-  User,
-  Lock
+  User
 } from 'lucide-react';
 
 const navigation = [

@@ -1,6 +1,4 @@
 import { parse } from 'csv-parse/sync';
-import { z } from 'zod';
-import { getCurrentUser } from '@/lib/auth0';
 import { prisma } from '@/lib/prisma';
 import { 
   StandardCsvRowSchema, 
@@ -12,8 +10,7 @@ import {
 import { 
   CsvAiMapper, 
   type AiMappingResult, 
-  type ColumnMapping,
-  CONFIDENCE_THRESHOLDS 
+  type ColumnMapping
 } from '@/lib/ai/csvMapper';
 import { 
   CsvFormatDetector, 

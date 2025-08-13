@@ -14,9 +14,7 @@ import {
   AlertTriangle, 
   Download,
   RefreshCw,
-  Info,
-  Star,
-  TrendingUp
+  Info
 } from 'lucide-react';
 // Removed broker formats import - using automatic detection now
 

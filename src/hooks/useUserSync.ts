@@ -42,7 +42,7 @@ export function useUserSync() {
     if (user && !isLoading && !isSyncing) {
       syncUser();
     }
-  }, [user, isLoading]); // Removed isSyncing from dependencies to prevent infinite loop
+  }, [user, isLoading, isSyncing]);
 
   return { isSyncing, syncError };
 }

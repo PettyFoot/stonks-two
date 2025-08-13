@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, TrendingUp, Shield, Users } from 'lucide-react';
+import { TrendingUp, Shield, Users } from 'lucide-react';
 
 export default function LoginPage() {
   return (

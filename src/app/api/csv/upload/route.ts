@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth0';
 import { CsvIngestionService, FILE_SIZE_LIMITS } from '@/lib/csvIngestion';
 import { z } from 'zod';
-
-// Upload request validation
-const UploadRequestSchema = z.object({
-  accountTags: z.string().optional(),
-  forceStandard: z.string().optional().transform(val => val === 'true'),
-});
 
 export async function POST(request: NextRequest) {
   try {

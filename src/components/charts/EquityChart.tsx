@@ -62,7 +62,7 @@ export default function EquityChart({
             />
             {showTooltip && (
               <Tooltip 
-                formatter={(value: number, name: string) => [formatTooltipValue(value), 'P&L']}
+                formatter={(value: number) => [formatTooltipValue(value), 'P&L']}
                 labelFormatter={(value) => new Date(value).toLocaleDateString('en-US', { 
                   weekday: 'short', 
                   month: 'short', 

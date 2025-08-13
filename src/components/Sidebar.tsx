@@ -35,7 +35,7 @@ const navigation = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { user, isLoading } = useUser();
+  const { user } = useUser();
   
   // Automatically sync user to database when logged in
   useUserSync();

@@ -19,7 +19,7 @@ export async function middleware(request: NextRequest) {
       // Check if this is a new user (you can add additional checks here)
       // For now, allow access if authenticated
       return NextResponse.next();
-    } catch (error) {
+    } catch {
       // If error getting session, redirect to signup
       const signupUrl = new URL('/api/auth/signup', request.url);
       return NextResponse.redirect(signupUrl);

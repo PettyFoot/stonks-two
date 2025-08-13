@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import TopBar from '@/components/TopBar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search as SearchIcon, Filter, Calendar, DollarSign } from 'lucide-react';
+import { Search as SearchIcon, Filter, Calendar } from 'lucide-react';
 import { mockTrades } from '@/data/mockData';
 import { Trade } from '@/types';
 

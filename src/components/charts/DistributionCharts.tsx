@@ -14,9 +14,7 @@ interface DistributionChartsProps {
 
 export default function DistributionCharts({ 
   data, 
-  title, 
-  height = 120,
-  showValues = true 
+  title
 }: DistributionChartsProps) {
   const getBarColor = (value: number) => {
     return value >= 0 ? '#16A34A' : '#DC2626';
@@ -99,9 +97,7 @@ interface GaugeChartProps {
 export function GaugeChart({ 
   value, 
   max, 
-  title, 
-  height = 120,
-  color = '#16A34A' 
+  title
 }: GaugeChartProps) {
   const percentage = (Math.abs(value) / max) * 100;
   const isPositive = value >= 0;

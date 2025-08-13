@@ -13,7 +13,7 @@ interface KPICardsProps {
 export default function KPICards({ days, className }: KPICardsProps) {
   return (
     <div className={cn('grid grid-cols-7 gap-4', className)}>
-      {days.map((day, index) => {
+      {days.map((day) => {
         const date = new Date(day.date);
         const dayNumber = date.getDate();
         const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });

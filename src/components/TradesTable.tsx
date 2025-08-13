@@ -21,7 +21,6 @@ type SortDirection = 'asc' | 'desc';
 export default function TradesTable({ 
   trades, 
   showCheckboxes = true, 
-  showPagination = false,
   onTradeSelect 
 }: TradesTableProps) {
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);

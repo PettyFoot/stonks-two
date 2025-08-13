@@ -68,7 +68,7 @@ export default function CustomBarChart({
             />
             {showTooltip && (
               <Tooltip 
-                formatter={(value: number, name: string) => [formatTooltipValue(value), title]}
+                formatter={(value: number) => [formatTooltipValue(value), title]}
                 labelFormatter={(value) => {
                   if (typeof value === 'string' && value.includes('-')) {
                     return new Date(value).toLocaleDateString('en-US', { 

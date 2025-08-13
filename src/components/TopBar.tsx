@@ -7,6 +7,7 @@ import { Edit, HelpCircle, User, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -112,9 +113,11 @@ function UserMenu() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="h-8 w-8 rounded-full p-0">
           {user.picture ? (
-            <img 
+            <Image 
               src={user.picture} 
               alt={user.name || user.email || 'User'} 
+              width={32}
+              height={32}
               className="h-8 w-8 rounded-full"
             />
           ) : (
@@ -138,19 +141,3 @@ function UserMenu() {
   );
 }
 
-// Helper component for badge
-function BadgeComponent({ children, className, variant = 'default' }: { 
-  children: React.ReactNode; 
-  className?: string;
-  variant?: 'default' | 'secondary';
-}) {
-  return (
-    <span className={cn(
-      'inline-flex items-center px-2 py-1 rounded-md text-xs font-medium',
-      variant === 'secondary' ? 'bg-gray-100 text-gray-800' : 'bg-primary text-white',
-      className
-    )}>
-      {children}
-    </span>
-  );
-}

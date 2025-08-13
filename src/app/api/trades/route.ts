@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
 import { mockTrades } from '@/data/mockData';
-import { getCurrentUser } from '@/lib/auth0';
-import { prisma } from '@/lib/prisma';
 import { TradeType, Prisma } from '@prisma/client';
 
 export async function GET(request: Request) {

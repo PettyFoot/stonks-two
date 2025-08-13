@@ -23,9 +23,17 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+interface AiMappingResult {
+  mappings: Array<{ sourceColumn: string; targetColumn: string; confidence: number }>;
+  overallConfidence: number;
+  requiresUserReview: boolean;
+  missingRequired: string[];
+  suggestions: string[];
+}
+
 interface MappingModalState {
   isOpen: boolean;
-  aiMappingResult: Record<string, unknown> | null;
+  aiMappingResult: AiMappingResult | null;
   originalHeaders: string[];
   sampleData: Record<string, unknown>[];
   importBatchId: string | null;
@@ -76,7 +84,7 @@ export default function EnhancedImportPage() {
     
     setMappingModal({
       isOpen: true,
-      aiMappingResult: result.aiMappingResult as Record<string, unknown> | null,
+      aiMappingResult: result.aiMappingResult as AiMappingResult | null,
       originalHeaders: (result.aiMappingResult as { mappings?: Array<{ sourceColumn: string }> })?.mappings?.map((m: { sourceColumn: string }) => m.sourceColumn) || [],
       sampleData: [], // Would need to be passed from the upload component
       importBatchId: result.importBatchId as string | null,

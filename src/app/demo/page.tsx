@@ -6,7 +6,7 @@ import KPICards from '@/components/KPICards';
 import EquityChart from '@/components/charts/EquityChart';
 import CustomPieChart from '@/components/charts/PieChart';
 import DistributionCharts, { GaugeChart } from '@/components/charts/DistributionCharts';
-import { mockDayData, mockCumulativePnl, mockGapPerformance, mockDayTypePerformance, mockKPIData } from '@/data/mockData';
+import { mockDayData, mockCumulativePnl, mockKPIData } from '@/data/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function DemoPage() {

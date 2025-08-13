@@ -1,4 +1,3 @@
-import { z } from 'zod';
 
 // CSV Format Registry - Database of known CSV formats and their mappings
 export interface CsvFormat {
@@ -659,7 +658,7 @@ export const DATA_TRANSFORMERS = {
       // Fallback to default parsing
       const date = new Date(value);
       return isNaN(date.getTime()) ? new Date() : date;
-    } catch (error) {
+    } catch {
       return new Date();
     }
   },
@@ -687,7 +686,7 @@ export const DATA_TRANSFORMERS = {
       }
       
       return new Date(isoString);
-    } catch (error) {
+    } catch {
       return null;
     }
   },
