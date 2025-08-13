@@ -77,7 +77,7 @@ export default function EnhancedImportPage() {
     setMappingModal({
       isOpen: true,
       aiMappingResult: result.aiMappingResult as Record<string, unknown> | null,
-      originalHeaders: result.aiMappingResult?.mappings.map((m: Record<string, unknown>) => m.sourceColumn) || [],
+      originalHeaders: (result.aiMappingResult as any)?.mappings?.map((m: Record<string, unknown>) => m.sourceColumn) || [],
       sampleData: [], // Would need to be passed from the upload component
       importBatchId: result.importBatchId as string | null,
     });
