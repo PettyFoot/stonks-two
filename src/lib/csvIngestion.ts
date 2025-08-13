@@ -47,13 +47,56 @@ export interface CsvValidationResult {
   isValid: boolean;
   isStandardFormat: boolean;
   headers: string[];
-  sampleRows: any[];
+  sampleRows: Record<string, unknown>[];
   rowCount: number;
   errors: string[];
   fileSize: number;
   detectedFormat?: CsvFormat;
   formatConfidence?: number;
   formatReasoning?: string[];
+}
+
+// Schwab order data structure
+interface SchwabOrder {
+  symbol?: string;
+  orderType?: string;
+  side?: string;
+  timeInForce?: string;
+  orderQuantity?: number;
+  limitPrice?: number;
+  orderStatus?: string;
+  orderPlacedTime?: Date;
+  orderExecutedTime?: Date;
+  orderCancelledTime?: Date;
+  [key: string]: unknown;
+}
+
+// Schwab parse result structure
+interface SchwabParseResult {
+  workingOrders: SchwabOrder[];
+  filledOrders: SchwabOrder[];
+  cancelledOrders: SchwabOrder[];
+  errors: string[];
+}
+
+// Order data structure for detected format mapping
+interface NormalizedOrder {
+  orderId: string;
+  parentOrderId?: string | null;
+  symbol: string;
+  orderType: string;
+  side: 'BUY' | 'SELL';
+  timeInForce: string;
+  orderQuantity: number;
+  limitPrice?: number | null;
+  stopPrice?: number | null;
+  orderStatus: string;
+  orderPlacedTime: Date;
+  orderExecutedTime: Date;
+  accountId?: string | null;
+  orderAccount?: string | null;
+  orderRoute?: string | null;
+  tags: string[];
 }
 
 export class CsvIngestionService {
@@ -141,7 +184,7 @@ export class CsvIngestionService {
       }
 
       const headers = Object.keys(records[0]);
-      const sampleRows = records.slice(0, 5); // Get first 5 rows for analysis
+      const sampleRows = records.slice(0, 5) as Record<string, unknown>[]; // Get first 5 rows for analysis
       
       // Try automatic format detection first
       const formatDetection = this.formatDetector.detectFormat(headers, sampleRows, fileContent);
@@ -423,7 +466,7 @@ export class CsvIngestionService {
     // Process each row using detected format mappings
     for (let i = 0; i < records.length; i++) {
       try {
-        const normalizedOrder = this.applyDetectedFormatMapping(records[i], detectedFormat, accountTags);
+        const normalizedOrder = this.applyDetectedFormatMapping(records[i] as Record<string, unknown>, detectedFormat, accountTags);
         
         // Create order record
         await prisma.order.create({
@@ -660,12 +703,12 @@ export class CsvIngestionService {
 
   private async updateUploadLog(
     logId: string, 
-    status: any, 
-    parseMethod?: any, 
+    status: string, 
+    parseMethod?: string, 
     errorMessage?: string,
     importBatchId?: string
   ) {
-    const updateData: any = { uploadStatus: status };
+    const updateData: Record<string, unknown> = { uploadStatus: status };
     
     if (parseMethod) updateData.parseMethod = parseMethod;
     if (errorMessage) updateData.errorMessage = errorMessage;
@@ -735,8 +778,8 @@ export class CsvIngestionService {
     throw new Error('Retry with user mappings requires storing original file content - not implemented in this demo');
   }
 
-  private getBrokerTypeFromFormat(format: CsvFormat): any {
-    const brokerMap: { [key: string]: any } = {
+  private getBrokerTypeFromFormat(format: CsvFormat): string {
+    const brokerMap: { [key: string]: string } = {
       'interactive-brokers-flex': 'INTERACTIVE_BROKERS',
       'td-ameritrade-history': 'TD_AMERITRADE',
       'etrade-transactions': 'E_TRADE',
@@ -750,18 +793,20 @@ export class CsvIngestionService {
     return brokerMap[format.id] || 'GENERIC_CSV';
   }
 
-  private applyDetectedFormatMapping(row: any, format: CsvFormat, accountTags: string[]): any {
-    const normalizedData: any = {};
+  private applyDetectedFormatMapping(row: Record<string, unknown>, format: CsvFormat, accountTags: string[]): NormalizedOrder {
+    const normalizedData: Record<string, unknown> = {};
     
     // Apply mappings from detected format
-    for (const [csvColumn, mapping] of Object.entries(format.fieldMappings)) {
+    const fieldMappings = format.fieldMappings;
+    for (const csvColumn of Object.keys(fieldMappings)) {
+      const mapping = fieldMappings[csvColumn];
       const value = row[csvColumn];
       if (value !== undefined && value !== null && value !== '') {
         let transformedValue = value;
         
         // Apply data transformers if specified
-        if (mapping.transformer && DATA_TRANSFORMERS[mapping.transformer]) {
-          transformedValue = DATA_TRANSFORMERS[mapping.transformer](value);
+        if (mapping.transformer && DATA_TRANSFORMERS[mapping.transformer as keyof typeof DATA_TRANSFORMERS]) {
+          transformedValue = DATA_TRANSFORMERS[mapping.transformer as keyof typeof DATA_TRANSFORMERS](String(value));
         }
         
         // Type conversion
@@ -770,7 +815,7 @@ export class CsvIngestionService {
             transformedValue = parseFloat(String(transformedValue).replace(/[$,]/g, ''));
             break;
           case 'date':
-            transformedValue = new Date(transformedValue);
+            transformedValue = new Date(String(transformedValue));
             break;
           case 'boolean':
             transformedValue = Boolean(transformedValue);
@@ -791,23 +836,23 @@ export class CsvIngestionService {
     }
 
     // Ensure required fields have defaults for orders
-    const order = {
-      orderId: normalizedData.orderId || '',
-      parentOrderId: normalizedData.parentOrderId,
-      symbol: normalizedData.symbol || '',
-      orderType: normalizedData.orderType || 'MARKET',
-      side: this.normalizeOrderSide(normalizedData.side || 'BUY'),
+    const order: NormalizedOrder = {
+      orderId: String(normalizedData.orderId || ''),
+      parentOrderId: normalizedData.parentOrderId ? String(normalizedData.parentOrderId) : null,
+      symbol: String(normalizedData.symbol || ''),
+      orderType: String(normalizedData.orderType || 'MARKET'),
+      side: this.normalizeOrderSide(String(normalizedData.side) || 'BUY'),
       timeInForce: 'DAY',
-      orderQuantity: normalizedData.orderQuantity || 0,
-      limitPrice: normalizedData.limitPrice,
-      stopPrice: normalizedData.stopPrice,
+      orderQuantity: Number(normalizedData.orderQuantity) || 0,
+      limitPrice: normalizedData.limitPrice ? Number(normalizedData.limitPrice) : null,
+      stopPrice: normalizedData.stopPrice ? Number(normalizedData.stopPrice) : null,
       orderStatus: 'FILLED',
-      orderPlacedTime: normalizedData.orderExecutedTime || new Date(),
-      orderExecutedTime: normalizedData.orderExecutedTime || new Date(),
-      accountId: normalizedData.accountId,
-      orderAccount: normalizedData.orderAccount,
-      orderRoute: normalizedData.orderRoute,
-      tags: normalizedData.tags,
+      orderPlacedTime: normalizedData.orderExecutedTime ? new Date(String(normalizedData.orderExecutedTime)) : new Date(),
+      orderExecutedTime: normalizedData.orderExecutedTime ? new Date(String(normalizedData.orderExecutedTime)) : new Date(),
+      accountId: normalizedData.accountId ? String(normalizedData.accountId) : null,
+      orderAccount: normalizedData.orderAccount ? String(normalizedData.orderAccount) : null,
+      orderRoute: normalizedData.orderRoute ? String(normalizedData.orderRoute) : null,
+      tags: Array.isArray(normalizedData.tags) ? normalizedData.tags as string[] : accountTags,
     };
     
     return order;
@@ -892,7 +937,9 @@ export class CsvIngestionService {
     let errorCount = 0;
 
     // Process filled orders as orders (they're actually executions)
-    for (const [index, order] of schwabResult.filledOrders.entries()) {
+    const filledOrders = (schwabResult as SchwabParseResult).filledOrders;
+    for (let index = 0; index < filledOrders.length; index++) {
+      const order = filledOrders[index];
       try {
         await prisma.order.create({
           data: {
@@ -919,7 +966,9 @@ export class CsvIngestionService {
     }
 
     // Process working orders
-    for (const [index, order] of schwabResult.workingOrders.entries()) {
+    const workingOrders = (schwabResult as SchwabParseResult).workingOrders;
+    for (let index = 0; index < workingOrders.length; index++) {
+      const order = workingOrders[index];
       try {
         await prisma.order.create({
           data: {
@@ -945,7 +994,9 @@ export class CsvIngestionService {
     }
 
     // Process cancelled orders
-    for (const [index, order] of schwabResult.cancelledOrders.entries()) {
+    const cancelledOrders = (schwabResult as SchwabParseResult).cancelledOrders;
+    for (let index = 0; index < cancelledOrders.length; index++) {
+      const order = cancelledOrders[index];
       try {
         if (order.symbol) { // Only process orders with symbols
           await prisma.order.create({
@@ -974,9 +1025,9 @@ export class CsvIngestionService {
     }
 
     // Add parsing errors if any
-    if (schwabResult.errors.length > 0) {
-      errors.push(...schwabResult.errors);
-      errorCount += schwabResult.errors.length;
+    if ((schwabResult as SchwabParseResult).errors.length > 0) {
+      errors.push(...(schwabResult as SchwabParseResult).errors);
+      errorCount += (schwabResult as SchwabParseResult).errors.length;
     }
 
     // Update import batch with results
@@ -1007,7 +1058,7 @@ export class CsvIngestionService {
   }
 
   private normalizeOrderType(orderType: string): 'MARKET' | 'LIMIT' | 'STOP' | 'STOP_LIMIT' | 'TRAILING_STOP' | 'MARKET_ON_CLOSE' | 'LIMIT_ON_CLOSE' | 'PEGGED_TO_MIDPOINT' {
-    const typeMap: { [key: string]: any } = {
+    const typeMap: { [key: string]: 'MARKET' | 'LIMIT' | 'STOP' | 'STOP_LIMIT' | 'TRAILING_STOP' | 'MARKET_ON_CLOSE' | 'LIMIT_ON_CLOSE' | 'PEGGED_TO_MIDPOINT' } = {
       'Market': 'MARKET',
       'Limit': 'LIMIT', 
       'Stop': 'STOP',
@@ -1022,7 +1073,7 @@ export class CsvIngestionService {
   }
 
   private normalizeTimeInForce(timeInForce: string): 'DAY' | 'GTC' | 'IOC' | 'FOK' | 'GTD' {
-    const tifMap: { [key: string]: any } = {
+    const tifMap: { [key: string]: 'DAY' | 'GTC' | 'IOC' | 'FOK' | 'GTD' } = {
       'DAY': 'DAY',
       'GTC': 'GTC',
       'IOC': 'IOC', 
@@ -1033,7 +1084,7 @@ export class CsvIngestionService {
   }
 
   private normalizeOrderStatus(orderStatus: string): 'PENDING' | 'PARTIALLY_FILLED' | 'FILLED' | 'CANCELLED' | 'REJECTED' | 'EXPIRED' {
-    const statusMap: { [key: string]: any } = {
+    const statusMap: { [key: string]: 'PENDING' | 'PARTIALLY_FILLED' | 'FILLED' | 'CANCELLED' | 'REJECTED' | 'EXPIRED' } = {
       'WORKING': 'PENDING',
       'FILLED': 'FILLED',
       'CANCELLED': 'CANCELLED',

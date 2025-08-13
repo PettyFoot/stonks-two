@@ -23,7 +23,7 @@ export interface AiMappingResult {
   requiresUserReview: boolean;
   missingRequired: string[];
   suggestions: string[];
-  detectedFormat?: any; // CsvFormat from csvFormatRegistry
+  detectedFormat?: Record<string, unknown>; // CsvFormat from csvFormatRegistry
   formatConfidence?: number;
 }
 
@@ -109,13 +109,13 @@ Example response format:
 `;
   }
 
-  private async callAiService(prompt: string): Promise<any> {
+  private async callAiService(prompt: string): Promise<Record<string, unknown>> {
     // This would integrate with OpenAI/Claude/etc.
     // For now, implementing a mock response based on heuristics
     throw new Error('AI service not implemented - falling back to heuristics');
   }
 
-  private parseMappingResponse(response: any): ColumnMapping[] {
+  private parseMappingResponse(response: Record<string, unknown>): ColumnMapping[] {
     // Parse AI response into ColumnMapping array
     return response.mappings || [];
   }
@@ -284,12 +284,12 @@ Example response format:
     if (mappings.length === 0) return 0;
 
     const weightedSum = mappings.reduce((sum, mapping) => {
-      const weight = REQUIRED_COLUMNS.includes(mapping.targetColumn as any) ? 2 : 1;
+      const weight = REQUIRED_COLUMNS.includes(mapping.targetColumn as string) ? 2 : 1;
       return sum + (mapping.confidence * weight);
     }, 0);
 
     const totalWeight = mappings.reduce((sum, mapping) => {
-      return sum + (REQUIRED_COLUMNS.includes(mapping.targetColumn as any) ? 2 : 1);
+      return sum + (REQUIRED_COLUMNS.includes(mapping.targetColumn as string) ? 2 : 1);
     }, 0);
 
     return totalWeight > 0 ? weightedSum / totalWeight : 0;

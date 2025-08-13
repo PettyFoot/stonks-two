@@ -114,7 +114,7 @@ export async function GET(request: Request) {
         where: {
           userId: user.id,
           ...(symbol && symbol !== 'Symbol' ? { symbol } : {}),
-          ...(side && side !== 'all' ? { side: side.toUpperCase() as any } : {}),
+          ...(side && side !== 'all' ? { side: side.toUpperCase() as 'BUY' | 'SELL' } : {}),
           ...(dateFrom || dateTo ? {
             orderExecutedTime: {
               ...(dateFrom ? { gte: new Date(dateFrom) } : {}),
