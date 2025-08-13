@@ -21,7 +21,8 @@
       "Bash(npm ls:*)",
       "Bash(npm update:*)",
       "Bash(cmd /c:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
