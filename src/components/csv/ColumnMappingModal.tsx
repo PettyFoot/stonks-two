@@ -43,7 +43,7 @@ interface ColumnMappingModalProps {
   onClose: () => void;
   aiMappingResult: AiMappingResult;
   originalHeaders: string[];
-  sampleData: any[];
+  sampleData: Record<string, unknown>[];
   onApplyMappings: (mappings: ColumnMapping[]) => void;
   isProcessing?: boolean;
 }

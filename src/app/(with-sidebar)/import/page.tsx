@@ -25,9 +25,9 @@ import Link from 'next/link';
 
 interface MappingModalState {
   isOpen: boolean;
-  aiMappingResult: any | null;
+  aiMappingResult: Record<string, unknown> | null;
   originalHeaders: string[];
-  sampleData: any[];
+  sampleData: Record<string, unknown>[];
   importBatchId: string | null;
 }
 
@@ -62,7 +62,7 @@ export default function EnhancedImportPage() {
 
   if (!user) return null;
 
-  const handleUploadComplete = (result: any) => {
+  const handleUploadComplete = (result: Record<string, unknown>) => {
     console.log('Upload completed:', result);
     
     // Show success message and redirect
@@ -71,19 +71,19 @@ export default function EnhancedImportPage() {
     }, 2000);
   };
 
-  const handleMappingRequired = (result: any) => {
+  const handleMappingRequired = (result: Record<string, unknown>) => {
     console.log('Mapping required:', result);
     
     setMappingModal({
       isOpen: true,
       aiMappingResult: result.aiMappingResult,
-      originalHeaders: result.aiMappingResult?.mappings.map((m: any) => m.sourceColumn) || [],
+      originalHeaders: result.aiMappingResult?.mappings.map((m: Record<string, unknown>) => m.sourceColumn) || [],
       sampleData: [], // Would need to be passed from the upload component
       importBatchId: result.importBatchId,
     });
   };
 
-  const handleApplyMappings = async (mappings: any[]) => {
+  const handleApplyMappings = async (mappings: Record<string, unknown>[]) => {
     if (!mappingModal.importBatchId) return;
 
     setIsProcessingMapping(true);
@@ -263,7 +263,7 @@ export default function EnhancedImportPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-muted">
-                  Don't have the standard format? No problem! Our AI will:
+                  Don&apos;t have the standard format? No problem! Our AI will:
                 </p>
                 
                 <ul className="text-sm text-muted space-y-2">

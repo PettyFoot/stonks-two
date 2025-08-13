@@ -33,7 +33,7 @@ interface ValidationResult {
   isValid: boolean;
   isStandardFormat: boolean;
   headers: string[];
-  sampleRows: any[];
+  sampleRows: Record<string, unknown>[];
   rowCount: number;
   errors: string[];
   fileSize: number;
@@ -46,13 +46,13 @@ interface UploadState {
   isUploading: boolean;
   uploadProgress: number;
   validationResult: ValidationResult | null;
-  uploadResult: any | null;
+  uploadResult: Record<string, unknown> | null;
   error: string | null;
 }
 
 interface EnhancedFileUploadProps {
-  onUploadComplete?: (result: any) => void;
-  onMappingRequired?: (result: any) => void;
+  onUploadComplete?: (result: Record<string, unknown>) => void;
+  onMappingRequired?: (result: Record<string, unknown>) => void;
   accountTags?: string[];
 }
 

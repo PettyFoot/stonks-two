@@ -258,7 +258,7 @@ export class BrokerImporter {
           const dateSegments = datePart.split('/');
           
           if (dateSegments.length === 3) {
-            let [month, day, year] = dateSegments;
+            const [month, day, year] = dateSegments;
             
             // Convert 2-digit year to 4-digit year
             if (year.length === 2) {

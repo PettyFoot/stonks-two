@@ -397,7 +397,7 @@ export class CsvFormatDetector {
   private formats: CsvFormat[] = [...KNOWN_CSV_FORMATS];
 
   // Detect CSV format from headers and sample data
-  detectFormat(headers: string[], sampleRows: any[], fileContent?: string): {
+  detectFormat(headers: string[], sampleRows: Record<string, unknown>[], fileContent?: string): {
     format: CsvFormat | null;
     confidence: number;
     reasoning: string[];
@@ -427,7 +427,7 @@ export class CsvFormatDetector {
     };
   }
 
-  private analyzeFormat(headers: string[], sampleRows: any[], format: CsvFormat, fileContent?: string): {
+  private analyzeFormat(headers: string[], sampleRows: Record<string, unknown>[], format: CsvFormat, fileContent?: string): {
     confidence: number;
     reasoning: string[];
   } {
@@ -437,7 +437,7 @@ export class CsvFormatDetector {
 
     // Special handling for Schwab format
     if (format.id === 'schwab-todays-trades' && fileContent) {
-      const specialDetection = (format.detectionPatterns as any).specialDetection;
+      const specialDetection = format.detectionPatterns.specialDetection;
       if (specialDetection?.fileStartPattern) {
         const fileStartMatch = specialDetection.fileStartPattern.test(fileContent);
         if (fileStartMatch) {
@@ -529,7 +529,7 @@ export class CsvFormatDetector {
     name: string,
     headers: string[],
     userMappings: { [csvColumn: string]: string },
-    sampleRows: any[],
+    sampleRows: Record<string, unknown>[],
     brokerName?: string
   ): CsvFormat {
     const fieldMappings: CsvFormat['fieldMappings'] = {};
@@ -537,11 +537,11 @@ export class CsvFormatDetector {
     for (const [csvColumn, tradeVoyagerField] of Object.entries(userMappings)) {
       if (tradeVoyagerField && tradeVoyagerField !== 'none') {
         const fieldInfo = TRADE_VOYAGER_FIELDS[tradeVoyagerField as keyof typeof TRADE_VOYAGER_FIELDS];
-        const examples = sampleRows.map(row => row[csvColumn]).filter(Boolean).slice(0, 3);
+        const examples = sampleRows.map(row => row[csvColumn]).filter(Boolean).slice(0, 3).map(ex => String(ex));
         
         fieldMappings[csvColumn] = {
           tradeVoyagerField,
-          dataType: fieldInfo?.type as any || 'string',
+          dataType: (fieldInfo?.type as 'string' | 'number' | 'date' | 'boolean') || 'string',
           required: fieldInfo?.required || false,
           examples
         };
@@ -640,13 +640,14 @@ export const DATA_TRANSFORMERS = {
         const dateSegments = datePart.split('/');
         
         if (dateSegments.length === 3) {
-          let [month, day, year] = dateSegments;
+          const [month, day, year] = dateSegments;
           
           // Convert 2-digit year to 4-digit year
           if (year.length === 2) {
             const currentYear = new Date().getFullYear();
             const currentCentury = Math.floor(currentYear / 100) * 100;
-            year = String(currentCentury + parseInt(year));
+            const fullYear = String(currentCentury + parseInt(year));
+            dateSegments[2] = fullYear;
           }
           
           const fullDateTime = `${month}/${day}/${year} ${timePart}`;
