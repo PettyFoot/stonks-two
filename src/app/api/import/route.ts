@@ -12,6 +12,7 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const brokerType = formData.get('brokerType') as string;
+    const accountTags = formData.get('accountTags') as string;
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -24,9 +25,12 @@ export async function POST(request: Request) {
     // Read file content
     const csvContent = await file.text();
     
+    // Parse account tags
+    const parsedTags = accountTags ? accountTags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0) : [];
+    
     // Create importer and process
     const importer = new BrokerImporter(user.id, brokerType);
-    const result = await importer.importCsv(csvContent, file.name);
+    const result = await importer.importCsv(csvContent, file.name, parsedTags);
 
     return NextResponse.json(result);
 

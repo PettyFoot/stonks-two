@@ -109,7 +109,7 @@ export class BrokerImporter {
     }
   }
 
-  async importCsv(csvContent: string, filename: string): Promise<ImportResult> {
+  async importCsv(csvContent: string, filename: string, accountTags: string[] = []): Promise<ImportResult> {
     // Create import batch record
     const importBatch = await prisma.importBatch.create({
       data: {
@@ -151,7 +151,7 @@ export class BrokerImporter {
         const row = parseResult.data[i] as CSVRow;
         
         try {
-          const trade = await this.parseTradeFromRow(row, i + 1);
+          const trade = await this.parseTradeFromRow(row, i + 1, accountTags);
           
           await prisma.trade.create({
             data: {
@@ -205,7 +205,7 @@ export class BrokerImporter {
     }
   }
 
-  private async parseTradeFromRow(row: CSVRow, rowNumber: number): Promise<{
+  private async parseTradeFromRow(row: CSVRow, rowNumber: number, accountTags: string[] = []): Promise<{
     date: Date;
     time: string;
     symbol: string;
@@ -273,7 +273,7 @@ export class BrokerImporter {
       executions: 1, // Default to 1 execution per CSV row
       pnl,
       notes: `Imported from ${this.config.name}`,
-      tags: ['imported']
+      tags: ['imported', ...accountTags]
     };
   }
 
@@ -309,10 +309,13 @@ export class BrokerImporter {
       const winningTrades = dayTrades.filter(trade => trade.pnl > 0).length;
       const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
 
-      // Upsert day data
+      // Upsert day data - need to use userId + date as compound key
       await prisma.dayData.upsert({
         where: {
-          date: date
+          userId_date: {
+            userId: this.userId,
+            date: date
+          }
         },
         update: {
           pnl: totalPnl,

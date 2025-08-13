@@ -1,0 +1,6 @@
+Date,Time,Symbol,Buy/Sell,Shares,Price,Commission,Fees,Account
+2025-01-01,09:30:00,AAPL,BUY,100,150.00,1.00,0.50,Main Account
+2025-01-01,09:35:00,AAPL,SELL,100,151.50,1.00,0.50,Main Account
+2025-01-01,10:00:00,TSLA,BUY,50,250.00,2.50,1.25,Trading Account
+2025-01-01,10:30:00,MSFT,BUY,75,300.00,1.50,0.75,Main Account
+2025-01-01,11:00:00,MSFT,SELL,75,305.00,1.50,0.75,Main Account

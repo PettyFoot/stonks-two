@@ -8,7 +8,7 @@ export const GET = handleAuth({
     authorizationParams: {
       screen_hint: 'signup',
     },
-    returnTo: '/dashboard'
+    returnTo: '/onboarding'
   })
 });
 

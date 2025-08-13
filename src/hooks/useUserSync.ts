@@ -38,8 +38,11 @@ export function useUserSync() {
       }
     }
 
-    syncUser();
-  }, [user, isLoading, isSyncing]);
+    // Only sync once when user becomes available
+    if (user && !isLoading && !isSyncing) {
+      syncUser();
+    }
+  }, [user, isLoading]); // Removed isSyncing from dependencies to prevent infinite loop
 
   return { isSyncing, syncError };
 }

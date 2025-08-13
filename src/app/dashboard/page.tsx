@@ -1,25 +1,139 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useUser } from '@auth0/nextjs-auth0/client';
+import { useRouter } from 'next/navigation';
 import TopBar from '@/components/TopBar';
 import KPICards from '@/components/KPICards';
 import EquityChart from '@/components/charts/EquityChart';
 import CustomPieChart from '@/components/charts/PieChart';
 import DistributionCharts, { GaugeChart } from '@/components/charts/DistributionCharts';
-import { mockDayData, mockCumulativePnl, mockGapPerformance, mockDayTypePerformance, mockKPIData } from '@/data/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Upload, FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+
+interface UserAnalytics {
+  metrics: {
+    totalPnl: number;
+    totalTrades: number;
+    winRate: number;
+    bestDay: number;
+    worstDay: number;
+    avgWinningTrade: number;
+    avgLosingTrade: number;
+    maxConsecutiveWins: number;
+    maxConsecutiveLosses: number;
+  };
+  performanceData: Array<{
+    date: Date;
+    pnl: number;
+    cumulativePnl: number;
+  }>;
+  dayData: Array<{
+    date: Date;
+    pnl: number;
+    trades: number;
+  }>;
+}
 
 export default function Dashboard() {
+  const { user, isLoading } = useUser();
+  const router = useRouter();
+  const [analytics, setAnalytics] = useState<UserAnalytics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isLoading, router]);
+
+  // Fetch user analytics data
+  useEffect(() => {
+    async function fetchAnalytics() {
+      if (!user) return;
+
+      try {
+        setLoading(true);
+        const response = await fetch('/api/analytics');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch analytics data');
+        }
+
+        const data = await response.json();
+        setAnalytics(data);
+      } catch (error) {
+        console.error('Error fetching analytics:', error);
+        setError(error instanceof Error ? error.message : 'Failed to load data');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchAnalytics();
+  }, [user]);
+
+  if (isLoading || loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#2563EB] mx-auto mb-4"></div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
+  if (error || !analytics) {
+    return (
+      <div className="flex flex-col h-full">
+        <TopBar title="Dashboard" showTimeRangeFilters={false} />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center max-w-md">
+            <div className="mb-6">
+              <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Trading Data Yet</h3>
+              <p className="text-gray-600 mb-6">
+                Start by importing your trades or manually adding your first trade to see your analytics dashboard.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <Link href="/import">
+                <Button className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import Trades
+                </Button>
+              </Link>
+              <Link href="/new-trade">
+                <Button variant="outline" className="w-full">
+                  Add Manual Trade
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const { metrics, performanceData } = analytics;
+
   // Prepare pie chart data for winning vs losing trades
+  const totalWinning = metrics.avgWinningTrade * (metrics.totalTrades * metrics.winRate / 100);
+  const totalLosing = Math.abs(metrics.avgLosingTrade * (metrics.totalTrades * (100 - metrics.winRate) / 100));
+  
   const winLossData = [
-    { name: 'Winning', value: mockKPIData.totalPnl * 0.65, percentage: 65, color: '#16A34A' },
-    { name: 'Losing', value: mockKPIData.totalPnl * 0.35, percentage: 35, color: '#DC2626' }
+    { name: 'Winning', value: totalWinning, percentage: metrics.winRate, color: '#16A34A' },
+    { name: 'Losing', value: totalLosing, percentage: 100 - metrics.winRate, color: '#DC2626' }
   ];
 
-  // Performance by day of week data
+  // Performance by day of week data (simplified for now)
   const dayOfWeekData = [
     { range: 'Sun', value: 0, percentage: 0, count: 0 },
-    { range: 'Mon', value: 3.72, percentage: 100, count: 1 },
+    { range: 'Mon', value: 0, percentage: 0, count: 0 },
     { range: 'Tue', value: 0, percentage: 0, count: 0 },
     { range: 'Wed', value: 0, percentage: 0, count: 0 },
     { range: 'Thu', value: 0, percentage: 0, count: 0 },
@@ -39,8 +153,10 @@ export default function Dashboard() {
       <div className="flex-1 overflow-auto p-6">
         {/* Daily Calendar Cards */}
         <div className="mb-6">
-          <h2 className="text-lg font-semibold text-primary mb-4">Aug 2025</h2>
-          <KPICards days={mockDayData} />
+          <h2 className="text-lg font-semibold text-primary mb-4">
+            {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          </h2>
+          <KPICards days={analytics.dayData || []} />
         </div>
 
         {/* Charts Grid */}
@@ -48,7 +164,7 @@ export default function Dashboard() {
           {/* Cumulative P&L - Large Chart */}
           <div className="col-span-8">
             <EquityChart 
-              data={mockCumulativePnl}
+              data={performanceData}
               title="Cumulative P&L"
               height={350}
             />
@@ -73,7 +189,7 @@ export default function Dashboard() {
                 <div className="h-48 flex items-center justify-center">
                   <div className="text-center">
                     <div className="text-4xl font-bold text-[#16A34A] mb-2">
-                      {mockKPIData.winRate}%
+                      {metrics.winRate.toFixed(1)}%
                     </div>
                     <div className="w-32 h-32 mx-auto bg-[#16A34A] rounded-full opacity-20"></div>
                   </div>
@@ -117,10 +233,10 @@ export default function Dashboard() {
                 <CardContent>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <div className="text-lg font-bold text-[#16A34A]">${mockKPIData.avgWinningTrade.toFixed(2)}</div>
+                      <div className="text-lg font-bold text-[#16A34A]">${metrics.avgWinningTrade.toFixed(2)}</div>
                     </div>
                     <div className="flex items-center justify-between">
-                      <div className="text-lg font-bold text-[#DC2626]">-${Math.abs(mockKPIData.avgLosingTrade).toFixed(2)}</div>
+                      <div className="text-lg font-bold text-[#DC2626]">-${Math.abs(metrics.avgLosingTrade).toFixed(2)}</div>
                     </div>
                   </div>
                 </CardContent>
@@ -133,8 +249,8 @@ export default function Dashboard() {
                 <CardContent>
                   <div className="text-center">
                     <GaugeChart 
-                      value={mockKPIData.bestDay}
-                      max={300}
+                      value={metrics.bestDay}
+                      max={Math.max(300, metrics.bestDay * 1.2)}
                       title=""
                       height={80}
                     />
@@ -162,8 +278,8 @@ export default function Dashboard() {
                 <CardContent>
                   <div className="text-center">
                     <GaugeChart 
-                      value={mockKPIData.avgPositionMfe}
-                      max={20}
+                      value={Math.abs(metrics.worstDay)}
+                      max={Math.max(20, Math.abs(metrics.worstDay) * 1.2)}
                       title=""
                       height={80}
                     />
@@ -179,7 +295,7 @@ export default function Dashboard() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>Intraday</span>
-                      <span className="text-[#16A34A]">$437.28</span>
+                      <span className="text-[#16A34A]">${metrics.totalPnl.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Multiday</span>
@@ -201,7 +317,7 @@ export default function Dashboard() {
                 <CardContent>
                   <div className="text-center">
                     <div className="text-4xl font-bold text-[#16A34A]">
-                      {mockKPIData.maxConsecutiveWins}
+                      {metrics.maxConsecutiveWins}
                     </div>
                   </div>
                 </CardContent>
@@ -214,7 +330,7 @@ export default function Dashboard() {
                 <CardContent>
                   <div className="text-center">
                     <div className="text-4xl font-bold text-[#DC2626]">
-                      {mockKPIData.maxConsecutiveLosses}
+                      {metrics.maxConsecutiveLosses}
                     </div>
                   </div>
                 </CardContent>

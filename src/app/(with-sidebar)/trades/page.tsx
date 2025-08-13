@@ -6,12 +6,13 @@ import FilterPanel from '@/components/FilterPanel';
 import TradesTable from '@/components/TradesTable';
 import { Button } from '@/components/ui/button';
 import { FilterOptions, Trade, ViewMode } from '@/types';
-import { mockTrades } from '@/data/mockData';
+import { useTradesData } from '@/hooks/useTradesData';
 import { Settings } from 'lucide-react';
 
 export default function Trades() {
   const [filters, setFilters] = useState<FilterOptions>({});
   const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const { data: tradesData, loading, error } = useTradesData(filters);
 
   const viewModeButtons = [
     { id: 'table', label: 'Table', active: viewMode === 'table' },
@@ -26,22 +27,27 @@ export default function Trades() {
     console.log('Selected trade:', trade);
   };
 
-  // Filter trades based on current filters
-  const filteredTrades = mockTrades.filter(trade => {
-    if (filters.symbol && filters.symbol !== 'Symbol' && trade.symbol !== filters.symbol) {
-      return false;
-    }
-    if (filters.side && filters.side !== 'all' && trade.side !== filters.side) {
-      return false;
-    }
-    if (filters.tags && filters.tags.length > 0) {
-      const hasMatchingTag = filters.tags.some(tag => 
-        trade.tags?.some(tradeTag => tradeTag.toLowerCase().includes(tag.toLowerCase()))
-      );
-      if (!hasMatchingTag) return false;
-    }
-    return true;
-  });
+  // Use real trades data instead of mock data
+  const trades = tradesData?.trades || [];
+  const filteredTrades = trades;
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563EB]"></div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-red-500">Error loading trades: {error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -128,7 +134,7 @@ export default function Trades() {
           <div className="bg-surface border border-default rounded-lg p-8">
             <div className="text-center">
               <div className="text-4xl font-bold text-primary mb-2">
-                ${filteredTrades.reduce((sum, trade) => sum + trade.pnl, 0).toFixed(2)}
+                ${(tradesData?.totalPnl || 0).toFixed(2)}
               </div>
               <div className="text-muted">Gross P&L</div>
             </div>
@@ -139,7 +145,7 @@ export default function Trades() {
           <div className="bg-surface border border-default rounded-lg p-8">
             <div className="text-center">
               <div className="text-4xl font-bold text-primary mb-2">
-                ${(filteredTrades.reduce((sum, trade) => sum + trade.pnl, 0) * 0.95).toFixed(2)}
+                ${((tradesData?.totalPnl || 0) * 0.95).toFixed(2)}
               </div>
               <div className="text-muted">Net P&L (after commissions)</div>
             </div>
@@ -150,26 +156,29 @@ export default function Trades() {
         <div className="mt-6 grid grid-cols-4 gap-4">
           <div className="bg-surface border border-default rounded-lg p-4">
             <div className="text-sm text-muted mb-1">Total Trades</div>
-            <div className="text-2xl font-bold text-primary">{filteredTrades.length}</div>
+            <div className="text-2xl font-bold text-primary">{tradesData?.count || 0}</div>
           </div>
           <div className="bg-surface border border-default rounded-lg p-4">
             <div className="text-sm text-muted mb-1">Win Rate</div>
             <div className="text-2xl font-bold text-[#16A34A]">
-              {((filteredTrades.filter(t => t.pnl > 0).length / filteredTrades.length) * 100).toFixed(1)}%
+              {filteredTrades.length > 0 
+                ? ((filteredTrades.filter(t => t.pnl > 0).length / filteredTrades.length) * 100).toFixed(1)
+                : '0'
+              }%
             </div>
           </div>
           <div className="bg-surface border border-default rounded-lg p-4">
             <div className="text-sm text-muted mb-1">Total Volume</div>
             <div className="text-2xl font-bold text-primary">
-              {filteredTrades.reduce((sum, trade) => sum + trade.volume, 0).toLocaleString()}
+              {(tradesData?.totalVolume || 0).toLocaleString()}
             </div>
           </div>
           <div className="bg-surface border border-default rounded-lg p-4">
             <div className="text-sm text-muted mb-1">Total P&L</div>
             <div className={`text-2xl font-bold ${
-              filteredTrades.reduce((sum, trade) => sum + trade.pnl, 0) >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'
+              (tradesData?.totalPnl || 0) >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'
             }`}>
-              ${filteredTrades.reduce((sum, trade) => sum + trade.pnl, 0).toFixed(2)}
+              ${(tradesData?.totalPnl || 0).toFixed(2)}
             </div>
           </div>
         </div>

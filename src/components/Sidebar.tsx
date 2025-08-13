@@ -87,9 +87,11 @@ export default function Sidebar() {
 
       {/* Import Trades Button */}
       <div className="px-4 py-4">
-        <Button className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white rounded-lg font-medium">
-          📊 Import Trades
-        </Button>
+        <Link href="/import">
+          <Button className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white rounded-lg font-medium">
+            📊 Import Trades
+          </Button>
+        </Link>
       </div>
 
       {/* User Profile */}

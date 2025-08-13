@@ -3,8 +3,16 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, HelpCircle } from 'lucide-react';
+import { Edit, HelpCircle, User, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useUser } from '@auth0/nextjs-auth0/client';
+import Link from 'next/link';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface TopBarProps {
   title: string;
@@ -73,12 +81,60 @@ export default function TopBar({
           </div>
         )}
 
-        {/* Help Button */}
-        <Button variant="ghost" size="sm" className="text-muted hover:text-primary">
-          <HelpCircle className="h-4 w-4" />
-        </Button>
+        {/* User Menu and Help Button */}
+        <div className="flex items-center gap-2">
+          <UserMenu />
+          <Button variant="ghost" size="sm" className="text-muted hover:text-primary">
+            <HelpCircle className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
+  );
+}
+
+// User menu component
+function UserMenu() {
+  const { user, isLoading } = useUser();
+
+  if (isLoading) {
+    return (
+      <div className="h-8 w-8 rounded-full bg-gray-200 animate-pulse" />
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-8 w-8 rounded-full p-0">
+          {user.picture ? (
+            <img 
+              src={user.picture} 
+              alt={user.name || user.email || 'User'} 
+              className="h-8 w-8 rounded-full"
+            />
+          ) : (
+            <User className="h-4 w-4" />
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <div className="px-2 py-1.5">
+          <p className="text-sm font-medium">{user.name || 'User'}</p>
+          <p className="text-xs text-muted-foreground">{user.email}</p>
+        </div>
+        <DropdownMenuItem asChild>
+          <Link href="/api/auth/logout" className="flex items-center">
+            <LogOut className="h-4 w-4 mr-2" />
+            Sign out
+          </Link>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
