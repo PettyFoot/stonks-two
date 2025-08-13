@@ -1,0 +1,21 @@
+Today's Trade Activity for 56037956SCHW   ││   (Individual) on 9/25/24 10:56:32
+
+Working Orders
+Notes,,Time Placed,Spread,Side,Qty,Pos Effect,Symbol,Exp,Strike,Type,PRICE,,TIF,Mark,Status
+,,9/25/24 10:15:02,STOCK,BUY,+100,TO OPEN,ABC,,,STOCK,4.50,,DAY,4.50,OPEN
+,,9/25/24 10:45:30,STOCK,SELL,-50,TO CLOSE,XYZ,,,STOCK,125.00,,GTC,124.95,OPEN
+
+Filled Orders
+,,Exec Time,Spread,Side,Qty,Pos Effect,Symbol,Exp,Strike,Type,Price,Net Price,Order Type
+,,9/25/24 09:31:36,STOCK,SELL,-25,TO CLOSE,OCTO,,,STOCK,4.29,4.29,STP
+,,9/25/24 09:31:30,STOCK,BUY,+25,TO OPEN,OCTO,,,STOCK,4.33,4.33,LMT
+,,9/25/24 09:45:12,STOCK,BUY,+100,TO OPEN,TSLA,,,STOCK,245.50,245.50,MKT
+,,9/25/24 10:12:45,STOCK,SELL,-100,TO CLOSE,AAPL,,,STOCK,175.25,175.25,LMT
+
+Canceled Orders
+Notes,,Time Canceled,Spread,Side,Qty,Pos Effect,Symbol,Exp,Strike,Type,PRICE,,TIF,Status
+,,9/25/24 09:33:45,STOCK,SELL,-25,TO CLOSE,OCTO,,,STOCK,~,MKT,DAY,CANCELED
+,,9/25/24 10:05:20,STOCK,BUY,+200,TO OPEN,NVDA,,,STOCK,450.00,LMT,DAY,CANCELED
+
+Rolling Strategies
+Covered Call Position,New Exp,Call By,Begin (Days),Order Price,Active Time,Move to MKT Time,Status

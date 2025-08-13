@@ -83,7 +83,44 @@ export class CsvIngestionService {
     }
 
     try {
-      // Parse CSV to get headers and sample data
+      // Special handling for Schwab "Today's Trade Activity" format
+      const schwabPattern = /Today's Trade Activity for \d+\w*\s+.*on\s+\d{1,2}\/\d{1,2}\/\d{2,4}/i;
+      const isSchwabFormat = schwabPattern.test(fileContent);
+      
+      if (isSchwabFormat) {
+        // Parse Schwab format using our custom parser
+        const { parseSchwabTodaysTrades } = await import('../../scripts/parseSchwabTodaysTrades');
+        const schwabResult = parseSchwabTodaysTrades(fileContent);
+        
+        const totalTrades = schwabResult.workingOrders.length + 
+                           schwabResult.filledOrders.length + 
+                           schwabResult.cancelledOrders.length;
+        
+        // Create mock headers from first filled order (for UI display)
+        const sampleOrder = schwabResult.filledOrders[0] || schwabResult.workingOrders[0] || schwabResult.cancelledOrders[0];
+        const headers = sampleOrder ? Object.keys(sampleOrder) : ['symbol', 'side', 'orderQuantity', 'orderStatus'];
+        const sampleRows = [schwabResult.filledOrders[0], schwabResult.workingOrders[0]].filter(Boolean).slice(0, 3);
+        
+        // Get Schwab format definition
+        const { CsvFormatDetector } = await import('./csvFormatRegistry');
+        const detector = new CsvFormatDetector();
+        const formatDetection = detector.detectFormat(headers, sampleRows, fileContent);
+        
+        return {
+          isValid: true,
+          isStandardFormat: false,
+          headers,
+          sampleRows,
+          rowCount: totalTrades,
+          errors: schwabResult.errors,
+          fileSize,
+          detectedFormat: formatDetection.format,
+          formatConfidence: formatDetection.confidence,
+          formatReasoning: formatDetection.reasoning,
+        };
+      }
+      
+      // Standard CSV parsing for other formats
       const records = parse(fileContent, {
         columns: true,
         skip_empty_lines: true,
@@ -107,7 +144,7 @@ export class CsvIngestionService {
       const sampleRows = records.slice(0, 5); // Get first 5 rows for analysis
       
       // Try automatic format detection first
-      const formatDetection = this.formatDetector.detectFormat(headers, sampleRows);
+      const formatDetection = this.formatDetector.detectFormat(headers, sampleRows, fileContent);
       
       // Check if it's standard format
       const isStandardFormat = this.isStandardCsvFormat(headers);
@@ -177,7 +214,21 @@ export class CsvIngestionService {
     );
 
     try {
-      if (validation.isStandardFormat && !userMappings) {
+      // Check if this is a Schwab format specifically
+      const schwabPattern = /Today's Trade Activity for \d+\w*\s+.*on\s+\d{1,2}\/\d{1,2}\/\d{2,4}/i;
+      const isSchwabFormat = schwabPattern.test(fileContent);
+      
+      if (isSchwabFormat && !userMappings) {
+        // Process as Schwab CSV
+        return await this.processSchwabCsv(
+          fileContent,
+          fileName,
+          userId,
+          accountTags,
+          uploadLog.id,
+          validation.fileSize
+        );
+      } else if (validation.isStandardFormat && !userMappings) {
         // Process as standard CSV
         return await this.processStandardCsv(
           fileContent, 
@@ -693,6 +744,7 @@ export class CsvIngestionService {
       'robinhood-statements': 'ROBINHOOD',
       'custom-order-execution': 'GENERIC_CSV',
       'trade-voyager-orders': 'GENERIC_CSV',
+      'schwab-todays-trades': 'CHARLES_SCHWAB',
     };
     
     return brokerMap[format.id] || 'GENERIC_CSV';
@@ -797,5 +849,200 @@ export class CsvIngestionService {
     };
     
     return sideMap[sideUpper] || 'BUY';
+  }
+
+  private async processSchwabCsv(
+    fileContent: string,
+    fileName: string,
+    userId: string,
+    accountTags: string[],
+    uploadLogId: string,
+    fileSize: number
+  ): Promise<CsvIngestionResult> {
+    
+    // Parse Schwab format using our custom parser
+    const { parseSchwabTodaysTrades } = await import('../../scripts/parseSchwabTodaysTrades');
+    const schwabResult = parseSchwabTodaysTrades(fileContent);
+    
+    const totalTrades = schwabResult.workingOrders.length + 
+                       schwabResult.filledOrders.length + 
+                       schwabResult.cancelledOrders.length;
+
+    // Create import batch
+    const importBatch = await prisma.importBatch.create({
+      data: {
+        userId,
+        filename: fileName,
+        fileSize,
+        brokerType: 'CHARLES_SCHWAB',
+        importType: 'CUSTOM',
+        status: 'PROCESSING',
+        totalRecords: totalTrades,
+        aiMappingUsed: false,
+        mappingConfidence: 1.0, // Custom parser is 100% confident
+        userReviewRequired: false,
+      },
+    });
+
+    // Update upload log
+    await this.updateUploadLog(uploadLogId, 'PARSING', 'USER_CORRECTED', undefined, importBatch.id);
+
+    const errors: string[] = [];
+    let successCount = 0;
+    let errorCount = 0;
+
+    // Process filled orders as orders (they're actually executions)
+    for (const [index, order] of schwabResult.filledOrders.entries()) {
+      try {
+        await prisma.order.create({
+          data: {
+            userId,
+            orderId: `schwab-${Date.now()}-${index}`,
+            symbol: order.symbol || '',
+            orderType: this.normalizeOrderType(order.orderType || 'Market'),
+            side: this.normalizeOrderSide(order.side || 'BUY'),
+            timeInForce: this.normalizeTimeInForce(order.timeInForce || 'DAY'),
+            orderQuantity: order.orderQuantity || 0,
+            limitPrice: order.limitPrice,
+            orderStatus: this.normalizeOrderStatus(order.orderStatus || 'FILLED'),
+            orderPlacedTime: order.orderExecutedTime || new Date(),
+            orderExecutedTime: order.orderExecutedTime || new Date(),
+            tags: accountTags,
+          },
+        });
+
+        successCount++;
+      } catch (error) {
+        errorCount++;
+        errors.push(`Filled order ${index + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
+    // Process working orders
+    for (const [index, order] of schwabResult.workingOrders.entries()) {
+      try {
+        await prisma.order.create({
+          data: {
+            userId,
+            orderId: `schwab-working-${Date.now()}-${index}`,
+            symbol: order.symbol || '',
+            orderType: this.normalizeOrderType(order.orderType || 'Market'),
+            side: this.normalizeOrderSide(order.side || 'BUY'),
+            timeInForce: this.normalizeTimeInForce(order.timeInForce || 'DAY'),
+            orderQuantity: order.orderQuantity || 0,
+            limitPrice: order.limitPrice,
+            orderStatus: this.normalizeOrderStatus('WORKING'), // Working orders are PENDING
+            orderPlacedTime: order.orderPlacedTime || new Date(),
+            tags: accountTags,
+          },
+        });
+
+        successCount++;
+      } catch (error) {
+        errorCount++;
+        errors.push(`Working order ${index + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
+    // Process cancelled orders
+    for (const [index, order] of schwabResult.cancelledOrders.entries()) {
+      try {
+        if (order.symbol) { // Only process orders with symbols
+          await prisma.order.create({
+            data: {
+              userId,
+              orderId: `schwab-cancelled-${Date.now()}-${index}`,
+              symbol: order.symbol,
+              orderType: this.normalizeOrderType(order.orderType || 'Market'),
+              side: this.normalizeOrderSide(order.side || 'BUY'),
+              timeInForce: this.normalizeTimeInForce(order.timeInForce || 'DAY'),
+              orderQuantity: order.orderQuantity || 0,
+              limitPrice: order.limitPrice,
+              orderStatus: this.normalizeOrderStatus(order.orderStatus || 'CANCELLED'),
+              orderPlacedTime: order.orderCancelledTime || new Date(),
+              orderCancelledTime: order.orderCancelledTime || new Date(),
+              tags: accountTags,
+            },
+          });
+
+          successCount++;
+        }
+      } catch (error) {
+        errorCount++;
+        errors.push(`Cancelled order ${index + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+
+    // Add parsing errors if any
+    if (schwabResult.errors.length > 0) {
+      errors.push(...schwabResult.errors);
+      errorCount += schwabResult.errors.length;
+    }
+
+    // Update import batch with results
+    await prisma.importBatch.update({
+      where: { id: importBatch.id },
+      data: {
+        status: errorCount === totalTrades ? 'FAILED' : 'COMPLETED',
+        successCount,
+        errorCount,
+        errors: errors.length > 0 ? errors : null,
+        processingCompleted: new Date(),
+      },
+    });
+
+    // Update upload log
+    await this.updateUploadLog(uploadLogId, 'IMPORTED', 'USER_CORRECTED');
+
+    return {
+      success: errorCount < totalTrades,
+      importBatchId: importBatch.id,
+      importType: 'CUSTOM',
+      totalRecords: totalTrades,
+      successCount,
+      errorCount,
+      errors,
+      requiresUserReview: false,
+    };
+  }
+
+  private normalizeOrderType(orderType: string): 'MARKET' | 'LIMIT' | 'STOP' | 'STOP_LIMIT' | 'TRAILING_STOP' | 'MARKET_ON_CLOSE' | 'LIMIT_ON_CLOSE' | 'PEGGED_TO_MIDPOINT' {
+    const typeMap: { [key: string]: any } = {
+      'Market': 'MARKET',
+      'Limit': 'LIMIT', 
+      'Stop': 'STOP',
+      'MARKET': 'MARKET',
+      'LIMIT': 'LIMIT',
+      'STOP': 'STOP',
+      'MKT': 'MARKET',
+      'LMT': 'LIMIT',
+      'STP': 'STOP'
+    };
+    return typeMap[orderType] || 'MARKET';
+  }
+
+  private normalizeTimeInForce(timeInForce: string): 'DAY' | 'GTC' | 'IOC' | 'FOK' | 'GTD' {
+    const tifMap: { [key: string]: any } = {
+      'DAY': 'DAY',
+      'GTC': 'GTC',
+      'IOC': 'IOC', 
+      'FOK': 'FOK',
+      'GTD': 'GTD'
+    };
+    return tifMap[timeInForce] || 'DAY';
+  }
+
+  private normalizeOrderStatus(orderStatus: string): 'PENDING' | 'PARTIALLY_FILLED' | 'FILLED' | 'CANCELLED' | 'REJECTED' | 'EXPIRED' {
+    const statusMap: { [key: string]: any } = {
+      'WORKING': 'PENDING',
+      'FILLED': 'FILLED',
+      'CANCELLED': 'CANCELLED',
+      'CANCELED': 'CANCELLED',
+      'REJECTED': 'REJECTED',
+      'EXPIRED': 'EXPIRED',
+      'PENDING': 'PENDING',
+      'PARTIALLY_FILLED': 'PARTIALLY_FILLED'
+    };
+    return statusMap[orderStatus] || 'PENDING';
   }
 }

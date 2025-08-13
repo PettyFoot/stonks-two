@@ -24,6 +24,10 @@ export interface CsvFormat {
     headerPattern: string[]; // Required headers for detection
     sampleValuePatterns?: { [column: string]: RegExp }; // Value patterns for verification
     fileNamePatterns?: RegExp[]; // Common filename patterns
+    specialDetection?: {
+      fileStartPattern?: RegExp;
+      sectionHeaders?: string[];
+    };
   };
   
   // Metadata
@@ -50,7 +54,6 @@ export const TRADE_VOYAGER_FIELDS = {
   
   // Pricing
   price: { required: false, type: 'number', description: 'Execution price per share' },
-  fillPrice: { required: false, type: 'number', description: 'Actual fill price' },
   averagePrice: { required: false, type: 'number', description: 'Average fill price' },
   
   // Costs
@@ -70,9 +73,20 @@ export const TRADE_VOYAGER_FIELDS = {
   orderQuantity: { required: false, type: 'number', description: 'Total order quantity' },
   limitPrice: { required: false, type: 'number', description: 'Order limit price' },
   orderPlaceTime: { required: false, type: 'date', description: 'Order placement timestamp' },
+  orderPlacedTime: { required: false, type: 'date', description: 'Order placed timestamp' },
+  orderExecutedTime: { required: false, type: 'date', description: 'Order executed timestamp' },
+  orderCancelledTime: { required: false, type: 'date', description: 'Order cancelled timestamp' },
   timeInForce: { required: false, type: 'string', description: 'Day/GTC/IOC/FOK' },
   executionVenue: { required: false, type: 'string', description: 'Exchange/ECN' },
   liquidityFlag: { required: false, type: 'string', description: 'Maker/Taker' },
+  orderStatus: { required: false, type: 'string', description: 'Order status (WORKING/FILLED/CANCELLED)' },
+  orderNotes: { required: false, type: 'string', description: 'Order notes and status details' },
+  assetClass: { required: false, type: 'string', description: 'Asset class (STOCK/OPTION/etc)' },
+  positionEffect: { required: false, type: 'string', description: 'Position effect (TO OPEN/TO CLOSE)' },
+  fillPrice: { required: false, type: 'number', description: 'Actual fill price' },
+  expirationDate: { required: false, type: 'string', description: 'Option expiration date' },
+  strikePrice: { required: false, type: 'number', description: 'Option strike price' },
+  optionType: { required: false, type: 'string', description: 'Option type (CALL/PUT)' },
   
   // P&L and performance
   realizedPnL: { required: false, type: 'number', description: 'Realized profit/loss' },
@@ -224,6 +238,157 @@ export const KNOWN_CSV_FORMATS: CsvFormat[] = [
     createdAt: new Date(),
     updatedAt: new Date(),
     usageCount: 0,
+  },
+  
+  {
+    id: 'schwab-todays-trades',
+    name: 'Schwab Today\'s Trade Activity',
+    description: 'Charles Schwab Today\'s Trade Activity export format',
+    fingerprint: 'timeplaced|exectime|timecanceled|spread|side|qty|symbol|price|orderstatus',
+    confidence: 0.95,
+    fieldMappings: {
+      'Time Placed': { 
+        tradeVoyagerField: 'orderPlacedTime', 
+        dataType: 'date', 
+        required: false, 
+        transformer: 'parseSchwabDateTime',
+        examples: ['9/25/24 10:15:02'] 
+      },
+      'Exec Time': { 
+        tradeVoyagerField: 'orderExecutedTime', 
+        dataType: 'date', 
+        required: false,
+        transformer: 'parseSchwabDateTime',
+        examples: ['9/25/24 09:31:36'] 
+      },
+      'Time Canceled': { 
+        tradeVoyagerField: 'orderCancelledTime', 
+        dataType: 'date', 
+        required: false,
+        transformer: 'parseSchwabDateTime',
+        examples: ['9/25/24 09:33:45'] 
+      },
+      'Spread': { 
+        tradeVoyagerField: 'assetClass', 
+        dataType: 'string', 
+        required: false, 
+        examples: ['STOCK', 'OPTION'] 
+      },
+      'Side': { 
+        tradeVoyagerField: 'side', 
+        dataType: 'string', 
+        required: true,
+        transformer: 'schwabSideMapping',
+        examples: ['BUY', 'SELL'] 
+      },
+      'Qty': { 
+        tradeVoyagerField: 'orderQuantity', 
+        dataType: 'number', 
+        required: true,
+        transformer: 'parseAbsoluteQuantity',
+        examples: ['+100', '-25'] 
+      },
+      'Pos Effect': { 
+        tradeVoyagerField: 'positionEffect', 
+        dataType: 'string', 
+        required: false, 
+        examples: ['TO OPEN', 'TO CLOSE'] 
+      },
+      'Symbol': { 
+        tradeVoyagerField: 'symbol', 
+        dataType: 'string', 
+        required: true, 
+        examples: ['ABC', 'OCTO'] 
+      },
+      'Exp': { 
+        tradeVoyagerField: 'expirationDate', 
+        dataType: 'string', 
+        required: false, 
+        examples: ['12/20/24'] 
+      },
+      'Strike': { 
+        tradeVoyagerField: 'strikePrice', 
+        dataType: 'number', 
+        required: false, 
+        examples: ['150', '25.50'] 
+      },
+      'Type': { 
+        tradeVoyagerField: 'optionType', 
+        dataType: 'string', 
+        required: false, 
+        examples: ['STOCK', 'CALL', 'PUT'] 
+      },
+      'Price': { 
+        tradeVoyagerField: 'limitPrice', 
+        dataType: 'number', 
+        required: false,
+        transformer: 'parseSchwabPrice',
+        examples: ['4.29', '~'] 
+      },
+      'PRICE': { 
+        tradeVoyagerField: 'limitPrice', 
+        dataType: 'number', 
+        required: false,
+        transformer: 'parseSchwabPrice',
+        examples: ['4.50', '~'] 
+      },
+      'Net Price': { 
+        tradeVoyagerField: 'fillPrice', 
+        dataType: 'number', 
+        required: false, 
+        examples: ['4.29', '4.33'] 
+      },
+      'Order Type': { 
+        tradeVoyagerField: 'orderType', 
+        dataType: 'string', 
+        required: false,
+        transformer: 'schwabOrderTypeMapping',
+        examples: ['LMT', 'STP', 'MKT'] 
+      },
+      'TIF': { 
+        tradeVoyagerField: 'timeInForce', 
+        dataType: 'string', 
+        required: false, 
+        examples: ['DAY', 'GTC'] 
+      },
+      'Status': { 
+        tradeVoyagerField: 'orderStatus', 
+        dataType: 'string', 
+        required: false, 
+        examples: ['OPEN', 'CANCELED', 'WORKING', 'FILLED'] 
+      },
+      'Notes': { 
+        tradeVoyagerField: 'orderNotes', 
+        dataType: 'string', 
+        required: false, 
+        examples: [''] 
+      }
+    },
+    detectionPatterns: {
+      headerPattern: ['Spread', 'Side', 'Qty', 'Symbol'],
+      sampleValuePatterns: {
+        'Side': /^(BUY|SELL)$/i,
+        'Qty': /^[+\-]?\d+$/,
+        'Pos Effect': /^TO (OPEN|CLOSE)$/i,
+        'TIF': /^(DAY|GTC|IOC|FOK)$/i,
+        'Spread': /^(STOCK|OPTION)$/i,
+      },
+      fileNamePatterns: [
+        /schwab.*trade.*activity/i,
+        /todays.*trade.*activity/i,
+        /trade.*activity.*\d{1,2}\/\d{1,2}\/\d{2,4}/i
+      ],
+      // Special detection for Schwab format - look for the header line pattern
+      specialDetection: {
+        fileStartPattern: /Today's Trade Activity for \d+\w*\s+.*on\s+\d{1,2}\/\d{1,2}\/\d{2,4}/i,
+        sectionHeaders: ['Working Orders', 'Filled Orders', 'Canceled Orders']
+      }
+    },
+    brokerName: 'Charles Schwab',
+    version: '1.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    usageCount: 0,
   }
 ];
 
@@ -232,13 +397,13 @@ export class CsvFormatDetector {
   private formats: CsvFormat[] = [...KNOWN_CSV_FORMATS];
 
   // Detect CSV format from headers and sample data
-  detectFormat(headers: string[], sampleRows: any[]): {
+  detectFormat(headers: string[], sampleRows: any[], fileContent?: string): {
     format: CsvFormat | null;
     confidence: number;
     reasoning: string[];
   } {
     const results = this.formats.map(format => {
-      const analysis = this.analyzeFormat(headers, sampleRows, format);
+      const analysis = this.analyzeFormat(headers, sampleRows, format, fileContent);
       return { format, ...analysis };
     });
 
@@ -262,7 +427,7 @@ export class CsvFormatDetector {
     };
   }
 
-  private analyzeFormat(headers: string[], sampleRows: any[], format: CsvFormat): {
+  private analyzeFormat(headers: string[], sampleRows: any[], format: CsvFormat, fileContent?: string): {
     confidence: number;
     reasoning: string[];
   } {
@@ -270,17 +435,41 @@ export class CsvFormatDetector {
     let score = 0;
     let maxScore = 0;
 
-    // Check required headers
-    const requiredHeaders = format.detectionPatterns.headerPattern;
-    const headerMatches = requiredHeaders.filter(required => 
-      headers.some(header => header.toLowerCase().includes(required.toLowerCase()))
-    );
-    
-    const headerScore = headerMatches.length / requiredHeaders.length;
-    score += headerScore * 0.6; // 60% weight for headers
-    maxScore += 0.6;
-    
-    reasoning.push(`Header match: ${headerMatches.length}/${requiredHeaders.length} required headers found`);
+    // Special handling for Schwab format
+    if (format.id === 'schwab-todays-trades' && fileContent) {
+      const specialDetection = (format.detectionPatterns as any).specialDetection;
+      if (specialDetection?.fileStartPattern) {
+        const fileStartMatch = specialDetection.fileStartPattern.test(fileContent);
+        if (fileStartMatch) {
+          score += 0.8; // High confidence for file start pattern match
+          maxScore += 0.8;
+          reasoning.push('Detected Schwab "Today\'s Trade Activity" file header pattern');
+        }
+      }
+      
+      if (specialDetection?.sectionHeaders) {
+        const sectionMatches = specialDetection.sectionHeaders.filter((section: string) => 
+          fileContent.includes(section)
+        ).length;
+        if (sectionMatches > 0) {
+          score += 0.2 * (sectionMatches / specialDetection.sectionHeaders.length);
+          maxScore += 0.2;
+          reasoning.push(`Found ${sectionMatches}/${specialDetection.sectionHeaders.length} expected sections`);
+        }
+      }
+    } else {
+      // Regular header matching for other formats
+      const requiredHeaders = format.detectionPatterns.headerPattern;
+      const headerMatches = requiredHeaders.filter(required => 
+        headers.some(header => header.toLowerCase().includes(required.toLowerCase()))
+      );
+      
+      const headerScore = headerMatches.length / requiredHeaders.length;
+      score += headerScore * 0.6; // 60% weight for headers
+      maxScore += 0.6;
+      
+      reasoning.push(`Header match: ${headerMatches.length}/${requiredHeaders.length} required headers found`);
+    }
 
     // Check sample value patterns
     if (format.detectionPatterns.sampleValuePatterns && sampleRows.length > 0) {
@@ -472,5 +661,66 @@ export const DATA_TRANSFORMERS = {
     } catch (error) {
       return new Date();
     }
+  },
+  
+  parseSchwabDateTime: (value: string) => {
+    // Handle Schwab format like "9/25/24 10:15:02"
+    if (!value) return null;
+    
+    try {
+      const [datePart, timePart] = value.split(' ');
+      if (!datePart) return null;
+      
+      const [month, day, year] = datePart.split('/');
+      if (!month || !day || !year) return null;
+      
+      // Convert 2-digit year to 4-digit year
+      const fullYear = year.length === 2 ? '20' + year : year;
+      
+      let isoString = `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      
+      if (timePart) {
+        isoString += `T${timePart}`;
+      } else {
+        isoString += 'T00:00:00';
+      }
+      
+      return new Date(isoString);
+    } catch (error) {
+      return null;
+    }
+  },
+  
+  schwabSideMapping: (value: string) => {
+    if (!value) return null;
+    const upperSide = value.toUpperCase();
+    if (upperSide === 'BUY' || upperSide === 'B') return 'BUY';
+    if (upperSide === 'SELL' || upperSide === 'S') return 'SELL';
+    return upperSide;
+  },
+  
+  parseAbsoluteQuantity: (value: string) => {
+    if (!value) return 0;
+    // Remove +/- signs and convert to absolute value
+    const cleanQty = value.toString().replace(/[+\-]/g, '');
+    return Math.abs(parseFloat(cleanQty)) || 0;
+  },
+  
+  parseSchwabPrice: (value: string) => {
+    if (!value || value === '~') return null;
+    return parseFloat(value) || null;
+  },
+  
+  schwabOrderTypeMapping: (value: string) => {
+    if (!value) return 'Market';
+    const typeMap: { [key: string]: string } = {
+      'MKT': 'Market',
+      'LMT': 'Limit',
+      'STP': 'Stop',
+      'MARKET': 'Market',
+      'LIMIT': 'Limit',
+      'STOP': 'Stop'
+    };
+    return typeMap[value.toUpperCase()] || value;
   },
 };
