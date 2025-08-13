@@ -282,6 +282,10 @@ export class CsvIngestionService {
             account: normalizedTrade.account,
             notes: normalizedTrade.notes,
             tags: normalizedTrade.tags,
+            // Required fields for enhanced schema
+            orderFilledTime: normalizedTrade.date,
+            entryDate: normalizedTrade.date,
+            quantityFilled: normalizedTrade.volume,
           },
         });
 
@@ -368,26 +372,28 @@ export class CsvIngestionService {
     // Process each row using detected format mappings
     for (let i = 0; i < records.length; i++) {
       try {
-        const normalizedTrade = this.applyDetectedFormatMapping(records[i], detectedFormat, accountTags);
+        const normalizedOrder = this.applyDetectedFormatMapping(records[i], detectedFormat, accountTags);
         
-        // Create trade record
-        await prisma.trade.create({
+        // Create order record
+        await prisma.order.create({
           data: {
             userId,
-            importBatchId: importBatch.id,
-            date: normalizedTrade.date,
-            time: normalizedTrade.time,
-            symbol: normalizedTrade.symbol,
-            side: normalizedTrade.side,
-            volume: normalizedTrade.volume,
-            executions: 1,
-            pnl: normalizedTrade.pnl,
-            price: normalizedTrade.price,
-            commission: normalizedTrade.commission,
-            fees: normalizedTrade.fees,
-            account: normalizedTrade.account,
-            notes: normalizedTrade.notes,
-            tags: normalizedTrade.tags,
+            orderId: normalizedOrder.orderId,
+            parentOrderId: normalizedOrder.parentOrderId,
+            symbol: normalizedOrder.symbol,
+            orderType: normalizedOrder.orderType,
+            side: normalizedOrder.side,
+            timeInForce: normalizedOrder.timeInForce,
+            orderQuantity: normalizedOrder.orderQuantity,
+            limitPrice: normalizedOrder.limitPrice,
+            stopPrice: normalizedOrder.stopPrice,
+            orderStatus: normalizedOrder.orderStatus,
+            orderPlacedTime: normalizedOrder.orderPlacedTime,
+            orderExecutedTime: normalizedOrder.orderExecutedTime,
+            accountId: normalizedOrder.accountId,
+            orderAccount: normalizedOrder.orderAccount,
+            orderRoute: normalizedOrder.orderRoute,
+            tags: normalizedOrder.tags,
           },
         });
 
@@ -536,6 +542,10 @@ export class CsvIngestionService {
               account: trade.account,
               notes: trade.notes,
               tags: trade.tags,
+              // Required fields for enhanced schema
+              orderFilledTime: trade.date,
+              entryDate: trade.date,
+              quantityFilled: trade.volume,
             },
           });
 
@@ -682,12 +692,13 @@ export class CsvIngestionService {
       'fidelity-positions': 'FIDELITY',
       'robinhood-statements': 'ROBINHOOD',
       'custom-order-execution': 'GENERIC_CSV',
+      'trade-voyager-orders': 'GENERIC_CSV',
     };
     
     return brokerMap[format.id] || 'GENERIC_CSV';
   }
 
-  private applyDetectedFormatMapping(row: any, format: CsvFormat, accountTags: string[]): NormalizedTrade {
+  private applyDetectedFormatMapping(row: any, format: CsvFormat, accountTags: string[]): any {
     const normalizedData: any = {};
     
     // Apply mappings from detected format
@@ -720,33 +731,54 @@ export class CsvIngestionService {
       }
     }
     
-    // Extract time from date if it's a datetime field
-    let tradeTime = normalizedData.time || new Date().toTimeString().split(' ')[0];
-    if (normalizedData.date instanceof Date) {
-      tradeTime = normalizedData.date.toTimeString().split(' ')[0];
+    // Handle tags field (convert string to array)
+    if (normalizedData.tags && typeof normalizedData.tags === 'string') {
+      normalizedData.tags = [normalizedData.tags, ...accountTags];
+    } else {
+      normalizedData.tags = accountTags;
     }
 
-    // Ensure required fields have defaults
-    const trade: NormalizedTrade = {
-      date: normalizedData.date || new Date(),
-      time: tradeTime,
+    // Ensure required fields have defaults for orders
+    const order = {
+      orderId: normalizedData.orderId || '',
+      parentOrderId: normalizedData.parentOrderId,
       symbol: normalizedData.symbol || '',
-      side: this.normalizeSide(normalizedData.side || 'BUY'),
-      volume: normalizedData.quantity || 0,
-      executions: 1,
-      pnl: normalizedData.realizedPnL || normalizedData.totalPnL || 0,
-      price: normalizedData.price || normalizedData.fillPrice || normalizedData.averagePrice,
-      commission: normalizedData.commission || 0,
-      fees: normalizedData.fees || 0,
-      account: normalizedData.account || normalizedData.accountNumber,
-      notes: normalizedData.notes,
-      tags: accountTags,
-      shared: false,
+      orderType: normalizedData.orderType || 'MARKET',
+      side: this.normalizeOrderSide(normalizedData.side || 'BUY'),
+      timeInForce: 'DAY',
+      orderQuantity: normalizedData.orderQuantity || 0,
+      limitPrice: normalizedData.limitPrice,
+      stopPrice: normalizedData.stopPrice,
+      orderStatus: 'FILLED',
+      orderPlacedTime: normalizedData.orderExecutedTime || new Date(),
+      orderExecutedTime: normalizedData.orderExecutedTime || new Date(),
+      accountId: normalizedData.accountId,
+      orderAccount: normalizedData.orderAccount,
+      orderRoute: normalizedData.orderRoute,
+      tags: normalizedData.tags,
     };
     
-    return trade;
+    return order;
   }
   
+  private normalizeOrderSide(side: string): 'BUY' | 'SELL' {
+    const sideUpper = String(side).toUpperCase();
+    const sideMap: { [key: string]: 'BUY' | 'SELL' } = {
+      'BUY': 'BUY',
+      'BOT': 'BUY',
+      'B': 'BUY',
+      'BOUGHT': 'BUY',
+      'YOU BOUGHT': 'BUY',
+      'SELL': 'SELL',
+      'SLD': 'SELL',
+      'S': 'SELL',
+      'SOLD': 'SELL',
+      'YOU SOLD': 'SELL',
+    };
+    
+    return sideMap[sideUpper] || 'BUY';
+  }
+
   private normalizeSide(side: string): 'BUY' | 'SELL' | 'SHORT' | 'COVER' {
     const sideUpper = String(side).toUpperCase();
     const sideMap: { [key: string]: 'BUY' | 'SELL' | 'SHORT' | 'COVER' } = {

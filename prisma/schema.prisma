@@ -37,34 +37,20 @@ model Trade {
   // 1. Trade Identification
   tradeId               String?     // Unique trade/execution ID
   orderId               String?     // Parent order ID
-  parentOrderId         String?     // For grouped orders
   symbol                String      // Ticker symbol
-  isin                  String?     // International identifier
-  cusip                 String?     // CUSIP identifier
-  contractId            String?     // Contract identifier
-  exchangeCode          String?     // Exchange/market code
   assetClass            AssetClass  @default(EQUITY)
   underlyingSymbol      String?     // For derivatives
   brokerName            String?     // Broker name
-  accountNumber         String?     // Account number
-  strategyTag           String?     // Strategy identifier
-  customTag             String?     // Custom user tag
   tradeSource           TradeSource @default(IMPORTED)
   
   // 2. Order & Execution Details
   orderType             OrderType   @default(MARKET)
-  side                  TradeSide   // Buy/Sell/Short/Cover
+  side                  TradeSide   // Long/Short
   timeInForce           TimeInForce @default(DAY)
-  orderPlacementTime    DateTime?   // When order was placed
   orderFilledTime       DateTime    // When order was filled (main date/time)
-  executionVenue        String?     // Exchange, Dark Pool, ECN
-  liquidityFlag         LiquidityFlag? // Maker/Taker
-  fillPrice             Float?      // Actual fill price
   quantityFilled        Int         // Quantity filled in this execution
   remainingQuantity     Int?        // Remaining quantity after fill
   averageFillPrice      Float?      // Average price across all fills
-  slippageAmount        Float?      // Slippage vs intended price
-  spreadAtExecution     Float?      // Bid-ask spread at execution
   
   // 3. Trade Timing & Duration
   entryDate             DateTime    // Entry date (same as orderFilledTime for simplicity)
@@ -78,23 +64,15 @@ model Trade {
   exitPrice             Float?      // Exit price
   highDuringTrade       Float?      // Highest price during trade
   lowDuringTrade        Float?      // Lowest price during trade
-  vwapAtEntry           Float?      // VWAP at entry
-  vwapAtExit            Float?      // VWAP at exit
-  marketPriceChange     Float?      // Market price change % during trade
-  atrAtEntry            Float?      // ATR (volatility) at entry
-  rsiAtEntry            Float?      // RSI at entry
   
   // Legacy/Calculated Fields
   date                  DateTime    // Main trade date
-  time                  String      // Trade time as string
   volume                Int         // Alias for quantityFilled
   executions            Int         @default(1) // Number of partial fills
   pnl                   Float       @default(0) // Realized P&L
   price                 Float?      // Alias for fillPrice
   commission            Float?      // Commission fees
   fees                  Float?      // Other fees
-  account               String?     // Alias for accountNumber
-  shared                Boolean     @default(false)
   notes                 String?     // User notes
   tags                  String[]    // User tags
   
@@ -119,7 +97,7 @@ model Trade {
   @@map("trades")
 }
 
-// Order-level information (one order can have multiple trade executions)
+// Order-level information (individual order executions)
 model Order {
   id                    String      @id @default(cuid())
   userId                String
@@ -127,15 +105,20 @@ model Order {
   parentOrderId         String?     // For bracket/OCO orders
   symbol                String
   orderType             OrderType
-  side                  TradeSide
+  side                  OrderSide   // Buy/Sell
   timeInForce           TimeInForce
   orderQuantity         Int         // Total order quantity
   limitPrice            Float?      // Limit price if applicable
   stopPrice             Float?      // Stop price if applicable
   orderStatus           OrderStatus
   orderPlacedTime       DateTime
+  orderExecutedTime     DateTime?   // When order was executed
   orderUpdatedTime      DateTime?
   orderCancelledTime    DateTime?
+  accountId             String?     // Account ID associated with order
+  orderAccount          String?     // Account associated with order
+  orderRoute            String?     // Route/venue for order execution
+  tags                  String[]    // Tags for this order
   
   // Relations
   user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -293,13 +276,17 @@ enum AssetClass {
 }
 
 enum TradeSide {
-  BUY
-  SELL
-  SHORT
-  COVER
-  LONG  // Alias for BUY
+  LONG   // Long position
+  SHORT  // Short position
   
   @@map("trade_side")
+}
+
+enum OrderSide {
+  BUY
+  SELL
+  
+  @@map("order_side")
 }
 
 enum TradeSource {

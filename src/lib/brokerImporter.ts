@@ -94,6 +94,24 @@ export const brokerConfigs: Record<string, BrokerConfig> = {
       'BUY': TradeType.LONG,
       'SELL': TradeType.SHORT
     }
+  },
+  trade_voyager: {
+    name: 'Trade Voyager',
+    type: BrokerType.GENERIC_CSV,
+    columns: {
+      date: 'time',
+      symbol: 'symb',
+      side: 'B/S',
+      quantity: 'qty',
+      price: 'price'
+    },
+    dateFormat: 'MM/DD/YY HH:mm:ss',
+    sideMapping: {
+      'B': TradeType.LONG,
+      'S': TradeType.SHORT,
+      'BUY': TradeType.LONG,
+      'SELL': TradeType.SHORT
+    }
   }
 };
 
@@ -231,7 +249,36 @@ export class BrokerImporter {
     // Parse date
     let date: Date;
     try {
-      date = new Date(dateStr);
+      // Handle Trade Voyager date format: "04/22/25 12:08:30"
+      if (this.config.dateFormat === 'MM/DD/YY HH:mm:ss' && typeof dateStr === 'string') {
+        const parts = String(dateStr).split(' ');
+        if (parts.length === 2) {
+          const datePart = parts[0];
+          const timePart = parts[1];
+          const dateSegments = datePart.split('/');
+          
+          if (dateSegments.length === 3) {
+            let [month, day, year] = dateSegments;
+            
+            // Convert 2-digit year to 4-digit year
+            if (year.length === 2) {
+              const currentYear = new Date().getFullYear();
+              const currentCentury = Math.floor(currentYear / 100) * 100;
+              year = String(currentCentury + parseInt(year));
+            }
+            
+            const fullDateTime = `${month}/${day}/${year} ${timePart}`;
+            date = new Date(fullDateTime);
+          } else {
+            date = new Date(dateStr);
+          }
+        } else {
+          date = new Date(dateStr);
+        }
+      } else {
+        date = new Date(dateStr);
+      }
+      
       if (isNaN(date.getTime())) {
         throw new Error(`Invalid date: ${dateStr}`);
       }
