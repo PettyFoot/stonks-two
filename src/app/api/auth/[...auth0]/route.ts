@@ -1,5 +1,7 @@
 import { handleAuth, handleLogin, handleLogout } from '@auth0/nextjs-auth0';
 
+const baseURL = process.env.AUTH0_BASE_URL || 'http://localhost:3002';
+
 export const GET = handleAuth({
   login: handleLogin({
     authorizationParams: {
@@ -9,7 +11,7 @@ export const GET = handleAuth({
     returnTo: '/dashboard'
   }),
   logout: handleLogout({
-    returnTo: '/',
+    returnTo: baseURL,
     logoutParams: {
       federated: true  // This clears the Auth0 session AND the identity provider session
     }
