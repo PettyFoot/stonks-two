@@ -7,12 +7,40 @@ import TradesTable from '@/components/TradesTable';
 import { Button } from '@/components/ui/button';
 import { FilterOptions, Trade, ViewMode } from '@/types';
 import { useTradesData } from '@/hooks/useTradesData';
-import { Settings } from 'lucide-react';
+import { Settings, RefreshCw } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function Trades() {
   const [filters, setFilters] = useState<FilterOptions>({});
   const [viewMode, setViewMode] = useState<ViewMode>('table');
-  const { data: tradesData, loading, error } = useTradesData(filters);
+  const [calculating, setCalculating] = useState(false);
+  const { data: tradesData, loading, error, refetch } = useTradesData(filters);
+
+  const calculateTrades = async () => {
+    setCalculating(true);
+    try {
+      const response = await fetch('/api/trades/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success(`Successfully calculated ${data.tradesCalculated} trades`);
+        // Refresh the trades data
+        if (refetch) refetch();
+      } else {
+        toast.error('Failed to calculate trades');
+      }
+    } catch (error) {
+      console.error('Error calculating trades:', error);
+      toast.error('Failed to calculate trades');
+    } finally {
+      setCalculating(false);
+    }
+  };
 
   const viewModeButtons = [
     { id: 'table', label: 'Table', active: viewMode === 'table' },
@@ -69,8 +97,18 @@ export default function Trades() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-primary">Trades</h2>
             
-            {/* View Mode Buttons */}
+            {/* Action Buttons */}
             <div className="flex items-center gap-4">
+              <Button
+                onClick={calculateTrades}
+                disabled={calculating}
+                size="sm"
+                className="bg-[#16A34A] hover:bg-[#15803d] text-white"
+              >
+                <RefreshCw className={`mr-2 h-4 w-4 ${calculating ? 'animate-spin' : ''}`} />
+                {calculating ? 'Calculating...' : 'Calculate Trades'}
+              </Button>
+
               <div className="flex rounded-lg border border-default bg-surface">
                 {viewModeButtons.map((button, index) => (
                   <Button

@@ -24,7 +24,10 @@
       "Bash(npx tsc:*)",
       "Bash(git push:*)",
       "Bash(git add:*)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(npm outdated:*)",
+      "Bash(npm run trades:calc:*)",
+      "Bash(powershell:*)"
     ],
     "deny": [],
     "ask": []

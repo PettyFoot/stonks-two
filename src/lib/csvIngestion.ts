@@ -17,6 +17,7 @@ import {
   type CsvFormat, 
   DATA_TRANSFORMERS 
 } from '@/lib/csvFormatRegistry';
+import { tradeCalculationService } from '@/services/tradeCalculation';
 
 export type CustomCsvRow = Record<string, string>;
 
@@ -402,6 +403,16 @@ export class CsvIngestionService {
     // Update upload log
     await this.updateUploadLog(uploadLogId, 'IMPORTED', 'STANDARD');
 
+    // Calculate trades after successful import
+    if (successCount > 0) {
+      try {
+        await tradeCalculationService.buildTrades(userId);
+      } catch (error) {
+        console.error('Trade calculation error:', error);
+        // Don't fail the import if trade calculation fails
+      }
+    }
+
     return {
       success: errorCount < records.length,
       importBatchId: importBatch.id,
@@ -509,6 +520,16 @@ export class CsvIngestionService {
 
     // Update upload log
     await this.updateUploadLog(uploadLogId, 'IMPORTED', 'STANDARD');
+
+    // Calculate trades after successful import
+    if (successCount > 0) {
+      try {
+        await tradeCalculationService.buildTrades(userId);
+      } catch (error) {
+        console.error('Trade calculation error:', error);
+        // Don't fail the import if trade calculation fails
+      }
+    }
 
     return {
       success: errorCount < records.length,
@@ -662,6 +683,16 @@ export class CsvIngestionService {
     // Update upload log
     const parseMethod = userMappings ? 'USER_CORRECTED' : 'AI_MAPPED';
     await this.updateUploadLog(uploadLogId, 'IMPORTED', parseMethod, undefined, importBatch.id);
+
+    // Calculate trades after successful import
+    if (successCount > 0) {
+      try {
+        await tradeCalculationService.buildTrades(userId);
+      } catch (error) {
+        console.error('Trade calculation error:', error);
+        // Don't fail the import if trade calculation fails
+      }
+    }
 
     return {
       success: errorCount < records.length,

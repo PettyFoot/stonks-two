@@ -65,6 +65,17 @@ model Trade {
   highDuringTrade       Float?      // Highest price during trade
   lowDuringTrade        Float?      // Lowest price during trade
   
+  // 5. Calculated Trade Fields (for complete trades)
+  openTime              DateTime?   // When trade was opened
+  closeTime             DateTime?   // When trade was closed
+  quantity              Int?        // Total closed shares
+  costBasis             Float?      // Sum of (buyQuantity * buyLimitPrice)
+  proceeds              Float?      // Sum of (sellQuantity * sellLimitPrice)
+  profitLoss            Float?      // proceeds - costBasis
+  ordersInTrade         String[]    // List of order IDs that make up this trade
+  ordersCount           Int?        // Number of orders in this trade
+  isCalculated          Boolean     @default(false) // Flag to indicate if this is a calculated trade
+  
   // Legacy/Calculated Fields
   date                  DateTime    // Main trade date
   volume                Int         // Alias for quantityFilled
@@ -119,6 +130,8 @@ model Order {
   orderAccount          String?     // Account associated with order
   orderRoute            String?     // Route/venue for order execution
   tags                  String[]    // Tags for this order
+  usedInTrade           Boolean     @default(false) // Whether this order has been used in trade calculation
+  tradeId               String?     // ID of the calculated trade this order belongs to
   
   // Relations
   user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
