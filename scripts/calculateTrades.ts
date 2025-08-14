@@ -1,11 +1,11 @@
 #!/usr/bin/env tsx
 /**
- * Standalone script to calculate trades from orders
+ * Standalone script to calculate trades from orders using the new trade processing system
  * Run with: npx tsx scripts/calculateTrades.ts [userId]
  */
 
 import { PrismaClient } from '@prisma/client';
-import { tradeCalculationService } from '../src/services/tradeCalculation';
+import { processUserOrders } from '../src/lib/tradeBuilder';
 
 const prisma = new PrismaClient();
 
@@ -22,15 +22,17 @@ async function main() {
       console.log(`\nProcessing trades for user: ${user.email} (${user.id})`);
       
       try {
-        const trades = await tradeCalculationService.buildTrades(user.id);
-        console.log(`✓ Calculated ${trades.length} trades for ${user.email}`);
+        const trades = await processUserOrders(user.id);
+        console.log(`✓ Processed ${trades.length} new trades for ${user.email}`);
         
         // Display summary
-        const totalPnL = trades.reduce((sum, t) => sum + t.profitLoss, 0);
-        const winners = trades.filter(t => t.profitLoss > 0).length;
-        const losers = trades.filter(t => t.profitLoss < 0).length;
+        const completedTrades = trades.filter(t => t.status === 'CLOSED');
+        const openTrades = trades.filter(t => t.status === 'OPEN');
+        const totalPnL = completedTrades.reduce((sum, t) => sum + t.pnl, 0);
+        const winners = completedTrades.filter(t => t.pnl > 0).length;
+        const losers = completedTrades.filter(t => t.pnl < 0).length;
         
-        console.log(`  Summary: ${winners}W/${losers}L, Total P&L: $${totalPnL.toFixed(2)}`);
+        console.log(`  Summary: ${completedTrades.length} completed, ${openTrades.length} open, ${winners}W/${losers}L, Total P&L: $${totalPnL.toFixed(2)}`);
       } catch (error) {
         console.error(`✗ Error processing user ${user.email}:`, error);
       }
@@ -49,43 +51,50 @@ async function main() {
     }
     
     try {
-      const trades = await tradeCalculationService.buildTrades(userId);
-      console.log(`✓ Calculated ${trades.length} trades for ${user.email}`);
+      const trades = await processUserOrders(userId);
+      console.log(`✓ Processed ${trades.length} new trades for ${user.email}`);
       
       // Display detailed results
-      console.log('\nCalculated Trades:');
+      console.log('\nProcessed Trades:');
       console.log('═══════════════════════════════════════════');
       
       for (const trade of trades) {
+        const status = trade.status === 'CLOSED' ? '🔒 CLOSED' : '🔓 OPEN';
         console.log(`
 Symbol: ${trade.symbol}
 Side: ${trade.side}
-Quantity: ${trade.quantity}
-Cost Basis: $${trade.costBasis.toFixed(2)}
-Proceeds: $${trade.proceeds.toFixed(2)}
-P&L: $${trade.profitLoss.toFixed(2)} ${trade.profitLoss >= 0 ? '✓' : '✗'}
-Orders: ${trade.ordersCount} orders
+Status: ${status}
+${trade.openQuantity ? `Open Quantity: ${trade.openQuantity}` : ''}
+${trade.closeQuantity ? `Close Quantity: ${trade.closeQuantity}` : ''}
+${trade.avgEntryPrice ? `Entry Price: $${trade.avgEntryPrice.toFixed(2)}` : ''}
+${trade.avgExitPrice ? `Exit Price: $${trade.avgExitPrice.toFixed(2)}` : ''}
+P&L: $${trade.pnl.toFixed(2)} ${trade.pnl >= 0 ? '✓' : '✗'}
+Orders: ${trade.ordersInTrade.length} orders (${trade.ordersInTrade.join(', ')})
 ───────────────────────────────────────────`);
       }
       
       // Summary
-      const totalPnL = trades.reduce((sum, t) => sum + t.profitLoss, 0);
-      const winners = trades.filter(t => t.profitLoss > 0).length;
-      const losers = trades.filter(t => t.profitLoss < 0).length;
-      const winRate = trades.length > 0 ? (winners / trades.length * 100).toFixed(1) : 0;
+      const completedTrades = trades.filter(t => t.status === 'CLOSED');
+      const openTrades = trades.filter(t => t.status === 'OPEN');
+      const totalPnL = completedTrades.reduce((sum, t) => sum + t.pnl, 0);
+      const winners = completedTrades.filter(t => t.pnl > 0).length;
+      const losers = completedTrades.filter(t => t.pnl < 0).length;
+      const winRate = completedTrades.length > 0 ? (winners / completedTrades.length * 100).toFixed(1) : 0;
       
       console.log(`
 ═══════════════════════════════════════════
 SUMMARY
 ═══════════════════════════════════════════
-Total Trades: ${trades.length}
+Total New Trades: ${trades.length}
+Completed Trades: ${completedTrades.length}
+Open Trades: ${openTrades.length}
 Winners: ${winners}
 Losers: ${losers}
 Win Rate: ${winRate}%
 Total P&L: $${totalPnL.toFixed(2)}
 ═══════════════════════════════════════════`);
     } catch (error) {
-      console.error('Error calculating trades:', error);
+      console.error('Error processing trades:', error);
       process.exit(1);
     }
   }

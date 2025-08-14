@@ -52,6 +52,13 @@ model Trade {
   remainingQuantity     Int?        // Remaining quantity after fill
   averageFillPrice      Float?      // Average price across all fills
   
+  // Trade Status and Enhanced Fields
+  status                TradeStatus @default(OPEN)
+  avgEntryPrice         Decimal?    // Average entry price
+  avgExitPrice          Decimal?    // Average exit price
+  openQuantity          Int?        // Open quantity
+  closeQuantity         Int?        // Close quantity
+  
   // 3. Trade Timing & Duration
   entryDate             DateTime    // Entry date (same as orderFilledTime for simplicity)
   exitDate              DateTime?   // Exit date (for closed positions)
@@ -105,6 +112,7 @@ model Trade {
   @@index([userId, orderId])
   @@index([userId, assetClass])
   @@index([userId, side])
+  @@index([userId, symbol, status])
   @@map("trades")
 }
 
@@ -139,6 +147,7 @@ model Order {
   
   @@index([userId, symbol])
   @@index([userId, orderStatus])
+  @@index([tradeId])
   @@map("orders")
 }
 
@@ -293,6 +302,13 @@ enum TradeSide {
   SHORT  // Short position
   
   @@map("trade_side")
+}
+
+enum TradeStatus {
+  OPEN
+  CLOSED
+  
+  @@map("trade_status")
 }
 
 enum OrderSide {

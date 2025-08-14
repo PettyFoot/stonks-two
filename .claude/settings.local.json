@@ -27,7 +27,9 @@
       "Bash(npm run lint)",
       "Bash(npm outdated:*)",
       "Bash(npm run trades:calc:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run test:*)"
     ],
     "deny": [],
     "ask": []
