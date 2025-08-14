@@ -11,10 +11,8 @@ export const GET = handleAuth({
     returnTo: '/dashboard'
   }),
   logout: handleLogout({
-    returnTo: baseURL,
-    logoutParams: {
-      federated: true  // This clears the Auth0 session AND the identity provider session
-    }
+    returnTo: baseURL
+    // Removed federated: true to only clear Auth0 session, not Google session
   }),
   signup: handleLogin({
     authorizationParams: {
