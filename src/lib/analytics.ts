@@ -55,23 +55,23 @@ export class TradingAnalyzer {
       return this.getEmptyMetrics();
     }
 
-    const totalPnl = this.trades.reduce((sum, trade) => sum + trade.pnl, 0);
-    const totalVolume = this.trades.reduce((sum, trade) => sum + trade.volume, 0);
+    const totalPnl = this.trades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl), 0);
+    const totalVolume = this.trades.reduce((sum, trade) => sum + (trade.quantity || 0), 0);
     const totalTrades = this.trades.length;
 
-    const winningTrades = this.trades.filter(trade => trade.pnl > 0);
-    const losingTrades = this.trades.filter(trade => trade.pnl < 0);
+    const winningTrades = this.trades.filter(trade => (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl) > 0);
+    const losingTrades = this.trades.filter(trade => (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl) < 0);
 
     const winRate = totalTrades > 0 ? (winningTrades.length / totalTrades) * 100 : 0;
     const avgWinningTrade = winningTrades.length > 0 
-      ? winningTrades.reduce((sum, trade) => sum + trade.pnl, 0) / winningTrades.length 
+      ? winningTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl), 0) / winningTrades.length 
       : 0;
     const avgLosingTrade = losingTrades.length > 0 
-      ? losingTrades.reduce((sum, trade) => sum + trade.pnl, 0) / losingTrades.length 
+      ? losingTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl), 0) / losingTrades.length 
       : 0;
 
-    const grossProfit = winningTrades.reduce((sum, trade) => sum + trade.pnl, 0);
-    const grossLoss = Math.abs(losingTrades.reduce((sum, trade) => sum + trade.pnl, 0));
+    const grossProfit = winningTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl), 0);
+    const grossLoss = Math.abs(losingTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl), 0));
     const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0;
 
     const dayMetrics = this.calculateDayMetrics();
@@ -108,9 +108,9 @@ export class TradingAnalyzer {
 
     Object.keys(dayGroups).sort().forEach(dateStr => {
       const dayTrades = dayGroups[dateStr];
-      const dayPnl = dayTrades.reduce((sum, trade) => sum + trade.pnl, 0);
-      const dayVolume = dayTrades.reduce((sum, trade) => sum + trade.volume, 0);
-      const winningTrades = dayTrades.filter(trade => trade.pnl > 0).length;
+      const dayPnl = dayTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl), 0);
+      const dayVolume = dayTrades.reduce((sum, trade) => sum + (trade.quantity || 0), 0);
+      const winningTrades = dayTrades.filter(trade => (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl) > 0).length;
       const winRate = dayTrades.length > 0 ? (winningTrades / dayTrades.length) * 100 : 0;
       
       cumulativePnl += dayPnl;
@@ -141,8 +141,8 @@ export class TradingAnalyzer {
 
     return Object.keys(monthlyData).sort().map(month => {
       const monthTrades = monthlyData[month];
-      const monthPnl = monthTrades.reduce((sum, trade) => sum + trade.pnl, 0);
-      const winningTrades = monthTrades.filter(trade => trade.pnl > 0).length;
+      const monthPnl = monthTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl), 0);
+      const winningTrades = monthTrades.filter(trade => (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl) > 0).length;
       const winRate = monthTrades.length > 0 ? (winningTrades / monthTrades.length) * 100 : 0;
 
       return {
@@ -166,8 +166,8 @@ export class TradingAnalyzer {
 
     return Object.keys(symbolData).map(symbol => {
       const symbolTrades = symbolData[symbol];
-      const symbolPnl = symbolTrades.reduce((sum, trade) => sum + trade.pnl, 0);
-      const winningTrades = symbolTrades.filter(trade => trade.pnl > 0).length;
+      const symbolPnl = symbolTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl), 0);
+      const winningTrades = symbolTrades.filter(trade => (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl) > 0).length;
       const winRate = symbolTrades.length > 0 ? (winningTrades / symbolTrades.length) * 100 : 0;
 
       return {
@@ -224,7 +224,7 @@ export class TradingAnalyzer {
     let worstDay = 0;
 
     Object.values(dayGroups).forEach(dayTrades => {
-      const dayPnl = dayTrades.reduce((sum, trade) => sum + trade.pnl, 0);
+      const dayPnl = dayTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl), 0);
       bestDay = Math.max(bestDay, dayPnl);
       worstDay = Math.min(worstDay, dayPnl);
     });
@@ -239,11 +239,11 @@ export class TradingAnalyzer {
     let currentLosses = 0;
 
     this.trades.forEach(trade => {
-      if (trade.pnl > 0) {
+      if ((typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl) > 0) {
         currentWins++;
         currentLosses = 0;
         maxWins = Math.max(maxWins, currentWins);
-      } else if (trade.pnl < 0) {
+      } else if ((typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl) < 0) {
         currentLosses++;
         currentWins = 0;
         maxLosses = Math.max(maxLosses, currentLosses);
@@ -302,17 +302,17 @@ export class TradingAnalyzer {
 
 // Utility functions for quick calculations
 export function calculatePnL(trades: Trade[]): number {
-  return trades.reduce((sum, trade) => sum + trade.pnl, 0);
+  return trades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl), 0);
 }
 
 export function calculateWinRate(trades: Trade[]): number {
   if (trades.length === 0) return 0;
-  const winningTrades = trades.filter(trade => trade.pnl > 0).length;
+  const winningTrades = trades.filter(trade => (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl) > 0).length;
   return (winningTrades / trades.length) * 100;
 }
 
 export function calculateVolume(trades: Trade[]): number {
-  return trades.reduce((sum, trade) => sum + trade.volume, 0);
+  return trades.reduce((sum, trade) => sum + (trade.quantity || 0), 0);
 }
 
 export function formatCurrency(amount: number): string {

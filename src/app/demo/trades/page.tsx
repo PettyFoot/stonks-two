@@ -4,25 +4,28 @@ import React, { useState } from 'react';
 import TopBar from '@/components/TopBar';
 import FilterPanel from '@/components/FilterPanel';
 import TradesTable from '@/components/TradesTable';
+import ColumnSettingsModal from '@/components/ColumnSettingsModal';
 import { Button } from '@/components/ui/button';
-import { FilterOptions, Trade, ViewMode } from '@/types';
+import { FilterOptions, Trade, ViewMode, ColumnConfiguration } from '@/types';
 import { mockTrades } from '@/data/mockData';
-import { Settings } from 'lucide-react';
 
 export default function DemoTrades() {
   const [filters, setFilters] = useState<FilterOptions>({});
   const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [columnConfig, setColumnConfig] = useState<ColumnConfiguration[]>([]);
 
   const viewModeButtons = [
     { id: 'table', label: 'Table', active: viewMode === 'table' },
-    { id: 'charts-large', label: 'Charts (large)', active: viewMode === 'charts-large' },
-    { id: 'charts-small', label: 'Charts (small)', active: viewMode === 'charts-small' },
     { id: 'gross', label: 'Gross', active: viewMode === 'gross' },
     { id: 'net', label: 'Net', active: viewMode === 'net' }
   ];
 
   const handleTradeSelect = (trade: Trade) => {
     console.log('Selected trade:', trade);
+  };
+
+  const handleColumnsChange = (columns: ColumnConfiguration[]) => {
+    setColumnConfig(columns);
   };
 
   // Filter trades based on current filters
@@ -53,8 +56,8 @@ export default function DemoTrades() {
       <FilterPanel 
         filters={filters}
         onFiltersChange={setFilters}
-        showCustomFilters={true}
         showAdvanced={true}
+        demo={true}
       />
 
       <div className="flex-1 overflow-auto p-6">
@@ -86,9 +89,7 @@ export default function DemoTrades() {
                 ))}
               </div>
               
-              <Button variant="ghost" size="sm" className="h-8">
-                <Settings className="h-3 w-3" />
-              </Button>
+              <ColumnSettingsModal onColumnsChange={handleColumnsChange} />
             </div>
           </div>
         </div>
@@ -100,29 +101,10 @@ export default function DemoTrades() {
             showCheckboxes={true}
             showPagination={true}
             onTradeSelect={handleTradeSelect}
+            columnConfig={columnConfig}
           />
         )}
 
-        {/* Chart views - placeholder for now */}
-        {viewMode === 'charts-large' && (
-          <div className="bg-surface border border-default rounded-lg p-8">
-            <div className="text-center text-muted">
-              Large chart view will be implemented here
-            </div>
-          </div>
-        )}
-
-        {viewMode === 'charts-small' && (
-          <div className="grid grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-surface border border-default rounded-lg p-4">
-                <div className="text-center text-muted text-sm">
-                  Small chart #{i + 1}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
 
         {viewMode === 'gross' && (
           <div className="bg-surface border border-default rounded-lg p-8">

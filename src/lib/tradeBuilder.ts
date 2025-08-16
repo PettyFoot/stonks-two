@@ -10,6 +10,7 @@ export interface OpenPosition {
   totalCostBasis: number;
   openTime: Date;
   orderIds: string[];
+  existingTradeId?: string; // Track if this position came from an existing trade
 }
 
 export interface ProcessedTrade {
@@ -32,6 +33,107 @@ export class TradeBuilder {
   private newTrades: ProcessedTrade[] = [];
 
   /**
+   * Calculate total quantity across all orders in a trade
+   */
+  private async calculateTotalQuantity(orderIds: string[]): Promise<number> {
+    const orders = await ordersRepo.getOrdersByIds(orderIds);
+    return orders.reduce((total, order) => total + order.orderQuantity, 0);
+  }
+
+  /**
+   * Calculate time in trade in seconds
+   */
+  private calculateTimeInTrade(openTime: Date, closeTime?: Date): number {
+    const endTime = closeTime || new Date();
+    return Math.floor((endTime.getTime() - openTime.getTime()) / 1000);
+  }
+
+  /**
+   * Calculate average exit price for open trades
+   */
+  private async calculateAvgExitPrice(orderIds: string[], tradeSide: TradeSide): Promise<number | undefined> {
+    const orders = await ordersRepo.getOrdersByIds(orderIds);
+    const exitSide = tradeSide === TradeSide.LONG ? 'SELL' : 'BUY';
+    const exitOrders = orders.filter(order => order.side === exitSide && order.limitPrice);
+    
+    if (exitOrders.length === 0) return undefined;
+    
+    const totalQuantity = exitOrders.reduce((sum, order) => sum + order.orderQuantity, 0);
+    const weightedSum = exitOrders.reduce((sum, order) => 
+      sum + (order.orderQuantity * order.limitPrice!), 0);
+    
+    return weightedSum / totalQuantity;
+  }
+
+  /**
+   * Calculate remaining quantity for open trades
+   */
+  private async calculateRemainingQuantity(orderIds: string[], tradeSide: TradeSide): Promise<number> {
+    const orders = await ordersRepo.getOrdersByIds(orderIds);
+    const entryQuantity = orders
+      .filter(order => order.side === (tradeSide === TradeSide.LONG ? 'BUY' : 'SELL'))
+      .reduce((sum, order) => sum + order.orderQuantity, 0);
+    
+    const exitQuantity = orders
+      .filter(order => order.side === (tradeSide === TradeSide.LONG ? 'SELL' : 'BUY'))
+      .reduce((sum, order) => sum + order.orderQuantity, 0);
+    
+    return entryQuantity - exitQuantity;
+  }
+
+  /**
+   * Calculate open and close quantities based on trade side
+   */
+  private async calculateOpenCloseQuantities(orderIds: string[], tradeSide: TradeSide): Promise<{openQuantity: number, closeQuantity: number}> {
+    const orders = await ordersRepo.getOrdersByIds(orderIds);
+    
+    if (tradeSide === TradeSide.LONG) {
+      // For LONG trades: BUY orders open, SELL orders close
+      const openQuantity = orders
+        .filter(order => order.side === 'BUY')
+        .reduce((sum, order) => sum + order.orderQuantity, 0);
+      
+      const closeQuantity = orders
+        .filter(order => order.side === 'SELL')
+        .reduce((sum, order) => sum + order.orderQuantity, 0);
+        
+      return { openQuantity, closeQuantity };
+    } else {
+      // For SHORT trades: SELL orders open, BUY orders close
+      const openQuantity = orders
+        .filter(order => order.side === 'SELL')
+        .reduce((sum, order) => sum + order.orderQuantity, 0);
+      
+      const closeQuantity = orders
+        .filter(order => order.side === 'BUY')
+        .reduce((sum, order) => sum + order.orderQuantity, 0);
+        
+      return { openQuantity, closeQuantity };
+    }
+  }
+
+  /**
+   * Calculate market session based on first order time
+   */
+  private calculateMarketSession(openTime: Date): string {
+    const hour = openTime.getHours();
+    const minute = openTime.getMinutes();
+    const timeInMinutes = hour * 60 + minute;
+    
+    // Market hours in minutes from midnight
+    const marketOpen = 9 * 60 + 30; // 9:30 AM
+    const marketClose = 16 * 60; // 4:00 PM
+    
+    if (timeInMinutes < marketOpen) {
+      return 'PRE_MARKET';
+    } else if (timeInMinutes >= marketOpen && timeInMinutes < marketClose) {
+      return 'REGULAR';
+    } else {
+      return 'AFTER_HOURS';
+    }
+  }
+
+  /**
    * Main function to process user orders and create trades
    */
   async processUserOrders(userId: string): Promise<ProcessedTrade[]> {
@@ -51,8 +153,45 @@ export class TradeBuilder {
       await this.processOrder(order);
     }
 
+    // Create trades for any remaining open positions
+    await this.createTradesForOpenPositions();
+
     console.log(`Created ${this.newTrades.length} new trades`);
     return this.newTrades;
+  }
+
+  /**
+   * Create trades for any remaining open positions
+   */
+  private async createTradesForOpenPositions(): Promise<void> {
+    for (const [symbol, position] of this.openPositions.entries()) {
+      // Skip if this position already has a trade in the database
+      if (position.existingTradeId) {
+        console.log(`Skipping existing open trade for ${symbol} (ID: ${position.existingTradeId})`);
+        continue;
+      }
+      
+      const avgEntryPrice = position.totalCostBasis / position.openQuantity;
+      const avgExitPrice = await this.calculateAvgExitPrice(position.orderIds, position.side);
+      const { openQuantity, closeQuantity } = await this.calculateOpenCloseQuantities(position.orderIds, position.side);
+      const remainingQuantity = await this.calculateRemainingQuantity(position.orderIds, position.side);
+      
+      const openTrade: ProcessedTrade = {
+        id: '',
+        symbol: position.symbol,
+        side: position.side,
+        status: TradeStatus.OPEN,
+        openTime: position.openTime,
+        avgEntryPrice,
+        avgExitPrice,
+        openQuantity,
+        closeQuantity,
+        pnl: 0, // No P&L for open positions
+        ordersInTrade: position.orderIds,
+      };
+      
+      this.newTrades.push(openTrade);
+    }
   }
 
   /**
@@ -70,6 +209,7 @@ export class TradeBuilder {
         totalCostBasis: trade.costBasis || 0,
         openTime: trade.openTime || trade.entryDate,
         orderIds: trade.ordersInTrade,
+        existingTradeId: trade.id, // Store the existing trade ID
       });
     }
   }
@@ -125,38 +265,12 @@ export class TradeBuilder {
       totalCostBasis: quantity * price,
       openTime,
       orderIds: [orderId],
+      // No existingTradeId since this is a new position
     };
 
     this.openPositions.set(symbol, position);
-
-    // Create open trade in database
-    const tradeData: CreateTradeData = {
-      userId: '', // Will be set by caller
-      symbol,
-      side,
-      status: TradeStatus.OPEN,
-      openTime,
-      avgEntryPrice: new Decimal(price),
-      openQuantity: quantity,
-      pnl: 0,
-      ordersInTrade: [orderId],
-      ordersCount: 1,
-      quantity,
-      costBasis: quantity * price,
-    };
-
-    // Note: We'll save this when the caller provides userId
-    this.newTrades.push({
-      id: '', // Will be set after saving
-      symbol,
-      side,
-      status: TradeStatus.OPEN,
-      openTime,
-      avgEntryPrice: price,
-      openQuantity: quantity,
-      pnl: 0,
-      ordersInTrade: [orderId],
-    });
+    
+    // Don't create trade record yet - only when position is closed or at end of processing
   }
 
   /**
@@ -175,18 +289,8 @@ export class TradeBuilder {
     position.openQuantity = newTotalQuantity;
     position.totalCostBasis = newTotalCostBasis;
     position.orderIds.push(orderId);
-
-    // Update the corresponding open trade in our tracking
-    const existingTradeIndex = this.newTrades.findIndex(
-      t => t.symbol === position.symbol && t.status === TradeStatus.OPEN
-    );
     
-    if (existingTradeIndex >= 0) {
-      const trade = this.newTrades[existingTradeIndex];
-      trade.openQuantity = newTotalQuantity;
-      trade.avgEntryPrice = newTotalCostBasis / newTotalQuantity;
-      trade.ordersInTrade.push(orderId);
-    }
+    // No need to update trades array since we don't create trades until positions close
   }
 
   /**
@@ -200,67 +304,63 @@ export class TradeBuilder {
     orderId: string
   ): Promise<void> {
     const closingQuantity = Math.min(quantity, position.openQuantity);
-    const remainingQuantity = quantity - closingQuantity;
+    const remainingOrderQuantity = quantity - closingQuantity;
+    const remainingPositionQuantity = position.openQuantity - closingQuantity;
 
-    // Calculate PnL for the closing portion
+    // Calculate average entry price
     const avgEntryPrice = position.totalCostBasis / position.openQuantity;
-    const pnl = position.side === TradeSide.LONG
-      ? (price - avgEntryPrice) * closingQuantity
-      : (avgEntryPrice - price) * closingQuantity;
+    
+    // Add the closing order to the position's order list
+    const allOrderIds = [...position.orderIds, orderId];
 
-    // Create closed trade
-    const closedTrade: ProcessedTrade = {
-      id: '',
-      symbol: position.symbol,
-      side: position.side,
-      status: TradeStatus.CLOSED,
-      openTime: position.openTime,
-      closeTime: orderTime,
-      avgEntryPrice,
-      avgExitPrice: price,
-      openQuantity: closingQuantity,
-      closeQuantity: closingQuantity,
-      pnl,
-      ordersInTrade: [...position.orderIds, orderId],
-    };
+    if (remainingPositionQuantity === 0) {
+      // Position fully closed - create closed trade
+      const { openQuantity, closeQuantity } = await this.calculateOpenCloseQuantities(allOrderIds, position.side);
+      const pnl = position.side === TradeSide.LONG
+        ? Math.round(((price - avgEntryPrice) * closingQuantity) * 100) / 100
+        : Math.round(((avgEntryPrice - price) * closingQuantity) * 100) / 100;
 
-    this.newTrades.push(closedTrade);
+      const closedTrade: ProcessedTrade = {
+        id: '',
+        symbol: position.symbol,
+        side: position.side,
+        status: TradeStatus.CLOSED,
+        openTime: position.openTime,
+        closeTime: orderTime,
+        avgEntryPrice,
+        avgExitPrice: price,
+        openQuantity,
+        closeQuantity,
+        pnl,
+        ordersInTrade: allOrderIds,
+      };
 
-    if (remainingQuantity > 0) {
-      // Reverse position - create new position in opposite direction
+      this.newTrades.push(closedTrade);
+      this.openPositions.delete(position.symbol);
+    } else {
+      // Position partially closed - update position but don't create trade yet
+      position.openQuantity = remainingPositionQuantity;
+      position.totalCostBasis = avgEntryPrice * remainingPositionQuantity;
+      position.orderIds = allOrderIds;
+      
+      // The position remains open with reduced quantity
+    }
+
+    if (remainingOrderQuantity > 0) {
+      // Order quantity exceeds position - reverse/create new position
       const newSide = position.side === TradeSide.LONG ? TradeSide.SHORT : TradeSide.LONG;
       
       const newPosition: OpenPosition = {
         symbol: position.symbol,
         side: newSide,
-        openQuantity: remainingQuantity,
-        totalCostBasis: remainingQuantity * price,
+        openQuantity: remainingOrderQuantity,
+        totalCostBasis: remainingOrderQuantity * price,
         openTime: orderTime,
         orderIds: [orderId],
+        // No existingTradeId since this is a new position from reversal
       };
 
       this.openPositions.set(position.symbol, newPosition);
-
-      // Create new open trade
-      this.newTrades.push({
-        id: '',
-        symbol: position.symbol,
-        side: newSide,
-        status: TradeStatus.OPEN,
-        openTime: orderTime,
-        avgEntryPrice: price,
-        openQuantity: remainingQuantity,
-        pnl: 0,
-        ordersInTrade: [orderId],
-      });
-    } else if (closingQuantity === position.openQuantity) {
-      // Exact close - remove position
-      this.openPositions.delete(position.symbol);
-    } else {
-      // Partial close - update position
-      position.openQuantity -= closingQuantity;
-      position.totalCostBasis -= (avgEntryPrice * closingQuantity);
-      position.orderIds.push(orderId);
     }
   }
 
@@ -269,6 +369,13 @@ export class TradeBuilder {
    */
   async persistTrades(userId: string): Promise<void> {
     for (const trade of this.newTrades) {
+      const totalQuantity = await this.calculateTotalQuantity(trade.ordersInTrade);
+      const timeInTrade = this.calculateTimeInTrade(trade.openTime, trade.closeTime);
+      const remainingQuantity = trade.status === TradeStatus.OPEN 
+        ? await this.calculateRemainingQuantity(trade.ordersInTrade, trade.side)
+        : 0;
+      const marketSession = this.calculateMarketSession(trade.openTime);
+
       const tradeData: CreateTradeData = {
         userId,
         symbol: trade.symbol,
@@ -280,10 +387,14 @@ export class TradeBuilder {
         avgExitPrice: trade.avgExitPrice ? new Decimal(trade.avgExitPrice) : undefined,
         openQuantity: trade.openQuantity,
         closeQuantity: trade.closeQuantity,
-        pnl: trade.pnl,
+        pnl: Math.round(trade.pnl * 100) / 100,
         ordersInTrade: trade.ordersInTrade,
         ordersCount: trade.ordersInTrade.length,
-        quantity: trade.closeQuantity || trade.openQuantity,
+        executions: trade.ordersInTrade.length,
+        quantity: totalQuantity,
+        timeInTrade,
+        remainingQuantity,
+        marketSession,
         costBasis: trade.avgEntryPrice && trade.openQuantity 
           ? trade.avgEntryPrice * trade.openQuantity 
           : undefined,

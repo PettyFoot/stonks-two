@@ -16,7 +16,11 @@ export interface CreateTradeData {
   pnl: number;
   ordersInTrade: string[];
   ordersCount: number;
-  quantity?: number;
+  executions: number;
+  quantity: number;
+  timeInTrade: number;
+  remainingQuantity?: number;
+  marketSession: string;
   costBasis?: number;
   proceeds?: number;
 }
@@ -38,16 +42,16 @@ export class TradesRepository {
         avgExitPrice: tradeData.avgExitPrice,
         openQuantity: tradeData.openQuantity,
         closeQuantity: tradeData.closeQuantity,
-        pnl: tradeData.pnl,
-        profitLoss: tradeData.pnl,
+        pnl: new Decimal(tradeData.pnl),
         ordersInTrade: tradeData.ordersInTrade,
         ordersCount: tradeData.ordersCount,
-        quantity: tradeData.quantity || tradeData.openQuantity,
-        quantityFilled: tradeData.quantity || tradeData.openQuantity || 0,
-        volume: tradeData.quantity || tradeData.openQuantity || 0,
-        costBasis: tradeData.costBasis,
-        proceeds: tradeData.proceeds,
-        orderFilledTime: tradeData.openTime,
+        executions: tradeData.executions,
+        quantity: tradeData.quantity,
+        timeInTrade: tradeData.timeInTrade,
+        remainingQuantity: tradeData.remainingQuantity,
+        marketSession: tradeData.marketSession as any,
+        costBasis: tradeData.costBasis ? new Decimal(tradeData.costBasis) : undefined,
+        proceeds: tradeData.proceeds ? new Decimal(tradeData.proceeds) : undefined,
         entryDate: tradeData.openTime,
         exitDate: tradeData.closeTime,
         date: tradeData.closeTime || tradeData.openTime,
@@ -99,10 +103,7 @@ export class TradesRepository {
       where: { id: tradeId },
       data: {
         ...updateData,
-        profitLoss: updateData.pnl,
-        quantity: updateData.quantity || updateData.openQuantity,
-        quantityFilled: updateData.quantity || updateData.openQuantity || 0,
-        volume: updateData.quantity || updateData.openQuantity || 0,
+        pnl: updateData.pnl ? new Decimal(updateData.pnl) : undefined,
         entryPrice: updateData.avgEntryPrice?.toNumber(),
         exitPrice: updateData.avgExitPrice?.toNumber(),
         exitDate: updateData.closeTime,

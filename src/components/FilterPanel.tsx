@@ -1,67 +1,84 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { FilterOptions } from '@/types';
-import { Settings, ChevronDown } from 'lucide-react';
+import { Settings } from 'lucide-react';
+import DynamicFilterDropdown from '@/components/DynamicFilterDropdown';
+import AdvancedFiltersPanel from '@/components/AdvancedFiltersPanel';
+import { useTradesMetadata } from '@/hooks/useTradesMetadata';
 
 interface FilterPanelProps {
   filters: FilterOptions;
   onFiltersChange: (filters: FilterOptions) => void;
-  showCustomFilters?: boolean;
   showAdvanced?: boolean;
   className?: string;
+  demo?: boolean;
 }
 
 export default function FilterPanel({ 
   filters, 
   onFiltersChange, 
-  showCustomFilters = true,
   showAdvanced = false,
-  className = '' 
+  className = '',
+  demo = false
 }: FilterPanelProps) {
+  const [showAdvancedPanel, setShowAdvancedPanel] = useState(false);
+  const { metadata, loading: metadataLoading } = useTradesMetadata(demo);
+
+  // Check if any date or advanced filters are applied
+  const hasDateFilters = Boolean(filters.dateFrom || filters.dateTo);
+  const hasAdvancedFilters = Boolean(
+    filters.priceRange || 
+    filters.volumeRange || 
+    filters.executionCountRange || 
+    filters.timeRange
+  );
+  const shouldShowClearButton = hasDateFilters || hasAdvancedFilters;
+
+  const clearDateAndAdvancedFilters = () => {
+    const newFilters = { ...filters };
+    // Remove date filters
+    delete newFilters.dateFrom;
+    delete newFilters.dateTo;
+    // Remove advanced filters
+    delete newFilters.priceRange;
+    delete newFilters.volumeRange;
+    delete newFilters.executionCountRange;
+    delete newFilters.timeRange;
+    
+    onFiltersChange(newFilters);
+    setShowAdvancedPanel(false);
+  };
   return (
     <div className={`bg-surface border-b border-default px-6 py-4 ${className}`}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-4">
-          {/* Symbol Filter */}
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-primary">Symbol</label>
-            <Select value={filters.symbol || 'Symbol'} onValueChange={(value) => onFiltersChange({...filters, symbol: value === 'Symbol' ? undefined : value})}>
-              <SelectTrigger className="w-32 h-8 text-sm">
-                <SelectValue placeholder="Symbol" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Symbol">All Symbols</SelectItem>
-                <SelectItem value="JNVR">JNVR</SelectItem>
-                <SelectItem value="AREB">AREB</SelectItem>
-                <SelectItem value="TSLA">TSLA</SelectItem>
-                <SelectItem value="NVDA">NVDA</SelectItem>
-                <SelectItem value="AAPL">AAPL</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Dynamic Symbol Filter */}
+          <DynamicFilterDropdown
+            label="Symbol"
+            value={filters.symbol}
+            onChange={(value) => onFiltersChange({...filters, symbol: value as string})}
+            options={metadata?.symbols.map(symbol => ({ value: symbol, label: symbol })) || []}
+            placeholder="Symbol"
+            loading={metadataLoading}
+            width="w-32"
+          />
 
-          {/* Tags Filter */}
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-primary">Tags</label>
-            <Select value={filters.tags?.[0] || 'Select'} onValueChange={(value) => onFiltersChange({...filters, tags: value === 'Select' ? undefined : [value]})}>
-              <SelectTrigger className="w-32 h-8 text-sm">
-                <SelectValue placeholder="Select" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Select">All Tags</SelectItem>
-                <SelectItem value="momentum">Momentum</SelectItem>
-                <SelectItem value="breakout">Breakout</SelectItem>
-                <SelectItem value="scalp">Scalp</SelectItem>
-                <SelectItem value="reversal">Reversal</SelectItem>
-                <SelectItem value="morning">Morning</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Dynamic Tags Filter */}
+          <DynamicFilterDropdown
+            label="Tags"
+            value={filters.tags}
+            onChange={(value) => onFiltersChange({...filters, tags: value as string[]})}
+            options={metadata?.tags.map(tag => ({ value: tag.name, label: tag.name, count: tag.count })) || []}
+            placeholder="Select"
+            multiple={true}
+            loading={metadataLoading}
+            width="w-32"
+          />
 
           {/* Side Filter */}
           <div className="flex items-center gap-2">
@@ -112,23 +129,33 @@ export default function FilterPanel({
               onChange={(e) => onFiltersChange({...filters, dateTo: e.target.value})}
               className="w-36 h-8 text-sm"
             />
+            
+            {/* Clear Date and Advanced Filters Button */}
+            {shouldShowClearButton && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearDateAndAdvancedFilters}
+                className="h-8 text-red-600 border-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-700"
+              >
+                Clear Filters
+              </Button>
+            )}
           </div>
 
           {/* Advanced Button */}
           {showAdvanced && (
-            <Button variant="outline" size="sm" className="h-8">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-8"
+              onClick={() => setShowAdvancedPanel(!showAdvancedPanel)}
+            >
               <Settings className="h-3 w-3 mr-1" />
               Advanced
             </Button>
           )}
 
-          {/* Custom Filters Dropdown */}
-          {showCustomFilters && (
-            <Button variant="outline" size="sm" className="h-8">
-              Custom Filters
-              <ChevronDown className="h-3 w-3 ml-1" />
-            </Button>
-          )}
 
           {/* Apply Button */}
           <Button className="h-8 bg-[#16A34A] hover:bg-[#15803d] text-white">
@@ -173,6 +200,22 @@ export default function FilterPanel({
           </Badge>
         )}
       </div>
+
+
+      {/* Advanced Filters Panel */}
+      {showAdvanced && showAdvancedPanel && (
+        <div className="mt-4">
+          <AdvancedFiltersPanel
+            filters={filters}
+            onFiltersChange={onFiltersChange}
+            metadata={metadata ? {
+              priceRange: metadata.priceRange,
+              volumeRange: metadata.volumeRange,
+              executionCountRange: metadata.executionCountRange
+            } : undefined}
+          />
+        </div>
+      )}
     </div>
   );
 }

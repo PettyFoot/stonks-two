@@ -64,17 +64,17 @@ export async function GET(request: Request) {
     });
 
     // Calculate KPIs
-    const totalPnl = trades.reduce((sum, trade) => sum + trade.pnl, 0);
+    const totalPnl = trades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl), 0);
     const totalTrades = trades.length;
-    const totalVolume = trades.reduce((sum, trade) => sum + trade.volume, 0);
-    const winningTrades = trades.filter(trade => trade.pnl > 0);
-    const losingTrades = trades.filter(trade => trade.pnl < 0);
+    const totalVolume = trades.reduce((sum, trade) => sum + (trade.quantity || 0), 0);
+    const winningTrades = trades.filter(trade => (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl) > 0);
+    const losingTrades = trades.filter(trade => (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl) < 0);
     const winRate = totalTrades > 0 ? (winningTrades.length / totalTrades) * 100 : 0;
     const avgWinningTrade = winningTrades.length > 0 
-      ? winningTrades.reduce((sum, trade) => sum + trade.pnl, 0) / winningTrades.length 
+      ? winningTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl), 0) / winningTrades.length 
       : 0;
     const avgLosingTrade = losingTrades.length > 0 
-      ? losingTrades.reduce((sum, trade) => sum + trade.pnl, 0) / losingTrades.length 
+      ? losingTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl), 0) / losingTrades.length 
       : 0;
 
     // Calculate cumulative P&L for chart
@@ -91,7 +91,7 @@ export async function GET(request: Request) {
     });
 
     tradesByDate.forEach((dayTrades, dateStr) => {
-      const dayPnl = dayTrades.reduce((sum, trade) => sum + trade.pnl, 0);
+      const dayPnl = dayTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl), 0);
       runningPnl += dayPnl;
       cumulativePnl.push({
         date: dateStr,

@@ -45,7 +45,7 @@ export async function GET(request: Request) {
       trades: filteredTrades,
       count: filteredTrades.length,
       totalPnl: filteredTrades.reduce((sum, trade) => sum + trade.pnl, 0),
-      totalVolume: filteredTrades.reduce((sum, trade) => sum + trade.volume, 0)
+      totalVolume: filteredTrades.reduce((sum, trade) => sum + (trade.quantity || 0), 0)
     });
   }
 
@@ -55,17 +55,17 @@ export async function GET(request: Request) {
     // TODO: Remove this workaround when Auth0 releases Next.js 15 compatible version
     const { prisma: prismaInstance } = await import('@/lib/prisma');
     
-    // Skip auth check for now and use test user directly
+    // Skip auth check for now and use actual logged in user
     let user = await prismaInstance.user.findFirst({
-      where: { email: 'test@example.com' }
+      where: { email: 'dannyvera127@gmail.com' }
     });
     
     if (!user) {
       user = await prismaInstance.user.create({
         data: {
-          auth0Id: 'test-auth0-id',
-          email: 'test@example.com',
-          name: 'Test User'
+          auth0Id: 'danny-auth0-id',
+          email: 'dannyvera127@gmail.com',
+          name: 'Danny Vera'
         }
       });
     }
@@ -79,7 +79,7 @@ export async function GET(request: Request) {
       where.symbol = symbol;
     }
 
-    if (side && side !== 'all') {
+    if (side && side.toLowerCase() !== 'all') {
       where.side = side.toUpperCase() as TradeSide;
     }
 
@@ -99,35 +99,13 @@ export async function GET(request: Request) {
       };
     }
 
-    // Get both trades and orders (since CSV uploads go to orders table)
-    const [trades, orders] = await Promise.all([
-      prismaInstance.trade.findMany({
-        where,
-        orderBy: [
-          { date: 'desc' },
-          { orderFilledTime: 'desc' }
-        ]
-      }),
-      prismaInstance.order.findMany({
-        where: {
-          userId: user.id,
-          ...(symbol && symbol !== 'Symbol' ? { symbol } : {}),
-          ...(side && side !== 'all' ? { side: side.toUpperCase() as 'BUY' | 'SELL' } : {}),
-          ...(dateFrom || dateTo ? {
-            orderExecutedTime: {
-              ...(dateFrom ? { gte: new Date(dateFrom) } : {}),
-              ...(dateTo ? { lte: new Date(dateTo) } : {})
-            }
-          } : {}),
-          ...(tags && tags.length > 0 ? {
-            tags: { hasSome: tags }
-          } : {})
-        },
-        orderBy: [
-          { orderExecutedTime: 'desc' }
-        ]
-      })
-    ]);
+    // Get only trades from trades table (not individual orders)
+    const trades = await prismaInstance.trade.findMany({
+      where,
+      orderBy: [
+        { date: 'desc' }
+      ]
+    });
 
     // Transform trades to match frontend interface
     const transformedTrades = trades.map(trade => ({
@@ -137,58 +115,25 @@ export async function GET(request: Request) {
         month: 'short', 
         year: 'numeric' 
       }),
-      time: trade.orderFilledTime.toLocaleTimeString('en-US', {
+      time: trade.openTime ? trade.openTime.toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit'
-      }),
+      }) : '00:00',
       symbol: trade.symbol,
       side: trade.side.toLowerCase() as 'long' | 'short',
-      volume: trade.volume,
+      quantity: trade.quantity,
       executions: trade.executions,
-      pnl: trade.pnl,
+      pnl: typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl,
       shared: false,
       notes: trade.notes,
       tags: trade.tags
     }));
 
-    // Transform orders to match frontend trade interface
-    const transformedOrders = orders.map(order => ({
-      id: order.id,
-      date: order.orderExecutedTime?.toLocaleDateString('en-US', { 
-        day: '2-digit', 
-        month: 'short', 
-        year: 'numeric' 
-      }) || new Date().toLocaleDateString('en-US', { 
-        day: '2-digit', 
-        month: 'short', 
-        year: 'numeric' 
-      }),
-      time: order.orderExecutedTime?.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit'
-      }) || new Date().toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit'
-      }),
-      symbol: order.symbol,
-      side: order.side.toLowerCase() as 'long' | 'short',
-      volume: order.orderQuantity,
-      executions: 1,
-      pnl: 0, // Orders don't have P&L
-      shared: false,
-      notes: `${order.orderType} order`,
-      tags: order.tags || []
-    }));
-
-    // Combine trades and orders, sort by date/time
-    const allTrades = [...transformedTrades, ...transformedOrders]
-      .sort((a, b) => new Date(b.date + ' ' + b.time).getTime() - new Date(a.date + ' ' + a.time).getTime());
-
     return NextResponse.json({
-      trades: allTrades,
-      count: allTrades.length,
-      totalPnl: allTrades.reduce((sum, trade) => sum + trade.pnl, 0),
-      totalVolume: allTrades.reduce((sum, trade) => sum + trade.volume, 0)
+      trades: transformedTrades,
+      count: transformedTrades.length,
+      totalPnl: transformedTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'number' ? trade.pnl : 0), 0),
+      totalVolume: transformedTrades.reduce((sum, trade) => sum + (trade.quantity || 0), 0)
     });
   } catch (error) {
     console.error('Trades API error:', error);
@@ -201,17 +146,17 @@ export async function POST(request: Request) {
     // TEMPORARY WORKAROUND: Next.js 15 + Auth0 compatibility issue
     const { prisma: prismaInstance } = await import('@/lib/prisma');
     
-    // Skip auth check for now and use test user directly
+    // Skip auth check for now and use actual logged in user
     let user = await prismaInstance.user.findFirst({
-      where: { email: 'test@example.com' }
+      where: { email: 'dannyvera127@gmail.com' }
     });
     
     if (!user) {
       user = await prismaInstance.user.create({
         data: {
-          auth0Id: 'test-auth0-id',
-          email: 'test@example.com',
-          name: 'Test User'
+          auth0Id: 'danny-auth0-id',
+          email: 'dannyvera127@gmail.com',
+          name: 'Danny Vera'
         }
       });
     }
@@ -223,12 +168,10 @@ export async function POST(request: Request) {
       data: {
         userId: user.id,
         date: body.date ? new Date(body.date) : now,
-        orderFilledTime: body.date ? new Date(body.date) : now,
         entryDate: body.date ? new Date(body.date) : now,
         symbol: body.symbol,
         side: (body.side || 'long').toUpperCase() as TradeSide,
-        volume: body.volume || 0,
-        quantityFilled: body.volume || 0,
+        quantity: body.volume || 0,
         executions: body.executions || 1,
         pnl: body.pnl || 0,
         notes: body.notes,
@@ -244,15 +187,15 @@ export async function POST(request: Request) {
         month: 'short', 
         year: 'numeric' 
       }),
-      time: newTrade.orderFilledTime.toLocaleTimeString('en-US', {
+      time: newTrade.openTime ? newTrade.openTime.toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit'
-      }),
+      }) : '00:00',
       symbol: newTrade.symbol,
       side: newTrade.side.toLowerCase() as 'long' | 'short',
-      volume: newTrade.volume,
+      volume: newTrade.quantity,
       executions: newTrade.executions,
-      pnl: newTrade.pnl,
+      pnl: typeof newTrade.pnl === 'object' ? newTrade.pnl.toNumber() : newTrade.pnl,
       shared: false,
       notes: newTrade.notes,
       tags: newTrade.tags

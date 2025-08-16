@@ -1,40 +1,104 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Trade, FilterOptions } from '@/types';
+import { Trade, FilterOptions, TradeFilters } from '@/types';
 
 interface TradesData {
   trades: Trade[];
-  count: number;
+  count?: number;
   totalPnl: number;
   totalVolume: number;
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
-export function useTradesData(filters: FilterOptions = {}, demo: boolean = false) {
+interface UseTradesDataOptions {
+  useComplexFiltering?: boolean;
+  page?: number;
+  limit?: number;
+}
+
+export function useTradesData(
+  filters: FilterOptions = {}, 
+  demo: boolean = false,
+  options: UseTradesDataOptions = {}
+) {
   const [data, setData] = useState<TradesData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { useComplexFiltering = false, page = 1, limit = 50 } = options;
 
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true);
-        
-        // Build query params from filters
-        const params = new URLSearchParams();
-        if (filters.symbol) params.append('symbol', filters.symbol);
-        if (filters.side) params.append('side', filters.side);
-        if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
-        if (filters.dateTo) params.append('dateTo', filters.dateTo);
-        if (filters.tags?.length) params.append('tags', filters.tags.join(','));
-        if (demo) params.append('demo', 'true');
-        
-        const response = await fetch(`/api/trades?${params}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch trades data');
+        setError(null);
+
+        if (useComplexFiltering) {
+          // Use the new filtered endpoint for complex filtering
+          const tradeFilters: TradeFilters = {
+            symbols: filters.symbol && filters.symbol !== 'Symbol' ? [filters.symbol] : undefined,
+            tags: filters.tags?.length ? filters.tags : undefined,
+            side: filters.side,
+            priceRange: filters.priceRange,
+            volumeRange: filters.volumeRange,
+            executionCountRange: filters.executionCountRange,
+            timeRange: filters.timeRange,
+            dateRange: (filters.dateFrom || filters.dateTo) ? {
+              start: filters.dateFrom ? new Date(filters.dateFrom) : new Date('1900-01-01'),
+              end: filters.dateTo ? new Date(filters.dateTo) : new Date()
+            } : undefined
+          };
+
+          const response = await fetch('/api/trades/filtered', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              filters: tradeFilters,
+              page,
+              limit,
+              demo
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to fetch filtered trades data');
+          }
+          
+          const result = await response.json();
+          setData({
+            trades: result.trades,
+            count: result.pagination?.total,
+            totalPnl: result.totalPnl,
+            totalVolume: result.totalVolume,
+            pagination: result.pagination
+          });
+        } else {
+          // Use the original simple filtering endpoint
+          const params = new URLSearchParams();
+          if (filters.symbol) params.append('symbol', filters.symbol);
+          if (filters.side) params.append('side', filters.side);
+          if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+          if (filters.dateTo) params.append('dateTo', filters.dateTo);
+          if (filters.tags?.length) params.append('tags', filters.tags.join(','));
+          if (demo) params.append('demo', 'true');
+          
+          const response = await fetch(`/api/trades?${params}`);
+          if (!response.ok) {
+            throw new Error('Failed to fetch trades data');
+          }
+          const result = await response.json();
+          setData({
+            trades: result.trades,
+            count: result.count,
+            totalPnl: result.totalPnl,
+            totalVolume: result.totalVolume
+          });
         }
-        const result = await response.json();
-        setData(result);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -43,7 +107,7 @@ export function useTradesData(filters: FilterOptions = {}, demo: boolean = false
     }
 
     fetchData();
-  }, [filters, demo]);
+  }, [filters, demo, useComplexFiltering, page, limit]);
 
   const addTrade = async (tradeData: Partial<Trade>) => {
     if (demo) {

@@ -4,7 +4,7 @@ export interface Trade {
   time: string;
   symbol: string;
   side: 'long' | 'short';
-  volume: number;
+  quantity: number;
   executions: number;
   pnl: number;
   shared?: boolean;
@@ -71,8 +71,40 @@ export interface FilterOptions {
   dateTo?: string;
   tags?: string[];
   duration?: 'all' | 'intraday' | 'multiday';
+  // Enhanced filtering options
+  priceRange?: { min: number; max: number };
+  volumeRange?: { min: number; max: number };
+  executionCountRange?: { min: number; max: number };
+  timeRange?: { start: string; end: string }; // time of day, not date
 }
 
-export type ViewMode = 'table' | 'charts-large' | 'charts-small' | 'gross' | 'net';
+export interface TradeFilters {
+  symbols?: string[];
+  tags?: string[];
+  priceRange?: { min: number; max: number };
+  timeRange?: { start: string; end: string };
+  volumeRange?: { min: number; max: number };
+  executionCountRange?: { min: number; max: number };
+  dateRange?: { start: Date; end: Date };
+  side?: 'all' | 'long' | 'short';
+}
+
+export interface TradesMetadata {
+  symbols: string[];
+  tags: Array<{ name: string; count: number }>;
+  priceRange: { min: number; max: number };
+  volumeRange: { min: number; max: number };
+  executionCountRange: { min: number; max: number };
+  dateRange: { earliest: string | null; latest: string | null };
+}
+
+export interface ColumnConfiguration {
+  id: string;
+  label: string;
+  visible: boolean;
+  sortable: boolean;
+}
+
+export type ViewMode = 'table' | 'gross' | 'net';
 export type ReportType = 'overview' | 'detailed' | 'win-vs-loss-days' | 'drawdown' | 'compare' | 'tag-breakdown' | 'advanced';
 export type DateRangeType = 'recent' | 'year-month-day' | 'calendar';

@@ -35,11 +35,8 @@ model Trade {
   userId                String
   
   // 1. Trade Identification
-  tradeId               String?     // Unique trade/execution ID
-  orderId               String?     // Parent order ID
   symbol                String      // Ticker symbol
   assetClass            AssetClass  @default(EQUITY)
-  underlyingSymbol      String?     // For derivatives
   brokerName            String?     // Broker name
   tradeSource           TradeSource @default(IMPORTED)
   
@@ -47,10 +44,8 @@ model Trade {
   orderType             OrderType   @default(MARKET)
   side                  TradeSide   // Long/Short
   timeInForce           TimeInForce @default(DAY)
-  orderFilledTime       DateTime    // When order was filled (main date/time)
-  quantityFilled        Int         // Quantity filled in this execution
   remainingQuantity     Int?        // Remaining quantity after fill
-  averageFillPrice      Float?      // Average price across all fills
+  averageFillPrice      Decimal?    @db.Decimal(10,2) // Average price across all fills
   
   // Trade Status and Enhanced Fields
   status                TradeStatus @default(OPEN)
@@ -62,35 +57,32 @@ model Trade {
   // 3. Trade Timing & Duration
   entryDate             DateTime    // Entry date (same as orderFilledTime for simplicity)
   exitDate              DateTime?   // Exit date (for closed positions)
-  timeInTrade           Int?        // Duration in minutes
+  timeInTrade           Int?        // Duration in seconds
   marketSession         MarketSession @default(REGULAR)
   holdingPeriod         HoldingPeriod @default(INTRADAY)
   
   // 4. Price Data at Entry & Exit
-  entryPrice            Float?      // Entry price
-  exitPrice             Float?      // Exit price
-  highDuringTrade       Float?      // Highest price during trade
-  lowDuringTrade        Float?      // Lowest price during trade
+  entryPrice            Decimal?    @db.Decimal(10,2) // Entry price
+  exitPrice             Decimal?    @db.Decimal(10,2) // Exit price
+  highDuringTrade       Decimal?    @db.Decimal(10,2) // Highest price during trade
+  lowDuringTrade        Decimal?    @db.Decimal(10,2) // Lowest price during trade
   
   // 5. Calculated Trade Fields (for complete trades)
   openTime              DateTime?   // When trade was opened
   closeTime             DateTime?   // When trade was closed
   quantity              Int?        // Total closed shares
-  costBasis             Float?      // Sum of (buyQuantity * buyLimitPrice)
-  proceeds              Float?      // Sum of (sellQuantity * sellLimitPrice)
-  profitLoss            Float?      // proceeds - costBasis
+  costBasis             Decimal?    @db.Decimal(10,2) // Sum of (buyQuantity * buyLimitPrice)
+  proceeds              Decimal?    @db.Decimal(10,2) // Sum of (sellQuantity * sellLimitPrice)
   ordersInTrade         String[]    // List of order IDs that make up this trade
   ordersCount           Int?        // Number of orders in this trade
   isCalculated          Boolean     @default(false) // Flag to indicate if this is a calculated trade
   
   // Legacy/Calculated Fields
   date                  DateTime    // Main trade date
-  volume                Int         // Alias for quantityFilled
   executions            Int         @default(1) // Number of partial fills
-  pnl                   Float       @default(0) // Realized P&L
-  price                 Float?      // Alias for fillPrice
-  commission            Float?      // Commission fees
-  fees                  Float?      // Other fees
+  pnl                   Decimal     @default(0) @db.Decimal(10,2) // Realized P&L
+  commission            Decimal?    @db.Decimal(10,2) // Commission fees
+  fees                  Decimal?    @db.Decimal(10,2) // Other fees
   notes                 String?     // User notes
   tags                  String[]    // User tags
   
@@ -100,7 +92,6 @@ model Trade {
   
   // Relations
   user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  order                 Order?      @relation(fields: [orderId], references: [id])
   journalEntryId        String?
   journalEntry          JournalEntry? @relation(fields: [journalEntryId], references: [id])
   importBatchId         String?
@@ -109,10 +100,17 @@ model Trade {
   
   @@index([userId, date])
   @@index([userId, symbol])
-  @@index([userId, orderId])
   @@index([userId, assetClass])
   @@index([userId, side])
   @@index([userId, symbol, status])
+  @@index([userId, entryPrice])
+  @@index([userId, exitPrice])
+  @@index([userId, quantity])
+  @@index([userId, executions])
+  @@index([userId, commission])
+  @@index([userId, fees])
+  @@index([userId, entryDate])
+  @@index([userId, exitDate])
   @@map("trades")
 }
 
@@ -127,8 +125,8 @@ model Order {
   side                  OrderSide   // Buy/Sell
   timeInForce           TimeInForce
   orderQuantity         Int         // Total order quantity
-  limitPrice            Float?      // Limit price if applicable
-  stopPrice             Float?      // Stop price if applicable
+  limitPrice            Decimal?    @db.Decimal(10,2) // Limit price if applicable
+  stopPrice             Decimal?    @db.Decimal(10,2) // Stop price if applicable
   orderStatus           OrderStatus
   orderPlacedTime       DateTime
   orderExecutedTime     DateTime?   // When order was executed
@@ -143,7 +141,6 @@ model Order {
   
   // Relations
   user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  trades                Trade[]     // All executions for this order
   
   @@index([userId, symbol])
   @@index([userId, orderStatus])
@@ -157,7 +154,7 @@ model PartialFill {
   tradeId               String
   fillSequence          Int         // Order of fills (1, 2, 3...)
   fillQuantity          Int
-  fillPrice             Float
+  fillPrice             Decimal     @db.Decimal(10,2)
   fillTime              DateTime
   venue                 String?
   liquidityFlag         LiquidityFlag?

@@ -8,7 +8,7 @@ export const mockTrades: Trade[] = [
     time: '12:33:16',
     symbol: 'JNVR',
     side: 'long',
-    volume: 52,
+    quantity: 52,
     executions: 2,
     pnl: 33.26,
     tags: ['momentum', 'breakout']
@@ -19,7 +19,7 @@ export const mockTrades: Trade[] = [
     time: '12:22:05',
     symbol: 'JNVR',
     side: 'long',
-    volume: 114,
+    quantity: 114,
     executions: 3,
     pnl: 28.52,
     tags: ['scalp']
@@ -30,7 +30,7 @@ export const mockTrades: Trade[] = [
     time: '12:20:58',
     symbol: 'JNVR',
     side: 'short',
-    volume: 56,
+    quantity: 56,
     executions: 4,
     pnl: -12.60,
     tags: ['reversal']
@@ -41,7 +41,7 @@ export const mockTrades: Trade[] = [
     time: '12:18:59',
     symbol: 'JNVR',
     side: 'long',
-    volume: 58,
+    quantity: 58,
     executions: 2,
     pnl: 24.04,
     tags: ['momentum']
@@ -52,7 +52,7 @@ export const mockTrades: Trade[] = [
     time: '12:18:33',
     symbol: 'JNVR',
     side: 'short',
-    volume: 58,
+    quantity: 58,
     executions: 2,
     pnl: -19.14,
     tags: ['reversal', 'failed']
@@ -63,7 +63,7 @@ export const mockTrades: Trade[] = [
     time: '12:16:44',
     symbol: 'JNVR',
     side: 'short',
-    volume: 60,
+    quantity: 60,
     executions: 5,
     pnl: -36.25,
     tags: ['overtrading']
@@ -74,7 +74,7 @@ export const mockTrades: Trade[] = [
     time: '08:49:57',
     symbol: 'JNVR',
     side: 'long',
-    volume: 610,
+    quantity: 610,
     executions: 6,
     pnl: 37.55,
     tags: ['morning', 'gap-up']
@@ -85,7 +85,7 @@ export const mockTrades: Trade[] = [
     time: '08:49:40',
     symbol: 'JNVR',
     side: 'long',
-    volume: 596,
+    quantity: 596,
     executions: 8,
     pnl: 51.36,
     tags: ['morning', 'momentum']
@@ -96,7 +96,7 @@ export const mockTrades: Trade[] = [
     time: '08:46:00',
     symbol: 'JNVR',
     side: 'long',
-    volume: 536,
+    quantity: 536,
     executions: 3,
     pnl: 144.72,
     tags: ['morning', 'breakout']
@@ -107,7 +107,7 @@ export const mockTrades: Trade[] = [
     time: '08:44:19',
     symbol: 'JNVR',
     side: 'short',
-    volume: 632,
+    quantity: 632,
     executions: 9,
     pnl: -111.30,
     tags: ['morning', 'failed']
@@ -118,7 +118,7 @@ export const mockTrades: Trade[] = [
     time: '08:43:29',
     symbol: 'JNVR',
     side: 'short',
-    volume: 184,
+    quantity: 184,
     executions: 5,
     pnl: -39.60,
     tags: ['pullback']
@@ -129,7 +129,7 @@ export const mockTrades: Trade[] = [
     time: '08:43:03',
     symbol: 'JNVR',
     side: 'short',
-    volume: 204,
+    quantity: 204,
     executions: 7,
     pnl: -30.78,
     tags: ['pullback']
@@ -140,7 +140,7 @@ export const mockTrades: Trade[] = [
     time: '08:19:56',
     symbol: 'AREB',
     side: 'short',
-    volume: 90,
+    quantity: 90,
     executions: 5,
     pnl: -49.01,
     tags: ['premarket']
@@ -151,7 +151,7 @@ export const mockTrades: Trade[] = [
     time: '08:19:16',
     symbol: 'AREB',
     side: 'short',
-    volume: 94,
+    quantity: 94,
     executions: 2,
     pnl: -17.39,
     tags: ['premarket']
@@ -163,7 +163,7 @@ export const mockTrades: Trade[] = [
     time: '10:15:32',
     symbol: 'TSLA',
     side: 'long',
-    volume: 200,
+    quantity: 200,
     executions: 3,
     pnl: 87.45,
     tags: ['large-cap', 'momentum']
@@ -174,7 +174,7 @@ export const mockTrades: Trade[] = [
     time: '09:45:12',
     symbol: 'NVDA',
     side: 'long',
-    volume: 150,
+    quantity: 150,
     executions: 4,
     pnl: 156.78,
     tags: ['tech', 'breakout']
@@ -185,7 +185,7 @@ export const mockTrades: Trade[] = [
     time: '14:22:18',
     symbol: 'AAPL',
     side: 'short',
-    volume: 300,
+    quantity: 300,
     executions: 2,
     pnl: -45.23,
     tags: ['large-cap', 'reversal']
@@ -196,7 +196,7 @@ export const mockTrades: Trade[] = [
     time: '11:33:44',
     symbol: 'SPCE',
     side: 'long',
-    volume: 500,
+    quantity: 500,
     executions: 6,
     pnl: 234.56,
     tags: ['small-cap', 'volatility']
@@ -208,7 +208,7 @@ export const mockTrades: Trade[] = [
     time: `${9 + Math.floor(Math.random() * 6)}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`,
     symbol: ['JNVR', 'AREB', 'TSLA', 'NVDA', 'AAPL', 'SPCE', 'AMD', 'MSFT'][Math.floor(Math.random() * 8)],
     side: Math.random() > 0.5 ? 'long' : 'short' as 'long' | 'short',
-    volume: Math.floor(Math.random() * 800) + 50,
+    quantity: Math.floor(Math.random() * 800) + 50,
     executions: Math.floor(Math.random() * 8) + 1,
     pnl: (Math.random() - 0.4) * 200, // Slightly profitable bias
     tags: [['momentum', 'breakout'], ['scalp', 'quick'], ['reversal', 'pullback'], ['morning', 'gap']][Math.floor(Math.random() * 4)]
@@ -221,49 +221,49 @@ export const mockDayData: DayData[] = [
     date: '2025-04-05',
     pnl: 0,
     trades: 0,
-    volume: 0,
+    quantity: 0,
     winRate: 0
   },
   {
     date: '2025-04-06',
     pnl: 0,
     trades: 0,
-    volume: 0,
+    quantity: 0,
     winRate: 0
   },
   {
     date: '2025-04-07',
     pnl: 3.72,
     trades: 14,
-    volume: 3344,
+    quantity: 3344,
     winRate: 42.86
   },
   {
     date: '2025-04-08',
     pnl: 244.23,
     trades: 2,
-    volume: 350,
+    quantity: 350,
     winRate: 100
   },
   {
     date: '2025-04-09',
     pnl: 189.33,
     trades: 2,
-    volume: 800,
+    quantity: 800,
     winRate: 50
   },
   {
     date: '2025-04-10',
     pnl: 0,
     trades: 0,
-    volume: 0,
+    quantity: 0,
     winRate: 0
   },
   {
     date: '2025-04-11',
     pnl: 0,
     trades: 0,
-    volume: 0,
+    quantity: 0,
     winRate: 0
   }
 ];

@@ -65,12 +65,12 @@ export async function GET(request: NextRequest) {
     // Calculate additional insights
     const recentTrades = trades.slice(-10); // Last 10 trades
     const top5Winners = trades
-      .filter(trade => trade.pnl > 0)
-      .sort((a, b) => b.pnl - a.pnl)
+      .filter(trade => (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl) > 0)
+      .sort((a, b) => (typeof b.pnl === 'object' ? b.pnl.toNumber() : b.pnl) - (typeof a.pnl === 'object' ? a.pnl.toNumber() : a.pnl))
       .slice(0, 5);
     const top5Losers = trades
-      .filter(trade => trade.pnl < 0)
-      .sort((a, b) => a.pnl - b.pnl)
+      .filter(trade => (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl) < 0)
+      .sort((a, b) => (typeof a.pnl === 'object' ? a.pnl.toNumber() : a.pnl) - (typeof b.pnl === 'object' ? b.pnl.toNumber() : b.pnl))
       .slice(0, 5);
 
     return NextResponse.json({
@@ -84,24 +84,24 @@ export async function GET(request: NextRequest) {
           date: trade.date,
           symbol: trade.symbol,
           side: trade.side,
-          volume: trade.volume,
-          pnl: trade.pnl
+          volume: trade.quantity,
+          pnl: typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl
         })),
         topWinners: top5Winners.map(trade => ({
           id: trade.id,
           date: trade.date,
           symbol: trade.symbol,
           side: trade.side,
-          volume: trade.volume,
-          pnl: trade.pnl
+          volume: trade.quantity,
+          pnl: typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl
         })),
         topLosers: top5Losers.map(trade => ({
           id: trade.id,
           date: trade.date,
           symbol: trade.symbol,
           side: trade.side,
-          volume: trade.volume,
-          pnl: trade.pnl
+          volume: trade.quantity,
+          pnl: typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl
         }))
       }
     });
