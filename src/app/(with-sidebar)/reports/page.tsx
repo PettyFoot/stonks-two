@@ -23,7 +23,7 @@ import {
   aggregateByDayOfWeek, 
   aggregateByHourOfDay, 
   aggregateByMonthOfYear,
-  aggregateByDuration,
+  aggregateBySimpleDuration,
   aggregateByIntradayDuration 
 } from '@/lib/reportCalculations';
 
@@ -78,7 +78,7 @@ export default function Reports() {
   const dayOfWeekData = useMemo(() => aggregateByDayOfWeek(trades), [trades]);
   const hourOfDayData = useMemo(() => aggregateByHourOfDay(trades), [trades]);
   const monthOfYearData = useMemo(() => aggregateByMonthOfYear(trades), [trades]);
-  const durationData = useMemo(() => aggregateByDuration(trades), [trades]);
+  const simpleDurationData = useMemo(() => aggregateBySimpleDuration(trades), [trades]);
   const intradayDurationData = useMemo(() => aggregateByIntradayDuration(trades), [trades]);
 
   return (
@@ -246,14 +246,16 @@ export default function Reports() {
 
             {/* SECOND TAB SYSTEM: New Enhanced Analysis Tabs (Days/Times, Price/Volume, etc.) */}
             <Tabs defaultValue="days-times" className="space-y-4">
-              <TabsList className="grid grid-cols-4 w-full max-w-2xl">
-                <TabsTrigger value="days-times">Days/Times</TabsTrigger>
-                <TabsTrigger value="price-volume">Price/Volume</TabsTrigger>
-                <TabsTrigger value="instrument">Instrument</TabsTrigger>
-                <TabsTrigger value="win-loss">Win/Loss/Expectation</TabsTrigger>
-              </TabsList>
+              <div className="flex justify-center">
+                <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+                  <TabsTrigger value="days-times">Days/Times</TabsTrigger>
+                  <TabsTrigger value="price-volume">Price/Volume</TabsTrigger>
+                  <TabsTrigger value="instrument">Instrument</TabsTrigger>
+                  <TabsTrigger value="win-loss">Win/Loss/Expectation</TabsTrigger>
+                </TabsList>
+              </div>
 
-              {/* Days/Times Tab - 4 Charts */}
+              {/* Days/Times Tab - 10 Charts Total */}
               <TabsContent value="days-times" className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Trade Distribution by Day of Week */}
@@ -276,33 +278,28 @@ export default function Reports() {
                     minWidth={400}
                   />
                   
-                  {/* Trade Distribution by Hour of Day */}
+                  {/* Trade Distribution by Hour of Day (24 hours) */}
                   <ChartContainer
                     title="TRADE DISTRIBUTION BY HOUR OF DAY"
                     data={hourOfDayData.distribution}
                     chartType="distribution"
                     valueType="shares"
                     height={300}
-                    minWidth={500}
+                    minWidth={800}
                     enableScroll={true}
                   />
                   
-                  {/* Performance by Hour of Day */}
+                  {/* Performance by Hour of Day (24 hours) */}
                   <ChartContainer
                     title="PERFORMANCE BY HOUR OF DAY"
                     data={hourOfDayData.performance}
                     chartType="performance"
                     valueType="currency"
                     height={300}
-                    minWidth={500}
+                    minWidth={800}
                     enableScroll={true}
                   />
-                </div>
-              </TabsContent>
 
-              {/* Win/Loss/Expectation Tab - 6 Charts */}
-              <TabsContent value="win-loss" className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Trade Distribution by Month of Year */}
                   <ChartContainer
                     title="TRADE DISTRIBUTION BY MONTH OF YEAR"
@@ -325,26 +322,24 @@ export default function Reports() {
                     enableScroll={true}
                   />
                   
-                  {/* Trade Distribution by Duration */}
+                  {/* Trade Distribution by Duration (Intraday/Multiday) */}
                   <ChartContainer
                     title="TRADE DISTRIBUTION BY DURATION"
-                    data={durationData.distribution}
+                    data={simpleDurationData.distribution}
                     chartType="distribution"
                     valueType="shares"
                     height={300}
-                    minWidth={450}
-                    enableScroll={true}
+                    minWidth={300}
                   />
                   
-                  {/* Performance by Duration */}
+                  {/* Performance by Duration (Intraday/Multiday) */}
                   <ChartContainer
                     title="PERFORMANCE BY DURATION"
-                    data={durationData.performance}
+                    data={simpleDurationData.performance}
                     chartType="performance"
                     valueType="currency"
                     height={300}
-                    minWidth={450}
-                    enableScroll={true}
+                    minWidth={300}
                   />
                   
                   {/* Trade Distribution by Intraday Duration */}
@@ -354,7 +349,7 @@ export default function Reports() {
                     chartType="distribution"
                     valueType="shares"
                     height={300}
-                    minWidth={450}
+                    minWidth={600}
                     enableScroll={true}
                   />
                   
@@ -365,10 +360,24 @@ export default function Reports() {
                     chartType="performance"
                     valueType="currency"
                     height={300}
-                    minWidth={450}
+                    minWidth={600}
                     enableScroll={true}
                   />
                 </div>
+              </TabsContent>
+
+              {/* Win/Loss/Expectation Tab - Placeholder for future content */}
+              <TabsContent value="win-loss" className="space-y-6">
+                <Card className="bg-surface border-default">
+                  <CardHeader>
+                    <CardTitle className="text-base font-medium text-primary">
+                      Win/Loss/Expectation Analysis
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-[300px] flex items-center justify-center">
+                    <span className="text-muted">Charts have been moved to Days/Times tab</span>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               {/* Price/Volume Tab - Placeholder for future implementation */}

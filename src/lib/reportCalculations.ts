@@ -94,13 +94,13 @@ export function aggregateByDayOfWeek(trades: any[]) {
   };
 }
 
-// Aggregate trades by hour of day
+// Aggregate trades by hour of day (24-hour support for stocks that trade around the clock)
 export function aggregateByHourOfDay(trades: any[]) {
-  const hours = Array.from({ length: 14 }, (_, i) => i + 7); // 7 AM to 8 PM (market hours)
+  const hours = Array.from({ length: 24 }, (_, i) => i); // 0 to 23 (24-hour trading)
   const distribution: Record<number, number> = {};
   const performance: Record<number, number> = {};
   
-  // Initialize
+  // Initialize all hours
   hours.forEach(hour => {
     distribution[hour] = 0;
     performance[hour] = 0;
@@ -109,19 +109,17 @@ export function aggregateByHourOfDay(trades: any[]) {
   // Aggregate
   trades.forEach(trade => {
     const hour = getHourOfDay(trade.entryDate || trade.date);
-    if (hour >= 7 && hour <= 20) {
-      distribution[hour]++;
-      performance[hour] += Number(trade.pnl || 0);
-    }
+    distribution[hour]++;
+    performance[hour] += Number(trade.pnl || 0);
   });
   
   return {
     distribution: hours.map(hour => ({
-      date: `${hour}:00`,
+      date: `${hour.toString().padStart(2, '0')}:00`,
       value: distribution[hour]
     })),
     performance: hours.map(hour => ({
-      date: `${hour}:00`,
+      date: `${hour.toString().padStart(2, '0')}:00`,
       value: performance[hour]
     }))
   };
@@ -158,7 +156,82 @@ export function aggregateByMonthOfYear(trades: any[]) {
   };
 }
 
-// Aggregate trades by duration
+// Aggregate trades by simple duration (Intraday vs Multiday)
+export function aggregateBySimpleDuration(trades: any[]) {
+  const distribution = { Intraday: 0, Multiday: 0 };
+  const performance = { Intraday: 0, Multiday: 0 };
+  
+  trades.forEach(trade => {
+    const seconds = trade.timeInTrade || 0;
+    const category = seconds < 86400 ? 'Intraday' : 'Multiday'; // 86400 seconds = 24 hours
+    distribution[category]++;
+    performance[category] += Number(trade.pnl || 0);
+  });
+  
+  return {
+    distribution: [
+      { date: 'Intraday', value: distribution.Intraday },
+      { date: 'Multiday', value: distribution.Multiday }
+    ],
+    performance: [
+      { date: 'Intraday', value: performance.Intraday },
+      { date: 'Multiday', value: performance.Multiday }
+    ]
+  };
+}
+
+// New intraday time bucket type
+export type IntradayBucket = '<1min' | '1-2min' | '2-5min' | '5-10min' | '10-20min' | '20-40min' | '40-60min' | '60-120min' | '120-240min' | '>240min';
+
+// Helper to get intraday bucket
+export function getIntradayBucket(seconds: number): IntradayBucket {
+  const minutes = seconds / 60;
+  if (minutes < 1) return '<1min';
+  if (minutes < 2) return '1-2min';
+  if (minutes < 5) return '2-5min';
+  if (minutes < 10) return '5-10min';
+  if (minutes < 20) return '10-20min';
+  if (minutes < 40) return '20-40min';
+  if (minutes < 60) return '40-60min';
+  if (minutes < 120) return '60-120min';
+  if (minutes < 240) return '120-240min';
+  return '>240min';
+}
+
+// Aggregate trades by intraday duration with new buckets
+export function aggregateByIntradayDuration(trades: any[]) {
+  const buckets: IntradayBucket[] = ['<1min', '1-2min', '2-5min', '5-10min', '10-20min', '20-40min', '40-60min', '60-120min', '120-240min', '>240min'];
+  const intradayTrades = trades.filter(t => (t.timeInTrade || 0) < 86400); // Only trades < 24 hours
+  
+  const distribution: Record<IntradayBucket, number> = {} as any;
+  const performance: Record<IntradayBucket, number> = {} as any;
+  
+  // Initialize
+  buckets.forEach(bucket => {
+    distribution[bucket] = 0;
+    performance[bucket] = 0;
+  });
+  
+  // Aggregate
+  intradayTrades.forEach(trade => {
+    const bucket = getIntradayBucket(trade.timeInTrade || 0);
+    distribution[bucket]++;
+    performance[bucket] += Number(trade.pnl || 0);
+  });
+  
+  return {
+    distribution: buckets.map(bucket => ({
+      date: bucket,
+      value: distribution[bucket]
+    })),
+    performance: buckets.map(bucket => ({
+      date: bucket,
+      value: performance[bucket]
+    }))
+  };
+}
+
+// Keep original aggregateByDuration for backwards compatibility if needed
 export function aggregateByDuration(trades: any[]) {
   const buckets: TimeBucket[] = ['< 1min', '1-5min', '5-15min', '15-30min', '30-60min', '1-2hr', '2-4hr', '4hr+'];
   const distribution: Record<TimeBucket, number> = {} as any;
@@ -189,16 +262,6 @@ export function aggregateByDuration(trades: any[]) {
       value: performance[bucket]
     }))
   };
-}
-
-// Aggregate trades by intraday duration (filter out overnight trades)
-export function aggregateByIntradayDuration(trades: any[]) {
-  const intradayTrades = trades.filter(trade => {
-    const bucket = getTimeBucket(trade.timeInTrade);
-    return bucket !== 'overnight';
-  });
-  
-  return aggregateByDuration(intradayTrades);
 }
 
 // Calculate consecutive wins/losses

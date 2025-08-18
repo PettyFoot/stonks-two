@@ -58,6 +58,11 @@ const CustomBarChart = React.memo(function CustomBarChart({
   }, [formatter]);
 
   const formatXAxisTick = React.useCallback((value: string) => {
+    // Check if this is a duration bucket (contains min, hr, etc.) or simple duration labels
+    if (value.includes('min') || value.includes('hr') || value === 'Intraday' || value === 'Multiday') {
+      return value;
+    }
+    
     // Use intelligent time interval formatting if available
     if (timeInterval && (value.includes('-') || value.match(/^\d{4}/) || value.match(/W\d{2}/))) {
       try {
@@ -77,8 +82,14 @@ const CustomBarChart = React.memo(function CustomBarChart({
 
   // Calculate tick interval to prevent overcrowding
   const tickInterval = React.useMemo(() => {
+    // Show all labels for duration-related charts
+    if (data.length > 0 && data[0]?.date && 
+        (data[0].date.includes('min') || data[0].date.includes('hr') || 
+         data[0].date === 'Intraday' || data[0].date === 'Multiday')) {
+      return 0; // Show all labels
+    }
     return calculateTickInterval(data.length, timeInterval?.tickCount || 8);
-  }, [data.length, timeInterval]);
+  }, [data, timeInterval]);
 
   return (
     <Card className="bg-surface border-default">
@@ -114,8 +125,16 @@ const CustomBarChart = React.memo(function CustomBarChart({
               <Tooltip 
                 formatter={(value: number) => formatTooltipValue(value, title)}
                 labelFormatter={(value) => {
-                  if (typeof value === 'string' && (value.includes('-') || value.match(/^\d{4}-\d{2}$/))) {
-                    return formatTimeAxis(value, 'long');
+                  if (typeof value === 'string') {
+                    // Handle duration labels
+                    if (value.includes('min') || value.includes('hr') || 
+                        value === 'Intraday' || value === 'Multiday') {
+                      return value;
+                    }
+                    // Handle date labels
+                    if (value.includes('-') || value.match(/^\d{4}-\d{2}$/)) {
+                      return formatTimeAxis(value, 'long');
+                    }
                   }
                   return value;
                 }}
