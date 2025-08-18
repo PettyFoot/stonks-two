@@ -1,10 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import TopBar from '@/components/TopBar';
+import FilterPanel from '@/components/FilterPanel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { useFilterContext } from '@/contexts/GlobalFilterContext';
+import { ReportsFilterOptions } from '@/types';
 
 const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -16,9 +19,34 @@ const mockCalendarData = [
 ];
 
 export default function CalendarPage() {
-  const currentDate = new Date();
+  const { state, updateFilters } = useFilterContext();
+  const [currentDate, setCurrentDate] = useState(new Date());
+  
   const currentMonth = currentDate.toLocaleString('default', { month: 'long' });
   const currentYear = currentDate.getFullYear();
+  
+  // Convert filter context state to reports filter format
+  const calendarFilters: ReportsFilterOptions = useMemo(() => ({
+    predefinedTimeframe: state.filters.predefinedTimeframe || '1m',
+    customTimeRange: !!state.filters.dateFrom || !!state.filters.dateTo,
+    symbols: state.filters.symbols,
+    tags: state.filters.tags,
+    side: state.filters.side,
+    dateFrom: state.filters.dateFrom,
+    dateTo: state.filters.dateTo,
+  }), [state.filters]);
+
+  const handleFiltersChange = (newFilters: ReportsFilterOptions) => {
+    updateFilters({
+      predefinedTimeframe: newFilters.predefinedTimeframe,
+      customTimeRange: newFilters.customTimeRange,
+      symbols: newFilters.symbols,
+      tags: newFilters.tags,
+      side: newFilters.side,
+      dateFrom: newFilters.dateFrom,
+      dateTo: newFilters.dateTo,
+    });
+  };
 
   // Generate calendar days for the current month
   const firstDayOfMonth = new Date(currentYear, currentDate.getMonth(), 1);
@@ -47,7 +75,14 @@ export default function CalendarPage() {
       <TopBar 
         title="Calendar" 
         subtitle={`${currentMonth} ${currentYear}`}
-        showTimeRangeFilters={true}
+        showTimeRangeFilters={false}
+      />
+      
+      <FilterPanel 
+        filters={calendarFilters}
+        onFiltersChange={handleFiltersChange}
+        showTimeframes={true}
+        showAdvanced={true}
       />
       
       <div className="flex-1 overflow-auto p-6">
@@ -56,10 +91,48 @@ export default function CalendarPage() {
           <div className="flex items-center space-x-4">
             <h1 className="text-2xl font-bold text-primary">{currentMonth} {currentYear}</h1>
             <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  const newDate = new Date(currentDate);
+                  newDate.setMonth(newDate.getMonth() - 1);
+                  setCurrentDate(newDate);
+                  
+                  // Update filters to reflect the new month
+                  const start = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
+                  const end = new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0);
+                  handleFiltersChange({
+                    ...calendarFilters,
+                    customTimeRange: true,
+                    predefinedTimeframe: undefined,
+                    dateFrom: start.toISOString().split('T')[0],
+                    dateTo: end.toISOString().split('T')[0],
+                  });
+                }}
+              >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  const newDate = new Date(currentDate);
+                  newDate.setMonth(newDate.getMonth() + 1);
+                  setCurrentDate(newDate);
+                  
+                  // Update filters to reflect the new month
+                  const start = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
+                  const end = new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0);
+                  handleFiltersChange({
+                    ...calendarFilters,
+                    customTimeRange: true,
+                    predefinedTimeframe: undefined,
+                    dateFrom: start.toISOString().split('T')[0],
+                    dateTo: end.toISOString().split('T')[0],
+                  });
+                }}
+              >
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>

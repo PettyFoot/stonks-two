@@ -1,40 +1,49 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import TopBar from '@/components/TopBar';
 import FilterPanel from '@/components/FilterPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import EquityChart from '@/components/charts/EquityChart';
 import CustomBarChart from '@/components/charts/BarChart';
-import DistributionCharts from '@/components/charts/DistributionCharts';
-import { FilterOptions } from '@/types';
-import { mockCumulativePnl, mockGapPerformance, mockVolumePerformance, mockMonthlyPerformance, mockSymbolPerformance } from '@/data/mockData';
+import ConditionalBarChart from '@/components/charts/ConditionalBarChart';
+import StatisticsTable from '@/components/charts/StatisticsTable';
+import WinLossStatsTable from '@/components/charts/WinLossStatsTable';
+import AnalyticsTabsSection from '@/components/analytics/AnalyticsTabsSection';
+import { ReportsFilterOptions } from '@/types';
+import { useFilterContext } from '@/contexts/GlobalFilterContext';
+import { useAnalyticsData } from '@/hooks/useAnalyticsData';
 
-export default function Reports() {
-  const [filters, setFilters] = useState<FilterOptions>({});
-  const [dateRange, setDateRange] = useState('30 Days');
+function ReportsContent() {
+  const { state, updateFilters, setStandardTimeframe, getEffectiveTimeframe } = useFilterContext();
 
-  // Chart data for different metrics
-  const dailyPnlData = [
-    { date: '2025-04-07', value: 3.72 },
-    { date: '2025-04-08', value: 244.23 },
-    { date: '2025-04-09', value: 189.33 }
-  ];
+  // Convert filter context state to reports filter format
+  const reportsFilters: ReportsFilterOptions = {
+    predefinedTimeframe: state.filters.predefinedTimeframe,
+    customTimeRange: !!state.filters.dateFrom || !!state.filters.dateTo,
+    symbols: state.filters.symbols,
+    tags: state.filters.tags,
+    side: state.filters.side,
+    dateFrom: state.filters.dateFrom,
+    dateTo: state.filters.dateTo,
+  };
 
-  const dailyVolumeData = [
-    { date: '2025-04-07', value: 3344 },
-    { date: '2025-04-08', value: 350 },
-    { date: '2025-04-09', value: 800 }
-  ];
+  // Fetch real analytics data
+  const { data: analyticsData, loading, error, errorType, refetch, retryCount } = useAnalyticsData(state.standardTimeframe, reportsFilters);
 
-  const winPercentageData = [
-    { date: '2025-04-07', value: 42.86 },
-    { date: '2025-04-08', value: 100 },
-    { date: '2025-04-09', value: 50 }
-  ];
+  const handleFiltersChange = (newFilters: ReportsFilterOptions) => {
+    updateFilters({
+      predefinedTimeframe: newFilters.predefinedTimeframe,
+      customTimeRange: newFilters.customTimeRange,
+      symbols: newFilters.symbols,
+      tags: newFilters.tags,
+      side: newFilters.side,
+      dateFrom: newFilters.dateFrom,
+      dateTo: newFilters.dateTo,
+    });
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -44,16 +53,16 @@ export default function Reports() {
       />
       
       <FilterPanel 
-        filters={filters}
-        onFiltersChange={setFilters}
-        showCustomFilters={true}
+        filters={reportsFilters}
+        onFiltersChange={handleFiltersChange}
+        showTimeframes={true}
         showAdvanced={true}
       />
 
       <div className="flex-1 overflow-auto p-6">
-        {/* Report Type Selection */}
+        {/* Simplified Controls */}
         <div className="mb-6">
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium text-primary">P&L Type</label>
               <Select defaultValue="Gross">
@@ -67,187 +76,205 @@ export default function Reports() {
               </Select>
             </div>
 
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-primary">View mode</label>
-              <Select defaultValue="$ Value">
-                <SelectTrigger className="w-28 h-8 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="$ Value">$ Value</SelectItem>
-                  <SelectItem value="Percentage">%</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-primary">Report type</label>
-              <Select defaultValue="Aggregate P&L">
-                <SelectTrigger className="w-36 h-8 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Aggregate P&L">Aggregate P&L</SelectItem>
-                  <SelectItem value="Individual">Individual</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Date Range Tabs */}
-            <div className="ml-auto flex items-center gap-2">
-              <div className="flex rounded-lg border border-default bg-surface">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className={`rounded-l-lg rounded-r-none border-r h-8 ${dateRange === 'Recent' ? 'bg-muted/10' : ''}`}
-                  onClick={() => setDateRange('Recent')}
-                >
-                  Recent
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className={`rounded-none border-r h-8 ${dateRange === 'Year/Month/Day' ? 'bg-muted/10' : ''}`}
-                  onClick={() => setDateRange('Year/Month/Day')}
-                >
-                  Year/Month/Day
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className={`rounded-r-lg rounded-l-none h-8 ${dateRange === 'Calendar' ? 'bg-muted/10' : ''}`}
-                  onClick={() => setDateRange('Calendar')}
-                >
-                  Calendar
-                </Button>
-              </div>
-              <div className="flex rounded-lg border border-default bg-surface">
-                <Button variant="ghost" size="sm" className="rounded-l-lg rounded-r-none border-r h-8">
-                  30 Days
-                </Button>
-                <Button variant="ghost" size="sm" className="rounded-none border-r bg-muted/10 h-8">
-                  60 Days
-                </Button>
-                <Button variant="ghost" size="sm" className="rounded-r-lg rounded-l-none h-8">
-                  90 Days
-                </Button>
-              </div>
+            {/* Quick Time Range Selector */}
+            <div className="flex rounded-lg border border-default bg-surface">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`rounded-l-lg rounded-r-none border-r h-8 ${state.standardTimeframe === '30d' ? 'bg-muted/10' : ''}`}
+                onClick={() => setStandardTimeframe('30d')}
+              >
+                30 Days
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`rounded-none border-r h-8 ${state.standardTimeframe === '60d' ? 'bg-muted/10' : ''}`}
+                onClick={() => setStandardTimeframe('60d')}
+              >
+                60 Days
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`rounded-r-lg rounded-l-none h-8 ${state.standardTimeframe === '90d' ? 'bg-muted/10' : ''}`}
+                onClick={() => setStandardTimeframe('90d')}
+              >
+                90 Days
+              </Button>
             </div>
           </div>
         </div>
 
+        {/* Loading and Error States */}
+        {loading && (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+              <p className="text-muted-foreground">Loading analytics data...</p>
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center max-w-md">
+              <div className="text-red-500 text-lg mb-2">
+                {errorType === 'network' ? '🌐' : errorType === 'validation' ? '⚠️' : '❌'} 
+              </div>
+              <p className="text-red-500 font-medium mb-2">Error loading analytics data</p>
+              <p className="text-sm text-muted-foreground mb-4">{error}</p>
+              {errorType === 'network' && retryCount < 3 && (
+                <Button 
+                  onClick={refetch} 
+                  variant="outline" 
+                  size="sm"
+                  className="mr-2"
+                >
+                  Retry ({retryCount}/3)
+                </Button>
+              )}
+              <Button 
+                onClick={() => window.location.reload()} 
+                variant="outline" 
+                size="sm"
+              >
+                Refresh Page
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Tabs for different report sections */}
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid grid-cols-7 w-full max-w-4xl">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="detailed">Detailed</TabsTrigger>
-            <TabsTrigger value="win-vs-loss">Win vs Loss Days</TabsTrigger>
-            <TabsTrigger value="drawdown">Drawdown</TabsTrigger>
-            <TabsTrigger value="compare">Compare</TabsTrigger>
-            <TabsTrigger value="tag-breakdown">Tag Breakdown</TabsTrigger>
-            <TabsTrigger value="advanced">Advanced</TabsTrigger>
-          </TabsList>
+        {analyticsData && !loading && !error && (
+          <Tabs defaultValue="overview" className="space-y-6">
+            <TabsList className="grid grid-cols-7 w-full max-w-4xl">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="detailed">Detailed</TabsTrigger>
+              <TabsTrigger value="win-vs-loss">Win vs Loss Days</TabsTrigger>
+              <TabsTrigger value="drawdown">Drawdown</TabsTrigger>
+              <TabsTrigger value="compare">Compare</TabsTrigger>
+              <TabsTrigger value="tag-breakdown">Tag Breakdown</TabsTrigger>
+              <TabsTrigger value="advanced">Advanced</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
-            {/* Four chart grid */}
-            <div className="grid grid-cols-2 gap-6">
-              <EquityChart 
-                data={dailyPnlData}
-                title="GROSS DAILY P&L (30 Days)"
-                height={300}
-              />
-              
-              <EquityChart 
-                data={mockCumulativePnl}
-                title="GROSS CUMULATIVE P&L (30 Days)"
-                height={300}
-              />
-              
-              <CustomBarChart 
-                data={dailyVolumeData}
-                title="DAILY VOLUME (30 Days)"
-                height={300}
-                dataKey="value"
-              />
-              
-              <CustomBarChart 
-                data={winPercentageData}
-                title="WIN % (30 Days)"
-                height={300}
-                dataKey="value"
-              />
-            </div>
-          </TabsContent>
+            <TabsContent value="overview" className="space-y-6">
+              {/* Four chart grid with real data */}
+              <div className="grid grid-cols-2 gap-6">
+                <ConditionalBarChart 
+                  data={analyticsData.overview.dailyPnl}
+                  title={`GROSS DAILY P&L (AVG) (${getEffectiveTimeframe().toUpperCase()})`}
+                  height={300}
+                />
+                
+                <ConditionalBarChart 
+                  data={analyticsData.overview.cumulativePnl}
+                  title={`GROSS CUMULATIVE P&L (${getEffectiveTimeframe().toUpperCase()})`}
+                  height={300}
+                  valueFormatter={(value: number) => `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                />
+                
+                <CustomBarChart 
+                  data={analyticsData.overview.dailyVolume}
+                  title={`DAILY VOLUME (${getEffectiveTimeframe().toUpperCase()})`}
+                  height={300}
+                  dataKey="value"
+                  chartType="normalizedVolume"
+                />
+                
+                <CustomBarChart 
+                  data={analyticsData.overview.winPercentage}
+                  title={`WIN % (${getEffectiveTimeframe().toUpperCase()})`}
+                  height={300}
+                  dataKey="value"
+                  chartType="percentage"
+                />
+              </div>
+            </TabsContent>
 
-          <TabsContent value="detailed" className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              <DistributionCharts 
-                data={mockGapPerformance}
-                title="Performance By Instrument Opening Gap"
-              />
+            <TabsContent value="detailed" className="space-y-6">
+              {/* Statistics Table at the top */}
+              <StatisticsTable metrics={analyticsData.statistics} title="Stats" />
               
-              <Card className="bg-surface border-default">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base font-medium text-primary">Tag Breakdown</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-48 flex items-center justify-center text-muted">
-                    <span>Chart visualization here</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <DistributionCharts 
-                data={mockVolumePerformance}
-                title="Performance By Instrument Volume"
-              />
+              {/* Analytics Tabs Section */}
+              <AnalyticsTabsSection data={analyticsData} context="detailed" />
               
-              <DistributionCharts 
-                data={mockSymbolPerformance}
-                title="Performance By Symbol At Entry"
-              />
-            </div>
-          </TabsContent>
+              {/* Chart sections */}
+              <div className="grid grid-cols-2 gap-6">
+                {/* Trade Distribution by Day of Week */}
+                <CustomBarChart 
+                  data={analyticsData.distribution.byDayOfWeek}
+                  title="TRADE DISTRIBUTION BY DAY OF WEEK"
+                  height={300}
+                  dataKey="count"
+                  chartType="shares"
+                />
+                
+                {/* Performance by Day of Week */}
+                <ConditionalBarChart 
+                  data={analyticsData.performance.byDayOfWeek}
+                  title="PERFORMANCE BY DAY OF WEEK"
+                  height={300}
+                />
+                
+                {/* Trade Distribution by Hour of Day */}
+                <CustomBarChart 
+                  data={analyticsData.distribution.byHourOfDay}
+                  title="TRADE DISTRIBUTION BY HOUR OF DAY"
+                  height={300}
+                  dataKey="count"
+                  chartType="shares"
+                />
+                
+                {/* Performance by Hour of Day */}
+                <ConditionalBarChart 
+                  data={analyticsData.performance.byHourOfDay}
+                  title="PERFORMANCE BY HOUR OF DAY"
+                  height={300}
+                />
+                
+                {/* Trade Distribution by Month of Year */}
+                <CustomBarChart 
+                  data={analyticsData.distribution.byMonth}
+                  title="TRADE DISTRIBUTION BY MONTH OF YEAR"
+                  height={300}
+                  dataKey="count"
+                  chartType="shares"
+                />
+                
+                {/* Performance by Month of Year */}
+                <ConditionalBarChart 
+                  data={analyticsData.performance.byMonth}
+                  title="PERFORMANCE BY MONTH OF YEAR"
+                  height={300}
+                />
+                
+                {/* Trade Distribution by Duration */}
+                <CustomBarChart 
+                  data={analyticsData.distribution.byDuration}
+                  title="TRADE DISTRIBUTION BY DURATION"
+                  height={300}
+                  dataKey="count"
+                  chartType="shares"
+                />
+                
+                {/* Performance by Duration */}
+                <ConditionalBarChart 
+                  data={analyticsData.performance.byDuration}
+                  title="PERFORMANCE BY DURATION"
+                  height={300}
+                />
+              </div>
+            </TabsContent>
 
           <TabsContent value="win-vs-loss" className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              <Card className="bg-surface border-default">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base font-medium text-primary">Win vs Loss Analysis</CardTitle>
-                </CardHeader>
-                <CardContent className="h-64">
-                  <div className="flex items-center justify-center h-full text-muted">
-                    Win vs Loss analysis charts
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-surface border-default">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base font-medium text-primary">Performance Metrics</CardTitle>
-                </CardHeader>
-                <CardContent className="h-64">
-                  <div className="space-y-4">
-                    <div className="flex justify-between">
-                      <span>Win Rate</span>
-                      <span className="text-[#16A34A] font-semibold">50.0%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Average Win</span>
-                      <span className="text-[#16A34A] font-semibold">$53.40</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Average Loss</span>
-                      <span className="text-[#DC2626] font-semibold">-$39.58</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Profit Factor</span>
-                      <span className="font-semibold">1.35</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <WinLossStatsTable 
+              winningDaysMetrics={analyticsData.winLossStats.winningDays}
+              losingDaysMetrics={analyticsData.winLossStats.losingDays}
+            />
+            
+            {/* Analytics Tabs Section */}
+            <AnalyticsTabsSection data={analyticsData} context="win-loss-days" />
           </TabsContent>
 
           <TabsContent value="drawdown" className="space-y-6">
@@ -277,10 +304,16 @@ export default function Reports() {
           </TabsContent>
 
           <TabsContent value="tag-breakdown" className="space-y-6">
-            <DistributionCharts 
-              data={mockMonthlyPerformance}
-              title="Performance By Month Of Year"
-            />
+            <Card className="bg-surface border-default">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-medium text-primary">Tag Breakdown Analysis</CardTitle>
+              </CardHeader>
+              <CardContent className="h-64">
+                <div className="flex items-center justify-center h-full text-muted">
+                  Tag breakdown charts will be displayed here
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="advanced" className="space-y-6">
@@ -319,7 +352,12 @@ export default function Reports() {
             </div>
           </TabsContent>
         </Tabs>
+        )}
       </div>
     </div>
   );
+}
+
+export default function Reports() {
+  return <ReportsContent />;
 }

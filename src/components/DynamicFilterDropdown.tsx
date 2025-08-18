@@ -46,10 +46,18 @@ export default function DynamicFilterDropdown({
 
   const displayValue = () => {
     if (multiple && Array.isArray(value)) {
-      return value.length > 0 ? `${value.length} selected` : `All ${label}`;
+      return value.length > 0 ? `${value.length} selected` : placeholder;
     }
-    return value || `All ${label}`;
+    return value || placeholder;
   };
+
+  // Sort options by count (descending) if available, otherwise alphabetically
+  const sortedOptions = [...options].sort((a, b) => {
+    if (a.count !== undefined && b.count !== undefined) {
+      return b.count - a.count; // Highest count first
+    }
+    return a.label.localeCompare(b.label); // Alphabetical fallback
+  });
 
   const isSelected = (optionValue: string) => {
     if (multiple && Array.isArray(value)) {
@@ -67,16 +75,26 @@ export default function DynamicFilterDropdown({
     );
   }
 
+  const hasActiveSelection = () => {
+    if (multiple && Array.isArray(value)) {
+      return value.length > 0;
+    }
+    return Boolean(value && value !== 'all');
+  };
+
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      <label className="text-sm font-medium text-primary">{label}</label>
+      <label className={`text-sm font-medium ${hasActiveSelection() ? 'text-blue-600' : 'text-primary'}`}>
+        {label}
+        {hasActiveSelection() && <span className="ml-1 text-blue-500">•</span>}
+      </label>
       <Select value={displayValue()} onValueChange={handleValueChange}>
-        <SelectTrigger className={`${width} h-8 text-sm`}>
+        <SelectTrigger className={`${width} h-8 text-sm ${hasActiveSelection() ? 'border-blue-300 bg-blue-50' : ''}`}>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All {label}</SelectItem>
-          {options.map((option) => (
+          {sortedOptions.map((option) => (
             <SelectItem key={option.value} value={option.value}>
               <div className="flex items-center justify-between w-full">
                 <span className={isSelected(option.value) ? 'font-medium' : ''}>

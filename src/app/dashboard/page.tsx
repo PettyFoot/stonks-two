@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { useRouter } from 'next/navigation';
 import TopBar from '@/components/TopBar';
+import FilterPanel from '@/components/FilterPanel';
 import KPICards from '@/components/KPICards';
 import EquityChart from '@/components/charts/EquityChart';
 import CustomPieChart from '@/components/charts/PieChart';
@@ -12,6 +13,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useFilterContext } from '@/contexts/GlobalFilterContext';
+import { ReportsFilterOptions } from '@/types';
 
 interface UserAnalytics {
   metrics: {
@@ -42,9 +45,33 @@ interface UserAnalytics {
 export default function Dashboard() {
   const { user, isLoading } = useUser();
   const router = useRouter();
+  const { state, updateFilters } = useFilterContext();
   const [analytics, setAnalytics] = useState<UserAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Convert filter context state to reports filter format
+  const dashboardFilters: ReportsFilterOptions = useMemo(() => ({
+    predefinedTimeframe: state.filters.predefinedTimeframe || '1m',
+    customTimeRange: !!state.filters.dateFrom || !!state.filters.dateTo,
+    symbols: state.filters.symbols,
+    tags: state.filters.tags,
+    side: state.filters.side,
+    dateFrom: state.filters.dateFrom,
+    dateTo: state.filters.dateTo,
+  }), [state.filters]);
+
+  const handleFiltersChange = (newFilters: ReportsFilterOptions) => {
+    updateFilters({
+      predefinedTimeframe: newFilters.predefinedTimeframe,
+      customTimeRange: newFilters.customTimeRange,
+      symbols: newFilters.symbols,
+      tags: newFilters.tags,
+      side: newFilters.side,
+      dateFrom: newFilters.dateFrom,
+      dateTo: newFilters.dateTo,
+    });
+  };
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -149,7 +176,14 @@ export default function Dashboard() {
         title="Dashboard" 
         subtitle="Aug 2025"
         showEditLayout={true}
-        showTimeRangeFilters={true}
+        showTimeRangeFilters={false}
+      />
+      
+      <FilterPanel 
+        filters={dashboardFilters}
+        onFiltersChange={handleFiltersChange}
+        showTimeframes={true}
+        showAdvanced={true}
       />
       
       <div className="flex-1 overflow-auto p-6">

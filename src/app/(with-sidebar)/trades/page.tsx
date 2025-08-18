@@ -1,30 +1,70 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import TopBar from '@/components/TopBar';
 import FilterPanel from '@/components/FilterPanel';
 import TradesTable from '@/components/TradesTable';
 import ColumnSettingsModal from '@/components/ColumnSettingsModal';
 import { Button } from '@/components/ui/button';
-import { FilterOptions, Trade, ViewMode, ColumnConfiguration } from '@/types';
+import { FilterOptions, Trade, ViewMode, ColumnConfiguration, ReportsFilterOptions } from '@/types';
 import { useTradesData } from '@/hooks/useTradesData';
 import { RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { useFilterContext } from '@/contexts/GlobalFilterContext';
 
 export default function Trades() {
-  const [filters, setFilters] = useState<FilterOptions>({});
+  const { state, updateFilters } = useFilterContext();
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [calculating, setCalculating] = useState(false);
   const [columnConfig, setColumnConfig] = useState<ColumnConfiguration[]>([]);
+
+  // Convert global filter context to local FilterOptions format
+  const localFilters: FilterOptions = useMemo(() => ({
+    symbol: state.filters.symbols?.[0], // Take first symbol if multiple selected
+    symbols: state.filters.symbols,
+    tags: state.filters.tags,
+    side: state.filters.side === 'LONG' ? 'long' : state.filters.side === 'SHORT' ? 'short' : 'all',
+    dateFrom: state.filters.dateFrom,
+    dateTo: state.filters.dateTo,
+    // Advanced filters - keep existing functionality
+    priceRange: undefined,
+    volumeRange: undefined,
+    executionCountRange: undefined,
+    timeRange: undefined,
+  }), [state.filters]);
+
+  // Convert local filters to reports filter format for FilterPanel
+  const reportsFilters: ReportsFilterOptions = useMemo(() => ({
+    predefinedTimeframe: state.filters.predefinedTimeframe || '1m',
+    customTimeRange: !!state.filters.dateFrom || !!state.filters.dateTo,
+    symbols: state.filters.symbols,
+    tags: state.filters.tags,
+    side: state.filters.side,
+    dateFrom: state.filters.dateFrom,
+    dateTo: state.filters.dateTo,
+  }), [state.filters]);
+
   // Determine if we need complex filtering based on advanced filters
   const hasAdvancedFilters = Boolean(
-    filters.priceRange || 
-    filters.volumeRange || 
-    filters.executionCountRange || 
-    filters.timeRange
+    localFilters.priceRange || 
+    localFilters.volumeRange || 
+    localFilters.executionCountRange || 
+    localFilters.timeRange
   );
   
-  const { data: tradesData, loading, error, refetch } = useTradesData(filters, false, { useComplexFiltering: hasAdvancedFilters });
+  const { data: tradesData, loading, error, refetch } = useTradesData(localFilters, false, { useComplexFiltering: hasAdvancedFilters });
+
+  const handleFiltersChange = (newFilters: ReportsFilterOptions) => {
+    updateFilters({
+      predefinedTimeframe: newFilters.predefinedTimeframe,
+      customTimeRange: newFilters.customTimeRange,
+      symbols: newFilters.symbols,
+      tags: newFilters.tags,
+      side: newFilters.side,
+      dateFrom: newFilters.dateFrom,
+      dateTo: newFilters.dateTo,
+    });
+  };
 
   const calculateTrades = async () => {
     setCalculating(true);
@@ -97,8 +137,9 @@ export default function Trades() {
       />
       
       <FilterPanel 
-        filters={filters}
-        onFiltersChange={setFilters}
+        filters={reportsFilters}
+        onFiltersChange={handleFiltersChange}
+        showTimeframes={true}
         showAdvanced={true}
         demo={false}
       />

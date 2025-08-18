@@ -5,16 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { FilterOptions } from '@/types';
+import { FilterOptions, ReportsFilterOptions, FilterTimeframe } from '@/types';
 import { Settings } from 'lucide-react';
 import DynamicFilterDropdown from '@/components/DynamicFilterDropdown';
 import AdvancedFiltersPanel from '@/components/AdvancedFiltersPanel';
+import TimeframeSelector from '@/components/TimeframeSelector';
 import { useTradesMetadata } from '@/hooks/useTradesMetadata';
 
 interface FilterPanelProps {
-  filters: FilterOptions;
-  onFiltersChange: (filters: FilterOptions) => void;
+  filters: FilterOptions | ReportsFilterOptions;
+  onFiltersChange: (filters: FilterOptions | ReportsFilterOptions) => void;
   showAdvanced?: boolean;
+  showTimeframes?: boolean;
   className?: string;
   demo?: boolean;
 }
@@ -23,27 +25,42 @@ export default function FilterPanel({
   filters, 
   onFiltersChange, 
   showAdvanced = false,
+  showTimeframes = false,
   className = '',
   demo = false
 }: FilterPanelProps) {
   const [showAdvancedPanel, setShowAdvancedPanel] = useState(false);
   const { metadata, loading: metadataLoading } = useTradesMetadata(demo);
 
-  // Check if any date or advanced filters are applied
-  const hasDateFilters = Boolean(filters.dateFrom || filters.dateTo);
+  // Check if any filters are applied
+  const hasSymbolFilter = Boolean(filters.symbol && filters.symbol !== 'all');
+  const hasTagsFilter = Boolean(filters.tags && Array.isArray(filters.tags) && filters.tags.length > 0);
+  const hasSideFilter = Boolean(filters.side && filters.side !== 'all');
+  const hasDurationFilter = Boolean(filters.duration && filters.duration !== 'All');
+  const hasDateFilters = Boolean(
+    ('dateFrom' in filters && filters.dateFrom) || 
+    ('dateTo' in filters && filters.dateTo)
+  );
+  const hasFilterTimeframe = Boolean((filters as ReportsFilterOptions).predefinedTimeframe);
   const hasAdvancedFilters = Boolean(
     filters.priceRange || 
     filters.volumeRange || 
     filters.executionCountRange || 
     filters.timeRange
   );
-  const shouldShowClearButton = hasDateFilters || hasAdvancedFilters;
+  const hasActiveFilters = hasSymbolFilter || hasTagsFilter || hasSideFilter || hasDurationFilter || hasDateFilters || hasFilterTimeframe || hasAdvancedFilters;
+  const shouldShowClearButton = hasDateFilters || hasFilterTimeframe || hasAdvancedFilters;
 
   const clearDateAndAdvancedFilters = () => {
     const newFilters = { ...filters };
-    // Remove date filters
-    delete newFilters.dateFrom;
-    delete newFilters.dateTo;
+    // Remove date filters if they exist
+    if ('dateFrom' in newFilters) delete newFilters.dateFrom;
+    if ('dateTo' in newFilters) delete newFilters.dateTo;
+    // Remove timeframe if it exists
+    if ('predefinedTimeframe' in newFilters) {
+      (newFilters as ReportsFilterOptions).predefinedTimeframe = undefined;
+      (newFilters as ReportsFilterOptions).customTimeRange = false;
+    }
     // Remove advanced filters
     delete newFilters.priceRange;
     delete newFilters.volumeRange;
@@ -54,16 +71,23 @@ export default function FilterPanel({
     setShowAdvancedPanel(false);
   };
   return (
-    <div className={`bg-surface border-b border-default px-6 py-4 ${className}`}>
+    <div className={`bg-surface border-b px-6 py-4 ${hasActiveFilters ? 'border-blue-300 bg-blue-50/30' : 'border-default'} ${className}`}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-4">
+          {/* Active Filters Indicator */}
+          {hasActiveFilters && (
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span className="text-xs text-blue-600 font-medium">Filters Active</span>
+            </div>
+          )}
           {/* Dynamic Symbol Filter */}
           <DynamicFilterDropdown
             label="Symbol"
             value={filters.symbol}
             onChange={(value) => onFiltersChange({...filters, symbol: value as string})}
             options={metadata?.symbols.map(symbol => ({ value: symbol, label: symbol })) || []}
-            placeholder="Symbol"
+            placeholder={metadata?.symbols.length ? "All Symbols" : "No symbols"}
             loading={metadataLoading}
             width="w-32"
           />
@@ -74,7 +98,7 @@ export default function FilterPanel({
             value={filters.tags}
             onChange={(value) => onFiltersChange({...filters, tags: value as string[]})}
             options={metadata?.tags.map(tag => ({ value: tag.name, label: tag.name, count: tag.count })) || []}
-            placeholder="Select"
+            placeholder={metadata?.tags.length ? "All Tags" : "No tags"}
             multiple={true}
             loading={metadataLoading}
             width="w-32"
@@ -83,12 +107,12 @@ export default function FilterPanel({
           {/* Side Filter */}
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-primary">Side</label>
-            <Select value={filters.side || 'All'} onValueChange={(value) => onFiltersChange({...filters, side: value as 'all' | 'long' | 'short'})}>
+            <Select value={filters.side || 'all'} onValueChange={(value) => onFiltersChange({...filters, side: value as 'all' | 'long' | 'short'})}>
               <SelectTrigger className="w-24 h-8 text-sm">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="All">All</SelectItem>
+                <SelectItem value="all">All</SelectItem>
                 <SelectItem value="long">Long</SelectItem>
                 <SelectItem value="short">Short</SelectItem>
               </SelectContent>
@@ -113,21 +137,54 @@ export default function FilterPanel({
 
         {/* Right Side Controls */}
         <div className="flex items-center gap-2">
+          {/* Predefined Timeframes */}
+          {showTimeframes && (
+            <TimeframeSelector
+              value={(filters as ReportsFilterOptions).predefinedTimeframe}
+              onValueChange={(timeframe: FilterTimeframe) => 
+                onFiltersChange({
+                  ...filters,
+                  predefinedTimeframe: timeframe,
+                  customTimeRange: false,
+                  dateFrom: undefined,
+                  dateTo: undefined,
+                } as ReportsFilterOptions)
+              }
+              className={`transition-all duration-200 ${(filters as ReportsFilterOptions).predefinedTimeframe ? 'ring-1 ring-primary/30' : ''}`}
+            />
+          )}
+
           {/* Date Range */}
           <div className="flex items-center gap-2">
             <Input 
               type="date" 
-              value={filters.dateFrom || ''} 
-              onChange={(e) => onFiltersChange({...filters, dateFrom: e.target.value})}
-              className="w-36 h-8 text-sm"
+              value={('dateFrom' in filters && filters.dateFrom) || ''} 
+              onChange={(e) => {
+                const newFilters = {
+                  ...filters,
+                  dateFrom: e.target.value,
+                  predefinedTimeframe: undefined,
+                  customTimeRange: true
+                } as any;
+                onFiltersChange(newFilters);
+              }}
+              className={`w-36 h-8 text-sm transition-all duration-200 ${(filters as any).dateFrom ? 'ring-1 ring-primary/30' : ''}`}
               placeholder="From - To"
             />
             <span className="text-muted">-</span>
             <Input 
               type="date" 
-              value={filters.dateTo || ''} 
-              onChange={(e) => onFiltersChange({...filters, dateTo: e.target.value})}
-              className="w-36 h-8 text-sm"
+              value={('dateTo' in filters && filters.dateTo) || ''} 
+              onChange={(e) => {
+                const newFilters = {
+                  ...filters,
+                  dateTo: e.target.value,
+                  predefinedTimeframe: undefined,
+                  customTimeRange: true
+                } as any;
+                onFiltersChange(newFilters);
+              }}
+              className={`w-36 h-8 text-sm transition-all duration-200 ${(filters as any).dateTo ? 'ring-1 ring-primary/30' : ''}`}
             />
             
             {/* Clear Date and Advanced Filters Button */}
