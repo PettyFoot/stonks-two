@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { useRouter } from 'next/navigation';
 import TopBar from '@/components/TopBar';
+import FilterPanel from '@/components/FilterPanel';
 import KPICards from '@/components/KPICards';
 import EquityChart from '@/components/charts/EquityChart';
 import CustomPieChart from '@/components/charts/PieChart';
@@ -12,39 +13,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useDashboardData } from '@/hooks/useDashboardData';
 
-interface UserAnalytics {
-  metrics: {
-    totalPnl: number;
-    totalTrades: number;
-    winRate: number;
-    bestDay: number;
-    worstDay: number;
-    avgWinningTrade: number;
-    avgLosingTrade: number;
-    maxConsecutiveWins: number;
-    maxConsecutiveLosses: number;
-  };
-  performanceData: Array<{
-    date: string;
-    pnl: number;
-    cumulativePnl: number;
-    value: number;
-  }>;
-  dayData: Array<{
-    date: string;
-    pnl: number;
-    trades: number;
-    volume: number;
-  }>;
-}
 
 export default function Dashboard() {
   const { user, isLoading } = useUser();
   const router = useRouter();
-  const [analytics, setAnalytics] = useState<UserAnalytics | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: analytics, loading, error } = useDashboardData(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -52,32 +27,6 @@ export default function Dashboard() {
       router.push('/login');
     }
   }, [user, isLoading, router]);
-
-  // Fetch user analytics data
-  useEffect(() => {
-    async function fetchAnalytics() {
-      if (!user) return;
-
-      try {
-        setLoading(true);
-        const response = await fetch('/api/analytics');
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch analytics data');
-        }
-
-        const data = await response.json();
-        setAnalytics(data);
-      } catch (error) {
-        console.error('Error fetching analytics:', error);
-        setError(error instanceof Error ? error.message : 'Failed to load data');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchAnalytics();
-  }, [user]);
 
   if (isLoading || loading) {
     return (
@@ -93,6 +42,7 @@ export default function Dashboard() {
     return (
       <div className="flex flex-col h-full">
         <TopBar title="Dashboard" showTimeRangeFilters={false} />
+        <FilterPanel showTimeRangeTabs={true} />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-md">
             <div className="mb-6">
@@ -121,7 +71,7 @@ export default function Dashboard() {
     );
   }
 
-  const { metrics, performanceData } = analytics;
+  const { kpiData: metrics, cumulativePnl: performanceData } = analytics;
 
   // Prepare pie chart data for winning vs losing trades
   const totalWinning = metrics.avgWinningTrade * (metrics.totalTrades * metrics.winRate / 100);
@@ -149,8 +99,10 @@ export default function Dashboard() {
         title="Dashboard" 
         subtitle="Aug 2025"
         showEditLayout={true}
-        showTimeRangeFilters={true}
+        showTimeRangeFilters={false}
       />
+      
+      <FilterPanel showTimeRangeTabs={true} />
       
       <div className="flex-1 overflow-auto p-6">
         {/* Daily Calendar Cards */}

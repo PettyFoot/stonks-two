@@ -44,11 +44,11 @@ export default function DynamicFilterDropdown({
     }
   };
 
-  const displayValue = () => {
+  const displayValue = (): string => {
     if (multiple && Array.isArray(value)) {
       return value.length > 0 ? `${value.length} selected` : `All ${label}`;
     }
-    return value || `All ${label}`;
+    return (typeof value === 'string' ? value : '') || `All ${label}`;
   };
 
   const isSelected = (optionValue: string) => {

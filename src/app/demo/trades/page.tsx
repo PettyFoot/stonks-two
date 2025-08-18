@@ -6,11 +6,10 @@ import FilterPanel from '@/components/FilterPanel';
 import TradesTable from '@/components/TradesTable';
 import ColumnSettingsModal from '@/components/ColumnSettingsModal';
 import { Button } from '@/components/ui/button';
-import { FilterOptions, Trade, ViewMode, ColumnConfiguration } from '@/types';
+import { Trade, ViewMode, ColumnConfiguration } from '@/types';
 import { mockTrades } from '@/data/mockData';
 
 export default function DemoTrades() {
-  const [filters, setFilters] = useState<FilterOptions>({});
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [columnConfig, setColumnConfig] = useState<ColumnConfiguration[]>([]);
 
@@ -28,22 +27,8 @@ export default function DemoTrades() {
     setColumnConfig(columns);
   };
 
-  // Filter trades based on current filters
-  const filteredTrades = mockTrades.filter(trade => {
-    if (filters.symbol && filters.symbol !== 'Symbol' && trade.symbol !== filters.symbol) {
-      return false;
-    }
-    if (filters.side && filters.side !== 'all' && trade.side !== filters.side) {
-      return false;
-    }
-    if (filters.tags && filters.tags.length > 0) {
-      const hasMatchingTag = filters.tags.some(tag => 
-        trade.tags?.some(tradeTag => tradeTag.toLowerCase().includes(tag.toLowerCase()))
-      );
-      if (!hasMatchingTag) return false;
-    }
-    return true;
-  });
+  // For demo purposes, use all mock trades
+  const filteredTrades = mockTrades;
 
   return (
     <div className="flex flex-col h-full">
@@ -54,10 +39,9 @@ export default function DemoTrades() {
       />
       
       <FilterPanel 
-        filters={filters}
-        onFiltersChange={setFilters}
         showAdvanced={true}
         demo={true}
+        showTimeRangeTabs={false}
       />
 
       <div className="flex-1 overflow-auto p-6">

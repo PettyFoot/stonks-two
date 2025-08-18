@@ -2,6 +2,7 @@
 
 import React from 'react';
 import TopBar from '@/components/TopBar';
+import FilterPanel from '@/components/FilterPanel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
@@ -47,8 +48,10 @@ export default function CalendarPage() {
       <TopBar 
         title="Calendar" 
         subtitle={`${currentMonth} ${currentYear}`}
-        showTimeRangeFilters={true}
+        showTimeRangeFilters={false}
       />
+      
+      <FilterPanel showTimeRangeTabs={true} />
       
       <div className="flex-1 overflow-auto p-6">
         {/* Calendar Header */}

@@ -10,11 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import EquityChart from '@/components/charts/EquityChart';
 import CustomBarChart from '@/components/charts/BarChart';
 import DistributionCharts from '@/components/charts/DistributionCharts';
-import { FilterOptions } from '@/types';
 import { mockCumulativePnl, mockGapPerformance, mockVolumePerformance, mockMonthlyPerformance, mockSymbolPerformance } from '@/data/mockData';
 
 export default function DemoReports() {
-  const [filters, setFilters] = useState<FilterOptions>({});
   const [dateRange, setDateRange] = useState('30 Days');
 
   // Chart data for different metrics
@@ -45,10 +43,8 @@ export default function DemoReports() {
       />
       
       <FilterPanel 
-        filters={filters}
-        onFiltersChange={setFilters}
-        showCustomFilters={true}
         showAdvanced={true}
+        showTimeRangeTabs={true}
       />
 
       <div className="flex-1 overflow-auto p-6">

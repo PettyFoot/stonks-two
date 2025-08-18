@@ -6,25 +6,17 @@ import FilterPanel from '@/components/FilterPanel';
 import TradesTable from '@/components/TradesTable';
 import ColumnSettingsModal from '@/components/ColumnSettingsModal';
 import { Button } from '@/components/ui/button';
-import { FilterOptions, Trade, ViewMode, ColumnConfiguration } from '@/types';
+import { Trade, ViewMode, ColumnConfiguration } from '@/types';
 import { useTradesData } from '@/hooks/useTradesData';
 import { RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Trades() {
-  const [filters, setFilters] = useState<FilterOptions>({});
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [calculating, setCalculating] = useState(false);
   const [columnConfig, setColumnConfig] = useState<ColumnConfiguration[]>([]);
-  // Determine if we need complex filtering based on advanced filters
-  const hasAdvancedFilters = Boolean(
-    filters.priceRange || 
-    filters.volumeRange || 
-    filters.executionCountRange || 
-    filters.timeRange
-  );
   
-  const { data: tradesData, loading, error, refetch } = useTradesData(filters, false, { useComplexFiltering: hasAdvancedFilters });
+  const { data: tradesData, loading, error, refetch } = useTradesData(false);
 
   const calculateTrades = async () => {
     setCalculating(true);
@@ -97,10 +89,9 @@ export default function Trades() {
       />
       
       <FilterPanel 
-        filters={filters}
-        onFiltersChange={setFilters}
         showAdvanced={true}
         demo={false}
+        showTimeRangeTabs={true}
       />
 
       <div className="flex-1 overflow-auto p-6">

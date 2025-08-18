@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { DayData, KPIData, ChartDataPoint } from '@/types';
+import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 
 interface DashboardData {
   dayData: DayData[];
@@ -18,19 +19,23 @@ interface DashboardData {
   };
 }
 
-export function useDashboardData(dateRange: string = '30', demo: boolean = false) {
+export function useDashboardData(demo: boolean = false) {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { toFilterOptions } = useGlobalFilters();
 
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true);
-        const params = new URLSearchParams({ range: dateRange });
-        if (demo) {
-          params.append('demo', 'true');
-        }
+        const filterOptions = toFilterOptions();
+        const params = new URLSearchParams();
+        
+        // Use date range from global filters
+        if (filterOptions.dateFrom) params.append('dateFrom', filterOptions.dateFrom);
+        if (filterOptions.dateTo) params.append('dateTo', filterOptions.dateTo);
+        if (demo) params.append('demo', 'true');
         
         const response = await fetch(`/api/dashboard?${params.toString()}`);
         if (!response.ok) {
@@ -46,15 +51,17 @@ export function useDashboardData(dateRange: string = '30', demo: boolean = false
     }
 
     fetchData();
-  }, [dateRange, demo]);
+  }, [toFilterOptions, demo]);
 
   const refetch = () => {
     setError(null);
     setLoading(true);
-    const params = new URLSearchParams({ range: dateRange });
-    if (demo) {
-      params.append('demo', 'true');
-    }
+    const filterOptions = toFilterOptions();
+    const params = new URLSearchParams();
+    
+    if (filterOptions.dateFrom) params.append('dateFrom', filterOptions.dateFrom);
+    if (filterOptions.dateTo) params.append('dateTo', filterOptions.dateTo);
+    if (demo) params.append('demo', 'true');
     
     fetch(`/api/dashboard?${params.toString()}`)
       .then(res => res.json())

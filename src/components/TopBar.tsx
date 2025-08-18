@@ -18,7 +18,7 @@ interface TopBarProps {
   title: string;
   subtitle?: string;
   showEditLayout?: boolean;
-  showTimeRangeFilters?: boolean;
+  showTimeRangeFilters?: boolean; // Deprecated - time filters moved to FilterPanel
   notification?: string;
 }
 
@@ -64,22 +64,6 @@ export default function TopBar({
           </div>
         </div>
 
-        {/* Time Range Filters */}
-        {showTimeRangeFilters && (
-          <div className="flex items-center gap-2">
-            <div className="flex rounded-lg border border-default bg-surface">
-              <Button variant="ghost" size="sm" className="rounded-l-lg rounded-r-none border-r">
-                30 Days
-              </Button>
-              <Button variant="ghost" size="sm" className="rounded-none border-r bg-muted/10">
-                60 Days
-              </Button>
-              <Button variant="ghost" size="sm" className="rounded-r-lg rounded-l-none">
-                90 Days
-              </Button>
-            </div>
-          </div>
-        )}
 
         {/* User Menu and Help Button */}
         <div className="flex items-center gap-2">

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Trade, FilterOptions, TradeFilters } from '@/types';
+import { Trade, TradeFilters } from '@/types';
+import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 
 interface TradesData {
   trades: Trade[];
@@ -23,7 +24,6 @@ interface UseTradesDataOptions {
 }
 
 export function useTradesData(
-  filters: FilterOptions = {}, 
   demo: boolean = false,
   options: UseTradesDataOptions = {}
 ) {
@@ -31,14 +31,20 @@ export function useTradesData(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { useComplexFiltering = false, page = 1, limit = 50 } = options;
+  const { toFilterOptions, hasAdvancedFilters } = useGlobalFilters();
+  
+  // Automatically use complex filtering if advanced filters are active
+  const shouldUseComplexFiltering = useComplexFiltering || hasAdvancedFilters;
 
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true);
         setError(null);
+        
+        const filters = toFilterOptions();
 
-        if (useComplexFiltering) {
+        if (shouldUseComplexFiltering) {
           // Use the new filtered endpoint for complex filtering
           const tradeFilters: TradeFilters = {
             symbols: filters.symbol && filters.symbol !== 'Symbol' ? [filters.symbol] : undefined,
@@ -107,7 +113,7 @@ export function useTradesData(
     }
 
     fetchData();
-  }, [filters, demo, useComplexFiltering, page, limit]);
+  }, [toFilterOptions, demo, shouldUseComplexFiltering, page, limit]);
 
   const addTrade = async (tradeData: Partial<Trade>) => {
     if (demo) {
@@ -149,6 +155,7 @@ export function useTradesData(
     setError(null);
     setLoading(true);
     
+    const filters = toFilterOptions();
     const params = new URLSearchParams();
     if (filters.symbol) params.append('symbol', filters.symbol);
     if (filters.side) params.append('side', filters.side);

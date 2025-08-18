@@ -8,12 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { FilterOptions } from '@/types';
 import { mockJournalEntries } from '@/data/mockData';
 import { Lock } from 'lucide-react';
 
 export default function Journal() {
-  const [filters, setFilters] = useState<FilterOptions>({});
   const [notes, setNotes] = useState('');
 
   // For demo, use the first journal entry
@@ -27,10 +25,8 @@ export default function Journal() {
       />
       
       <FilterPanel 
-        filters={filters}
-        onFiltersChange={setFilters}
-        showCustomFilters={true}
         showAdvanced={true}
+        showTimeRangeTabs={true}
       />
 
       <div className="flex-1 overflow-auto p-6">

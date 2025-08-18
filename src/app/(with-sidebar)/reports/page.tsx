@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import TopBar from '@/components/TopBar';
 import FilterPanel from '@/components/FilterPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,32 +9,49 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EquityChart from '@/components/charts/EquityChart';
 import CustomBarChart from '@/components/charts/BarChart';
+import MonthTradeDistributionChart from '@/components/charts/MonthTradeDistributionChart';
 import DistributionCharts from '@/components/charts/DistributionCharts';
-import { FilterOptions } from '@/types';
-import { mockCumulativePnl, mockGapPerformance, mockVolumePerformance, mockMonthlyPerformance, mockSymbolPerformance } from '@/data/mockData';
+import { mockGapPerformance, mockVolumePerformance, mockMonthlyPerformance, mockSymbolPerformance } from '@/data/mockData';
+import { useReportsData } from '@/hooks/useReportsData';
+import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 
 export default function Reports() {
-  const [filters, setFilters] = useState<FilterOptions>({});
   const [dateRange, setDateRange] = useState('30 Days');
+  const { filters } = useGlobalFilters();
+  const { dailyPnl, averageDailyPnl, cumulativePnl, winPercentage, totalVolume, loading, error } = useReportsData();
 
-  // Chart data for different metrics
-  const dailyPnlData = [
-    { date: '2025-04-07', value: 3.72 },
-    { date: '2025-04-08', value: 244.23 },
-    { date: '2025-04-09', value: 189.33 }
-  ];
+  // Transform daily P&L data for the MonthTradeDistributionChart
+  const dailyPnlChartData = useMemo(() => {
+    return dailyPnl.map(day => ({
+      date: day.date,
+      pnl: day.pnl
+    }));
+  }, [dailyPnl]);
 
-  const dailyVolumeData = [
-    { date: '2025-04-07', value: 3344 },
-    { date: '2025-04-08', value: 350 },
-    { date: '2025-04-09', value: 800 }
-  ];
+  // Calculate average daily P&L for bar chart display
+  const averagePnlData = useMemo(() => {
+    if (averageDailyPnl === 0) return [];
+    return [{
+      date: 'Average',
+      value: averageDailyPnl
+    }];
+  }, [averageDailyPnl]);
 
-  const winPercentageData = [
-    { date: '2025-04-07', value: 42.86 },
-    { date: '2025-04-08', value: 100 },
-    { date: '2025-04-09', value: 50 }
-  ];
+  // Transform volume data for chart
+  const dailyVolumeData = useMemo(() => {
+    return dailyPnl.map(day => ({
+      date: day.date,
+      value: day.volume
+    }));
+  }, [dailyPnl]);
+
+  // Transform win rate data for chart
+  const winPercentageData = useMemo(() => {
+    return dailyPnl.map(day => ({
+      date: day.date,
+      value: day.winRate
+    }));
+  }, [dailyPnl]);
 
   return (
     <div className="flex flex-col h-full">
@@ -44,10 +61,8 @@ export default function Reports() {
       />
       
       <FilterPanel 
-        filters={filters}
-        onFiltersChange={setFilters}
-        showCustomFilters={true}
         showAdvanced={true}
+        showTimeRangeTabs={true}
       />
 
       <div className="flex-1 overflow-auto p-6">
@@ -93,7 +108,7 @@ export default function Reports() {
               </Select>
             </div>
 
-            {/* Date Range Tabs */}
+            {/* Date Range Type Selection */}
             <div className="ml-auto flex items-center gap-2">
               <div className="flex rounded-lg border border-default bg-surface">
                 <Button 
@@ -121,17 +136,6 @@ export default function Reports() {
                   Calendar
                 </Button>
               </div>
-              <div className="flex rounded-lg border border-default bg-surface">
-                <Button variant="ghost" size="sm" className="rounded-l-lg rounded-r-none border-r h-8">
-                  30 Days
-                </Button>
-                <Button variant="ghost" size="sm" className="rounded-none border-r bg-muted/10 h-8">
-                  60 Days
-                </Button>
-                <Button variant="ghost" size="sm" className="rounded-r-lg rounded-l-none h-8">
-                  90 Days
-                </Button>
-              </div>
             </div>
           </div>
         </div>
@@ -149,34 +153,56 @@ export default function Reports() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
+            {/* Loading state */}
+            {loading && (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-muted">Loading reports data...</div>
+              </div>
+            )}
+            
+            {/* Error state */}
+            {error && (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-red-500">Error: {error}</div>
+              </div>
+            )}
+            
             {/* Four chart grid */}
-            <div className="grid grid-cols-2 gap-6">
-              <EquityChart 
-                data={dailyPnlData}
-                title="GROSS DAILY P&L (30 Days)"
-                height={300}
-              />
-              
-              <EquityChart 
-                data={mockCumulativePnl}
-                title="GROSS CUMULATIVE P&L (30 Days)"
-                height={300}
-              />
-              
-              <CustomBarChart 
-                data={dailyVolumeData}
-                title="DAILY VOLUME (30 Days)"
-                height={300}
-                dataKey="value"
-              />
-              
-              <CustomBarChart 
-                data={winPercentageData}
-                title="WIN % (30 Days)"
-                height={300}
-                dataKey="value"
-              />
-            </div>
+            {!loading && !error && (
+              <div className="grid grid-cols-2 gap-6">
+                {/* Daily P&L Distribution Chart */}
+                <MonthTradeDistributionChart 
+                  data={dailyPnlChartData}
+                  title={`GROSS DAILY P&L (${filters.timeRange.label})`}
+                  height={300}
+                />
+                
+                {/* Cumulative P&L Chart */}
+                <EquityChart 
+                  data={cumulativePnl}
+                  title={`GROSS CUMULATIVE P&L (${filters.timeRange.label})`}
+                  height={300}
+                />
+                
+                {/* Daily Volume Chart */}
+                <CustomBarChart 
+                  data={dailyVolumeData}
+                  title={`DAILY VOLUME (${filters.timeRange.label})`}
+                  height={300}
+                  dataKey="value"
+                  color="#3B82F6"
+                />
+                
+                {/* Win Percentage Chart */}
+                <CustomBarChart 
+                  data={winPercentageData}
+                  title={`WIN % (${filters.timeRange.label})`}
+                  height={300}
+                  dataKey="value"
+                  color="#8B5CF6"
+                />
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="detailed" className="space-y-6">
