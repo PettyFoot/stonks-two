@@ -4,6 +4,8 @@ import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { ChartDataPoint } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatTimeAxis } from '@/lib/chartFormatters';
+import { determineOptimalInterval, formatDateForInterval, parsePeriodToDate, calculateTickInterval } from '@/lib/timeIntervals';
 
 interface EquityChartProps {
   data: ChartDataPoint[];
@@ -14,7 +16,7 @@ interface EquityChartProps {
   color?: string;
 }
 
-export default function EquityChart({ 
+const EquityChart = React.memo(function EquityChart({ 
   data, 
   title, 
   height = 300,
@@ -22,14 +24,48 @@ export default function EquityChart({
   showTooltip = true,
   color = '#16A34A'
 }: EquityChartProps) {
-  const formatTooltipValue = (value: number) => {
-    return `$${value.toFixed(2)}`;
-  };
+  // Determine optimal interval based on data range
+  const timeInterval = React.useMemo(() => {
+    if (data.length === 0) return null;
+    
+    const firstDate = data[0]?.date;
+    const lastDate = data[data.length - 1]?.date;
+    
+    if (!firstDate || !lastDate) return null;
+    
+    try {
+      const start = new Date(firstDate);
+      const end = new Date(lastDate);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+      
+      return determineOptimalInterval({ start, end });
+    } catch {
+      return null;
+    }
+  }, [data]);
 
-  const formatXAxisTick = (value: string) => {
-    const date = new Date(value);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
+  const formatTooltipValue = React.useCallback((value: number) => {
+    return `$${value.toFixed(2)}`;
+  }, []);
+
+  const formatXAxisTick = React.useCallback((value: string) => {
+    // Use intelligent time interval formatting if available
+    if (timeInterval && (value.includes('-') || value.match(/^\d{4}/) || value.match(/W\d{2}/))) {
+      try {
+        const date = parsePeriodToDate(value, timeInterval.type);
+        return formatDateForInterval(date, timeInterval.type);
+      } catch {
+        return formatTimeAxis(value, 'short');
+      }
+    }
+    
+    return formatTimeAxis(value, 'short');
+  }, [timeInterval]);
+
+  // Calculate tick interval to prevent overcrowding
+  const tickInterval = React.useMemo(() => {
+    return calculateTickInterval(data.length, timeInterval?.tickCount || 8);
+  }, [data.length, timeInterval]);
 
   return (
     <Card className="bg-surface border-default">
@@ -53,6 +89,7 @@ export default function EquityChart({
               tickLine={false}
               tick={{ fontSize: 12, fill: '#6B7280' }}
               tickFormatter={formatXAxisTick}
+              interval={tickInterval}
             />
             <YAxis 
               axisLine={false}
@@ -63,11 +100,7 @@ export default function EquityChart({
             {showTooltip && (
               <Tooltip 
                 formatter={(value: number) => [formatTooltipValue(value), 'P&L']}
-                labelFormatter={(value) => new Date(value).toLocaleDateString('en-US', { 
-                  weekday: 'short', 
-                  month: 'short', 
-                  day: 'numeric' 
-                })}
+                labelFormatter={(value) => formatTimeAxis(String(value), 'long')}
                 contentStyle={{
                   backgroundColor: '#FFFFFF',
                   border: '1px solid #E5E7EB',
@@ -91,4 +124,6 @@ export default function EquityChart({
       </CardContent>
     </Card>
   );
-}
+});
+
+export default EquityChart;

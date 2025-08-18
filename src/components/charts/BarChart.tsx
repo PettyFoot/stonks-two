@@ -4,6 +4,8 @@ import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ChartDataPoint } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChartType, CHART_FORMATTERS, formatTimeAxis } from '@/lib/chartFormatters';
+import { determineOptimalInterval, formatDateForInterval, parsePeriodToDate, calculateTickInterval } from '@/lib/timeIntervals';
 
 interface BarChartProps {
   data: ChartDataPoint[];
@@ -13,29 +15,68 @@ interface BarChartProps {
   showTooltip?: boolean;
   color?: string;
   dataKey?: string;
+  chartType?: ChartType;
 }
 
-export default function CustomBarChart({ 
+const CustomBarChart = React.memo(function CustomBarChart({ 
   data, 
   title, 
   height = 300,
   showGrid = true,
   showTooltip = true,
   color = '#16A34A',
-  dataKey = 'value'
+  dataKey = 'value',
+  chartType = 'currency'
 }: BarChartProps) {
-  const formatTooltipValue = (value: number) => {
-    return dataKey === 'value' ? `$${value.toFixed(2)}` : value.toString();
-  };
+  const formatter = CHART_FORMATTERS[chartType];
 
-  const formatXAxisTick = (value: string) => {
-    // For dates, format them nicely
-    if (value.includes('-')) {
-      const date = new Date(value);
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  // Determine optimal interval based on data range
+  const timeInterval = React.useMemo(() => {
+    if (data.length === 0) return null;
+    
+    // Try to parse the first and last dates
+    const firstDate = data[0]?.date;
+    const lastDate = data[data.length - 1]?.date;
+    
+    if (!firstDate || !lastDate) return null;
+    
+    try {
+      const start = new Date(firstDate);
+      const end = new Date(lastDate);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
+      
+      return determineOptimalInterval({ start, end });
+    } catch {
+      return null;
+    }
+  }, [data]);
+
+  const formatTooltipValue = React.useCallback((value: number, name?: string) => {
+    return formatter.formatTooltipValue(value, name);
+  }, [formatter]);
+
+  const formatXAxisTick = React.useCallback((value: string) => {
+    // Use intelligent time interval formatting if available
+    if (timeInterval && (value.includes('-') || value.match(/^\d{4}/) || value.match(/W\d{2}/))) {
+      try {
+        const date = parsePeriodToDate(value, timeInterval.type);
+        return formatDateForInterval(date, timeInterval.type);
+      } catch {
+        return formatTimeAxis(value, 'short');
+      }
+    }
+    
+    // Fallback to existing logic
+    if (value.includes('-') || value.match(/^\d{4}-\d{2}$/)) {
+      return formatTimeAxis(value, 'short');
     }
     return value;
-  };
+  }, [timeInterval]);
+
+  // Calculate tick interval to prevent overcrowding
+  const tickInterval = React.useMemo(() => {
+    return calculateTickInterval(data.length, timeInterval?.tickCount || 8);
+  }, [data.length, timeInterval]);
 
   return (
     <Card className="bg-surface border-default">
@@ -59,23 +100,20 @@ export default function CustomBarChart({
               tickLine={false}
               tick={{ fontSize: 12, fill: '#6B7280' }}
               tickFormatter={formatXAxisTick}
+              interval={tickInterval}
             />
             <YAxis 
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 12, fill: '#6B7280' }}
-              tickFormatter={(value) => dataKey === 'value' ? `$${value}` : value.toString()}
+              tickFormatter={(value) => formatter.formatAxisValue(value)}
             />
             {showTooltip && (
               <Tooltip 
-                formatter={(value: number) => [formatTooltipValue(value), title]}
+                formatter={(value: number) => formatTooltipValue(value, title)}
                 labelFormatter={(value) => {
-                  if (typeof value === 'string' && value.includes('-')) {
-                    return new Date(value).toLocaleDateString('en-US', { 
-                      weekday: 'short', 
-                      month: 'short', 
-                      day: 'numeric' 
-                    });
+                  if (typeof value === 'string' && (value.includes('-') || value.match(/^\d{4}-\d{2}$/))) {
+                    return formatTimeAxis(value, 'long');
                   }
                   return value;
                 }}
@@ -98,4 +136,6 @@ export default function CustomBarChart({
       </CardContent>
     </Card>
   );
-}
+});
+
+export default CustomBarChart;

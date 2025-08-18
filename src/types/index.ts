@@ -36,18 +36,7 @@ export interface KPIData {
   avgPositionMfe: number;
 }
 
-export interface ChartDataPoint {
-  date: string;
-  value: number;
-  label?: string;
-}
 
-export interface DistributionData {
-  range: string;
-  value: number;
-  percentage: number;
-  count: number;
-}
 
 export interface JournalEntry {
   id: string;
@@ -108,3 +97,104 @@ export interface ColumnConfiguration {
 export type ViewMode = 'table' | 'gross' | 'net';
 export type ReportType = 'overview' | 'detailed' | 'win-vs-loss-days' | 'drawdown' | 'compare' | 'tag-breakdown' | 'advanced';
 export type DateRangeType = 'recent' | 'year-month-day' | 'calendar';
+
+// New types for enhanced filtering and analytics
+export type StandardTimeframe = '30d' | '60d' | '90d';
+export type FilterTimeframe = '1w' | '2w' | '1m' | '3m' | '6m' | 'last-year' | 'ytd' | 'yesterday';
+export type PredefinedTimeframe = StandardTimeframe | FilterTimeframe;
+
+export interface TimeframeOption {
+  value: FilterTimeframe; // Only filter timeframes appear in dropdown
+  label: string;
+  days?: number;
+  description?: string;
+}
+
+export interface ReportsFilterOptions extends TradeFilters {
+  predefinedTimeframe?: FilterTimeframe; // Only filter timeframes, not standard ones
+  customTimeRange?: boolean;
+}
+
+// Analytics data interfaces
+export interface ChartDataPoint {
+  date: string;
+  value: number;
+  label?: string;
+  volume?: number;
+  count?: number;
+}
+
+export interface DistributionData {
+  category: string;
+  count: number;
+  percentage: number;
+  pnl: number;
+  avgPnl: number;
+}
+
+export interface PerformanceMetrics {
+  totalPnl: number;
+  totalTrades: number;
+  winRate: number;
+  lossRate: number;
+  avgWin: number;
+  avgLoss: number;
+  avgDailyPnl: number;
+  avgTradePnl: number;
+  largestGain: number;
+  largestLoss: number;
+  winningTrades: number;
+  losingTrades: number;
+  maxConsecutiveWins: number;
+  maxConsecutiveLosses: number;
+  avgHoldTime: string;
+  profitFactor: number;
+  sharpeRatio: number;
+  maxDrawdown: number;
+  kellyPercentage: number;
+  systemQualityNumber: number;
+  totalCommissions: number;
+  totalFees: number;
+  avgPerSharePnl: number;
+}
+
+export interface AnalyticsData {
+  overview: {
+    dailyPnl: ChartDataPoint[];
+    cumulativePnl: ChartDataPoint[];
+    dailyVolume: ChartDataPoint[];
+    winPercentage: ChartDataPoint[];
+  };
+  distribution: {
+    byMonth: DistributionData[];
+    byDayOfWeek: DistributionData[];
+    byHourOfDay: DistributionData[];
+    byDuration: DistributionData[];
+    byIntradayDuration: DistributionData[];
+  };
+  performance: {
+    byMonth: ChartDataPoint[];
+    byDayOfWeek: ChartDataPoint[];
+    byHourOfDay: ChartDataPoint[];
+    byDuration: ChartDataPoint[];
+    byIntradayDuration: ChartDataPoint[];
+  };
+  statistics: PerformanceMetrics;
+  winLossStats: WinLossMetrics;
+  timeframe: {
+    start: Date;
+    end: Date;
+    period: string;
+  };
+}
+
+export interface WinLossMetrics {
+  winningDays: PerformanceMetrics;
+  losingDays: PerformanceMetrics;
+  dayCount: {
+    winning: number;
+    losing: number;
+    breakeven: number;
+    total: number;
+  };
+}

@@ -11,7 +11,9 @@ function convertTo24Hour(timeStr: string): string {
   }
   
   const [time, modifier] = timeStr.split(' ');
-  let [hours, minutes] = time.split(':');
+  const timeParts = time.split(':');
+  let hours = timeParts[0];
+  const minutes = timeParts[1];
   
   if (hours === '12') {
     hours = '00';
@@ -31,6 +33,19 @@ export async function POST(request: Request) {
     const page: number = body.page || 1;
     const limit: number = body.limit || 50;
     const demo: boolean = body.demo || false;
+
+    // Validate and normalize side filter
+    if (filters.side) {
+      const normalizedSide = filters.side.toLowerCase();
+      if (!['all', 'long', 'short'].includes(normalizedSide)) {
+        console.error('Invalid side filter received:', filters.side);
+        return NextResponse.json(
+          { error: 'Invalid side filter. Must be "all", "long", or "short".' },
+          { status: 400 }
+        );
+      }
+      filters.side = normalizedSide as 'all' | 'long' | 'short';
+    }
 
     // Demo mode - filter mock data
     if (demo) {
@@ -54,7 +69,9 @@ export async function POST(request: Request) {
       }
 
       if (filters.side && filters.side !== 'all') {
-        filteredTrades = filteredTrades.filter(trade => trade.side === filters.side);
+        filteredTrades = filteredTrades.filter(trade => 
+          trade.side.toLowerCase() === filters.side
+        );
       }
 
       if (filters.priceRange) {
@@ -169,7 +186,11 @@ export async function POST(request: Request) {
 
     // Side filter
     if (filters.side && filters.side !== 'all') {
-      where.side = filters.side.toUpperCase() as TradeSide;
+      const uppercaseSide = filters.side.toUpperCase();
+      // Ensure only valid TradeSide enum values are used
+      if (uppercaseSide === 'LONG' || uppercaseSide === 'SHORT') {
+        where.side = uppercaseSide as TradeSide;
+      }
     }
 
     // Price range filter (using entryPrice and exitPrice)
