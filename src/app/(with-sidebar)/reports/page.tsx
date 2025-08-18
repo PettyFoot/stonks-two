@@ -168,13 +168,8 @@ export default function Reports() {
           </div>
         </div>
 
-        {/* NEW: Enhanced Statistics Section - 22 Trading Metrics */}
-        {!detailedLoading && !detailedError && (
-          <StatsSection stats={stats} />
-        )}
-
-        {/* Original Tabs with Enhanced Content */}
-        <Tabs defaultValue="overview" className="space-y-6">
+        {/* FIRST TAB SYSTEM: Original 7 Tabs (Overview, Detailed, etc.) */}
+        <Tabs defaultValue="overview" className="space-y-6 mb-8">
           <TabsList className="grid grid-cols-7 w-full max-w-4xl">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="detailed">Detailed</TabsTrigger>
@@ -242,55 +237,8 @@ export default function Reports() {
             )}
           </TabsContent>
 
-          {/* Detailed Tab - Enhanced with Days/Times Analysis */}
+          {/* Detailed Tab */}
           <TabsContent value="detailed" className="space-y-6">
-            {/* NEW: Days/Times Analysis Charts */}
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold text-primary mb-4">Days & Times Analysis</h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Trade Distribution by Day of Week */}
-                <ChartContainer
-                  title="TRADE DISTRIBUTION BY DAY OF WEEK"
-                  data={dayOfWeekData.distribution}
-                  chartType="distribution"
-                  valueType="shares"
-                  height={300}
-                />
-                
-                {/* Performance by Day of Week */}
-                <ChartContainer
-                  title="PERFORMANCE BY DAY OF WEEK"
-                  data={dayOfWeekData.performance}
-                  chartType="performance"
-                  valueType="currency"
-                  height={300}
-                />
-                
-                {/* Trade Distribution by Hour of Day */}
-                <ChartContainer
-                  title="TRADE DISTRIBUTION BY HOUR OF DAY"
-                  data={hourOfDayData.distribution}
-                  chartType="distribution"
-                  valueType="shares"
-                  height={300}
-                  minWidth={500}
-                  enableScroll={true}
-                />
-                
-                {/* Performance by Hour of Day */}
-                <ChartContainer
-                  title="PERFORMANCE BY HOUR OF DAY"
-                  data={hourOfDayData.performance}
-                  chartType="performance"
-                  valueType="currency"
-                  height={300}
-                  minWidth={500}
-                  enableScroll={true}
-                />
-              </div>
-            </div>
-
-            {/* Original Detailed Charts */}
             <div className="grid grid-cols-2 gap-6">
               <DistributionCharts 
                 data={mockGapPerformance}
@@ -320,56 +268,8 @@ export default function Reports() {
             </div>
           </TabsContent>
 
-          {/* Win vs Loss Days Tab - Enhanced with Win/Loss/Expectation Charts */}
+          {/* Win vs Loss Days Tab */}
           <TabsContent value="win-vs-loss" className="space-y-6">
-            {/* NEW: Enhanced Win/Loss Analysis */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              {/* Trade Distribution by Month of Year */}
-              <ChartContainer
-                title="TRADE DISTRIBUTION BY MONTH OF YEAR"
-                data={monthOfYearData.distribution}
-                chartType="distribution"
-                valueType="shares"
-                height={300}
-                minWidth={500}
-                enableScroll={true}
-              />
-              
-              {/* Performance by Month of Year */}
-              <ChartContainer
-                title="PERFORMANCE BY MONTH OF YEAR"
-                data={monthOfYearData.performance}
-                chartType="performance"
-                valueType="currency"
-                height={300}
-                minWidth={500}
-                enableScroll={true}
-              />
-              
-              {/* Trade Distribution by Duration */}
-              <ChartContainer
-                title="TRADE DISTRIBUTION BY DURATION"
-                data={durationData.distribution}
-                chartType="distribution"
-                valueType="shares"
-                height={300}
-                minWidth={450}
-                enableScroll={true}
-              />
-              
-              {/* Performance by Duration */}
-              <ChartContainer
-                title="PERFORMANCE BY DURATION"
-                data={durationData.performance}
-                chartType="performance"
-                valueType="currency"
-                height={300}
-                minWidth={450}
-                enableScroll={true}
-              />
-            </div>
-
-            {/* Original Win vs Loss Content */}
             <div className="grid grid-cols-2 gap-6">
               <Card className="bg-surface border-default">
                 <CardHeader className="pb-2">
@@ -418,7 +318,7 @@ export default function Reports() {
             </div>
           </TabsContent>
 
-          {/* Drawdown Tab - Original Placeholder */}
+          {/* Drawdown Tab */}
           <TabsContent value="drawdown" className="space-y-6">
             <Card className="bg-surface border-default">
               <CardHeader className="pb-2">
@@ -432,7 +332,7 @@ export default function Reports() {
             </Card>
           </TabsContent>
 
-          {/* Compare Tab - Original Placeholder */}
+          {/* Compare Tab */}
           <TabsContent value="compare" className="space-y-6">
             <Card className="bg-surface border-default">
               <CardHeader className="pb-2">
@@ -446,76 +346,16 @@ export default function Reports() {
             </Card>
           </TabsContent>
 
-          {/* Tag Breakdown Tab - Original Content */}
+          {/* Tag Breakdown Tab */}
           <TabsContent value="tag-breakdown" className="space-y-6">
             <DistributionCharts 
               data={mockMonthlyPerformance}
               title="Performance By Month Of Year"
             />
-            
-            {/* NEW: Intraday Duration Analysis */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ChartContainer
-                title="TRADE DISTRIBUTION BY INTRADAY DURATION"
-                data={intradayDurationData.distribution}
-                chartType="distribution"
-                valueType="shares"
-                height={300}
-                minWidth={450}
-                enableScroll={true}
-              />
-              
-              <ChartContainer
-                title="PERFORMANCE BY INTRADAY DURATION"
-                data={intradayDurationData.performance}
-                chartType="performance"
-                valueType="currency"
-                height={300}
-                minWidth={450}
-                enableScroll={true}
-              />
-            </div>
           </TabsContent>
 
-          {/* Advanced Tab - Enhanced with New Metrics */}
+          {/* Advanced Tab */}
           <TabsContent value="advanced" className="space-y-6">
-            {/* NEW: Advanced Statistics Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-              <Card className="bg-surface border-default">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-primary">Trade P&L Std Deviation</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-primary">
-                    ${stats?.tradePnlStdDev?.toFixed(2) || '0.00'}
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-surface border-default">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-primary">Profit Factor</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-primary">
-                    {stats?.profitFactor?.toFixed(2) || '0.00'}
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-surface border-default">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-primary">Total Commissions & Fees</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-[#DC2626]">
-                    ${((stats?.totalCommissions || 0) + (stats?.totalFees || 0)).toFixed(2)}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Original MAE/MFE Cards */}
             <div className="grid grid-cols-2 gap-6">
               <Card className="bg-surface border-default">
                 <CardHeader className="pb-2">
@@ -546,6 +386,237 @@ export default function Reports() {
                       <div className="text-sm text-muted">Maximum Favorable Excursion</div>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* STATISTICS SECTION: 22 Trading Metrics */}
+        {!detailedLoading && !detailedError && (
+          <StatsSection stats={stats} />
+        )}
+
+        {/* SECOND TAB SYSTEM: New Enhanced Analysis Tabs (Days/Times, Price/Volume, etc.) */}
+        <Tabs defaultValue="days-times" className="space-y-4">
+          <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+            <TabsTrigger value="days-times">Days/Times</TabsTrigger>
+            <TabsTrigger value="price-volume">Price/Volume</TabsTrigger>
+            <TabsTrigger value="instrument">Instrument</TabsTrigger>
+            <TabsTrigger value="win-loss">Win/Loss/Expectation</TabsTrigger>
+          </TabsList>
+
+          {/* Days/Times Tab - 4 Charts */}
+          <TabsContent value="days-times" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Trade Distribution by Day of Week */}
+              <ChartContainer
+                title="TRADE DISTRIBUTION BY DAY OF WEEK"
+                data={dayOfWeekData.distribution}
+                chartType="distribution"
+                valueType="shares"
+                height={300}
+                minWidth={400}
+              />
+              
+              {/* Performance by Day of Week */}
+              <ChartContainer
+                title="PERFORMANCE BY DAY OF WEEK"
+                data={dayOfWeekData.performance}
+                chartType="performance"
+                valueType="currency"
+                height={300}
+                minWidth={400}
+              />
+              
+              {/* Trade Distribution by Hour of Day */}
+              <ChartContainer
+                title="TRADE DISTRIBUTION BY HOUR OF DAY"
+                data={hourOfDayData.distribution}
+                chartType="distribution"
+                valueType="shares"
+                height={300}
+                minWidth={500}
+                enableScroll={true}
+              />
+              
+              {/* Performance by Hour of Day */}
+              <ChartContainer
+                title="PERFORMANCE BY HOUR OF DAY"
+                data={hourOfDayData.performance}
+                chartType="performance"
+                valueType="currency"
+                height={300}
+                minWidth={500}
+                enableScroll={true}
+              />
+            </div>
+          </TabsContent>
+
+          {/* Win/Loss/Expectation Tab - 6 Charts */}
+          <TabsContent value="win-loss" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Trade Distribution by Month of Year */}
+              <ChartContainer
+                title="TRADE DISTRIBUTION BY MONTH OF YEAR"
+                data={monthOfYearData.distribution}
+                chartType="distribution"
+                valueType="shares"
+                height={300}
+                minWidth={500}
+                enableScroll={true}
+              />
+              
+              {/* Performance by Month of Year */}
+              <ChartContainer
+                title="PERFORMANCE BY MONTH OF YEAR"
+                data={monthOfYearData.performance}
+                chartType="performance"
+                valueType="currency"
+                height={300}
+                minWidth={500}
+                enableScroll={true}
+              />
+              
+              {/* Trade Distribution by Duration */}
+              <ChartContainer
+                title="TRADE DISTRIBUTION BY DURATION"
+                data={durationData.distribution}
+                chartType="distribution"
+                valueType="shares"
+                height={300}
+                minWidth={450}
+                enableScroll={true}
+              />
+              
+              {/* Performance by Duration */}
+              <ChartContainer
+                title="PERFORMANCE BY DURATION"
+                data={durationData.performance}
+                chartType="performance"
+                valueType="currency"
+                height={300}
+                minWidth={450}
+                enableScroll={true}
+              />
+              
+              {/* Trade Distribution by Intraday Duration */}
+              <ChartContainer
+                title="TRADE DISTRIBUTION BY INTRADAY DURATION"
+                data={intradayDurationData.distribution}
+                chartType="distribution"
+                valueType="shares"
+                height={300}
+                minWidth={450}
+                enableScroll={true}
+              />
+              
+              {/* Performance by Intraday Duration */}
+              <ChartContainer
+                title="PERFORMANCE BY INTRADAY DURATION"
+                data={intradayDurationData.performance}
+                chartType="performance"
+                valueType="currency"
+                height={300}
+                minWidth={450}
+                enableScroll={true}
+              />
+            </div>
+          </TabsContent>
+
+          {/* Price/Volume Tab - Placeholder for future implementation */}
+          <TabsContent value="price-volume" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="bg-surface border-default">
+                <CardHeader>
+                  <CardTitle className="text-base font-medium text-primary">
+                    PERFORMANCE BY ENTRY PRICE RANGE
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="h-[300px] flex items-center justify-center">
+                  <span className="text-muted">Chart coming soon</span>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-surface border-default">
+                <CardHeader>
+                  <CardTitle className="text-base font-medium text-primary">
+                    PERFORMANCE BY VOLUME PROFILE
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="h-[300px] flex items-center justify-center">
+                  <span className="text-muted">Chart coming soon</span>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-surface border-default">
+                <CardHeader>
+                  <CardTitle className="text-base font-medium text-primary">
+                    AVERAGE TRADE SIZE BY PRICE
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="h-[300px] flex items-center justify-center">
+                  <span className="text-muted">Chart coming soon</span>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-surface border-default">
+                <CardHeader>
+                  <CardTitle className="text-base font-medium text-primary">
+                    WIN RATE BY VOLUME QUINTILE
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="h-[300px] flex items-center justify-center">
+                  <span className="text-muted">Chart coming soon</span>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Instrument Tab - Placeholder for future implementation */}
+          <TabsContent value="instrument" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="bg-surface border-default">
+                <CardHeader>
+                  <CardTitle className="text-base font-medium text-primary">
+                    PERFORMANCE BY SYMBOL
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="h-[300px] flex items-center justify-center">
+                  <span className="text-muted">Chart coming soon</span>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-surface border-default">
+                <CardHeader>
+                  <CardTitle className="text-base font-medium text-primary">
+                    TRADE COUNT BY SYMBOL
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="h-[300px] flex items-center justify-center">
+                  <span className="text-muted">Chart coming soon</span>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-surface border-default">
+                <CardHeader>
+                  <CardTitle className="text-base font-medium text-primary">
+                    WIN RATE BY SYMBOL
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="h-[300px] flex items-center justify-center">
+                  <span className="text-muted">Chart coming soon</span>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-surface border-default">
+                <CardHeader>
+                  <CardTitle className="text-base font-medium text-primary">
+                    AVERAGE P&L BY SECTOR
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="h-[300px] flex items-center justify-center">
+                  <span className="text-muted">Chart coming soon</span>
                 </CardContent>
               </Card>
             </div>
