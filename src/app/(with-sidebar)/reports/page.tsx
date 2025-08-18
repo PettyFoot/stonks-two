@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EquityChart from '@/components/charts/EquityChart';
 import CustomBarChart from '@/components/charts/BarChart';
-import MonthTradeDistributionChart from '@/components/charts/MonthTradeDistributionChart';
 import DistributionCharts from '@/components/charts/DistributionCharts';
 import { mockGapPerformance, mockVolumePerformance, mockMonthlyPerformance, mockSymbolPerformance } from '@/data/mockData';
 import { useReportsData } from '@/hooks/useReportsData';
@@ -18,17 +17,9 @@ import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 export default function Reports() {
   const [dateRange, setDateRange] = useState('30 Days');
   const { filters } = useGlobalFilters();
-  const { dailyPnl, averageDailyPnl, cumulativePnl, winPercentage, totalVolume, loading, error } = useReportsData();
+  const { dailyPnl, averageDailyPnl, averageDailyVolume, cumulativePnl, winPercentage, totalVolume, daysDiff, loading, error } = useReportsData();
 
-  // Transform daily P&L data for the MonthTradeDistributionChart
-  const dailyPnlChartData = useMemo(() => {
-    return dailyPnl.map(day => ({
-      date: day.date,
-      pnl: day.pnl
-    }));
-  }, [dailyPnl]);
-
-  // Calculate average daily P&L for bar chart display
+  // Calculate average daily P&L for Gross Daily P&L chart
   const averagePnlData = useMemo(() => {
     if (averageDailyPnl === 0) return [];
     return [{
@@ -37,13 +28,14 @@ export default function Reports() {
     }];
   }, [averageDailyPnl]);
 
-  // Transform volume data for chart
+  // Calculate average daily volume for chart display
   const dailyVolumeData = useMemo(() => {
-    return dailyPnl.map(day => ({
-      date: day.date,
-      value: day.volume
-    }));
-  }, [dailyPnl]);
+    if (averageDailyVolume === 0) return [];
+    return [{
+      date: 'Average',
+      value: averageDailyVolume
+    }];
+  }, [averageDailyVolume]);
 
   // Transform win rate data for chart
   const winPercentageData = useMemo(() => {
@@ -170,11 +162,14 @@ export default function Reports() {
             {/* Four chart grid */}
             {!loading && !error && (
               <div className="grid grid-cols-2 gap-6">
-                {/* Daily P&L Distribution Chart */}
-                <MonthTradeDistributionChart 
-                  data={dailyPnlChartData}
+                {/* Daily P&L Distribution Chart - Now showing average */}
+                <CustomBarChart 
+                  data={averagePnlData}
                   title={`GROSS DAILY P&L (${filters.timeRange.label})`}
                   height={300}
+                  dataKey="value"
+                  chartType="currency"
+                  useConditionalColors={true}
                 />
                 
                 {/* Cumulative P&L Chart */}
@@ -182,6 +177,7 @@ export default function Reports() {
                   data={cumulativePnl}
                   title={`GROSS CUMULATIVE P&L (${filters.timeRange.label})`}
                   height={300}
+                  useConditionalColors={true}
                 />
                 
                 {/* Daily Volume Chart */}
@@ -190,7 +186,8 @@ export default function Reports() {
                   title={`DAILY VOLUME (${filters.timeRange.label})`}
                   height={300}
                   dataKey="value"
-                  color="#3B82F6"
+                  chartType="shares"
+                  useConditionalColors={true}
                 />
                 
                 {/* Win Percentage Chart */}
@@ -199,7 +196,8 @@ export default function Reports() {
                   title={`WIN % (${filters.timeRange.label})`}
                   height={300}
                   dataKey="value"
-                  color="#8B5CF6"
+                  chartType="percentage"
+                  useConditionalColors={true}
                 />
               </div>
             )}

@@ -105,9 +105,15 @@ export async function GET(request: NextRequest) {
       winRate: data.trades > 0 ? parseFloat(((data.wins / data.trades) * 100).toFixed(2)) : 0
     }));
 
-    // Calculate average daily P&L
-    const totalPnl = dailyPnl.reduce((sum, day) => sum + day.pnl, 0);
-    const averageDailyPnl = dailyPnl.length > 0 ? totalPnl / dailyPnl.length : 0;
+    // Calculate the number of days in the selected period
+    const daysDiff = Math.max(1, Math.ceil((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24)));
+
+    // Calculate total P&L and average daily P&L based on total days in period
+    const totalPnl = trades.reduce((sum, trade) => {
+      const pnlValue = trade.pnl instanceof Decimal ? trade.pnl.toNumber() : Number(trade.pnl);
+      return sum + pnlValue;
+    }, 0);
+    const averageDailyPnl = totalPnl / daysDiff;
 
     // Calculate cumulative P&L
     let cumulativeSum = 0;
@@ -126,15 +132,18 @@ export async function GET(request: NextRequest) {
     }).length;
     const winPercentage = trades.length > 0 ? (totalWins / trades.length) * 100 : 0;
 
-    // Calculate total volume
+    // Calculate total volume and average daily volume based on total days in period
     const totalVolume = trades.reduce((sum, trade) => sum + (trade.quantity || 0), 0);
+    const averageDailyVolume = totalVolume / daysDiff;
 
     return NextResponse.json({
       dailyPnl,
       averageDailyPnl: parseFloat(averageDailyPnl.toFixed(2)),
+      averageDailyVolume: parseFloat(averageDailyVolume.toFixed(2)),
       cumulativePnl,
       winPercentage: parseFloat(winPercentage.toFixed(2)),
-      totalVolume
+      totalVolume,
+      daysDiff
     });
 
   } catch (error) {

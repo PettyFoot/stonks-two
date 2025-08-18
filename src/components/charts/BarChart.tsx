@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { ChartDataPoint } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartType, CHART_FORMATTERS, formatTimeAxis } from '@/lib/chartFormatters';
@@ -16,6 +16,7 @@ interface BarChartProps {
   color?: string;
   dataKey?: string;
   chartType?: ChartType;
+  useConditionalColors?: boolean;
 }
 
 const CustomBarChart = React.memo(function CustomBarChart({ 
@@ -26,7 +27,8 @@ const CustomBarChart = React.memo(function CustomBarChart({
   showTooltip = true,
   color = '#16A34A',
   dataKey = 'value',
-  chartType = 'currency'
+  chartType = 'currency',
+  useConditionalColors = false
 }: BarChartProps) {
   const formatter = CHART_FORMATTERS[chartType];
 
@@ -130,7 +132,14 @@ const CustomBarChart = React.memo(function CustomBarChart({
               dataKey={dataKey}
               fill={color}
               radius={[2, 2, 0, 0]}
-            />
+            >
+              {useConditionalColors && data.map((entry, index) => (
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={entry[dataKey] >= 0 ? '#16A34A' : '#DC2626'} 
+                />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

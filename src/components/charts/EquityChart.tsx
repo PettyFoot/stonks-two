@@ -14,6 +14,9 @@ interface EquityChartProps {
   showGrid?: boolean;
   showTooltip?: boolean;
   color?: string;
+  useConditionalColors?: boolean;
+  positiveColor?: string;
+  negativeColor?: string;
 }
 
 const EquityChart = React.memo(function EquityChart({ 
@@ -22,7 +25,10 @@ const EquityChart = React.memo(function EquityChart({
   height = 300,
   showGrid = true,
   showTooltip = true,
-  color = '#16A34A'
+  color = '#16A34A',
+  useConditionalColors = false,
+  positiveColor = '#16A34A',
+  negativeColor = '#DC2626'
 }: EquityChartProps) {
   // Determine optimal interval based on data range
   const timeInterval = React.useMemo(() => {
@@ -66,6 +72,15 @@ const EquityChart = React.memo(function EquityChart({
   const tickInterval = React.useMemo(() => {
     return calculateTickInterval(data.length, timeInterval?.tickCount || 8);
   }, [data.length, timeInterval]);
+
+  // Determine line color based on last value when using conditional colors
+  const lineColor = React.useMemo(() => {
+    if (!useConditionalColors) return color;
+    
+    // Get the last non-null value
+    const lastValue = data.length > 0 ? data[data.length - 1]?.value ?? 0 : 0;
+    return lastValue >= 0 ? positiveColor : negativeColor;
+  }, [data, useConditionalColors, color, positiveColor, negativeColor]);
 
   return (
     <Card className="bg-surface border-default">
@@ -114,10 +129,10 @@ const EquityChart = React.memo(function EquityChart({
             <Line 
               type="monotone" 
               dataKey="value" 
-              stroke={color}
+              stroke={lineColor}
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 4, fill: color }}
+              activeDot={{ r: 4, fill: lineColor }}
             />
           </LineChart>
         </ResponsiveContainer>
