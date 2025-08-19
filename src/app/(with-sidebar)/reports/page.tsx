@@ -24,7 +24,9 @@ import {
   aggregateByHourOfDay, 
   aggregateByMonthOfYear,
   aggregateBySimpleDuration,
-  aggregateByIntradayDuration 
+  aggregateByIntradayDuration,
+  aggregateByPrice,
+  aggregateByVolume
 } from '@/lib/reportCalculations';
 
 export default function Reports() {
@@ -80,6 +82,8 @@ export default function Reports() {
   const monthOfYearData = useMemo(() => aggregateByMonthOfYear(trades), [trades]);
   const simpleDurationData = useMemo(() => aggregateBySimpleDuration(trades), [trades]);
   const intradayDurationData = useMemo(() => aggregateByIntradayDuration(trades), [trades]);
+  const priceData = useMemo(() => aggregateByPrice(trades), [trades]);
+  const volumeData = useMemo(() => aggregateByVolume(trades), [trades]);
 
   return (
     <div className="flex flex-col h-full">
@@ -380,52 +384,48 @@ export default function Reports() {
                 </Card>
               </TabsContent>
 
-              {/* Price/Volume Tab - Placeholder for future implementation */}
+              {/* Price/Volume Tab - Enhanced with 4 charts */}
               <TabsContent value="price-volume" className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <Card className="bg-surface border-default">
-                    <CardHeader>
-                      <CardTitle className="text-base font-medium text-primary">
-                        PERFORMANCE BY ENTRY PRICE RANGE
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="h-[300px] flex items-center justify-center">
-                      <span className="text-muted">Chart coming soon</span>
-                    </CardContent>
-                  </Card>
+                  {/* Trade Distribution by Price */}
+                  <ChartContainer
+                    title="TRADE DISTRIBUTION BY PRICE"
+                    data={priceData.distribution}
+                    chartType="distribution"
+                    valueType="shares"
+                    height={300}
+                    minWidth={400}
+                  />
                   
-                  <Card className="bg-surface border-default">
-                    <CardHeader>
-                      <CardTitle className="text-base font-medium text-primary">
-                        PERFORMANCE BY VOLUME PROFILE
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="h-[300px] flex items-center justify-center">
-                      <span className="text-muted">Chart coming soon</span>
-                    </CardContent>
-                  </Card>
+                  {/* Performance by Price */}
+                  <ChartContainer
+                    title="PERFORMANCE BY PRICE"
+                    data={priceData.performance}
+                    chartType="performance"
+                    valueType="currency"
+                    height={300}
+                    minWidth={400}
+                  />
                   
-                  <Card className="bg-surface border-default">
-                    <CardHeader>
-                      <CardTitle className="text-base font-medium text-primary">
-                        AVERAGE TRADE SIZE BY PRICE
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="h-[300px] flex items-center justify-center">
-                      <span className="text-muted">Chart coming soon</span>
-                    </CardContent>
-                  </Card>
+                  {/* Trade Distribution by Volume Traded */}
+                  <ChartContainer
+                    title="TRADE DISTRIBUTION BY VOLUME TRADED"
+                    data={volumeData.distribution}
+                    chartType="distribution"
+                    valueType="shares"
+                    height={300}
+                    minWidth={400}
+                  />
                   
-                  <Card className="bg-surface border-default">
-                    <CardHeader>
-                      <CardTitle className="text-base font-medium text-primary">
-                        WIN RATE BY VOLUME QUINTILE
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="h-[300px] flex items-center justify-center">
-                      <span className="text-muted">Chart coming soon</span>
-                    </CardContent>
-                  </Card>
+                  {/* Performance by Volume Traded */}
+                  <ChartContainer
+                    title="PERFORMANCE BY VOLUME TRADED"
+                    data={volumeData.performance}
+                    chartType="performance"
+                    valueType="currency"
+                    height={300}
+                    minWidth={400}
+                  />
                 </div>
               </TabsContent>
 

@@ -317,6 +317,103 @@ export function calculateProfitFactor(trades: any[]): number {
   return losses === 0 ? gains > 0 ? Infinity : 0 : gains / losses;
 }
 
+// Price bucket type
+export type PriceBucket = '<1' | '1-2' | '2-5' | '5-10' | '10-20' | '20-50' | '50-100' | '100+';
+
+// Helper to get price bucket
+export function getPriceBucket(price: number): PriceBucket {
+  if (price < 1) return '<1';
+  if (price < 2) return '1-2';
+  if (price < 5) return '2-5';
+  if (price < 10) return '5-10';
+  if (price < 20) return '10-20';
+  if (price < 50) return '20-50';
+  if (price < 100) return '50-100';
+  return '100+';
+}
+
+// Aggregate trades by price
+export function aggregateByPrice(trades: any[]) {
+  const buckets: PriceBucket[] = ['<1', '1-2', '2-5', '5-10', '10-20', '20-50', '50-100', '100+'];
+  const distribution: Record<PriceBucket, number> = {} as any;
+  const performance: Record<PriceBucket, number> = {} as any;
+  
+  // Initialize all buckets to ensure they all appear even if empty
+  buckets.forEach(bucket => {
+    distribution[bucket] = 0;
+    performance[bucket] = 0;
+  });
+  
+  // Aggregate
+  trades.forEach(trade => {
+    // Use avgEntryPrice if available, otherwise fall back to entryPrice
+    const price = Number(trade.avgEntryPrice || trade.entryPrice || 0);
+    if (price > 0) {
+      const bucket = getPriceBucket(price);
+      distribution[bucket]++;
+      performance[bucket] += Number(trade.pnl || 0);
+    }
+  });
+  
+  return {
+    distribution: buckets.map(bucket => ({
+      date: bucket,
+      value: distribution[bucket]
+    })),
+    performance: buckets.map(bucket => ({
+      date: bucket,
+      value: performance[bucket]
+    }))
+  };
+}
+
+// Volume bucket type
+export type VolumeBucket = '<50' | '50-100' | '100-200' | '200-500' | '500-1000' | '1000-2000' | '2000-5000' | '>5000';
+
+// Helper to get volume bucket
+export function getVolumeBucket(volume: number): VolumeBucket {
+  if (volume < 50) return '<50';
+  if (volume < 100) return '50-100';
+  if (volume < 200) return '100-200';
+  if (volume < 500) return '200-500';
+  if (volume < 1000) return '500-1000';
+  if (volume < 2000) return '1000-2000';
+  if (volume < 5000) return '2000-5000';
+  return '>5000';
+}
+
+// Aggregate trades by volume
+export function aggregateByVolume(trades: any[]) {
+  const buckets: VolumeBucket[] = ['<50', '50-100', '100-200', '200-500', '500-1000', '1000-2000', '2000-5000', '>5000'];
+  const distribution: Record<VolumeBucket, number> = {} as any;
+  const performance: Record<VolumeBucket, number> = {} as any;
+  
+  // Initialize all buckets to ensure they all appear even if empty
+  buckets.forEach(bucket => {
+    distribution[bucket] = 0;
+    performance[bucket] = 0;
+  });
+  
+  // Aggregate
+  trades.forEach(trade => {
+    const volume = Number(trade.quantity || 0);
+    const bucket = getVolumeBucket(volume);
+    distribution[bucket]++;
+    performance[bucket] += Number(trade.pnl || 0);
+  });
+  
+  return {
+    distribution: buckets.map(bucket => ({
+      date: bucket,
+      value: distribution[bucket]
+    })),
+    performance: buckets.map(bucket => ({
+      date: bucket,
+      value: performance[bucket]
+    }))
+  };
+}
+
 /* 
  * Database Engineer Review Point:
  * These calculations can be optimized with database aggregations:

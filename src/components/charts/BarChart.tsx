@@ -58,6 +58,16 @@ const CustomBarChart = React.memo(function CustomBarChart({
   }, [formatter]);
 
   const formatXAxisTick = React.useCallback((value: string) => {
+    // Check if this is a price bucket (starts with $ or < or >)
+    if (value.startsWith('$') || value.startsWith('<') || value.startsWith('>')) {
+      return value;
+    }
+    
+    // Check if this is a numeric range (like "50-100" or "1-2")
+    if (value.match(/^\d+[-–]\d+$/)) {
+      return value;
+    }
+    
     // Check if this is a duration bucket (contains min, hr, etc.) or simple duration labels
     if (value.includes('min') || value.includes('hr') || value === 'Intraday' || value === 'Multiday') {
       return value;
