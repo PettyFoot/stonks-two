@@ -82,6 +82,22 @@ const EquityChart = React.memo(function EquityChart({
     return lastValue >= 0 ? positiveColor : negativeColor;
   }, [data, useConditionalColors, color, positiveColor, negativeColor]);
 
+  // Handle empty data case
+  if (!data || data.length === 0) {
+    return (
+      <Card className="bg-surface border-default">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-medium text-primary">{title}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center text-muted" style={{ height: `${height}px` }}>
+            No data available for the selected period
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="bg-surface border-default">
       <CardHeader className="pb-2">

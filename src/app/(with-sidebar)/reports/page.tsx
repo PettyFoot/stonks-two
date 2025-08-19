@@ -206,14 +206,14 @@ export default function Reports() {
                 {/* Daily P&L Distribution Chart */}
                 <MonthTradeDistributionChart 
                   data={dailyPnlChartData}
-                  title={`GROSS DAILY P&L (${filters.timeRange.label})`}
+                  title="GROSS DAILY P&L"
                   height={300}
                 />
                 
                 {/* Cumulative P&L Chart */}
                 <EquityChart 
                   data={cumulativePnl}
-                  title={`GROSS CUMULATIVE P&L (${filters.timeRange.label})`}
+                  title="GROSS CUMULATIVE P&L"
                   height={300}
                   useConditionalColors={true}
                 />
@@ -221,7 +221,7 @@ export default function Reports() {
                 {/* Daily Volume Chart */}
                 <CustomBarChart 
                   data={dailyVolumeData}
-                  title={`DAILY VOLUME (${filters.timeRange.label})`}
+                  title="DAILY VOLUME"
                   height={300}
                   dataKey="value"
                   chartType="shares"
@@ -231,7 +231,7 @@ export default function Reports() {
                 {/* Win Percentage Chart */}
                 <CustomBarChart 
                   data={winPercentageData}
-                  title={`WIN % (${filters.timeRange.label})`}
+                  title="WIN %"
                   height={300}
                   dataKey="value"
                   chartType="percentage"

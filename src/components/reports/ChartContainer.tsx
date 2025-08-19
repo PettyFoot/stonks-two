@@ -43,6 +43,9 @@ export default function ChartContainer({
     ? { minWidth: `${minWidth}px` }
     : {};
 
+  // Check if there's any actual data (not just 0 values)
+  const hasData = data && data.length > 0 && data.some(item => item.value !== 0);
+
   return (
     <Card className="bg-surface border-default">
       <CardHeader className="pb-2">
@@ -52,7 +55,7 @@ export default function ChartContainer({
       </CardHeader>
       <CardContent className={containerClass}>
         <div style={contentStyle}>
-          {data && data.length > 0 ? (
+          {hasData ? (
             <CustomBarChart
               data={data}
               title=""
@@ -65,7 +68,7 @@ export default function ChartContainer({
             />
           ) : (
             <div className="flex items-center justify-center h-[300px] text-muted">
-              No data available
+              No data available for the selected period
             </div>
           )}
         </div>
