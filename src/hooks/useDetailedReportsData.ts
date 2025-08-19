@@ -2,12 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
-import { 
-  calculateConsecutiveStreaks, 
-  calculatePnlStandardDeviation, 
-  calculateProfitFactor,
-  formatDuration 
-} from '@/lib/reportCalculations';
 
 interface DetailedReportsData {
   // Statistics
@@ -89,22 +83,19 @@ export function useDetailedReportsData() {
         if (filters.tags?.length) params.append('tags', filters.tags.join(','));
         if (filters.duration && filters.duration !== 'all') params.append('duration', filters.duration);
 
-        // Fetch detailed reports data
-        // For now, we'll use mock data, but this would be the real API call
-        const mockResponse = await generateMockDetailedData(filters);
+        // Fetch detailed reports data from real API
+        const response = await fetch(`/api/reports/detailed?${params}`);
         
-        /* 
-         * Backend Engineer Review Point:
-         * Real API implementation:
-         * 
-         * const response = await fetch(`/api/reports/detailed?${params}`);
-         * if (!response.ok) throw new Error('Failed to fetch detailed reports');
-         * const result = await response.json();
-         */
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to fetch detailed reports');
+        }
+        
+        const result = await response.json();
         
         setData({
-          stats: mockResponse.stats,
-          trades: mockResponse.trades,
+          stats: result.stats,
+          trades: result.trades,
           loading: false,
           error: null
         });
@@ -124,8 +115,9 @@ export function useDetailedReportsData() {
   return data;
 }
 
-// Mock data generator for demonstration
-async function generateMockDetailedData(filters: any): Promise<DetailedReportsData> {
+// Mock data generator - kept for reference but no longer used
+// async function generateMockDetailedData(filters: any): Promise<DetailedReportsData> {
+/*
   // Generate mock trades
   const numTrades = 150;
   const trades = Array.from({ length: numTrades }, (_, i) => {
@@ -215,6 +207,7 @@ async function generateMockDetailedData(filters: any): Promise<DetailedReportsDa
     error: null
   };
 }
+*/
 
 /* 
  * Database Engineer Review Point:
