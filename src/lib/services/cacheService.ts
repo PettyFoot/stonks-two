@@ -196,17 +196,17 @@ export class CacheService {
       const _commonRequests: AnalyticsRequest[] = [
         // 30-day overview
         {
-          dateRange: { preset: '30d' },
+          dateRange: { start: '', end: '', preset: '30d' },
           aggregations: ['distribution', 'performance', 'statistics']
         },
         // 90-day performance
         {
-          dateRange: { preset: '90d' },
+          dateRange: { start: '', end: '', preset: '90d' },
           aggregations: ['performance', 'statistics']
         },
         // YTD summary
         {
-          dateRange: { preset: 'ytd' },
+          dateRange: { start: '', end: '', preset: 'ytd' },
           aggregations: ['statistics', 'time_analysis']
         }
       ];
@@ -225,7 +225,7 @@ export class CacheService {
    */
   async getCacheStats(): Promise<CacheStats> {
     try {
-      const info = await this.redis.info();
+      const info = await (this.redis as any)?.info();
       
       // Parse Redis info response
       const stats: CacheStats = {
@@ -234,6 +234,10 @@ export class CacheService {
         memoryUsage: 0,
         evictions: 0
       };
+
+      if (!info) {
+        return stats;
+      }
 
       // Parse info string to extract relevant metrics
       const lines = (info as string).split('\r\n');

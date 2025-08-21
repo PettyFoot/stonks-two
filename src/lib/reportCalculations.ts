@@ -86,10 +86,13 @@ export function aggregateByDayOfWeek(trades: TradeData[]) {
   
   // Aggregate
   trades.forEach(trade => {
-    const day = getDayOfWeek(trade.entryDate || trade.date);
-    if (days.includes(day)) {
-      distribution[day]++;
-      performance[day] += Number(trade.pnl || 0);
+    const date = trade.entryDate || trade.date;
+    if (date) {
+      const day = getDayOfWeek(date);
+      if (days.includes(day)) {
+        distribution[day]++;
+        performance[day] += Number(trade.pnl || 0);
+      }
     }
   });
   
@@ -119,9 +122,12 @@ export function aggregateByHourOfDay(trades: TradeData[]) {
   
   // Aggregate
   trades.forEach(trade => {
-    const hour = getHourOfDay(trade.entryDate || trade.date);
-    distribution[hour]++;
-    performance[hour] += Number(trade.pnl || 0);
+    const date = trade.entryDate || trade.date;
+    if (date) {
+      const hour = getHourOfDay(date);
+      distribution[hour]++;
+      performance[hour] += Number(trade.pnl || 0);
+    }
   });
   
   return {
@@ -150,9 +156,12 @@ export function aggregateByMonthOfYear(trades: TradeData[]) {
   
   // Aggregate
   trades.forEach(trade => {
-    const month = getMonthOfYear(trade.entryDate || trade.date);
-    distribution[month]++;
-    performance[month] += Number(trade.pnl || 0);
+    const date = trade.entryDate || trade.date;
+    if (date) {
+      const month = getMonthOfYear(date);
+      distribution[month]++;
+      performance[month] += Number(trade.pnl || 0);
+    }
   });
   
   return {
@@ -282,9 +291,12 @@ export function calculateConsecutiveStreaks(trades: TradeData[]) {
   let currentWins = 0;
   let currentLosses = 0;
   
-  const sortedTrades = [...trades].sort((a, b) => 
-    new Date(a.exitDate || a.date).getTime() - new Date(b.exitDate || b.date).getTime()
-  );
+  const sortedTrades = [...trades].sort((a, b) => {
+    const dateA = a.exitDate || a.date;
+    const dateB = b.exitDate || b.date;
+    if (!dateA || !dateB) return 0;
+    return new Date(dateA).getTime() - new Date(dateB).getTime();
+  });
   
   sortedTrades.forEach(trade => {
     const pnl = Number(trade.pnl || 0);
@@ -542,18 +554,26 @@ export function calculateTradeExpectation(trades: TradeData[]) {
 export function calculateCumulativePnl(trades: TradeData[]) {
   // API already filters for closed trades
   const sortedTrades = trades
-    .sort((a, b) => new Date(a.exitDate || a.date).getTime() - new Date(b.exitDate || b.date).getTime());
+    .sort((a, b) => {
+      const dateA = a.exitDate || a.date;
+      const dateB = b.exitDate || b.date;
+      if (!dateA || !dateB) return 0;
+      return new Date(dateA).getTime() - new Date(dateB).getTime();
+    });
 
   let cumulative = 0;
   const cumulativeData: Array<{ date: string; value: number; trades: number }> = [];
 
   // Group trades by date
   const tradesByDate = sortedTrades.reduce((acc: Record<string, TradeData[]>, trade) => {
-    const date = new Date(trade.exitDate || trade.date).toISOString().split('T')[0];
-    if (!acc[date]) {
-      acc[date] = [];
+    const tradeDate = trade.exitDate || trade.date;
+    if (tradeDate) {
+      const date = new Date(tradeDate).toISOString().split('T')[0];
+      if (!acc[date]) {
+        acc[date] = [];
+      }
+      acc[date].push(trade);
     }
-    acc[date].push(trade);
     return acc;
   }, {});
 

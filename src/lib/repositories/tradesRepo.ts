@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { Trade, TradeStatus, TradeSide } from '@prisma/client';
+import { Trade, TradeStatus, TradeSide, MarketSession } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
 export interface CreateTradeData {
@@ -49,7 +49,7 @@ export class TradesRepository {
         quantity: tradeData.quantity,
         timeInTrade: tradeData.timeInTrade,
         remainingQuantity: tradeData.remainingQuantity,
-        marketSession: tradeData.marketSession as 'PRE' | 'REGULAR' | 'POST' | undefined,
+        marketSession: tradeData.marketSession as MarketSession | undefined,
         costBasis: tradeData.costBasis ? new Decimal(tradeData.costBasis) : undefined,
         proceeds: tradeData.proceeds ? new Decimal(tradeData.proceeds) : undefined,
         entryDate: tradeData.openTime,
@@ -99,10 +99,12 @@ export class TradesRepository {
    * Update an existing trade
    */
   async updateTrade(tradeId: string, updateData: Partial<CreateTradeData>): Promise<Trade> {
+    const { userId, marketSession, ...updateFields } = updateData;
     return await prisma.trade.update({
       where: { id: tradeId },
       data: {
-        ...updateData,
+        ...updateFields,
+        marketSession: marketSession as MarketSession | undefined,
         pnl: updateData.pnl ? new Decimal(updateData.pnl) : undefined,
         entryPrice: updateData.avgEntryPrice?.toNumber(),
         exitPrice: updateData.avgExitPrice?.toNumber(),

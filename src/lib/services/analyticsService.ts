@@ -12,6 +12,34 @@ export class AnalyticsService {
   }
 
   /**
+   * Helper to safely access date filter values
+   */
+  private getDateFilterValue(dateFilter: unknown, property: 'gte' | 'lte'): string | Date | null {
+    if (!dateFilter) return null;
+    if (typeof dateFilter === 'string' || dateFilter instanceof Date) {
+      return dateFilter;
+    }
+    if (typeof dateFilter === 'object' && property in dateFilter) {
+      return (dateFilter as Record<string, unknown>)[property] as string | Date;
+    }
+    return null;
+  }
+
+  /**
+   * Helper to safely access array filter values
+   */
+  private getArrayFilterValue(filter: unknown): string[] | null {
+    if (!filter) return null;
+    if (Array.isArray(filter)) {
+      return filter;
+    }
+    if (typeof filter === 'object' && 'in' in filter) {
+      return (filter as Record<string, unknown>).in as string[];
+    }
+    return null;
+  }
+
+  /**
    * Parse date range from various input formats
    */
   parseDateRange(
@@ -145,9 +173,9 @@ export class AnalyticsService {
       WHERE "userId" = ${this.userId}
         AND "isCalculated" = true
         AND status = 'CLOSED'
-        AND date >= ${where.date?.gte}
-        AND date <= ${where.date?.lte}
-        ${where.symbol ? Prisma.sql`AND symbol = ANY(${where.symbol.in})` : Prisma.empty}
+        AND date >= ${this.getDateFilterValue(where.date, 'gte')}
+        AND date <= ${this.getDateFilterValue(where.date, 'lte')}
+        ${where.symbol ? Prisma.sql`AND symbol = ANY(${this.getArrayFilterValue(where.symbol)})` : Prisma.empty}
         ${where.side ? Prisma.sql`AND side = ${where.side}` : Prisma.empty}
       GROUP BY EXTRACT(MONTH FROM date)
       ORDER BY month
@@ -179,9 +207,9 @@ export class AnalyticsService {
       WHERE "userId" = ${this.userId}
         AND "isCalculated" = true
         AND status = 'CLOSED'
-        AND date >= ${where.date?.gte}
-        AND date <= ${where.date?.lte}
-        ${where.symbol ? Prisma.sql`AND symbol = ANY(${where.symbol.in})` : Prisma.empty}
+        AND date >= ${this.getDateFilterValue(where.date, 'gte')}
+        AND date <= ${this.getDateFilterValue(where.date, 'lte')}
+        ${where.symbol ? Prisma.sql`AND symbol = ANY(${this.getArrayFilterValue(where.symbol)})` : Prisma.empty}
         ${where.side ? Prisma.sql`AND side = ${where.side}` : Prisma.empty}
       GROUP BY EXTRACT(DOW FROM date)
       ORDER BY day_num
@@ -204,9 +232,9 @@ export class AnalyticsService {
         AND "isCalculated" = true
         AND status = 'CLOSED'
         AND "openTime" IS NOT NULL
-        AND date >= ${where.date?.gte}
-        AND date <= ${where.date?.lte}
-        ${where.symbol ? Prisma.sql`AND symbol = ANY(${where.symbol.in})` : Prisma.empty}
+        AND date >= ${this.getDateFilterValue(where.date, 'gte')}
+        AND date <= ${this.getDateFilterValue(where.date, 'lte')}
+        ${where.symbol ? Prisma.sql`AND symbol = ANY(${this.getArrayFilterValue(where.symbol)})` : Prisma.empty}
         ${where.side ? Prisma.sql`AND side = ${where.side}` : Prisma.empty}
       GROUP BY EXTRACT(HOUR FROM "openTime")
       ORDER BY hour
@@ -237,9 +265,9 @@ export class AnalyticsService {
       WHERE "userId" = ${this.userId}
         AND "isCalculated" = true
         AND status = 'CLOSED'
-        AND date >= ${where.date?.gte}
-        AND date <= ${where.date?.lte}
-        ${where.symbol ? Prisma.sql`AND symbol = ANY(${where.symbol.in})` : Prisma.empty}
+        AND date >= ${this.getDateFilterValue(where.date, 'gte')}
+        AND date <= ${this.getDateFilterValue(where.date, 'lte')}
+        ${where.symbol ? Prisma.sql`AND symbol = ANY(${this.getArrayFilterValue(where.symbol)})` : Prisma.empty}
         ${where.side ? Prisma.sql`AND side = ${where.side}` : Prisma.empty}
       GROUP BY 
         CASE 
@@ -291,9 +319,9 @@ export class AnalyticsService {
         AND "isCalculated" = true
         AND status = 'CLOSED'
         AND "holdingPeriod" = 'INTRADAY'
-        AND date >= ${where.date?.gte}
-        AND date <= ${where.date?.lte}
-        ${where.symbol ? Prisma.sql`AND symbol = ANY(${where.symbol.in})` : Prisma.empty}
+        AND date >= ${this.getDateFilterValue(where.date, 'gte')}
+        AND date <= ${this.getDateFilterValue(where.date, 'lte')}
+        ${where.symbol ? Prisma.sql`AND symbol = ANY(${this.getArrayFilterValue(where.symbol)})` : Prisma.empty}
         ${where.side ? Prisma.sql`AND side = ${where.side}` : Prisma.empty}
       GROUP BY 
         CASE 
@@ -412,9 +440,9 @@ export class AnalyticsService {
         AND "isCalculated" = true
         AND status = 'CLOSED'
         AND quantity IS NOT NULL
-        AND date >= ${where.date?.gte}
-        AND date <= ${where.date?.lte}
-        ${where.symbol ? Prisma.sql`AND symbol = ANY(${where.symbol.in})` : Prisma.empty}
+        AND date >= ${this.getDateFilterValue(where.date, 'gte')}
+        AND date <= ${this.getDateFilterValue(where.date, 'lte')}
+        ${where.symbol ? Prisma.sql`AND symbol = ANY(${this.getArrayFilterValue(where.symbol)})` : Prisma.empty}
         ${where.side ? Prisma.sql`AND side = ${where.side}` : Prisma.empty}
       GROUP BY ${periodSelector}
       ORDER BY period
@@ -447,9 +475,9 @@ export class AnalyticsService {
       WHERE "userId" = ${this.userId}
         AND "isCalculated" = true
         AND status = 'CLOSED'
-        AND date >= ${where.date?.gte}
-        AND date <= ${where.date?.lte}
-        ${where.symbol ? Prisma.sql`AND symbol = ANY(${where.symbol.in})` : Prisma.empty}
+        AND date >= ${this.getDateFilterValue(where.date, 'gte')}
+        AND date <= ${this.getDateFilterValue(where.date, 'lte')}
+        ${where.symbol ? Prisma.sql`AND symbol = ANY(${this.getArrayFilterValue(where.symbol)})` : Prisma.empty}
         ${where.side ? Prisma.sql`AND side = ${where.side}` : Prisma.empty}
     `;
 
@@ -514,9 +542,9 @@ export class AnalyticsService {
       WHERE "userId" = ${this.userId}
         AND "isCalculated" = true
         AND status = 'CLOSED'
-        AND date >= ${where.date?.gte}
-        AND date <= ${where.date?.lte}
-        ${where.symbol ? Prisma.sql`AND symbol = ANY(${where.symbol.in})` : Prisma.empty}
+        AND date >= ${this.getDateFilterValue(where.date, 'gte')}
+        AND date <= ${this.getDateFilterValue(where.date, 'lte')}
+        ${where.symbol ? Prisma.sql`AND symbol = ANY(${this.getArrayFilterValue(where.symbol)})` : Prisma.empty}
         ${where.side ? Prisma.sql`AND side = ${where.side}` : Prisma.empty}
       GROUP BY date::date
       ORDER BY date::date
@@ -540,9 +568,9 @@ export class AnalyticsService {
       WHERE "userId" = ${this.userId}
         AND "isCalculated" = true
         AND status = 'CLOSED'
-        AND date >= ${where.date?.gte}
-        AND date <= ${where.date?.lte}
-        ${where.symbol ? Prisma.sql`AND symbol = ANY(${where.symbol.in})` : Prisma.empty}
+        AND date >= ${this.getDateFilterValue(where.date, 'gte')}
+        AND date <= ${this.getDateFilterValue(where.date, 'lte')}
+        ${where.symbol ? Prisma.sql`AND symbol = ANY(${this.getArrayFilterValue(where.symbol)})` : Prisma.empty}
         ${where.side ? Prisma.sql`AND side = ${where.side}` : Prisma.empty}
       GROUP BY DATE_TRUNC('week', date)
       ORDER BY week_start
@@ -570,9 +598,9 @@ export class AnalyticsService {
         WHERE "userId" = ${this.userId}
           AND "isCalculated" = true
           AND status = 'CLOSED'
-          AND date >= ${where.date?.gte}
-          AND date <= ${where.date?.lte}
-          ${where.symbol ? Prisma.sql`AND symbol = ANY(${where.symbol.in})` : Prisma.empty}
+          AND date >= ${this.getDateFilterValue(where.date, 'gte')}
+          AND date <= ${this.getDateFilterValue(where.date, 'lte')}
+          ${where.symbol ? Prisma.sql`AND symbol = ANY(${this.getArrayFilterValue(where.symbol)})` : Prisma.empty}
           ${where.side ? Prisma.sql`AND side = ${where.side}` : Prisma.empty}
         GROUP BY DATE_TRUNC('month', date)
       )
@@ -603,9 +631,9 @@ export class AnalyticsService {
         AND "isCalculated" = true
         AND status = 'CLOSED'
         AND "openTime" IS NOT NULL
-        AND date >= ${where.date?.gte}
-        AND date <= ${where.date?.lte}
-        ${where.symbol ? Prisma.sql`AND symbol = ANY(${where.symbol.in})` : Prisma.empty}
+        AND date >= ${this.getDateFilterValue(where.date, 'gte')}
+        AND date <= ${this.getDateFilterValue(where.date, 'lte')}
+        ${where.symbol ? Prisma.sql`AND symbol = ANY(${this.getArrayFilterValue(where.symbol)})` : Prisma.empty}
         ${where.side ? Prisma.sql`AND side = ${where.side}` : Prisma.empty}
       GROUP BY EXTRACT(HOUR FROM "openTime")
       ORDER BY hour
@@ -686,7 +714,8 @@ export class AnalyticsService {
     const maxDrawdown = this.calculateMaxDrawdown(pnls);
 
     // Daily aggregations for additional metrics
-    const dailyGroups = this.groupByDay(trades);
+    const tradesForGrouping = trades.map(t => ({ pnl: Number(t.pnl), date: t.date }));
+    const dailyGroups = this.groupByDay(tradesForGrouping);
     const dailyPnls = Object.values(dailyGroups).map(dayTrades => 
       dayTrades.reduce((sum, trade) => sum + Number(trade.pnl), 0)
     );
@@ -739,9 +768,9 @@ export class AnalyticsService {
       WHERE "userId" = ${this.userId}
         AND "isCalculated" = true
         AND status = 'CLOSED'
-        AND date >= ${where.date?.gte}
-        AND date <= ${where.date?.lte}
-        ${where.symbol ? Prisma.sql`AND symbol = ANY(${where.symbol.in})` : Prisma.empty}
+        AND date >= ${this.getDateFilterValue(where.date, 'gte')}
+        AND date <= ${this.getDateFilterValue(where.date, 'lte')}
+        ${where.symbol ? Prisma.sql`AND symbol = ANY(${this.getArrayFilterValue(where.symbol)})` : Prisma.empty}
         ${where.side ? Prisma.sql`AND side = ${where.side}` : Prisma.empty}
       GROUP BY "marketSession"
     `;
@@ -764,9 +793,9 @@ export class AnalyticsService {
       WHERE "userId" = ${this.userId}
         AND "isCalculated" = true
         AND status = 'CLOSED'
-        AND date >= ${where.date?.gte}
-        AND date <= ${where.date?.lte}
-        ${where.symbol ? Prisma.sql`AND symbol = ANY(${where.symbol.in})` : Prisma.empty}
+        AND date >= ${this.getDateFilterValue(where.date, 'gte')}
+        AND date <= ${this.getDateFilterValue(where.date, 'lte')}
+        ${where.symbol ? Prisma.sql`AND symbol = ANY(${this.getArrayFilterValue(where.symbol)})` : Prisma.empty}
         ${where.side ? Prisma.sql`AND side = ${where.side}` : Prisma.empty}
       GROUP BY "holdingPeriod"
     `;
@@ -805,8 +834,8 @@ export class AnalyticsService {
         AND "isCalculated" = true
         AND status = 'CLOSED'
         AND "openTime" IS NOT NULL
-        AND date >= ${where.date?.gte}
-        AND date <= ${where.date?.lte}
+        AND date >= ${this.getDateFilterValue(where.date, 'gte')}
+        AND date <= ${this.getDateFilterValue(where.date, 'lte')}
       GROUP BY EXTRACT(HOUR FROM "openTime")
       ORDER BY avg_pnl DESC
     `;
@@ -832,8 +861,8 @@ export class AnalyticsService {
       WHERE "userId" = ${this.userId}
         AND "isCalculated" = true
         AND status = 'CLOSED'
-        AND date >= ${where.date?.gte}
-        AND date <= ${where.date?.lte}
+        AND date >= ${this.getDateFilterValue(where.date, 'gte')}
+        AND date <= ${this.getDateFilterValue(where.date, 'lte')}
       GROUP BY EXTRACT(DOW FROM date)
       ORDER BY avg_pnl DESC
     `;
@@ -849,8 +878,8 @@ export class AnalyticsService {
       WHERE "userId" = ${this.userId}
         AND "isCalculated" = true
         AND status = 'CLOSED'
-        AND date >= ${where.date?.gte}
-        AND date <= ${where.date?.lte}
+        AND date >= ${this.getDateFilterValue(where.date, 'gte')}
+        AND date <= ${this.getDateFilterValue(where.date, 'lte')}
       GROUP BY EXTRACT(MONTH FROM date)
       ORDER BY avg_pnl DESC
     `;
