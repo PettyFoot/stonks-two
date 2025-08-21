@@ -191,6 +191,12 @@ export interface AnalyticsData {
     end: Date;
     period: string;
   };
+  filters?: {
+    dateFrom?: string;
+    dateTo?: string;
+    symbol?: string;
+    side?: string;
+  };
 }
 
 export interface WinLossMetrics {

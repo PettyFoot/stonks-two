@@ -445,3 +445,142 @@ export function aggregateByVolume(trades: any[]) {
  *   ORDER BY hour_of_day
  * `;
  */
+
+// Win/Loss/Expectation aggregation functions
+
+// Calculate win/loss ratio data
+export function calculateWinLossRatio(trades: any[]) {
+  // API already filters for closed trades
+  const wins = trades.filter(t => Number(t.pnl) > 0).length;
+  const losses = trades.filter(t => Number(t.pnl) < 0).length;
+  const scratches = trades.filter(t => Number(t.pnl) === 0).length;
+  const total = trades.length;
+
+  return {
+    wins,
+    losses,
+    scratches,
+    winRate: total > 0 ? (wins / total) * 100 : 0,
+    lossRate: total > 0 ? (losses / total) * 100 : 0,
+    scratchRate: total > 0 ? (scratches / total) * 100 : 0,
+    totalTrades: total
+  };
+}
+
+// Calculate win/loss P&L comparison
+export function calculateWinLossPnlComparison(trades: any[]) {
+  // API already filters for closed trades
+  const winningTrades = trades.filter(t => Number(t.pnl) > 0);
+  const losingTrades = trades.filter(t => Number(t.pnl) < 0);
+
+  const totalWins = winningTrades.reduce((sum, t) => sum + Number(t.pnl), 0);
+  const totalLosses = Math.abs(losingTrades.reduce((sum, t) => sum + Number(t.pnl), 0));
+  
+  const avgWin = winningTrades.length > 0 ? totalWins / winningTrades.length : 0;
+  const avgLoss = losingTrades.length > 0 ? totalLosses / losingTrades.length : 0;
+
+  const pnlValues = trades.map(t => Number(t.pnl));
+  const largestWin = Math.max(...pnlValues.filter(p => p > 0), 0);
+  const largestLoss = Math.abs(Math.min(...pnlValues.filter(p => p < 0), 0));
+
+  return {
+    avgWin,
+    avgLoss,
+    totalWins,
+    totalLosses,
+    largestWin,
+    largestLoss,
+    winCount: winningTrades.length,
+    lossCount: losingTrades.length
+  };
+}
+
+// Calculate trade expectation
+export function calculateTradeExpectation(trades: any[]) {
+  // API already filters for closed trades
+  const winLossData = calculateWinLossPnlComparison(trades);
+  
+  const winRate = winLossData.winCount / (winLossData.winCount + winLossData.lossCount) || 0;
+  const lossRate = 1 - winRate;
+  
+  // Expectation = (Win Rate * Avg Win) - (Loss Rate * Avg Loss)
+  const expectation = (winRate * winLossData.avgWin) - (lossRate * winLossData.avgLoss);
+  
+  // Profit Factor = Total Wins / Total Losses
+  const profitFactor = winLossData.totalLosses > 0 ? winLossData.totalWins / winLossData.totalLosses : 0;
+  
+  // Payoff Ratio = Avg Win / Avg Loss
+  const payoffRatio = winLossData.avgLoss > 0 ? winLossData.avgWin / winLossData.avgLoss : 0;
+  
+  // Kelly Percentage = Win Rate - (Loss Rate / Payoff Ratio)
+  const kellyPercentage = payoffRatio > 0 ? (winRate - (lossRate / payoffRatio)) * 100 : 0;
+
+  return {
+    expectation,
+    expectationPerTrade: expectation,
+    profitFactor,
+    payoffRatio,
+    winRate: winRate * 100,
+    avgWin: winLossData.avgWin,
+    avgLoss: winLossData.avgLoss,
+    kellyPercentage: Math.max(0, Math.min(100, kellyPercentage)) // Clamp between 0-100
+  };
+}
+
+// Calculate cumulative P&L over time
+export function calculateCumulativePnl(trades: any[]) {
+  // API already filters for closed trades
+  const sortedTrades = trades
+    .sort((a, b) => new Date(a.exitDate || a.date).getTime() - new Date(b.exitDate || b.date).getTime());
+
+  let cumulative = 0;
+  const cumulativeData: any[] = [];
+
+  // Group trades by date
+  const tradesByDate = sortedTrades.reduce((acc: any, trade) => {
+    const date = new Date(trade.exitDate || trade.date).toISOString().split('T')[0];
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+    acc[date].push(trade);
+    return acc;
+  }, {});
+
+  // Calculate cumulative P&L for each date
+  Object.keys(tradesByDate).sort().forEach(date => {
+    const dayTrades = tradesByDate[date];
+    const dayPnl = dayTrades.reduce((sum: number, t: any) => sum + Number(t.pnl), 0);
+    cumulative += dayPnl;
+    
+    cumulativeData.push({
+      date,
+      value: cumulative,
+      trades: dayTrades.length
+    });
+  });
+
+  return cumulativeData;
+}
+
+// Calculate cumulative drawdown
+export function calculateCumulativeDrawdown(trades: any[]) {
+  const cumulativePnl = calculateCumulativePnl(trades);
+  
+  let peak = 0;
+  const drawdownData: any[] = [];
+
+  cumulativePnl.forEach(point => {
+    peak = Math.max(peak, point.value);
+    const drawdown = peak > 0 ? point.value - peak : 0;
+    const drawdownPercent = peak > 0 ? (drawdown / peak) * 100 : 0;
+    
+    drawdownData.push({
+      date: point.date,
+      drawdown,
+      drawdownPercent,
+      underwater: drawdown < 0 ? Math.abs(drawdownPercent) : 0
+    });
+  });
+
+  return drawdownData;
+}

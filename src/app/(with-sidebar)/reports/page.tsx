@@ -26,8 +26,14 @@ import {
   aggregateBySimpleDuration,
   aggregateByIntradayDuration,
   aggregateByPrice,
-  aggregateByVolume
+  aggregateByVolume,
+  calculateWinLossRatio,
+  calculateWinLossPnlComparison,
+  calculateTradeExpectation,
+  calculateCumulativePnl,
+  calculateCumulativeDrawdown
 } from '@/lib/reportCalculations';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
 export default function Reports() {
   const [dateRange, setDateRange] = useState('30 Days');
@@ -84,6 +90,13 @@ export default function Reports() {
   const intradayDurationData = useMemo(() => aggregateByIntradayDuration(trades), [trades]);
   const priceData = useMemo(() => aggregateByPrice(trades), [trades]);
   const volumeData = useMemo(() => aggregateByVolume(trades), [trades]);
+  
+  // Win/Loss/Expectation data
+  const winLossRatio = useMemo(() => calculateWinLossRatio(trades), [trades]);
+  const winLossPnlComparison = useMemo(() => calculateWinLossPnlComparison(trades), [trades]);
+  const tradeExpectation = useMemo(() => calculateTradeExpectation(trades), [trades]);
+  const cumulativePnlData = useMemo(() => calculateCumulativePnl(trades), [trades]);
+  const cumulativeDrawdownData = useMemo(() => calculateCumulativeDrawdown(trades), [trades]);
 
   return (
     <div className="flex flex-col h-full">
@@ -370,16 +383,152 @@ export default function Reports() {
                 </div>
               </TabsContent>
 
-              {/* Win/Loss/Expectation Tab - Placeholder for future content */}
+              {/* Win/Loss/Expectation Tab - Full implementation with 5 charts */}
               <TabsContent value="win-loss" className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Win/Loss Ratio Chart */}
+                  <Card className="bg-surface border-default">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base font-medium text-primary">WIN/LOSS RATIO</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {winLossRatio.totalTrades > 0 ? (
+                        <ResponsiveContainer width="100%" height={300}>
+                          <PieChart>
+                            <Pie
+                              data={[
+                                { name: 'Wins', value: winLossRatio.wins, percentage: winLossRatio.winRate },
+                                { name: 'Losses', value: winLossRatio.losses, percentage: winLossRatio.lossRate },
+                                { name: 'Scratches', value: winLossRatio.scratches, percentage: winLossRatio.scratchRate }
+                              ].filter(item => item.value > 0)}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={100}
+                              paddingAngle={2}
+                              dataKey="value"
+                            >
+                              <Cell fill="#16A34A" />
+                              <Cell fill="#DC2626" />
+                              <Cell fill="#6B7280" />
+                            </Pie>
+                            <Tooltip 
+                              formatter={(value: number, name: string, props: any) => [
+                                `${value} (${props.payload.percentage.toFixed(1)}%)`,
+                                name
+                              ]}
+                              contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
+                              labelStyle={{ color: '#E5E7EB' }}
+                            />
+                            <Legend 
+                              verticalAlign="bottom" 
+                              height={36}
+                              formatter={(value, entry: any) => `${value}: ${entry.payload.value} (${entry.payload.percentage.toFixed(1)}%)`}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="flex items-center justify-center h-[300px] text-muted">
+                          No data available for the selected period
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Win/Loss P&L Comparison Chart */}
+                  <Card className="bg-surface border-default">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base font-medium text-primary">WIN/LOSS P&L COMPARISON</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <CustomBarChart
+                        data={[
+                          { date: 'Avg Win', value: winLossPnlComparison.avgWin },
+                          { date: 'Avg Loss', value: -winLossPnlComparison.avgLoss },
+                          { date: 'Largest Win', value: winLossPnlComparison.largestWin },
+                          { date: 'Largest Loss', value: -winLossPnlComparison.largestLoss }
+                        ]}
+                        title=""
+                        height={300}
+                        chartType="currency"
+                        useConditionalColors={true}
+                        showGrid={true}
+                        showTooltip={true}
+                      />
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Trade Expectation Chart */}
+                  <Card className="bg-surface border-default">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base font-medium text-primary">TRADE EXPECTATION</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {/* Single bar showing expectation */}
+                        <CustomBarChart
+                          data={[{ date: 'Expectation', value: tradeExpectation.expectation }]}
+                          title=""
+                          height={200}
+                          chartType="currency"
+                          useConditionalColors={true}
+                          showGrid={true}
+                          showTooltip={true}
+                        />
+                        {/* Metrics below */}
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-muted">Win Rate: </span>
+                            <span className="font-semibold">{tradeExpectation.winRate.toFixed(1)}%</span>
+                          </div>
+                          <div>
+                            <span className="text-muted">Profit Factor: </span>
+                            <span className="font-semibold">{tradeExpectation.profitFactor.toFixed(2)}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted">Payoff Ratio: </span>
+                            <span className="font-semibold">{tradeExpectation.payoffRatio.toFixed(2)}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted">Kelly %: </span>
+                            <span className="font-semibold">{tradeExpectation.kellyPercentage.toFixed(1)}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Cumulative P&L Chart */}
+                  <Card className="bg-surface border-default">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base font-medium text-primary">CUMULATIVE P&L</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <EquityChart 
+                        data={cumulativePnlData}
+                        title=""
+                        height={300}
+                        useConditionalColors={false}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                {/* Cumulative Drawdown Chart - Full Width */}
                 <Card className="bg-surface border-default">
-                  <CardHeader>
-                    <CardTitle className="text-base font-medium text-primary">
-                      Win/Loss/Expectation Analysis
-                    </CardTitle>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base font-medium text-primary">CUMULATIVE DRAWDOWN</CardTitle>
                   </CardHeader>
-                  <CardContent className="h-[300px] flex items-center justify-center">
-                    <span className="text-muted">Charts have been moved to Days/Times tab</span>
+                  <CardContent>
+                    <EquityChart 
+                      data={cumulativeDrawdownData.map(d => ({ 
+                        date: d.date, 
+                        value: d.drawdown 
+                      }))}
+                      title=""
+                      height={300}
+                      useConditionalColors={true}
+                    />
                   </CardContent>
                 </Card>
               </TabsContent>
