@@ -5,7 +5,7 @@ import TradeDistributionChart from '@/components/charts/TradeDistributionChart';
 import ConditionalBarChart from '@/components/charts/ConditionalBarChart';
 import { AnalyticsTabContentProps } from '../AnalyticsTabsSection';
 
-export default function DaysTimesTab({ data, context }: AnalyticsTabContentProps) {
+export default function DaysTimesTab({ data }: AnalyticsTabContentProps) {
   return (
     <div className="space-y-8">
       {/* Days/Times Analytics */}

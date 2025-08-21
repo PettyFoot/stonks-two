@@ -158,7 +158,7 @@ export interface DashboardMetricsResponse {
     generatedAt: string;
     metricsIncluded: string[];
   };
-  formatted?: any; // Formatted display values
+  formatted?: Record<string, unknown>; // Formatted display values
 }
 
 // Filter Types

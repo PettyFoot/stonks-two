@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { Order, OrderStatus } from '@prisma/client';
+import { Order } from '@prisma/client';
 
 export class OrdersRepository {
   /**

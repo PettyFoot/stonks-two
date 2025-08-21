@@ -1,21 +1,20 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import TradeDistributionChart from '@/components/charts/TradeDistributionChart';
 import ConditionalBarChart from '@/components/charts/ConditionalBarChart';
 import { AnalyticsTabContentProps } from '../AnalyticsTabsSection';
-import { DistributionData } from '@/types';
 
-export default function InstrumentTab({ data, context }: AnalyticsTabContentProps) {
+export default function InstrumentTab({ data }: AnalyticsTabContentProps) {
   // Generate instrument analysis from existing data
   const symbolData = useMemo(() => {
     // Simulate top symbols based on trading activity
     const symbols = ['AAPL', 'TSLA', 'NVDA', 'SPY', 'QQQ', 'MSFT', 'GOOGL', 'AMZN'];
     const totalTrades = data.statistics.totalTrades || 1;
     
-    return symbols.map((symbol, index) => {
+    return symbols.map((symbol) => {
       const tradePercent = Math.max(0.05, Math.random() * 0.3); // 5-30% of trades per symbol
       const count = Math.round(totalTrades * tradePercent);
       const pnlMultiplier = (Math.random() - 0.5) * 2; // Random positive/negative performance
@@ -119,7 +118,7 @@ export default function InstrumentTab({ data, context }: AnalyticsTabContentProp
                   <span>Total P&L</span>
                   <span>Avg P&L</span>
                 </div>
-                {symbolData.map((symbol, index) => (
+                {symbolData.map((symbol) => (
                   <div key={symbol.category} className="grid grid-cols-5 gap-4 text-sm py-1">
                     <span className="font-medium text-primary">{symbol.category}</span>
                     <span className="text-muted-foreground">{symbol.count}</span>

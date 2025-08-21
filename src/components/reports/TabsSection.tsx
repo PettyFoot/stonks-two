@@ -13,7 +13,7 @@ import {
 } from '@/lib/reportCalculations';
 
 interface TabsSectionProps {
-  trades?: any[];
+  trades?: Array<Record<string, unknown>>;
 }
 
 export default function TabsSection({ trades = [] }: TabsSectionProps) {

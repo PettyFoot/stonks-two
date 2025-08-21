@@ -30,7 +30,7 @@ interface DetailedReportsData {
     totalFees: number;
   };
   // Raw trades for chart calculations
-  trades: any[];
+  trades: Array<Record<string, unknown>>;
   loading: boolean;
   error: string | null;
 }

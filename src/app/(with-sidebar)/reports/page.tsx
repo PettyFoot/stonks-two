@@ -11,7 +11,7 @@ import EquityChart from '@/components/charts/EquityChart';
 import CustomBarChart from '@/components/charts/BarChart';
 import MonthTradeDistributionChart from '@/components/charts/MonthTradeDistributionChart';
 import DistributionCharts from '@/components/charts/DistributionCharts';
-import { mockGapPerformance, mockVolumePerformance, mockMonthlyPerformance, mockSymbolPerformance } from '@/data/mockData';
+import { mockMonthlyPerformance } from '@/data/mockData';
 import { useReportsData } from '@/hooks/useReportsData';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 
@@ -40,10 +40,10 @@ export default function Reports() {
   const [pnlType, setPnlType] = useState('Gross');
   const [viewMode, setViewMode] = useState('$ Value');
   const [reportType, setReportType] = useState('Aggregate P&L');
-  const { filters } = useGlobalFilters();
+  const { } = useGlobalFilters();
   
   // Original data hook for existing charts
-  const { dailyPnl, averageDailyPnl, averageDailyVolume, cumulativePnl, winPercentage, totalVolume, daysDiff, loading, error } = useReportsData();
+  const { dailyPnl, averageDailyPnl, averageDailyVolume, cumulativePnl, loading, error } = useReportsData();
   
   // New enhanced data hook for statistics and new charts
   const { stats, trades, loading: detailedLoading, error: detailedError } = useDetailedReportsData();
@@ -56,14 +56,6 @@ export default function Reports() {
     }));
   }, [dailyPnl]);
 
-  // Calculate average daily P&L for Gross Daily P&L chart
-  const averagePnlData = useMemo(() => {
-    if (averageDailyPnl === 0) return [];
-    return [{
-      date: 'Average',
-      value: averageDailyPnl
-    }];
-  }, [averageDailyPnl]);
 
   // Calculate average daily volume for chart display
   const dailyVolumeData = useMemo(() => {
@@ -417,8 +409,8 @@ export default function Reports() {
                               ))}
                             </Pie>
                             <Tooltip 
-                              formatter={(value: number, name: string, props: any) => [
-                                `${value} (${props.payload.percentage.toFixed(1)}%)`,
+                              formatter={(value: number, name: string, props: { payload?: { percentage: number } }) => [
+                                `${value} (${props.payload?.percentage?.toFixed(1) || '0.0'}%)`,
                                 name
                               ]}
                               contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
@@ -427,7 +419,7 @@ export default function Reports() {
                             <Legend 
                               verticalAlign="bottom" 
                               height={36}
-                              formatter={(value, entry: any) => `${value}: ${entry.payload.value} (${entry.payload.percentage.toFixed(1)}%)`}
+                              formatter={(value, entry: { payload?: { value?: number; percentage?: number } }) => `${value}: ${entry.payload?.value || 0} (${entry.payload?.percentage?.toFixed(1) || '0.0'}%)`}
                             />
                           </PieChart>
                         </ResponsiveContainer>

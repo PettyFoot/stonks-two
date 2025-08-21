@@ -3,7 +3,6 @@ import { getCurrentUser } from '@/lib/auth0';
 import { prisma } from '@/lib/prisma';
 import { AnalyticsService } from '@/lib/services/analyticsService';
 import { CacheService } from '@/lib/services/cacheService';
-import { Prisma } from '@prisma/client';
 
 export interface AnalyticsRequest {
   dateRange?: {
@@ -250,25 +249,25 @@ export async function POST(request: NextRequest) {
     results.forEach((result, index) => {
       if (result.status === 'fulfilled' && result.value) {
         const aggregationType = aggregationTypes[index];
-        if (body.aggregations.includes(aggregationType as any)) {
+        if (body.aggregations.includes(aggregationType as 'distribution' | 'performance' | 'statistics' | 'time_analysis' | 'volume_analysis' | 'time_intervals')) {
           switch (aggregationType) {
             case 'distribution':
-              response.distribution = result.value;
+              response.distribution = result.value as AnalyticsResponse['distribution'];
               break;
             case 'performance':
-              response.performance = result.value;
+              response.performance = result.value as AnalyticsResponse['performance'];
               break;
             case 'statistics':
-              response.statistics = result.value;
+              response.statistics = result.value as AnalyticsResponse['statistics'];
               break;
             case 'time_analysis':
-              response.timeAnalysis = result.value;
+              response.timeAnalysis = result.value as AnalyticsResponse['timeAnalysis'];
               break;
             case 'volume_analysis':
-              (response as any).volumeAnalysis = result.value;
+              (response as AnalyticsResponse & { volumeAnalysis?: unknown }).volumeAnalysis = result.value;
               break;
             case 'time_intervals':
-              (response as any).timeIntervals = result.value;
+              (response as AnalyticsResponse & { timeIntervals?: unknown }).timeIntervals = result.value;
               break;
           }
         }
@@ -312,13 +311,13 @@ export async function GET(request: NextRequest) {
       dateRange: {
         start: searchParams.get('start') || '',
         end: searchParams.get('end') || '',
-        preset: (searchParams.get('preset') as any) || '30d'
+        preset: (searchParams.get('preset') as '30d' | '60d' | '90d' | '1w' | '2w' | '1m' | '3m' | '6m' | 'last-year' | 'ytd' | 'yesterday') || '30d'
       },
-      aggregations: (searchParams.get('aggregations')?.split(',') as any) || ['statistics'],
+      aggregations: (searchParams.get('aggregations')?.split(',') as ('distribution' | 'performance' | 'statistics' | 'time_analysis' | 'volume_analysis' | 'time_intervals')[]) || ['statistics'],
       filters: {
         symbols: searchParams.get('symbols')?.split(','),
         tags: searchParams.get('tags')?.split(','),
-        side: searchParams.get('side') as any,
+        side: searchParams.get('side') as 'LONG' | 'SHORT' | undefined,
         timeZone: searchParams.get('timeZone') || 'America/New_York'
       }
     };

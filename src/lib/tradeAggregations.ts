@@ -33,7 +33,7 @@ export async function calculateKellyCriterion(
 ): Promise<number> {
   const filterConditions = buildFilterConditions(filters);
   
-  const result = await prisma.$queryRaw<any[]>`
+  const result = await prisma.$queryRaw<Array<Record<string, unknown>>>`
     WITH trade_stats AS (
       SELECT 
         COUNT(*) FILTER (WHERE pnl > 0) as wins,
@@ -79,7 +79,7 @@ export async function calculateSharpeRatio(
   const filterConditions = buildFilterConditions(filters);
   const periodTrunc = period === 'daily' ? 'day' : period === 'weekly' ? 'week' : 'month';
   
-  const result = await prisma.$queryRaw<any[]>`
+  const result = await prisma.$queryRaw<Array<Record<string, unknown>>>`
     WITH period_returns AS (
       SELECT 
         DATE_TRUNC('${Prisma.raw(periodTrunc)}', exit_date) as period,
@@ -138,7 +138,7 @@ export async function calculateDrawdownMetrics(
 }> {
   const filterConditions = buildFilterConditions(filters);
   
-  const result = await prisma.$queryRaw<any[]>`
+  const result = await prisma.$queryRaw<Array<Record<string, unknown>>>`
     WITH cumulative_pnl AS (
       SELECT 
         exit_date,
@@ -202,7 +202,7 @@ export async function calculateDrawdownMetrics(
   const metrics = result[0] || {};
   
   // Calculate recovery time from max drawdown
-  const recoveryResult = await prisma.$queryRaw<any[]>`
+  const recoveryResult = await prisma.$queryRaw<Array<Record<string, unknown>>>`
     WITH max_dd_date AS (
       SELECT exit_date as dd_date
       FROM (
@@ -280,7 +280,7 @@ export async function calculateRMultiples(
 }> {
   const filterConditions = buildFilterConditions(filters);
   
-  const result = await prisma.$queryRaw<any[]>`
+  const result = await prisma.$queryRaw<Array<Record<string, unknown>>>`
     WITH r_multiples AS (
       SELECT 
         pnl::NUMERIC / ${initialRisk} as r_multiple,
@@ -321,7 +321,7 @@ export async function calculateRMultiples(
       END
   `;
 
-  const statsResult = await prisma.$queryRaw<any[]>`
+  const statsResult = await prisma.$queryRaw<Array<Record<string, unknown>>>`
     SELECT 
       AVG(pnl::NUMERIC / ${initialRisk}) as avg_r_multiple,
       SUM(pnl::NUMERIC / ${initialRisk}) / COUNT(*) as expectancy
@@ -362,7 +362,7 @@ export async function calculateMarketConditionPerformance(
   
   // This would require market data integration
   // For now, we'll analyze by volatility of returns
-  const result = await prisma.$queryRaw<any[]>`
+  const result = await prisma.$queryRaw<Array<Record<string, unknown>>>`
     WITH daily_volatility AS (
       SELECT 
         DATE(exit_date) as trade_date,
@@ -435,7 +435,7 @@ export async function calculateTradeQualityMetrics(
   
   // Note: This requires high/low during trade data
   // Using available data for approximation
-  const result = await prisma.$queryRaw<any[]>`
+  const result = await prisma.$queryRaw<Array<Record<string, unknown>>>`
     WITH trade_quality AS (
       SELECT 
         pnl::NUMERIC as pnl,
@@ -530,7 +530,7 @@ export async function calculateDashboardMetrics(
 ) {
   const filterConditions = buildFilterConditions(filters);
   
-  const result = await prisma.$queryRaw<any[]>`
+  const result = await prisma.$queryRaw<Array<Record<string, unknown>>>`
     WITH trade_metrics AS (
       SELECT 
         pnl::NUMERIC as pnl,

@@ -34,7 +34,7 @@ interface AnalyticsTabsSectionProps {
 }
 
 // Placeholder component for tabs not yet implemented
-const PlaceholderTab: React.FC<AnalyticsTabContentProps> = ({ data, context }) => (
+const PlaceholderTab: React.FC<AnalyticsTabContentProps> = ({  }) => (
   <Card className="bg-surface border-default">
     <CardHeader className="pb-2">
       <CardTitle className="text-base font-medium text-primary">Coming Soon</CardTitle>

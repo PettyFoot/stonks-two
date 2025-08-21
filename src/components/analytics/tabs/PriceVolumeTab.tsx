@@ -1,14 +1,13 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import TradeDistributionChart from '@/components/charts/TradeDistributionChart';
 import ConditionalBarChart from '@/components/charts/ConditionalBarChart';
 import { AnalyticsTabContentProps } from '../AnalyticsTabsSection';
-import { DistributionData, ChartDataPoint } from '@/types';
 
-export default function PriceVolumeTab({ data, context }: AnalyticsTabContentProps) {
+export default function PriceVolumeTab({ data }: AnalyticsTabContentProps) {
   // Generate price range analysis from existing data
   const priceRangeData = useMemo(() => {
     // Create price ranges based on P&L distribution

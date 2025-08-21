@@ -122,7 +122,7 @@ export class CacheService {
     userId: string, 
     aggregationType: 'hourly' | 'daily' | 'weekly' | 'monthly',
     period: string,
-    data: any
+    data: unknown
   ): Promise<void> {
     if (!this.redis) return; // Skip if Redis is not available
     
@@ -150,7 +150,7 @@ export class CacheService {
     userId: string,
     aggregationType: 'hourly' | 'daily' | 'weekly' | 'monthly',
     period: string
-  ): Promise<any | null> {
+  ): Promise<unknown | null> {
     if (!this.redis) return null; // Skip if Redis is not available
     
     const key = `${this.keyPrefix}time:${userId}:${aggregationType}:${period}`;
@@ -167,7 +167,7 @@ export class CacheService {
   /**
    * Batch set multiple cache entries
    */
-  async batchSet(entries: Array<{ key: string; value: any; ttl?: number }>): Promise<void> {
+  async batchSet(entries: Array<{ key: string; value: unknown; ttl?: number }>): Promise<void> {
     if (!this.redis) return; // Skip if Redis is not available
     
     try {
@@ -193,7 +193,7 @@ export class CacheService {
       // This would be called periodically or after trade updates
       // to pre-compute common analytics queries
       
-      const commonRequests: AnalyticsRequest[] = [
+      const _commonRequests: AnalyticsRequest[] = [
         // 30-day overview
         {
           dateRange: { preset: '30d' },

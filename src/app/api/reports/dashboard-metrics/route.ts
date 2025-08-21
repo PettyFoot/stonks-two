@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     const dateFrom = searchParams.get('from') ? new Date(searchParams.get('from')!) : undefined;
     const dateTo = searchParams.get('to') ? new Date(searchParams.get('to')!) : undefined;
     const symbol = searchParams.get('symbol') || undefined;
-    const side = searchParams.get('side') as 'LONG' | 'SHORT' | undefined;
+    const side = searchParams.get('side') as 'LONG' | 'SHORT' | 'all' | undefined;
     const requestedMetrics = searchParams.get('metrics')?.split(',') || ['all'];
 
     // Build filters object
@@ -49,18 +49,18 @@ export async function GET(request: NextRequest) {
       ...(dateFrom && { dateFrom }),
       ...(dateTo && { dateTo }),
       ...(symbol && symbol !== 'all' && { symbol }),
-      ...(side && side !== 'all' && { side }),
+      ...(side && side !== 'all' && { side: side as 'LONG' | 'SHORT' }),
     };
 
     // Initialize response object
-    const response: any = {};
+    const response: Record<string, unknown> = {};
 
     // Helper to check if metric is requested
     const isRequested = (metric: string) => 
       requestedMetrics.includes('all') || requestedMetrics.includes(metric);
 
     // Fetch requested metrics in parallel for optimal performance
-    const promises: Promise<any>[] = [];
+    const promises: Promise<unknown>[] = [];
     const promiseKeys: string[] = [];
 
     if (isRequested('dashboard')) {
@@ -148,51 +148,51 @@ export async function GET(request: NextRequest) {
 /**
  * Format metrics for display with proper number formatting
  */
-function formatMetricsForDisplay(metrics: any) {
-  const formatted: any = {};
+function formatMetricsForDisplay(metrics: Record<string, unknown>) {
+  const formatted: Record<string, unknown> = {};
 
   if (metrics.dashboard) {
-    const d = metrics.dashboard;
+    const d = metrics.dashboard as Record<string, unknown>;
     formatted.overview = {
-      totalTrades: d.total_trades || 0,
-      winRate: formatPercent(d.win_rate),
-      profitFactor: formatNumber(d.profit_factor, 2),
-      expectancy: formatCurrency(d.expectancy),
-      totalPnl: formatCurrency(d.total_pnl),
-      sharpeRatio: formatNumber(d.sharpe_ratio, 2),
+      totalTrades: (d.total_trades as number) || 0,
+      winRate: formatPercent(d.win_rate as number),
+      profitFactor: formatNumber(d.profit_factor as number, 2),
+      expectancy: formatCurrency(d.expectancy as number),
+      totalPnl: formatCurrency(d.total_pnl as number),
+      sharpeRatio: formatNumber(d.sharpe_ratio as number, 2),
     };
 
     formatted.performance = {
-      bestTrade: formatCurrency(d.best_trade),
-      worstTrade: formatCurrency(d.worst_trade),
-      avgWin: formatCurrency(d.avg_win),
-      avgLoss: formatCurrency(d.avg_loss),
-      avgDailyPnl: formatCurrency(d.avg_daily_pnl),
-      bestDay: formatCurrency(d.best_day),
-      worstDay: formatCurrency(d.worst_day),
+      bestTrade: formatCurrency(d.best_trade as number),
+      worstTrade: formatCurrency(d.worst_trade as number),
+      avgWin: formatCurrency(d.avg_win as number),
+      avgLoss: formatCurrency(d.avg_loss as number),
+      avgDailyPnl: formatCurrency(d.avg_daily_pnl as number),
+      bestDay: formatCurrency(d.best_day as number),
+      worstDay: formatCurrency(d.worst_day as number),
     };
 
     formatted.volume = {
-      totalVolume: formatNumber(d.total_volume, 0),
-      avgHoldTime: formatDuration(d.avg_hold_time),
-      tradingDays: d.trading_days || 0,
+      totalVolume: formatNumber(d.total_volume as number, 0),
+      avgHoldTime: formatDuration(d.avg_hold_time as number),
+      tradingDays: (d.trading_days as number) || 0,
     };
   }
 
   if (metrics.kelly !== undefined) {
     formatted.kelly = {
-      percentage: formatPercent(metrics.kelly * 100),
-      recommendation: getKellyRecommendation(metrics.kelly),
+      percentage: formatPercent((metrics.kelly as number) * 100),
+      recommendation: getKellyRecommendation(metrics.kelly as number),
     };
   }
 
   if (metrics.drawdown) {
-    const dd = metrics.drawdown;
+    const dd = metrics.drawdown as Record<string, unknown>;
     formatted.drawdown = {
-      maxDrawdown: formatCurrency(dd.maxDrawdown),
-      maxDrawdownPercent: formatPercent(dd.maxDrawdownPercent),
-      currentDrawdown: formatCurrency(dd.currentDrawdown),
-      currentDrawdownPercent: formatPercent(dd.currentDrawdownPercent),
+      maxDrawdown: formatCurrency(dd.maxDrawdown as number),
+      maxDrawdownPercent: formatPercent(dd.maxDrawdownPercent as number),
+      currentDrawdown: formatCurrency(dd.currentDrawdown as number),
+      currentDrawdownPercent: formatPercent(dd.currentDrawdownPercent as number),
       maxDuration: `${dd.maxDrawdownDuration} days`,
       recoveryTime: dd.recoveryTime ? `${dd.recoveryTime} days` : 'N/A',
     };

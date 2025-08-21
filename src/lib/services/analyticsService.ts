@@ -20,7 +20,7 @@ export class AnalyticsService {
       end?: string; 
       preset?: '30d' | '60d' | '90d' | '1w' | '2w' | '1m' | '3m' | '6m' | 'last-year' | 'ytd' | 'yesterday' 
     },
-    timeZone: string = 'America/New_York'
+    _timeZone: string = 'America/New_York'
   ): { start: Date; end: Date } {
     const now = new Date();
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -122,7 +122,7 @@ export class AnalyticsService {
    */
   async calculateDistributionMetrics(
     where: Prisma.TradeWhereInput,
-    timeZone: string = 'America/New_York'
+    _timeZone: string = 'America/New_York'
   ) {
     const cacheKey = `distribution:${this.userId}:${JSON.stringify(where)}`;
     const cached = await this.cacheService.getTimeAggregation(this.userId, 'daily', cacheKey);
@@ -367,7 +367,7 @@ export class AnalyticsService {
     const intervalType = this.determineOptimalInterval(dateRange);
     
     // Build period selection SQL based on interval type
-    let periodSelector: any;
+    let periodSelector: Prisma.Sql;
     switch (intervalType) {
       case 'daily':
         periodSelector = Prisma.sql`date::date::text`;
@@ -494,7 +494,7 @@ export class AnalyticsService {
    */
   async calculatePerformanceMetrics(
     where: Prisma.TradeWhereInput,
-    timeZone: string = 'America/New_York'
+    _timeZone: string = 'America/New_York'
   ) {
     // Daily performance
     const dailyPerformance = await prisma.$queryRaw<Array<{
@@ -721,7 +721,7 @@ export class AnalyticsService {
    */
   async calculateTimeAnalysis(
     where: Prisma.TradeWhereInput,
-    timeZone: string = 'America/New_York'
+    _timeZone: string = 'America/New_York'
   ) {
     // Market session analysis
     const sessionAnalysis = await prisma.$queryRaw<Array<{
@@ -921,8 +921,8 @@ export class AnalyticsService {
     return maxDrawdown;
   }
 
-  private groupByDay(trades: Array<{ pnl: any; date: Date }>): Record<string, Array<{ pnl: any; date: Date }>> {
-    const groups: Record<string, Array<{ pnl: any; date: Date }>> = {};
+  private groupByDay(trades: Array<{ pnl: number; date: Date }>): Record<string, Array<{ pnl: number; date: Date }>> {
+    const groups: Record<string, Array<{ pnl: number; date: Date }>> = {};
     
     for (const trade of trades) {
       const dateKey = trade.date.toISOString().split('T')[0];

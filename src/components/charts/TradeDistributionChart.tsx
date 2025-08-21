@@ -21,7 +21,7 @@ export default function TradeDistributionChart({
   orientation = 'vertical'
 }: TradeDistributionChartProps) {
   
-  const formatTooltip = (value: number, name: string, props: any) => {
+  const formatTooltip = (value: number, name: string, props: { payload?: { percentage?: number; count?: number } }) => {
     const { payload } = props;
     if (!payload) return [value, name];
 
@@ -74,7 +74,7 @@ export default function TradeDistributionChart({
               return (
                 <div key={index} className="flex items-center gap-3">
                   <div className="w-16 text-sm text-muted-foreground text-right">
-                    {formatAxisLabel(item.category)}
+                    {formatAxisLabel(item.category || '')}
                   </div>
                   <div className="flex-1 relative">
                     <div className="h-6 bg-muted/20 rounded">

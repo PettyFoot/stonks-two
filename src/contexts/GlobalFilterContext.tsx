@@ -42,7 +42,7 @@ export interface GlobalFilterContextType {
   setTimeRange: (range: '30' | '60' | '90') => void;
   setTimeFramePreset: (preset: TimeFramePreset) => void;
   setCustomDateRange: (from?: string, to?: string) => void;
-  updateFilter: (key: keyof GlobalFilterState, value: any) => void;
+  updateFilter: (key: keyof GlobalFilterState, value: unknown) => void;
   updateFilters: (filters: Partial<GlobalFilterState>) => void;
   clearFilters: () => void;
   clearAdvancedFilters: () => void;
@@ -145,7 +145,7 @@ type FilterAction =
   | { type: 'SET_TIME_RANGE'; payload: '30' | '60' | '90' }
   | { type: 'SET_TIME_FRAME_PRESET'; payload: TimeFramePreset }
   | { type: 'SET_CUSTOM_DATE_RANGE'; payload: { from?: string; to?: string } }
-  | { type: 'UPDATE_FILTER'; payload: { key: keyof GlobalFilterState; value: any } }
+  | { type: 'UPDATE_FILTER'; payload: { key: keyof GlobalFilterState; value: unknown } }
   | { type: 'UPDATE_FILTERS'; payload: Partial<GlobalFilterState> }
   | { type: 'CLEAR_FILTERS' }
   | { type: 'CLEAR_ADVANCED_FILTERS' }
@@ -279,7 +279,7 @@ export function GlobalFilterProvider({ children }: GlobalFilterProviderProps) {
     dispatch({ type: 'SET_CUSTOM_DATE_RANGE', payload: { from, to } });
   }, []);
 
-  const updateFilter = useCallback((key: keyof GlobalFilterState, value: any) => {
+  const updateFilter = useCallback((key: keyof GlobalFilterState, value: unknown) => {
     dispatch({ type: 'UPDATE_FILTER', payload: { key, value } });
   }, []);
 

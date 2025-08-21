@@ -154,10 +154,23 @@ export async function GET(request: NextRequest) {
     const avgDailyGainLoss = uniqueDates.length > 0 ? totalPnl / uniqueDates.length : 0;
     const avgDailyVolume = uniqueDates.length > 0 ? totalVolume / uniqueDates.length : 0;
 
+    // Transform trades to match TradeData interface
+    const transformedTrades = trades.map(trade => ({
+      ...trade,
+      pnl: trade.pnl?.toNumber() || 0,
+      avgEntryPrice: trade.avgEntryPrice?.toNumber() || null,
+      avgExitPrice: trade.avgExitPrice?.toNumber() || null,
+      entryPrice: trade.entryPrice?.toNumber() || null,
+      exitPrice: trade.exitPrice?.toNumber() || null,
+      quantity: trade.quantity || 0,
+      commissions: trade.commission?.toNumber() || null,
+      fees: trade.fees?.toNumber() || null
+    }));
+
     // Calculate advanced metrics
-    const streaks = calculateConsecutiveStreaks(trades);
-    const stdDev = calculatePnlStandardDeviation(trades);
-    const profitFactor = calculateProfitFactor(trades);
+    const streaks = calculateConsecutiveStreaks(transformedTrades);
+    const stdDev = calculatePnlStandardDeviation(transformedTrades);
+    const profitFactor = calculateProfitFactor(transformedTrades);
 
     // Prepare statistics response
     const stats = {

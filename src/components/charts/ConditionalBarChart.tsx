@@ -178,7 +178,7 @@ const ConditionalBarChart = React.memo(function ConditionalBarChart({
             <Bar 
               dataKey="value" 
               radius={[2, 2, 0, 0]}
-              label={showValues ? (props: any) => <CustomLabel {...props} /> : false}
+              label={showValues ? (props: { x: number; y: number; width: number; height: number; value: number }) => <CustomLabel {...props} /> : false}
             >
               {barCells}
             </Bar>

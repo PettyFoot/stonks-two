@@ -121,7 +121,7 @@ async function calculateWinLossMetrics(
 ): Promise<WinLossMetrics> {
   
   // Use raw SQL for complex aggregations - more efficient than multiple Prisma queries
-  const result = await prisma.$queryRaw<any[]>`
+  const result = await prisma.$queryRaw<Array<Record<string, number>>>`
     WITH trade_metrics AS (
       SELECT 
         pnl::NUMERIC as pnl,
@@ -135,8 +135,8 @@ async function calculateWinLossMetrics(
       WHERE 
         user_id = ${userId}
         AND status = 'CLOSED'
-        ${where.exitDate?.gte ? Prisma.sql`AND exit_date >= ${where.exitDate.gte}` : Prisma.empty}
-        ${where.exitDate?.lte ? Prisma.sql`AND exit_date <= ${where.exitDate.lte}` : Prisma.empty}
+        ${(typeof where.exitDate === 'object' && where.exitDate && 'gte' in where.exitDate) ? Prisma.sql`AND exit_date >= ${where.exitDate.gte}` : Prisma.empty}
+        ${(typeof where.exitDate === 'object' && where.exitDate && 'lte' in where.exitDate) ? Prisma.sql`AND exit_date <= ${where.exitDate.lte}` : Prisma.empty}
         ${where.symbol ? Prisma.sql`AND symbol = ${where.symbol}` : Prisma.empty}
         ${where.side ? Prisma.sql`AND side = ${where.side}` : Prisma.empty}
     )
@@ -207,7 +207,7 @@ async function calculateCumulativeMetrics(
   where: Prisma.TradeWhereInput
 ): Promise<CumulativeDataPoint[]> {
   
-  const result = await prisma.$queryRaw<any[]>`
+  const result = await prisma.$queryRaw<Array<Record<string, number>>>`
     WITH daily_pnl AS (
       SELECT 
         DATE(exit_date) as trade_date,
@@ -218,8 +218,8 @@ async function calculateCumulativeMetrics(
         user_id = ${userId}
         AND status = 'CLOSED'
         AND exit_date IS NOT NULL
-        ${where.exitDate?.gte ? Prisma.sql`AND exit_date >= ${where.exitDate.gte}` : Prisma.empty}
-        ${where.exitDate?.lte ? Prisma.sql`AND exit_date <= ${where.exitDate.lte}` : Prisma.empty}
+        ${(typeof where.exitDate === 'object' && where.exitDate && 'gte' in where.exitDate) ? Prisma.sql`AND exit_date >= ${where.exitDate.gte}` : Prisma.empty}
+        ${(typeof where.exitDate === 'object' && where.exitDate && 'lte' in where.exitDate) ? Prisma.sql`AND exit_date <= ${where.exitDate.lte}` : Prisma.empty}
         ${where.symbol ? Prisma.sql`AND symbol = ${where.symbol}` : Prisma.empty}
         ${where.side ? Prisma.sql`AND side = ${where.side}` : Prisma.empty}
       GROUP BY DATE(exit_date)
@@ -265,7 +265,7 @@ async function calculatePnlDistribution(
   where: Prisma.TradeWhereInput
 ) {
   
-  const result = await prisma.$queryRaw<any[]>`
+  const result = await prisma.$queryRaw<Array<Record<string, number>>>`
     WITH pnl_ranges AS (
       SELECT 
         WIDTH_BUCKET(pnl::NUMERIC, -1000, 1000, 20) as bucket,
@@ -277,8 +277,8 @@ async function calculatePnlDistribution(
       WHERE 
         user_id = ${userId}
         AND status = 'CLOSED'
-        ${where.exitDate?.gte ? Prisma.sql`AND exit_date >= ${where.exitDate.gte}` : Prisma.empty}
-        ${where.exitDate?.lte ? Prisma.sql`AND exit_date <= ${where.exitDate.lte}` : Prisma.empty}
+        ${(typeof where.exitDate === 'object' && where.exitDate && 'gte' in where.exitDate) ? Prisma.sql`AND exit_date >= ${where.exitDate.gte}` : Prisma.empty}
+        ${(typeof where.exitDate === 'object' && where.exitDate && 'lte' in where.exitDate) ? Prisma.sql`AND exit_date <= ${where.exitDate.lte}` : Prisma.empty}
         ${where.symbol ? Prisma.sql`AND symbol = ${where.symbol}` : Prisma.empty}
         ${where.side ? Prisma.sql`AND side = ${where.side}` : Prisma.empty}
       GROUP BY bucket
@@ -311,7 +311,7 @@ async function calculateStreaks(
   where: Prisma.TradeWhereInput
 ) {
   
-  const result = await prisma.$queryRaw<any[]>`
+  const result = await prisma.$queryRaw<Array<Record<string, number>>>`
     WITH trade_outcomes AS (
       SELECT 
         exit_date,
@@ -326,8 +326,8 @@ async function calculateStreaks(
         user_id = ${userId}
         AND status = 'CLOSED'
         AND exit_date IS NOT NULL
-        ${where.exitDate?.gte ? Prisma.sql`AND exit_date >= ${where.exitDate.gte}` : Prisma.empty}
-        ${where.exitDate?.lte ? Prisma.sql`AND exit_date <= ${where.exitDate.lte}` : Prisma.empty}
+        ${(typeof where.exitDate === 'object' && where.exitDate && 'gte' in where.exitDate) ? Prisma.sql`AND exit_date >= ${where.exitDate.gte}` : Prisma.empty}
+        ${(typeof where.exitDate === 'object' && where.exitDate && 'lte' in where.exitDate) ? Prisma.sql`AND exit_date <= ${where.exitDate.lte}` : Prisma.empty}
         ${where.symbol ? Prisma.sql`AND symbol = ${where.symbol}` : Prisma.empty}
         ${where.side ? Prisma.sql`AND side = ${where.side}` : Prisma.empty}
     ),
@@ -358,7 +358,7 @@ async function calculateStreaks(
   const streakData = result[0] || {};
   
   // Also get current streak
-  const currentStreakResult = await prisma.$queryRaw<any[]>`
+  const currentStreakResult = await prisma.$queryRaw<Array<{ current_streak: number; streak_type: string }>>`
     WITH recent_trades AS (
       SELECT 
         pnl,
@@ -404,7 +404,7 @@ async function calculateStreaks(
     avgWinStreak: Number(streakData.avg_win_streak) || 0,
     avgLossStreak: Number(streakData.avg_loss_streak) || 0,
     currentStreak: {
-      type: currentStreak.outcome,
+      type: currentStreak.streak_type,
       count: Number(currentStreak.current_streak) || 0,
     },
   };
@@ -419,7 +419,7 @@ async function analyzeTradeDuration(
   where: Prisma.TradeWhereInput
 ) {
   
-  const result = await prisma.$queryRaw<any[]>`
+  const result = await prisma.$queryRaw<Array<Record<string, number>>>`
     WITH duration_analysis AS (
       SELECT 
         CASE 
@@ -445,8 +445,8 @@ async function analyzeTradeDuration(
         user_id = ${userId}
         AND status = 'CLOSED'
         AND time_in_trade IS NOT NULL
-        ${where.exitDate?.gte ? Prisma.sql`AND exit_date >= ${where.exitDate.gte}` : Prisma.empty}
-        ${where.exitDate?.lte ? Prisma.sql`AND exit_date <= ${where.exitDate.lte}` : Prisma.empty}
+        ${(typeof where.exitDate === 'object' && where.exitDate && 'gte' in where.exitDate) ? Prisma.sql`AND exit_date >= ${where.exitDate.gte}` : Prisma.empty}
+        ${(typeof where.exitDate === 'object' && where.exitDate && 'lte' in where.exitDate) ? Prisma.sql`AND exit_date <= ${where.exitDate.lte}` : Prisma.empty}
         ${where.symbol ? Prisma.sql`AND symbol = ${where.symbol}` : Prisma.empty}
         ${where.side ? Prisma.sql`AND side = ${where.side}` : Prisma.empty}
     )

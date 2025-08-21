@@ -49,7 +49,7 @@ export class TradesRepository {
         quantity: tradeData.quantity,
         timeInTrade: tradeData.timeInTrade,
         remainingQuantity: tradeData.remainingQuantity,
-        marketSession: tradeData.marketSession as any,
+        marketSession: tradeData.marketSession as 'PRE' | 'REGULAR' | 'POST' | undefined,
         costBasis: tradeData.costBasis ? new Decimal(tradeData.costBasis) : undefined,
         proceeds: tradeData.proceeds ? new Decimal(tradeData.proceeds) : undefined,
         entryDate: tradeData.openTime,

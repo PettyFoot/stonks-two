@@ -5,11 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnalyticsTabContentProps } from '../AnalyticsTabsSection';
 
 // Import the new chart components
-import WinLossRatioChart from '@/components/charts/WinLossRatioChart';
-import WinLossPnlComparisonChart from '@/components/charts/WinLossPnlComparisonChart';
-import TradeExpectationChart from '@/components/charts/TradeExpectationChart';
-import CumulativePnlChart from '@/components/charts/CumulativePnlChart';
-import CumulativeDrawdownChart from '@/components/charts/CumulativeDrawdownChart';
+// TODO: Create these chart components
+// import WinLossRatioChart from '@/components/charts/WinLossRatioChart';
+// import WinLossPnlComparisonChart from '@/components/charts/WinLossPnlComparisonChart';
+// import TradeExpectationChart from '@/components/charts/TradeExpectationChart';
+// import CumulativePnlChart from '@/components/charts/CumulativePnlChart';
+// import CumulativeDrawdownChart from '@/components/charts/CumulativeDrawdownChart';
 
 interface WinLossExpectationData {
   winLossRatio: {
@@ -59,7 +60,7 @@ interface WinLossExpectationData {
   };
 }
 
-export default function WinLossExpectationTab({ data, context }: AnalyticsTabContentProps) {
+export default function WinLossExpectationTab({ data }: AnalyticsTabContentProps) {
   const [dashboardData, setDashboardData] = useState<WinLossExpectationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -141,75 +142,29 @@ export default function WinLossExpectationTab({ data, context }: AnalyticsTabCon
 
       {/* First Row: Win/Loss Ratio and P&L Comparison */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <WinLossRatioChart
-          data={dashboardData?.winLossRatio || {
-            wins: 0,
-            losses: 0,
-            scratches: 0,
-            winRate: 0,
-            lossRate: 0,
-            scratchRate: 0,
-            totalTrades: 0
-          }}
-          title="Win/Loss Ratio"
-          height={350}
-          loading={loading}
-          error={error || undefined}
-        />
+        <div className="bg-surface border border-default rounded-lg p-6 h-[350px] flex items-center justify-center">
+          <span className="text-muted">Win/Loss Ratio Chart - Coming Soon</span>
+        </div>
         
-        <WinLossPnlComparisonChart
-          data={dashboardData?.winLossPnlComparison || {
-            avgWin: 0,
-            avgLoss: 0,
-            totalWins: 0,
-            totalLosses: 0,
-            largestWin: 0,
-            largestLoss: 0,
-            winCount: 0,
-            lossCount: 0
-          }}
-          title="Win/Loss P&L Comparison"
-          height={350}
-          loading={loading}
-          error={error || undefined}
-        />
+        <div className="bg-surface border border-default rounded-lg p-6 h-[350px] flex items-center justify-center">
+          <span className="text-muted">Win/Loss P&L Comparison Chart - Coming Soon</span>
+        </div>
       </div>
 
       {/* Second Row: Trade Expectation (Full Width) */}
-      <TradeExpectationChart
-        data={dashboardData?.tradeExpectation || {
-          expectation: 0,
-          expectationPerTrade: 0,
-          profitFactor: 0,
-          payoffRatio: 0,
-          winRate: 0,
-          avgWin: 0,
-          avgLoss: 0,
-          kellyPercentage: 0
-        }}
-        title="Trade Expectation Analysis"
-        height={320}
-        loading={loading}
-        error={error || undefined}
-      />
+      <div className="bg-surface border border-default rounded-lg p-6 h-[320px] flex items-center justify-center">
+        <span className="text-muted">Trade Expectation Chart - Coming Soon</span>
+      </div>
 
       {/* Third Row: Cumulative P&L and Drawdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <CumulativePnlChart
-          data={dashboardData?.cumulativePnl || []}
-          title="Cumulative P&L"
-          height={350}
-          loading={loading}
-          error={error || undefined}
-        />
+        <div className="bg-surface border border-default rounded-lg p-6 h-[350px] flex items-center justify-center">
+          <span className="text-muted">Cumulative P&L Chart - Coming Soon</span>
+        </div>
         
-        <CumulativeDrawdownChart
-          data={dashboardData?.cumulativeDrawdown || []}
-          title="Cumulative Drawdown"
-          height={350}
-          loading={loading}
-          error={error || undefined}
-        />
+        <div className="bg-surface border border-default rounded-lg p-6 h-[350px] flex items-center justify-center">
+          <span className="text-muted">Cumulative Drawdown Chart - Coming Soon</span>
+        </div>
       </div>
 
       {/* Statistics Summary Card */}

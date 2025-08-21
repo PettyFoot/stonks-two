@@ -66,7 +66,7 @@ export default function StatsSection({ stats }: StatsSectionProps) {
 
   const currentStats = stats || mockStats;
 
-  const formatValue = (value: any, formatter: TradingStatistic['formatter']): string => {
+  const formatValue = (value: unknown, formatter: TradingStatistic['formatter']): string => {
     if (value === null || value === undefined) return 'N/A';
     
     switch (formatter) {
@@ -97,7 +97,7 @@ export default function StatsSection({ stats }: StatsSectionProps) {
     }
   };
 
-  const getColorClass = (value: any, colorCode?: TradingStatistic['colorCode']): string => {
+  const getColorClass = (value: unknown, colorCode?: TradingStatistic['colorCode']): string => {
     if (!colorCode || value === null || value === undefined) return 'text-primary';
     
     if (colorCode === 'positive') {

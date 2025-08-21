@@ -181,7 +181,7 @@ const CustomBarChart = React.memo(function CustomBarChart({
               {useConditionalColors && data.map((entry, index) => (
                 <Cell 
                   key={`cell-${index}`} 
-                  fill={(entry as any)[dataKey] >= 0 ? '#16A34A' : '#DC2626'} 
+                  fill={(entry as unknown as Record<string, number>)[dataKey] >= 0 ? '#16A34A' : '#DC2626'} 
                 />
               ))}
             </Bar>

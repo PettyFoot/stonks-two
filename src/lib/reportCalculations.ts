@@ -1,4 +1,15 @@
-import { Trade } from '@prisma/client';
+
+// Trade interface for type safety
+interface TradeData {
+  pnl?: string | number | null;
+  timeInTrade?: number | null;
+  entryDate?: string | Date | null;
+  exitDate?: string | Date | null;
+  date?: string | Date | null;
+  avgEntryPrice?: string | number | null;
+  entryPrice?: string | number | null;
+  quantity?: string | number | null;
+}
 
 // Time bucket definitions
 export type TimeBucket = '< 1min' | '1-5min' | '5-15min' | '15-30min' | '30-60min' | '1-2hr' | '2-4hr' | '4hr+' | 'overnight';
@@ -62,10 +73,10 @@ export function formatDuration(seconds: number | null | undefined): string {
 }
 
 // Aggregate trades by day of week
-export function aggregateByDayOfWeek(trades: any[]) {
+export function aggregateByDayOfWeek(trades: TradeData[]) {
   const days: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-  const distribution: Record<DayOfWeek, number> = {} as any;
-  const performance: Record<DayOfWeek, number> = {} as any;
+  const distribution: Record<DayOfWeek, number> = {} as Record<DayOfWeek, number>;
+  const performance: Record<DayOfWeek, number> = {} as Record<DayOfWeek, number>;
   
   // Initialize
   days.forEach(day => {
@@ -95,7 +106,7 @@ export function aggregateByDayOfWeek(trades: any[]) {
 }
 
 // Aggregate trades by hour of day (24-hour support for stocks that trade around the clock)
-export function aggregateByHourOfDay(trades: any[]) {
+export function aggregateByHourOfDay(trades: TradeData[]) {
   const hours = Array.from({ length: 24 }, (_, i) => i); // 0 to 23 (24-hour trading)
   const distribution: Record<number, number> = {};
   const performance: Record<number, number> = {};
@@ -126,10 +137,10 @@ export function aggregateByHourOfDay(trades: any[]) {
 }
 
 // Aggregate trades by month of year
-export function aggregateByMonthOfYear(trades: any[]) {
+export function aggregateByMonthOfYear(trades: TradeData[]) {
   const months: MonthOfYear[] = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const distribution: Record<MonthOfYear, number> = {} as any;
-  const performance: Record<MonthOfYear, number> = {} as any;
+  const distribution: Record<MonthOfYear, number> = {} as Record<MonthOfYear, number>;
+  const performance: Record<MonthOfYear, number> = {} as Record<MonthOfYear, number>;
   
   // Initialize
   months.forEach(month => {
@@ -157,7 +168,7 @@ export function aggregateByMonthOfYear(trades: any[]) {
 }
 
 // Aggregate trades by simple duration (Intraday vs Multiday)
-export function aggregateBySimpleDuration(trades: any[]) {
+export function aggregateBySimpleDuration(trades: TradeData[]) {
   const distribution = { Intraday: 0, Multiday: 0 };
   const performance = { Intraday: 0, Multiday: 0 };
   
@@ -199,12 +210,12 @@ export function getIntradayBucket(seconds: number): IntradayBucket {
 }
 
 // Aggregate trades by intraday duration with new buckets
-export function aggregateByIntradayDuration(trades: any[]) {
+export function aggregateByIntradayDuration(trades: TradeData[]) {
   const buckets: IntradayBucket[] = ['<1min', '1-2min', '2-5min', '5-10min', '10-20min', '20-40min', '40-60min', '60-120min', '120-240min', '>240min'];
   const intradayTrades = trades.filter(t => (t.timeInTrade || 0) < 86400); // Only trades < 24 hours
   
-  const distribution: Record<IntradayBucket, number> = {} as any;
-  const performance: Record<IntradayBucket, number> = {} as any;
+  const distribution: Record<IntradayBucket, number> = {} as Record<IntradayBucket, number>;
+  const performance: Record<IntradayBucket, number> = {} as Record<IntradayBucket, number>;
   
   // Initialize
   buckets.forEach(bucket => {
@@ -232,10 +243,10 @@ export function aggregateByIntradayDuration(trades: any[]) {
 }
 
 // Keep original aggregateByDuration for backwards compatibility if needed
-export function aggregateByDuration(trades: any[]) {
+export function aggregateByDuration(trades: TradeData[]) {
   const buckets: TimeBucket[] = ['< 1min', '1-5min', '5-15min', '15-30min', '30-60min', '1-2hr', '2-4hr', '4hr+'];
-  const distribution: Record<TimeBucket, number> = {} as any;
-  const performance: Record<TimeBucket, number> = {} as any;
+  const distribution: Record<TimeBucket, number> = {} as Record<TimeBucket, number>;
+  const performance: Record<TimeBucket, number> = {} as Record<TimeBucket, number>;
   
   // Initialize
   buckets.forEach(bucket => {
@@ -265,7 +276,7 @@ export function aggregateByDuration(trades: any[]) {
 }
 
 // Calculate consecutive wins/losses
-export function calculateConsecutiveStreaks(trades: any[]) {
+export function calculateConsecutiveStreaks(trades: TradeData[]) {
   let maxWins = 0;
   let maxLosses = 0;
   let currentWins = 0;
@@ -293,7 +304,7 @@ export function calculateConsecutiveStreaks(trades: any[]) {
 }
 
 // Calculate standard deviation of P&L
-export function calculatePnlStandardDeviation(trades: any[]): number {
+export function calculatePnlStandardDeviation(trades: TradeData[]): number {
   if (trades.length === 0) return 0;
   
   const pnls = trades.map(t => Number(t.pnl || 0));
@@ -305,7 +316,7 @@ export function calculatePnlStandardDeviation(trades: any[]): number {
 }
 
 // Calculate profit factor
-export function calculateProfitFactor(trades: any[]): number {
+export function calculateProfitFactor(trades: TradeData[]): number {
   const gains = trades
     .filter(t => Number(t.pnl || 0) > 0)
     .reduce((sum, t) => sum + Number(t.pnl || 0), 0);
@@ -333,10 +344,10 @@ export function getPriceBucket(price: number): PriceBucket {
 }
 
 // Aggregate trades by price
-export function aggregateByPrice(trades: any[]) {
+export function aggregateByPrice(trades: TradeData[]) {
   const buckets: PriceBucket[] = ['<1', '1-2', '2-5', '5-10', '10-20', '20-50', '50-100', '100+'];
-  const distribution: Record<PriceBucket, number> = {} as any;
-  const performance: Record<PriceBucket, number> = {} as any;
+  const distribution: Record<PriceBucket, number> = {} as Record<PriceBucket, number>;
+  const performance: Record<PriceBucket, number> = {} as Record<PriceBucket, number>;
   
   // Initialize all buckets to ensure they all appear even if empty
   buckets.forEach(bucket => {
@@ -383,10 +394,10 @@ export function getVolumeBucket(volume: number): VolumeBucket {
 }
 
 // Aggregate trades by volume
-export function aggregateByVolume(trades: any[]) {
+export function aggregateByVolume(trades: TradeData[]) {
   const buckets: VolumeBucket[] = ['<50', '50-100', '100-200', '200-500', '500-1000', '1000-2000', '2000-5000', '>5000'];
-  const distribution: Record<VolumeBucket, number> = {} as any;
-  const performance: Record<VolumeBucket, number> = {} as any;
+  const distribution: Record<VolumeBucket, number> = {} as Record<VolumeBucket, number>;
+  const performance: Record<VolumeBucket, number> = {} as Record<VolumeBucket, number>;
   
   // Initialize all buckets to ensure they all appear even if empty
   buckets.forEach(bucket => {
@@ -449,7 +460,7 @@ export function aggregateByVolume(trades: any[]) {
 // Win/Loss/Expectation aggregation functions
 
 // Calculate win/loss ratio data
-export function calculateWinLossRatio(trades: any[]) {
+export function calculateWinLossRatio(trades: TradeData[]) {
   // API already filters for closed trades
   const wins = trades.filter(t => Number(t.pnl) > 0).length;
   const losses = trades.filter(t => Number(t.pnl) < 0).length;
@@ -468,7 +479,7 @@ export function calculateWinLossRatio(trades: any[]) {
 }
 
 // Calculate win/loss P&L comparison
-export function calculateWinLossPnlComparison(trades: any[]) {
+export function calculateWinLossPnlComparison(trades: TradeData[]) {
   // API already filters for closed trades
   const winningTrades = trades.filter(t => Number(t.pnl) > 0);
   const losingTrades = trades.filter(t => Number(t.pnl) < 0);
@@ -496,7 +507,7 @@ export function calculateWinLossPnlComparison(trades: any[]) {
 }
 
 // Calculate trade expectation
-export function calculateTradeExpectation(trades: any[]) {
+export function calculateTradeExpectation(trades: TradeData[]) {
   // API already filters for closed trades
   const winLossData = calculateWinLossPnlComparison(trades);
   
@@ -528,16 +539,16 @@ export function calculateTradeExpectation(trades: any[]) {
 }
 
 // Calculate cumulative P&L over time
-export function calculateCumulativePnl(trades: any[]) {
+export function calculateCumulativePnl(trades: TradeData[]) {
   // API already filters for closed trades
   const sortedTrades = trades
     .sort((a, b) => new Date(a.exitDate || a.date).getTime() - new Date(b.exitDate || b.date).getTime());
 
   let cumulative = 0;
-  const cumulativeData: any[] = [];
+  const cumulativeData: Array<{ date: string; value: number; trades: number }> = [];
 
   // Group trades by date
-  const tradesByDate = sortedTrades.reduce((acc: any, trade) => {
+  const tradesByDate = sortedTrades.reduce((acc: Record<string, TradeData[]>, trade) => {
     const date = new Date(trade.exitDate || trade.date).toISOString().split('T')[0];
     if (!acc[date]) {
       acc[date] = [];
@@ -549,7 +560,7 @@ export function calculateCumulativePnl(trades: any[]) {
   // Calculate cumulative P&L for each date
   Object.keys(tradesByDate).sort().forEach(date => {
     const dayTrades = tradesByDate[date];
-    const dayPnl = dayTrades.reduce((sum: number, t: any) => sum + Number(t.pnl), 0);
+    const dayPnl = dayTrades.reduce((sum: number, t: TradeData) => sum + Number(t.pnl), 0);
     cumulative += dayPnl;
     
     cumulativeData.push({
@@ -563,11 +574,11 @@ export function calculateCumulativePnl(trades: any[]) {
 }
 
 // Calculate cumulative drawdown
-export function calculateCumulativeDrawdown(trades: any[]) {
+export function calculateCumulativeDrawdown(trades: TradeData[]) {
   const cumulativePnl = calculateCumulativePnl(trades);
   
   let peak = 0;
-  const drawdownData: any[] = [];
+  const drawdownData: Array<{ date: string; drawdown: number; drawdownPercent: number; underwater: number }> = [];
 
   cumulativePnl.forEach(point => {
     peak = Math.max(peak, point.value);

@@ -280,16 +280,16 @@ export const useAnalyticsData = (standardTimeframe: StandardTimeframe, filters: 
         }
         
         const error = new Error(errorMessage);
-        (error as any).category = errorCategory;
+        (error as Error & { category: string }).category = errorCategory;
         throw error;
       }
 
       let result: ApiResponse;
       try {
         result = await response.json();
-      } catch (parseError) {
+      } catch (_parseError) {
         const error = new Error('Failed to parse response data');
-        (error as any).category = 'parsing';
+        (error as Error & { category: string }).category = 'parsing';
         throw error;
       }
       
@@ -297,8 +297,8 @@ export const useAnalyticsData = (standardTimeframe: StandardTimeframe, filters: 
       console.log('Analytics API Response:', {
         performance: result.performance,
         statistics: result.statistics,
-        volumeAnalysis: (result as any).volumeAnalysis,
-        timeIntervals: (result as any).timeIntervals,
+        volumeAnalysis: (result as ApiResponse & { volumeAnalysis?: unknown }).volumeAnalysis,
+        timeIntervals: (result as ApiResponse & { timeIntervals?: unknown }).timeIntervals,
         metadata: result.metadata
       });
       
@@ -483,7 +483,7 @@ export const useAnalyticsData = (standardTimeframe: StandardTimeframe, filters: 
 };
 
 // Utility function to transform chart data for different chart libraries
-export const transformChartData = (data: any[], type: 'bar' | 'line' | 'distribution') => {
+export const transformChartData = (data: Array<Record<string, unknown>>, _type: 'bar' | 'line' | 'distribution') => {
   if (!data || !Array.isArray(data)) return [];
 
   return data.map((item, index) => ({

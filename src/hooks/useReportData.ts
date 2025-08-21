@@ -23,7 +23,7 @@ interface CacheEntry<T> {
 }
 
 // Simple in-memory cache
-const cache = new Map<string, CacheEntry<any>>();
+const cache = new Map<string, CacheEntry<unknown>>();
 
 /**
  * Hook for fetching Win/Loss report data

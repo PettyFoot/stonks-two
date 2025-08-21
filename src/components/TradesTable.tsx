@@ -73,8 +73,8 @@ export default function TradesTable({
 
   const sortedTrades = React.useMemo(() => {
     return [...trades].sort((a, b) => {
-      let aValue: string | number = a[sortField];
-      let bValue: string | number = b[sortField];
+      let aValue: string | number = a[sortField] ?? '';
+      let bValue: string | number = b[sortField] ?? '';
 
       // Handle time sorting
       if (sortField === 'time') {

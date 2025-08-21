@@ -174,7 +174,7 @@ export class TradeBuilder {
       const avgEntryPrice = position.totalCostBasis / position.openQuantity;
       const avgExitPrice = await this.calculateAvgExitPrice(position.orderIds, position.side);
       const { openQuantity, closeQuantity } = await this.calculateOpenCloseQuantities(position.orderIds, position.side);
-      const remainingQuantity = await this.calculateRemainingQuantity(position.orderIds, position.side);
+      const _remainingQuantity = await this.calculateRemainingQuantity(position.orderIds, position.side);
       
       const openTrade: ProcessedTrade = {
         id: '',

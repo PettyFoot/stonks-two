@@ -3,7 +3,7 @@ import { CacheService } from './cacheService';
 
 export class RealTimeService {
   private cacheService: CacheService;
-  private subscribers: Map<string, Set<(data: any) => void>>;
+  private subscribers: Map<string, Set<(data: unknown) => void>>;
 
   constructor() {
     this.cacheService = new CacheService();
@@ -65,7 +65,7 @@ export class RealTimeService {
   /**
    * Subscribe to real-time updates for a user
    */
-  subscribe(userId: string, callback: (data: any) => void): () => void {
+  subscribe(userId: string, callback: (data: unknown) => void): () => void {
     if (!this.subscribers.has(userId)) {
       this.subscribers.set(userId, new Set());
     }
@@ -87,7 +87,7 @@ export class RealTimeService {
   /**
    * Notify subscribers of updates
    */
-  private notifySubscribers(userId: string, data: any) {
+  private notifySubscribers(userId: string, data: unknown) {
     const userSubscribers = this.subscribers.get(userId);
     if (userSubscribers) {
       userSubscribers.forEach(callback => {
