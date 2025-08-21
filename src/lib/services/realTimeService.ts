@@ -118,10 +118,13 @@ export class RealTimeService {
     const { AnalyticsService } = await import('./analyticsService');
     const analyticsService = new AnalyticsService(userId);
 
-    const commonQueries = [
-      { preset: '30d' as const, aggregations: ['statistics'] as const },
-      { preset: '90d' as const, aggregations: ['performance'] as const },
-      { preset: 'ytd' as const, aggregations: ['distribution'] as const }
+    type PresetType = '30d' | '90d' | 'ytd';
+    type AggregationType = 'statistics' | 'performance' | 'distribution';
+    
+    const commonQueries: Array<{ preset: PresetType; aggregations: AggregationType[] }> = [
+      { preset: '30d', aggregations: ['statistics'] },
+      { preset: '90d', aggregations: ['performance'] },
+      { preset: 'ytd', aggregations: ['distribution'] }
     ];
 
     // Execute in background without blocking

@@ -26,7 +26,7 @@ export default function TopBar({
   title, 
   subtitle, 
   showEditLayout = false, 
-  showTimeRangeFilters = false,
+  showTimeRangeFilters: _showTimeRangeFilters = false,
   notification 
 }: TopBarProps) {
   return (

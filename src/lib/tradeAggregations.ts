@@ -256,7 +256,7 @@ export async function calculateDrawdownMetrics(
     maxDrawdownDuration: Number(metrics.max_drawdown_duration) || 0,
     currentDrawdown: Number(metrics.current_drawdown) || 0,
     currentDrawdownPercent: Number(metrics.current_drawdown_percent) || 0,
-    recoveryTime: recoveryResult[0]?.recovery_days || null,
+    recoveryTime: recoveryResult[0] ? Number(recoveryResult[0].recovery_days) || null : null,
   };
 }
 

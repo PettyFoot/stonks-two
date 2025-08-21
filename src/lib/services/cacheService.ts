@@ -225,7 +225,7 @@ export class CacheService {
    */
   async getCacheStats(): Promise<CacheStats> {
     try {
-      const info = await (this.redis as any)?.info();
+      const info = await (this.redis as { info?: () => Promise<string> })?.info?.();
       
       // Parse Redis info response
       const stats: CacheStats = {

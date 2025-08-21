@@ -43,7 +43,7 @@ export default function Reports() {
   const { } = useGlobalFilters();
   
   // Original data hook for existing charts
-  const { dailyPnl, averageDailyPnl, averageDailyVolume, cumulativePnl, loading, error } = useReportsData();
+  const { dailyPnl, averageDailyVolume, cumulativePnl, loading, error } = useReportsData();
   
   // New enhanced data hook for statistics and new charts
   const { stats, trades, loading: detailedLoading, error: detailedError } = useDetailedReportsData();

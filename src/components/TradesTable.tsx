@@ -235,7 +235,7 @@ export default function TradesTable({
                 />
               </TableHead>
             )}
-            {visibleColumns.map((column, index) => (
+            {visibleColumns.map((column) => (
               <TableHead 
                 key={column.id} 
                 className="text-xs font-medium text-muted uppercase"

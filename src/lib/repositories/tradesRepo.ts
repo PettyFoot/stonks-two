@@ -99,7 +99,7 @@ export class TradesRepository {
    * Update an existing trade
    */
   async updateTrade(tradeId: string, updateData: Partial<CreateTradeData>): Promise<Trade> {
-    const { userId, marketSession, ...updateFields } = updateData;
+    const { userId: _userId, marketSession, ...updateFields } = updateData;
     return await prisma.trade.update({
       where: { id: tradeId },
       data: {

@@ -60,7 +60,7 @@ export class TradeBuilder {
     
     const totalQuantity = exitOrders.reduce((sum, order) => sum + order.orderQuantity, 0);
     const weightedSum = exitOrders.reduce((sum, order) => 
-      sum + (order.orderQuantity * order.limitPrice!), 0);
+      sum + (order.orderQuantity * Number(order.limitPrice || 0)), 0);
     
     return weightedSum / totalQuantity;
   }
@@ -206,7 +206,7 @@ export class TradeBuilder {
         symbol: trade.symbol,
         side: trade.side,
         openQuantity: trade.openQuantity || 0,
-        totalCostBasis: trade.costBasis || 0,
+        totalCostBasis: Number(trade.costBasis || 0),
         openTime: trade.openTime || trade.entryDate,
         orderIds: trade.ordersInTrade,
         existingTradeId: trade.id, // Store the existing trade ID
@@ -226,7 +226,7 @@ export class TradeBuilder {
     const symbol = order.symbol;
     const orderSide = order.side;
     const quantity = order.orderQuantity;
-    const price = order.limitPrice;
+    const price = Number(order.limitPrice);
     const orderTime = order.orderExecutedTime;
 
     const tradeSide = orderSide === OrderSide.BUY ? TradeSide.LONG : TradeSide.SHORT;
