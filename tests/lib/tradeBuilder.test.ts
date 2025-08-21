@@ -2,6 +2,7 @@ import { TradeBuilder, processUserOrders } from '@/lib/tradeBuilder';
 import { ordersRepo } from '@/lib/repositories/ordersRepo';
 import { tradesRepo } from '@/lib/repositories/tradesRepo';
 import { Order, OrderSide, OrderStatus, TradeStatus, TradeSide } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 
 // Mock the repositories
 jest.mock('@/lib/repositories/ordersRepo');
@@ -45,7 +46,7 @@ describe('TradeBuilder', () => {
         symbol: 'AAPL',
         side: OrderSide.BUY,
         orderQuantity: 100,
-        limitPrice: 150.00,
+        limitPrice: new Decimal(150.00),
         orderExecutedTime: new Date('2023-01-01T10:00:00Z'),
         orderStatus: OrderStatus.FILLED,
         tradeId: null,
@@ -87,7 +88,7 @@ describe('TradeBuilder', () => {
         symbol: 'AAPL',
         side: OrderSide.BUY,
         orderQuantity: 100,
-        limitPrice: 150.00,
+        limitPrice: new Decimal(150.00),
         orderExecutedTime: new Date('2023-01-01T10:00:00Z'),
         orderStatus: OrderStatus.FILLED,
         tradeId: null,
@@ -110,7 +111,7 @@ describe('TradeBuilder', () => {
         id: 'order-2',
         orderId: 'sell-123',
         side: OrderSide.SELL,
-        limitPrice: 160.00,
+        limitPrice: new Decimal(160.00),
         orderExecutedTime: new Date('2023-01-01T11:00:00Z'),
       };
 
@@ -140,7 +141,7 @@ describe('TradeBuilder', () => {
         symbol: 'AAPL',
         side: OrderSide.BUY,
         orderQuantity: 100,
-        limitPrice: 150.00,
+        limitPrice: new Decimal(150.00),
         orderExecutedTime: new Date('2023-01-01T10:00:00Z'),
         orderStatus: OrderStatus.FILLED,
         tradeId: null,
@@ -164,7 +165,7 @@ describe('TradeBuilder', () => {
         orderId: 'sell-123',
         side: OrderSide.SELL,
         orderQuantity: 50,
-        limitPrice: 160.00,
+        limitPrice: new Decimal(160.00),
         orderExecutedTime: new Date('2023-01-01T11:00:00Z'),
       };
 
@@ -192,7 +193,7 @@ describe('TradeBuilder', () => {
         symbol: 'AAPL',
         side: OrderSide.BUY,
         orderQuantity: 100,
-        limitPrice: 150.00,
+        limitPrice: new Decimal(150.00),
         orderExecutedTime: new Date('2023-01-01T10:00:00Z'),
         orderStatus: OrderStatus.FILLED,
         tradeId: null,
@@ -216,7 +217,7 @@ describe('TradeBuilder', () => {
         orderId: 'sell-123',
         side: OrderSide.SELL,
         orderQuantity: 150,
-        limitPrice: 160.00,
+        limitPrice: new Decimal(160.00),
         orderExecutedTime: new Date('2023-01-01T11:00:00Z'),
       };
 
@@ -255,7 +256,7 @@ describe('TradeBuilder', () => {
         symbol: 'AAPL',
         side: OrderSide.SELL,
         orderQuantity: 100,
-        limitPrice: 150.00,
+        limitPrice: new Decimal(150.00),
         orderExecutedTime: new Date('2023-01-01T10:00:00Z'),
         orderStatus: OrderStatus.FILLED,
         tradeId: null,
@@ -278,7 +279,7 @@ describe('TradeBuilder', () => {
         id: 'order-2',
         orderId: 'buy-123',
         side: OrderSide.BUY,
-        limitPrice: 140.00,
+        limitPrice: new Decimal(140.00),
         orderExecutedTime: new Date('2023-01-01T11:00:00Z'),
       };
 
@@ -350,7 +351,7 @@ describe('TradeBuilder', () => {
         symbol: 'AAPL',
         side: OrderSide.BUY,
         orderQuantity: 100,
-        limitPrice: 150.00,
+        limitPrice: new Decimal(150.00),
         orderExecutedTime: new Date('2023-01-01T10:00:00Z'),
         orderStatus: OrderStatus.FILLED,
         tradeId: null,
@@ -396,7 +397,7 @@ describe('processUserOrders integration', () => {
       symbol: 'AAPL',
       side: OrderSide.BUY,
       orderQuantity: 100,
-      limitPrice: 150.00,
+      limitPrice: new Decimal(150.00),
       orderExecutedTime: new Date('2023-01-01T10:00:00Z'),
       orderStatus: OrderStatus.FILLED,
       tradeId: null,

@@ -54,11 +54,8 @@ describe('Database Schema Validation', () => {
           symbol: 'TEST',
           side: TradeSide.LONG,
           status: TradeStatus.OPEN,
-          orderFilledTime: new Date(),
-          quantityFilled: 100,
           entryDate: new Date(),
           date: new Date(),
-          volume: 100,
           pnl: 0,
         },
       });
@@ -83,11 +80,8 @@ describe('Database Schema Validation', () => {
           avgExitPrice: new Decimal('155.75'),
           openQuantity: 100,
           closeQuantity: 100,
-          orderFilledTime: new Date(),
-          quantityFilled: 100,
           entryDate: new Date(),
           date: new Date(),
-          volume: 100,
           pnl: 525, // (155.75 - 150.50) * 100
         },
       });
@@ -109,11 +103,8 @@ describe('Database Schema Validation', () => {
           symbol: 'ENUM_TEST_OPEN',
           side: TradeSide.LONG,
           status: TradeStatus.OPEN,
-          orderFilledTime: new Date(),
-          quantityFilled: 100,
           entryDate: new Date(),
           date: new Date(),
-          volume: 100,
           pnl: 0,
         },
       });
@@ -127,11 +118,8 @@ describe('Database Schema Validation', () => {
           symbol: 'ENUM_TEST_CLOSED',
           side: TradeSide.LONG,
           status: TradeStatus.CLOSED,
-          orderFilledTime: new Date(),
-          quantityFilled: 100,
           entryDate: new Date(),
           date: new Date(),
-          volume: 100,
           pnl: 100,
         },
       });
@@ -173,11 +161,8 @@ describe('Database Schema Validation', () => {
           symbol: 'LINK_TEST',
           side: TradeSide.LONG,
           status: TradeStatus.CLOSED,
-          orderFilledTime: new Date(),
-          quantityFilled: 100,
           entryDate: new Date(),
           date: new Date(),
-          volume: 100,
           pnl: 100,
         },
       });
@@ -207,7 +192,6 @@ describe('Database Schema Validation', () => {
       // Verify the relationship
       const orderWithTrade = await prisma.order.findUnique({
         where: { id: order.id },
-        include: { trades: true },
       });
 
       expect(orderWithTrade?.tradeId).toBe(trade.id);
@@ -240,11 +224,8 @@ describe('Database Schema Validation', () => {
           symbol: 'UPDATE_TEST',
           side: TradeSide.LONG,
           status: TradeStatus.OPEN,
-          orderFilledTime: new Date(),
-          quantityFilled: 100,
           entryDate: new Date(),
           date: new Date(),
-          volume: 100,
           pnl: 0,
         },
       });
@@ -269,11 +250,8 @@ describe('Database Schema Validation', () => {
           symbol: 'INDEX_TEST',
           side: TradeSide.LONG,
           status: TradeStatus.OPEN,
-          orderFilledTime: new Date(),
-          quantityFilled: 100,
           entryDate: new Date(),
           date: new Date(),
-          volume: 100,
           pnl: 0,
         },
       });
@@ -284,11 +262,8 @@ describe('Database Schema Validation', () => {
           symbol: 'INDEX_TEST',
           side: TradeSide.LONG,
           status: TradeStatus.CLOSED,
-          orderFilledTime: new Date(),
-          quantityFilled: 100,
           entryDate: new Date(),
           date: new Date(),
-          volume: 100,
           pnl: 100,
         },
       });
@@ -325,11 +300,8 @@ describe('Database Schema Validation', () => {
           symbol: 'TRADE_ID_INDEX',
           side: TradeSide.LONG,
           status: TradeStatus.OPEN,
-          orderFilledTime: new Date(),
-          quantityFilled: 200,
           entryDate: new Date(),
           date: new Date(),
-          volume: 200,
           pnl: 0,
         },
       });
@@ -391,11 +363,8 @@ describe('Database Schema Validation', () => {
           userId: testUserId,
           symbol: 'LEGACY_TEST',
           side: TradeSide.LONG,
-          orderFilledTime: new Date(),
-          quantityFilled: 100,
           entryDate: new Date(),
           date: new Date(),
-          volume: 100,
           pnl: 50,
           // Note: Not setting the new enhanced fields
         },
@@ -405,7 +374,7 @@ describe('Database Schema Validation', () => {
       // Verify traditional fields are preserved and new fields are null/default
       expect(traditionalTrade.symbol).toBe('LEGACY_TEST');
       expect(traditionalTrade.side).toBe(TradeSide.LONG);
-      expect(traditionalTrade.quantityFilled).toBe(100);
+      expect(traditionalTrade.quantity).toBe(100);
       expect(traditionalTrade.pnl).toBe(50);
       expect(traditionalTrade.status).toBe(TradeStatus.OPEN); // Default value
       expect(traditionalTrade.avgEntryPrice).toBeNull();
@@ -423,11 +392,8 @@ describe('Database Schema Validation', () => {
           status: TradeStatus.CLOSED,
           avgEntryPrice: new Decimal('123.456789'),
           avgExitPrice: new Decimal('124.987654'),
-          orderFilledTime: new Date(),
-          quantityFilled: 100,
           entryDate: new Date(),
           date: new Date(),
-          volume: 100,
           pnl: 153, // Approximate
         },
       });

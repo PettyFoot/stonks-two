@@ -7,6 +7,7 @@ export interface Trade {
   quantity: number;
   executions: number;
   pnl: number;
+  volume?: number;
   shared?: boolean;
   notes?: string;
   tags?: string[];
@@ -125,11 +126,13 @@ export interface ChartDataPoint {
 }
 
 export interface DistributionData {
-  category: string;
+  category?: string;
+  range?: string;
   count: number;
   percentage: number;
-  pnl: number;
-  avgPnl: number;
+  pnl?: number;
+  avgPnl?: number;
+  value?: number;
 }
 
 export interface PerformanceMetrics {
@@ -145,6 +148,8 @@ export interface PerformanceMetrics {
   largestLoss: number;
   winningTrades: number;
   losingTrades: number;
+  totalWins: number;
+  totalLosses: number;
   maxConsecutiveWins: number;
   maxConsecutiveLosses: number;
   avgHoldTime: string;

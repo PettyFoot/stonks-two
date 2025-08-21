@@ -38,7 +38,7 @@ export default function DistributionCharts({
           <div key={index} className="flex items-center justify-between">
             {/* Range Label */}
             <div className="flex-shrink-0 w-24 text-xs text-muted">
-              {item.range}
+              {item.range || item.category}
             </div>
             
             {/* Progress Bar */}
@@ -48,7 +48,7 @@ export default function DistributionCharts({
                   className="absolute left-0 top-0 h-full transition-all duration-300"
                   style={{ 
                     width: `${Math.abs(item.percentage)}%`,
-                    backgroundColor: getBarColor(item.value)
+                    backgroundColor: getBarColor(item.value ?? item.pnl ?? 0)
                   }}
                 />
               </div>
@@ -56,8 +56,8 @@ export default function DistributionCharts({
             
             {/* Value and Percentage */}
             <div className="flex-shrink-0 text-right space-y-0.5">
-              <div className={`text-sm font-medium ${item.value >= 0 ? 'text-positive' : 'text-negative'}`}>
-                {formatValue(item.value)}
+              <div className={`text-sm font-medium ${(item.value ?? item.pnl ?? 0) >= 0 ? 'text-positive' : 'text-negative'}`}>
+                {formatValue(item.value ?? item.pnl ?? 0)}
               </div>
               <div className="text-xs text-muted">
                 {formatPercentage(item.percentage)}
@@ -74,7 +74,7 @@ export default function DistributionCharts({
               <YAxis hide />
               <Bar dataKey="value" radius={[1, 1, 0, 0]}>
                 {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={getBarColor(entry.value)} />
+                  <Cell key={`cell-${index}`} fill={getBarColor(entry.value ?? entry.pnl ?? 0)} />
                 ))}
               </Bar>
             </BarChart>

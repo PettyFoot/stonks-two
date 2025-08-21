@@ -221,49 +221,49 @@ export const mockDayData: DayData[] = [
     date: '2025-04-05',
     pnl: 0,
     trades: 0,
-    quantity: 0,
+    volume: 0,
     winRate: 0
   },
   {
     date: '2025-04-06',
     pnl: 0,
     trades: 0,
-    quantity: 0,
+    volume: 0,
     winRate: 0
   },
   {
     date: '2025-04-07',
     pnl: 3.72,
     trades: 14,
-    quantity: 3344,
+    volume: 3344,
     winRate: 42.86
   },
   {
     date: '2025-04-08',
     pnl: 244.23,
     trades: 2,
-    quantity: 350,
+    volume: 350,
     winRate: 100
   },
   {
     date: '2025-04-09',
     pnl: 189.33,
     trades: 2,
-    quantity: 800,
+    volume: 800,
     winRate: 50
   },
   {
     date: '2025-04-10',
     pnl: 0,
     trades: 0,
-    quantity: 0,
+    volume: 0,
     winRate: 0
   },
   {
     date: '2025-04-11',
     pnl: 0,
     trades: 0,
-    quantity: 0,
+    volume: 0,
     winRate: 0
   }
 ];

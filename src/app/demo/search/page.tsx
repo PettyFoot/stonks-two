@@ -139,7 +139,7 @@ export default function DemoSearch() {
                             ${trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)}
                           </div>
                           <div className="text-sm text-muted">
-                            {trade.volume.toLocaleString()} shares
+                            {(trade.volume ?? 0).toLocaleString()} shares
                           </div>
                         </div>
                       </div>

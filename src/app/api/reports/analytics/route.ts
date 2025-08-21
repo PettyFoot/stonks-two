@@ -17,7 +17,7 @@ export interface AnalyticsRequest {
     side?: 'LONG' | 'SHORT';
     timeZone?: string;
   };
-  aggregations: ('distribution' | 'performance' | 'statistics' | 'time_analysis')[];
+  aggregations: ('distribution' | 'performance' | 'statistics' | 'time_analysis' | 'volume_analysis' | 'time_intervals')[];
   realTimeUpdates?: boolean;
 }
 

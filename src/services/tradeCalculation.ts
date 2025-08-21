@@ -112,7 +112,7 @@ export class TradeCalculationService {
     const orderSide = order.side;
     const tradeSide = orderSide === OrderSide.BUY ? TradeSide.LONG : TradeSide.SHORT;
     const quantity = order.orderQuantity;
-    const price = order.limitPrice || 0;
+    const price = order.limitPrice ? Number(order.limitPrice) : 0;
 
     const openPosition = this.openPositions.get(symbol);
 
@@ -251,8 +251,6 @@ export class TradeCalculationService {
           openTime: trade.openTime,
           closeTime: trade.closeTime,
           quantity: trade.quantity,
-          quantityFilled: trade.quantity,
-          volume: trade.quantity,
           costBasis: trade.costBasis,
           proceeds: trade.proceeds,
           profitLoss: trade.profitLoss,

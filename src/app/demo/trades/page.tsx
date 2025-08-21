@@ -127,7 +127,7 @@ export default function DemoTrades() {
           <div className="bg-surface border border-default rounded-lg p-4">
             <div className="text-sm text-muted mb-1">Total Volume</div>
             <div className="text-2xl font-bold text-primary">
-              {filteredTrades.reduce((sum, trade) => sum + trade.volume, 0).toLocaleString()}
+              {filteredTrades.reduce((sum, trade) => sum + (trade.volume ?? 0), 0).toLocaleString()}
             </div>
           </div>
           <div className="bg-surface border border-default rounded-lg p-4">
