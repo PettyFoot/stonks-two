@@ -40,26 +40,28 @@ export default function ColumnSettingsModal({
         const columns = data.columns as ColumnConfiguration[];
         
         // Load user preferences from localStorage
-        const savedColumns = localStorage.getItem('trades-column-settings');
-        if (savedColumns) {
-          try {
-            const userColumns = JSON.parse(savedColumns) as ColumnConfiguration[];
-            // Merge with available columns to handle new columns
-            const mergedColumns = columns.map(col => {
-              const userCol = userColumns.find(uc => uc.id === col.id);
-              return userCol ? { ...col, visible: userCol.visible } : col;
-            });
-            setAvailableColumns(mergedColumns);
-            setSelectedColumns(mergedColumns);
-          } catch {
-            // If parsing fails, use default columns
-            setAvailableColumns(columns);
-            setSelectedColumns(columns);
+        if (typeof window !== 'undefined') {
+          const savedColumns = localStorage.getItem('trades-column-settings');
+          if (savedColumns) {
+            try {
+              const userColumns = JSON.parse(savedColumns) as ColumnConfiguration[];
+              // Merge with available columns to handle new columns
+              const mergedColumns = columns.map(col => {
+                const userCol = userColumns.find(uc => uc.id === col.id);
+                return userCol ? { ...col, visible: userCol.visible } : col;
+              });
+              setAvailableColumns(mergedColumns);
+              setSelectedColumns(mergedColumns);
+              return;
+            } catch {
+              // Fall through to default behavior
+            }
           }
-        } else {
-          setAvailableColumns(columns);
-          setSelectedColumns(columns);
         }
+        
+        // Default behavior when localStorage is not available or empty
+        setAvailableColumns(columns);
+        setSelectedColumns(columns);
       } catch (error) {
         console.error('Failed to load column settings:', error);
         // Fallback to default columns
@@ -119,7 +121,9 @@ export default function ColumnSettingsModal({
 
   const handleSave = () => {
     // Save to localStorage
-    localStorage.setItem('trades-column-settings', JSON.stringify(selectedColumns));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('trades-column-settings', JSON.stringify(selectedColumns));
+    }
     
     // Notify parent component
     onColumnsChange(selectedColumns);

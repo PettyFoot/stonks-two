@@ -47,12 +47,14 @@ export default function TradesTable({
       return columnConfig;
     }
     
-    const savedColumns = localStorage.getItem('trades-column-settings');
-    if (savedColumns) {
-      try {
-        return JSON.parse(savedColumns) as ColumnConfiguration[];
-      } catch {
-        return defaultColumns;
+    if (typeof window !== 'undefined') {
+      const savedColumns = localStorage.getItem('trades-column-settings');
+      if (savedColumns) {
+        try {
+          return JSON.parse(savedColumns) as ColumnConfiguration[];
+        } catch {
+          return defaultColumns;
+        }
       }
     }
     

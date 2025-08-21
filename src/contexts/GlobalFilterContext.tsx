@@ -152,6 +152,8 @@ type FilterAction =
   | { type: 'LOAD_FROM_STORAGE'; payload: GlobalFilterState };
 
 function saveToStorage(state: GlobalFilterState) {
+  if (typeof window === 'undefined') return; // Skip on server
+  
   try {
     const serializable = {
       ...state,
@@ -168,6 +170,8 @@ function saveToStorage(state: GlobalFilterState) {
 }
 
 function loadFromStorage(): GlobalFilterState | null {
+  if (typeof window === 'undefined') return null; // Skip on server
+  
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
