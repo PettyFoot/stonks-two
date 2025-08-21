@@ -2,11 +2,11 @@
 
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TimeframeOption, FilterTimeframe } from '@/types';
+import { TimeframeOption, FilterTimeframe, PredefinedTimeframe } from '@/types';
 
 interface TimeframeSelectorProps {
-  value?: FilterTimeframe;
-  onValueChange: (value: FilterTimeframe) => void;
+  value?: PredefinedTimeframe;
+  onValueChange: (value: FilterTimeframe) => void; // Still only emits FilterTimeframe values
   className?: string;
 }
 
@@ -22,12 +22,15 @@ const timeframeOptions: TimeframeOption[] = [
 ];
 
 export default function TimeframeSelector({ value, onValueChange, className }: TimeframeSelectorProps) {
+  // Only show the value if it's a valid FilterTimeframe option
+  const selectValue = value && timeframeOptions.some(option => option.value === value) ? value : '';
+  
   return (
     <div className={`flex items-center gap-2 ${className || ''}`}>
       <label className="text-sm font-medium whitespace-nowrap text-primary">
         Timeframe
       </label>
-      <Select value={value || ''} onValueChange={onValueChange}>
+      <Select value={selectValue} onValueChange={onValueChange}>
         <SelectTrigger className="w-36 h-8 text-sm">
           <SelectValue placeholder="Select period" />
         </SelectTrigger>

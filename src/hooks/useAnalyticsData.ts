@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { AnalyticsData, ReportsFilterOptions, WinLossMetrics, PerformanceMetrics, StandardTimeframe, PredefinedTimeframe } from '@/types';
-import { getDateRangeFromTimeframe } from '@/contexts/GlobalFilterContext';
+import { getDateRangeFromTimeframe } from '@/contexts/FilterContext';
 
 interface UseAnalyticsDataReturn {
   data: AnalyticsData | null;
@@ -121,6 +121,8 @@ const calculateWinLossMetrics = (dailyPnlData: Array<{ date: string; value: numb
     largestLoss: 0,
     winningTrades: 0,
     losingTrades: 0,
+    totalWins: 0,
+    totalLosses: 0,
     maxConsecutiveWins: 0,
     maxConsecutiveLosses: 0,
     avgHoldTime: '0',
@@ -148,6 +150,8 @@ const calculateWinLossMetrics = (dailyPnlData: Array<{ date: string; value: numb
     largestLoss: 0,
     winningTrades: Math.round((overallStats?.totalVolume || 0) * (winningDays.length / dailyPnlData.length)),
     losingTrades: 0,
+    totalWins: Math.round((overallStats?.totalVolume || 0) * (winningDays.length / dailyPnlData.length)),
+    totalLosses: 0,
     maxConsecutiveWins: winningDays.length,
     maxConsecutiveLosses: 0,
     avgHoldTime: overallStats?.avgDailyPnl ? '4h' : '0',
@@ -175,6 +179,8 @@ const calculateWinLossMetrics = (dailyPnlData: Array<{ date: string; value: numb
     largestLoss: Math.min(...losingDays.map(day => day.value)),
     winningTrades: 0,
     losingTrades: Math.round((overallStats?.totalVolume || 0) * (losingDays.length / dailyPnlData.length)),
+    totalWins: 0,
+    totalLosses: Math.round((overallStats?.totalVolume || 0) * (losingDays.length / dailyPnlData.length)),
     maxConsecutiveWins: 0,
     maxConsecutiveLosses: losingDays.length,
     avgHoldTime: overallStats?.avgDailyPnl ? '4h' : '0',
@@ -412,6 +418,8 @@ export const useAnalyticsData = (standardTimeframe: StandardTimeframe, filters: 
           largestLoss: result.statistics?.overall?.avgLoss || 0,
           winningTrades: result.metadata.totalTrades > 0 ? Math.round((result.statistics?.overall?.winRate || 0) / 100 * result.metadata.totalTrades) : 0,
           losingTrades: result.metadata.totalTrades > 0 ? Math.round((100 - (result.statistics?.overall?.winRate || 0)) / 100 * result.metadata.totalTrades) : 0,
+          totalWins: result.metadata.totalTrades > 0 ? Math.round((result.statistics?.overall?.winRate || 0) / 100 * result.metadata.totalTrades) : 0,
+          totalLosses: result.metadata.totalTrades > 0 ? Math.round((100 - (result.statistics?.overall?.winRate || 0)) / 100 * result.metadata.totalTrades) : 0,
           maxConsecutiveWins: result.statistics?.overall?.maxConsecutiveWins || 0,
           maxConsecutiveLosses: result.statistics?.overall?.maxConsecutiveLosses || 0,
           avgHoldTime: '0',

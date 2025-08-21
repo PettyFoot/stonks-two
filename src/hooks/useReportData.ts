@@ -216,8 +216,8 @@ export function useDashboardMetrics(
 export function useLiveCumulativePnL(
   filters: ReportFilters,
   refreshInterval: number = 30000 // 30 seconds default
-): UseReportData<CumulativeDataPoint[]> {
-  const [data, setData] = useState<CumulativeDataPoint[] | null>(null);
+): UseReportData<ChartDataPoint[]> {
+  const [data, setData] = useState<ChartDataPoint[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);

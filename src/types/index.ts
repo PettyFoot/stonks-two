@@ -111,8 +111,8 @@ export interface TimeframeOption {
   description?: string;
 }
 
-export interface ReportsFilterOptions extends TradeFilters {
-  predefinedTimeframe?: FilterTimeframe; // Only filter timeframes, not standard ones
+export interface ReportsFilterOptions extends FilterOptions {
+  predefinedTimeframe?: PredefinedTimeframe; // Accepts both standard and filter timeframes
   customTimeRange?: boolean;
 }
 
