@@ -397,9 +397,9 @@ export default function Reports() {
                           <PieChart>
                             <Pie
                               data={[
-                                { name: 'Wins', value: winLossRatio.wins, percentage: winLossRatio.winRate },
-                                { name: 'Losses', value: winLossRatio.losses, percentage: winLossRatio.lossRate },
-                                { name: 'Scratches', value: winLossRatio.scratches, percentage: winLossRatio.scratchRate }
+                                { name: 'Wins', value: winLossRatio.wins, percentage: winLossRatio.winRate, color: '#16A34A' },
+                                { name: 'Losses', value: winLossRatio.losses, percentage: winLossRatio.lossRate, color: '#DC2626' },
+                                { name: 'Scratches', value: winLossRatio.scratches, percentage: winLossRatio.scratchRate, color: '#6B7280' }
                               ].filter(item => item.value > 0)}
                               cx="50%"
                               cy="50%"
@@ -408,9 +408,13 @@ export default function Reports() {
                               paddingAngle={2}
                               dataKey="value"
                             >
-                              <Cell fill="#16A34A" />
-                              <Cell fill="#DC2626" />
-                              <Cell fill="#6B7280" />
+                              {[
+                                { name: 'Wins', value: winLossRatio.wins, percentage: winLossRatio.winRate, color: '#16A34A' },
+                                { name: 'Losses', value: winLossRatio.losses, percentage: winLossRatio.lossRate, color: '#DC2626' },
+                                { name: 'Scratches', value: winLossRatio.scratches, percentage: winLossRatio.scratchRate, color: '#6B7280' }
+                              ].filter(item => item.value > 0).map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
                             </Pie>
                             <Tooltip 
                               formatter={(value: number, name: string, props: any) => [
@@ -464,35 +468,96 @@ export default function Reports() {
                       <CardTitle className="text-base font-medium text-primary">TRADE EXPECTATION</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-4">
-                        {/* Single bar showing expectation */}
-                        <CustomBarChart
-                          data={[{ date: 'Expectation', value: tradeExpectation.expectation }]}
-                          title=""
-                          height={200}
-                          chartType="currency"
-                          useConditionalColors={true}
-                          showGrid={true}
-                          showTooltip={true}
-                        />
-                        {/* Metrics below */}
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <span className="text-muted">Win Rate: </span>
-                            <span className="font-semibold">{tradeExpectation.winRate.toFixed(1)}%</span>
+                      <div style={{ height: 300, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        {/* Bar container */}
+                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+                          <span style={{ 
+                            marginRight: '15px', 
+                            fontSize: '12px', 
+                            color: '#9CA3AF',
+                            minWidth: '70px'
+                          }}>
+                            Expectation
+                          </span>
+                          <div style={{ 
+                            flex: 1,
+                            height: '80px',
+                            position: 'relative'
+                          }}>
+                            {/* The actual bar positioned based on value */}
+                            <div 
+                              style={{ 
+                                position: 'absolute',
+                                top: 0,
+                                height: '100%',
+                                backgroundColor: tradeExpectation.expectation >= 0 ? '#16A34A' : '#DC2626',
+                                // Scale: -3 to 5 = 8 units total, 0 is at 3/8 = 37.5% from left
+                                left: tradeExpectation.expectation >= 0 ? '37.5%' : `${37.5 + (tradeExpectation.expectation / 8 * 100)}%`,
+                                width: `${Math.abs(tradeExpectation.expectation) / 8 * 100}%`,
+                                borderRadius: '2px',
+                                cursor: 'pointer',
+                                transition: 'opacity 0.2s'
+                              }}
+                              title={`Expectation: $${tradeExpectation.expectation.toFixed(2)}`}
+                              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                            >
+                              {/* Tooltip on hover */}
+                              <div style={{
+                                position: 'absolute',
+                                top: '-40px',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                backgroundColor: '#1F2937',
+                                border: '1px solid #374151',
+                                borderRadius: '4px',
+                                padding: '4px 8px',
+                                fontSize: '12px',
+                                color: '#E5E7EB',
+                                whiteSpace: 'nowrap',
+                                opacity: 0,
+                                pointerEvents: 'none',
+                                transition: 'opacity 0.2s'
+                              }}
+                              className="expectation-tooltip">
+                                Expectation: ${tradeExpectation.expectation.toFixed(2)}
+                              </div>
+                            </div>
+                            {/* Zero line indicator */}
+                            <div style={{
+                              position: 'absolute',
+                              left: '37.5%',
+                              top: 0,
+                              bottom: 0,
+                              width: '1px',
+                              backgroundColor: '#4B5563',
+                              zIndex: 1
+                            }}></div>
+                            {/* Add CSS for hover effect */}
+                            <style jsx>{`
+                              div:hover .expectation-tooltip {
+                                opacity: 1 !important;
+                              }
+                            `}</style>
                           </div>
-                          <div>
-                            <span className="text-muted">Profit Factor: </span>
-                            <span className="font-semibold">{tradeExpectation.profitFactor.toFixed(2)}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted">Payoff Ratio: </span>
-                            <span className="font-semibold">{tradeExpectation.payoffRatio.toFixed(2)}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted">Kelly %: </span>
-                            <span className="font-semibold">{tradeExpectation.kellyPercentage.toFixed(1)}%</span>
-                          </div>
+                        </div>
+                        {/* X-axis labels */}
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          marginLeft: '85px',
+                          fontSize: '11px',
+                          color: '#6B7280'
+                        }}>
+                          <span>-$3</span>
+                          <span>-$2</span>
+                          <span>-$1</span>
+                          <span>$0</span>
+                          <span>$1</span>
+                          <span>$2</span>
+                          <span>$3</span>
+                          <span>$4</span>
+                          <span>$5</span>
                         </div>
                       </div>
                     </CardContent>
@@ -508,7 +573,7 @@ export default function Reports() {
                         data={cumulativePnlData}
                         title=""
                         height={300}
-                        useConditionalColors={false}
+                        useConditionalColors={true}
                       />
                     </CardContent>
                   </Card>
