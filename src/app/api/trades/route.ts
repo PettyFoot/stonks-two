@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { mockTrades } from '@/data/mockData';
 import { TradeSide, Prisma } from '@prisma/client';
+import { getCurrentUser } from '@/lib/auth0';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -51,23 +53,9 @@ export async function GET(request: Request) {
 
   // Authenticated mode - get user-specific data
   try {
-    // TEMPORARY WORKAROUND: Next.js 15 + Auth0 compatibility issue
-    // TODO: Remove this workaround when Auth0 releases Next.js 15 compatible version
-    const { prisma: prismaInstance } = await import('@/lib/prisma');
-    
-    // Skip auth check for now and use actual logged in user
-    let user = await prismaInstance.user.findFirst({
-      where: { email: 'dannyvera127@gmail.com' }
-    });
-    
+    const user = await getCurrentUser();
     if (!user) {
-      user = await prismaInstance.user.create({
-        data: {
-          auth0Id: 'danny-auth0-id',
-          email: 'dannyvera127@gmail.com',
-          name: 'Danny Vera'
-        }
-      });
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
     // Build where clause for filters
@@ -100,7 +88,7 @@ export async function GET(request: Request) {
     }
 
     // Get only trades from trades table (not individual orders)
-    const trades = await prismaInstance.trade.findMany({
+    const trades = await prisma.trade.findMany({
       where,
       orderBy: [
         { date: 'desc' }
@@ -143,28 +131,15 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    // TEMPORARY WORKAROUND: Next.js 15 + Auth0 compatibility issue
-    const { prisma: prismaInstance } = await import('@/lib/prisma');
-    
-    // Skip auth check for now and use actual logged in user
-    let user = await prismaInstance.user.findFirst({
-      where: { email: 'dannyvera127@gmail.com' }
-    });
-    
+    const user = await getCurrentUser();
     if (!user) {
-      user = await prismaInstance.user.create({
-        data: {
-          auth0Id: 'danny-auth0-id',
-          email: 'dannyvera127@gmail.com',
-          name: 'Danny Vera'
-        }
-      });
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
     const body = await request.json();
     
     const now = new Date();
-    const newTrade = await prismaInstance.trade.create({
+    const newTrade = await prisma.trade.create({
       data: {
         userId: user.id,
         date: body.date ? new Date(body.date) : now,

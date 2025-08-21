@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { getCurrentUser } from '@/lib/auth0';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -29,21 +31,9 @@ export async function GET(request: Request) {
 
   // Authenticated mode - get real metadata from database
   try {
-    const { prisma: prismaInstance } = await import('@/lib/prisma');
-    
-    // Get actual logged in user
-    let user = await prismaInstance.user.findFirst({
-      where: { email: 'dannyvera127@gmail.com' }
-    });
-    
+    const user = await getCurrentUser();
     if (!user) {
-      user = await prismaInstance.user.create({
-        data: {
-          auth0Id: 'danny-auth0-id',
-          email: 'dannyvera127@gmail.com',
-          name: 'Danny Vera'
-        }
-      });
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
     // Get metadata in parallel for performance
@@ -56,7 +46,7 @@ export async function GET(request: Request) {
       dateRange
     ] = await Promise.all([
       // Distinct symbols
-      prismaInstance.trade.findMany({
+      prisma.trade.findMany({
         where: { userId: user.id },
         select: { symbol: true },
         distinct: ['symbol'],
@@ -64,7 +54,7 @@ export async function GET(request: Request) {
       }),
       
       // All tags with counts
-      prismaInstance.trade.findMany({
+      prisma.trade.findMany({
         where: { 
           userId: user.id,
           tags: { isEmpty: false }
@@ -79,7 +69,7 @@ export async function GET(request: Request) {
       }),
       
       // Volume range
-      prismaInstance.trade.aggregate({
+      prisma.trade.aggregate({
         where: { 
           userId: user.id,
           quantity: { not: null }
@@ -89,14 +79,14 @@ export async function GET(request: Request) {
       }),
       
       // Execution count range
-      prismaInstance.trade.aggregate({
+      prisma.trade.aggregate({
         where: { userId: user.id },
         _min: { executions: true },
         _max: { executions: true }
       }),
       
       // Date range
-      prismaInstance.trade.aggregate({
+      prisma.trade.aggregate({
         where: { userId: user.id },
         _min: { date: true, entryDate: true },
         _max: { date: true, entryDate: true }

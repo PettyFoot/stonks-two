@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { TradeFilters } from '@/types';
 import { Prisma, TradeSide } from '@prisma/client';
 import { mockTrades } from '@/data/mockData';
+import { getCurrentUser } from '@/lib/auth0';
+import { prisma } from '@/lib/prisma';
 
 // Helper function to convert 12-hour format to 24-hour format for comparison
 function convertTo24Hour(timeStr: string): string {
@@ -152,21 +154,9 @@ export async function POST(request: Request) {
     }
 
     // Authenticated mode - query database
-    const { prisma: prismaInstance } = await import('@/lib/prisma');
-    
-    // Get actual logged in user
-    let user = await prismaInstance.user.findFirst({
-      where: { email: 'dannyvera127@gmail.com' }
-    });
-    
+    const user = await getCurrentUser();
     if (!user) {
-      user = await prismaInstance.user.create({
-        data: {
-          auth0Id: 'danny-auth0-id',
-          email: 'dannyvera127@gmail.com',
-          name: 'Danny Vera'
-        }
-      });
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
     // Build complex where clause
@@ -239,10 +229,10 @@ export async function POST(request: Request) {
     // since Prisma doesn't easily support TIME() extraction in filters
 
     // Get total count for pagination
-    const totalCount = await prismaInstance.trade.count({ where });
+    const totalCount = await prisma.trade.count({ where });
 
     // Get paginated results
-    const trades = await prismaInstance.trade.findMany({
+    const trades = await prisma.trade.findMany({
       where,
       orderBy: [
         { date: 'desc' },
@@ -253,7 +243,7 @@ export async function POST(request: Request) {
     });
 
     // Get aggregated data for totals
-    const aggregateResult = await prismaInstance.trade.aggregate({
+    const aggregateResult = await prisma.trade.aggregate({
       where,
       _sum: {
         pnl: true,

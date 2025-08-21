@@ -6,26 +6,14 @@ import {
   calculateProfitFactor,
   formatDuration 
 } from '@/lib/reportCalculations';
+import { getCurrentUser } from '@/lib/auth0';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
-    // TEMPORARY WORKAROUND: Next.js 15 + Auth0 compatibility issue
-    // TODO: Remove this workaround when Auth0 releases Next.js 15 compatible version
-    const { prisma } = await import('@/lib/prisma');
-    
-    // Skip auth check for now and use actual logged in user
-    let user = await prisma.user.findFirst({
-      where: { email: 'dannyvera127@gmail.com' }
-    });
-    
+    const user = await getCurrentUser();
     if (!user) {
-      user = await prisma.user.create({
-        data: {
-          auth0Id: 'danny-auth0-id',
-          email: 'dannyvera127@gmail.com',
-          name: 'Danny Vera'
-        }
-      });
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
     // Extract query parameters
