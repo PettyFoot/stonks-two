@@ -138,7 +138,7 @@ export function useTradesData(
         setData({
           ...data,
           trades: [...data.trades, newTrade],
-          count: data.count + 1,
+          count: (data.count || 0) + 1,
           totalPnl: data.totalPnl + (newTrade.pnl || 0),
           totalVolume: data.totalVolume + (newTrade.volume || 0)
         });

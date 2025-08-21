@@ -250,7 +250,7 @@ export const useAnalyticsData = (standardTimeframe: StandardTimeframe, filters: 
           preset: effectiveTimeframe,
         },
         filters: {
-          symbols: filters.symbols,
+          symbol: filters.symbol,
           tags: filters.tags,
           side: filters.side?.toUpperCase() as 'LONG' | 'SHORT' | undefined,
           timeZone: 'America/New_York',
@@ -501,6 +501,6 @@ export const transformChartData = (data: Array<Record<string, unknown>>, _type: 
     label: item.label,
     count: item.count,
     percentage: item.percentage,
-    color: item.value >= 0 ? '#16A34A' : '#DC2626', // Green for positive, red for negative
+    color: Number(item.value) >= 0 ? '#16A34A' : '#DC2626', // Green for positive, red for negative
   }));
 };

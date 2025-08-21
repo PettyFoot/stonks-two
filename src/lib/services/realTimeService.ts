@@ -186,7 +186,7 @@ export class RealTimeService {
             unsubscribe();
           };
 
-          controller.closed.then(cleanup).catch(cleanup);
+          // Cleanup handled via req.signal.addEventListener('abort') above
         }
       });
 

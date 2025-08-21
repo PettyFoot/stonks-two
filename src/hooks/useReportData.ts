@@ -12,6 +12,7 @@ import {
   ReportFilters,
   UseReportData 
 } from '@/types/reports';
+import { ChartDataPoint } from '@/types';
 
 // Cache duration in milliseconds (5 minutes)
 const CACHE_DURATION = 5 * 60 * 1000;
@@ -57,7 +58,7 @@ export function useWinLossReport(
     // Check cache
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      setData(cached.data);
+      setData(cached.data as WinLossReportResponse);
       setLoading(false);
       return;
     }
@@ -150,7 +151,7 @@ export function useDashboardMetrics(
     // Check cache
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      setData(cached.data);
+      setData(cached.data as DashboardMetricsResponse);
       setLoading(false);
       return;
     }
@@ -237,7 +238,13 @@ export function useLiveCumulativePnL(
       }
 
       const result: WinLossReportResponse = await response.json();
-      setData(result.cumulative);
+      // Convert CumulativeDataPoint[] to ChartDataPoint[]
+      const chartData: ChartDataPoint[] = result.cumulative.map(point => ({
+        date: point.date,
+        value: point.cumulativePnl,
+        count: point.trades
+      }));
+      setData(chartData);
       setError(null);
     } catch (err) {
       if (err instanceof Error) {

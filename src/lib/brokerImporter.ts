@@ -176,12 +176,10 @@ export class BrokerImporter {
               userId: this.userId,
               importBatchId: importBatch.id,
               date: trade.date,
-              orderFilledTime: trade.date,
               entryDate: trade.date,
               symbol: trade.symbol,
               side: trade.side,
-              volume: trade.volume,
-              quantityFilled: trade.volume,
+              quantity: trade.volume,
               executions: trade.executions,
               pnl: trade.pnl,
               notes: trade.notes,
@@ -342,7 +340,7 @@ export class BrokerImporter {
       where: { userId: this.userId },
       _sum: {
         pnl: true,
-        volume: true
+        quantity: true
       },
       _count: {
         id: true
@@ -352,9 +350,9 @@ export class BrokerImporter {
     // Update or create day data records
     for (const day of tradingDays) {
       const date = day.date;
-      const totalPnl = day._sum.pnl || 0;
-      const totalVolume = day._sum.volume || 0;
-      const totalTrades = day._count.id;
+      const totalPnl = day._sum.pnl ? Number(day._sum.pnl) : 0;
+      const totalVolume = day._sum.quantity ? Number(day._sum.quantity) : 0;
+      const totalTrades = day._count.id || 0;
 
       // Calculate win rate for the day
       const dayTrades = await prisma.trade.findMany({
@@ -364,7 +362,7 @@ export class BrokerImporter {
         }
       });
 
-      const winningTrades = dayTrades.filter(trade => trade.pnl > 0).length;
+      const winningTrades = dayTrades.filter(trade => Number(trade.pnl) > 0).length;
       const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
 
       // Upsert day data - need to use userId + date as compound key

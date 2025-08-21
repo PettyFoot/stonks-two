@@ -48,7 +48,8 @@ function filterReducer(state: FilterState, action: FilterAction): FilterState {
           predefinedTimeframe: action.payload,
           customTimeRange: false,
           // Clear date range when using predefined timeframe
-          dateRange: undefined,
+          dateFrom: undefined,
+          dateTo: undefined,
         },
         error: null,
       };

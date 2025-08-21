@@ -336,7 +336,7 @@ export async function calculateRMultiples(
 
   return {
     distribution: result.map(row => ({
-      rMultiple: row.r_bucket,
+      rMultiple: String(row.r_bucket),
       count: Number(row.count) || 0,
       totalPnl: Number(row.total_pnl) || 0,
     })),
