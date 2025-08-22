@@ -43,32 +43,32 @@ export default function TopBar({
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        {/* Title Section */}
-        <div className="flex items-center gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-semibold text-primary">{title}</h1>
-              {showEditLayout && (
-                <Button variant="ghost" size="sm" className="h-7 px-2 text-muted hover:text-primary">
-                  <Edit className="h-3 w-3 mr-1" />
-                  Edit Layout
-                </Button>
-              )}
-              {subtitle && (
-                <Badge variant="secondary" className="ml-2 bg-[#16A34A] text-white hover:bg-[#15803d]">
-                  {subtitle}
-                </Badge>
-              )}
-            </div>
+      <div className="relative flex items-center justify-center">
+        {/* Title Section - Centered */}
+        <div className="flex items-center gap-2 md:gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+            <h1 className="text-lg sm:text-xl font-semibold text-primary">{title}</h1>
+            {showEditLayout && (
+              <Button variant="ghost" size="sm" className="hidden sm:flex h-7 px-2 text-muted hover:text-primary">
+                <Edit className="h-3 w-3 mr-1" />
+                <span className="hidden md:inline">Edit Layout</span>
+              </Button>
+            )}
+            {subtitle && (
+              <Badge variant="secondary" className="self-start sm:self-auto sm:ml-2 bg-[#16A34A] text-white hover:bg-[#15803d]">
+                {subtitle}
+              </Badge>
+            )}
           </div>
         </div>
 
-
-        {/* User Menu and Help Button */}
-        <div className="flex items-center gap-2">
-          <UserMenu />
-          <Button variant="ghost" size="sm" className="text-muted hover:text-primary">
+        {/* User Menu and Help Button - Positioned Absolute Right */}
+        <div className="absolute right-0 flex items-center gap-2">
+          {/* Hide UserMenu on mobile - it's in the MobileNav */}
+          <div className="hidden lg:block">
+            <UserMenu />
+          </div>
+          <Button variant="ghost" size="sm" className="hidden sm:flex text-muted hover:text-primary">
             <HelpCircle className="h-4 w-4" />
           </Button>
         </div>

@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Trade, ColumnConfiguration } from '@/types';
 import { cn } from '@/lib/utils';
-import { ChevronUp, ChevronDown, MoreHorizontal } from 'lucide-react';
+import { ChevronUp, ChevronDown, MoreHorizontal, ChevronRight } from 'lucide-react';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 interface TradesTableProps {
   trades: Trade[];
@@ -19,6 +20,13 @@ interface TradesTableProps {
 type SortField = 'date' | 'time' | 'symbol' | 'volume' | 'executions' | 'pnl';
 type SortDirection = 'asc' | 'desc';
 
+// Define priority columns for different screen sizes
+const PRIORITY_COLUMNS = {
+  mobile: ['symbol', 'pnl', 'date'],
+  tablet: ['date', 'symbol', 'volume', 'pnl', 'time'],
+  desktop: 'all'
+};
+
 export default function TradesTable({ 
   trades, 
   showCheckboxes = true, 
@@ -28,6 +36,12 @@ export default function TradesTable({
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
   const [sortField, setSortField] = useState<SortField>('time');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [expandedRows, setExpandedRows] = useState<string[]>([]);
+  
+  // Media queries
+  const isMobile = useMediaQuery('(max-width: 639px)');
+  const isTablet = useMediaQuery('(min-width: 640px) and (max-width: 1023px)');
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
 
   // Define default column configuration
   const defaultColumns: ColumnConfiguration[] = [
@@ -62,7 +76,21 @@ export default function TradesTable({
   };
 
   const effectiveColumns = getEffectiveColumns();
-  const visibleColumns = effectiveColumns.filter(col => col.visible);
+  
+  // Filter columns based on device type
+  const getVisibleColumns = () => {
+    const allColumns = effectiveColumns.filter(col => col.visible);
+    
+    if (isMobile) {
+      return allColumns.filter(col => PRIORITY_COLUMNS.mobile.includes(col.id));
+    } else if (isTablet) {
+      return allColumns.filter(col => PRIORITY_COLUMNS.tablet.includes(col.id));
+    }
+    
+    return allColumns;
+  };
+  
+  const visibleColumns = getVisibleColumns();
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -111,6 +139,14 @@ export default function TradesTable({
       setSelectedTrades([]);
     }
   };
+  
+  const toggleRowExpansion = (tradeId: string) => {
+    setExpandedRows(prev => 
+      prev.includes(tradeId) 
+        ? prev.filter(id => id !== tradeId)
+        : [...prev, tradeId]
+    );
+  };
 
   const formatPnL = (pnl: number) => {
     const formatted = `$${Math.abs(pnl).toFixed(2)}`;
@@ -119,60 +155,56 @@ export default function TradesTable({
 
   // Function to render cell content based on column ID
   const renderCellContent = (trade: Trade, columnId: string) => {
-    const cellStyle = needsHorizontalScroll ? { 
-      minWidth: `calc(${baseColumnWidth} - 2px)`,
-      width: `calc(${baseColumnWidth} - 2px)`
-    } : { width: baseColumnWidth };
     switch (columnId) {
       case 'date':
         return (
-          <TableCell className="text-sm text-primary font-medium" style={cellStyle}>
+          <TableCell className="text-sm text-primary font-medium whitespace-nowrap">
             {trade.date}
           </TableCell>
         );
       case 'time':
         return (
-          <TableCell className="text-sm text-muted" style={cellStyle}>
+          <TableCell className="text-sm text-muted whitespace-nowrap">
             {trade.time}
           </TableCell>
         );
       case 'symbol':
         return (
-          <TableCell className="text-sm font-medium text-primary" style={cellStyle}>
+          <TableCell className="text-sm font-medium text-primary">
             {trade.symbol}
           </TableCell>
         );
       case 'volume':
         return (
-          <TableCell className="text-sm text-primary" style={cellStyle}>
+          <TableCell className="text-sm text-primary">
             {(trade.quantity || 0).toLocaleString()}
           </TableCell>
         );
       case 'executions':
         return (
-          <TableCell className="text-sm text-primary" style={cellStyle}>
+          <TableCell className="text-sm text-primary">
             {trade.executions || 0}
           </TableCell>
         );
       case 'pnl':
         return (
           <TableCell className={cn(
-            'text-sm font-medium',
+            'text-sm font-medium whitespace-nowrap',
             (trade.pnl || 0) >= 0 ? 'text-positive' : 'text-negative'
-          )} style={cellStyle}>
+          )}>
             {formatPnL(trade.pnl || 0)}
           </TableCell>
         );
       case 'notes':
         return (
-          <TableCell className="text-sm text-muted" style={cellStyle}>
+          <TableCell className="text-sm text-muted max-w-[200px] truncate">
             {trade.notes || ''}
           </TableCell>
         );
       case 'tags':
         return (
-          <TableCell style={cellStyle}>
-            <div className="flex gap-1">
+          <TableCell>
+            <div className="flex gap-1 flex-wrap">
               {trade.tags?.slice(0, 2).map((tag) => (
                 <span 
                   key={tag}
@@ -186,11 +218,52 @@ export default function TradesTable({
         );
       default:
         return (
-          <TableCell className="text-sm text-muted" style={cellStyle}>
+          <TableCell className="text-sm text-muted">
             -
           </TableCell>
         );
     }
+  };
+  
+  // Render expanded row details for mobile
+  const renderExpandedDetails = (trade: Trade) => {
+    const hiddenColumns = effectiveColumns.filter(col => 
+      col.visible && !visibleColumns.find(vc => vc.id === col.id)
+    );
+    
+    if (hiddenColumns.length === 0) return null;
+    
+    return (
+      <TableRow>
+        <TableCell colSpan={visibleColumns.length + (showCheckboxes ? 1 : 0) + (isMobile ? 1 : 2)}>
+          <div className="px-4 py-3 bg-gray-50 rounded-lg">
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              {hiddenColumns.map(col => (
+                <div key={col.id}>
+                  <span className="text-muted font-medium">{col.label}:</span>
+                  <span className="ml-2 text-primary">
+                    {col.id === 'pnl' ? (
+                      <span className={cn(
+                        'font-medium',
+                        (trade.pnl || 0) >= 0 ? 'text-positive' : 'text-negative'
+                      )}>
+                        {formatPnL(trade.pnl || 0)}
+                      </span>
+                    ) : col.id === 'volume' ? (
+                      (trade.quantity || 0).toLocaleString()
+                    ) : col.id === 'tags' ? (
+                      trade.tags?.join(', ') || '-'
+                    ) : (
+                      trade[col.id as keyof Trade] || '-'
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </TableCell>
+      </TableRow>
+    );
   };
 
   const SortButton = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
@@ -217,34 +290,30 @@ export default function TradesTable({
     }), { trades: 0, volume: 0, executions: 0, pnl: 0 });
   }, [trades]);
 
-  // Calculate if we need horizontal scrolling
-  const needsHorizontalScroll = visibleColumns.length > 7;
-  
-  // Calculate column width for even distribution up to 7 columns
-  const baseColumnWidth = needsHorizontalScroll ? `${100 / 7}%` : `${100 / visibleColumns.length}%`;
-
   return (
     <div className="bg-surface border border-default rounded-lg">
-      <div className={needsHorizontalScroll ? "overflow-x-auto" : ""}>
-        <Table className={needsHorizontalScroll ? "min-w-max" : "w-full"}>
+      <div className="overflow-x-auto">
+        <Table className="w-full">
         <TableHeader>
           <TableRow className="hover:bg-transparent border-b border-default">
-            {showCheckboxes && (
-              <TableHead className="w-12">
+            {showCheckboxes && !isMobile && (
+              <TableHead className="w-12 sticky left-0 bg-surface z-10">
                 <Checkbox 
                   checked={selectedTrades.length === trades.length && trades.length > 0}
                   onCheckedChange={handleSelectAll}
                 />
               </TableHead>
             )}
-            {visibleColumns.map((column) => (
+            {isMobile && (
+              <TableHead className="w-8"></TableHead>
+            )}
+            {visibleColumns.map((column, index) => (
               <TableHead 
                 key={column.id} 
-                className="text-xs font-medium text-muted uppercase"
-                style={needsHorizontalScroll ? { 
-                  minWidth: `calc(${baseColumnWidth} - 2px)`,
-                  width: `calc(${baseColumnWidth} - 2px)`
-                } : { width: baseColumnWidth }}
+                className={cn(
+                  "text-xs font-medium text-muted uppercase",
+                  index === 0 && !showCheckboxes && "sticky left-0 bg-surface z-10"
+                )}
               >
                 {column.sortable ? (
                   <SortButton field={column.id as SortField}>{column.label}</SortButton>
@@ -253,64 +322,126 @@ export default function TradesTable({
                 )}
               </TableHead>
             ))}
-            <TableHead className="w-12"></TableHead>
+            {!isMobile && <TableHead className="w-12"></TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
           {sortedTrades.map((trade) => (
-            <TableRow 
-              key={trade.id} 
-              className="hover:bg-gray-50 border-b border-default cursor-pointer"
-              onClick={() => onTradeSelect?.(trade)}
-            >
-              {showCheckboxes && (
-                <TableCell>
-                  <Checkbox 
-                    checked={selectedTrades.includes(trade.id)}
-                    onCheckedChange={(checked) => handleSelectTrade(trade.id, !!checked)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </TableCell>
-              )}
-              {visibleColumns.map((column) => 
-                <React.Fragment key={column.id}>
-                  {renderCellContent(trade, column.id)}
-                </React.Fragment>
-              )}
-              <TableCell>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                  <MoreHorizontal className="h-3 w-3" />
-                </Button>
-              </TableCell>
-            </TableRow>
+            <React.Fragment key={trade.id}>
+              <TableRow 
+                className="hover:bg-gray-50 border-b border-default cursor-pointer"
+                onClick={() => !isMobile && onTradeSelect?.(trade)}
+              >
+                {showCheckboxes && !isMobile && (
+                  <TableCell className="sticky left-0 bg-inherit z-10">
+                    <Checkbox 
+                      checked={selectedTrades.includes(trade.id)}
+                      onCheckedChange={(checked) => handleSelectTrade(trade.id, !!checked)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </TableCell>
+                )}
+                {isMobile && (
+                  <TableCell className="w-8">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleRowExpansion(trade.id);
+                      }}
+                      className="p-1"
+                    >
+                      <ChevronRight 
+                        className={cn(
+                          "h-4 w-4 transition-transform",
+                          expandedRows.includes(trade.id) && "rotate-90"
+                        )}
+                      />
+                    </button>
+                  </TableCell>
+                )}
+                {visibleColumns.map((column, index) => {
+                  const cellContent = renderCellContent(trade, column.id);
+                  if (index === 0 && !showCheckboxes && !isMobile) {
+                    return (
+                      <React.Fragment key={column.id}>
+                        {React.cloneElement(cellContent as React.ReactElement<{className?: string}>, {
+                          className: cn(
+                            (cellContent as React.ReactElement<{className?: string}>).props?.className,
+                            "sticky left-0 bg-inherit z-10"
+                          )
+                        })}
+                      </React.Fragment>
+                    );
+                  }
+                  return <React.Fragment key={column.id}>{cellContent}</React.Fragment>;
+                })}
+                {!isMobile && (
+                  <TableCell>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                      <MoreHorizontal className="h-3 w-3" />
+                    </Button>
+                  </TableCell>
+                )}
+              </TableRow>
+              {isMobile && expandedRows.includes(trade.id) && renderExpandedDetails(trade)}
+            </React.Fragment>
           ))}
           
-          {/* Totals Row */}
-          <TableRow className="bg-gray-50 border-t-2 border-default font-medium hover:bg-gray-50">
-            {showCheckboxes && <TableCell></TableCell>}
-            <TableCell colSpan={2} className="text-sm font-semibold text-primary">
-              TOTAL:
-            </TableCell>
-            <TableCell className="text-sm font-semibold text-primary">
-              {totals.trades} trades
-            </TableCell>
-            <TableCell className="text-sm font-semibold text-primary">
-              {totals.volume.toLocaleString()}
-            </TableCell>
-            <TableCell className="text-sm font-semibold text-primary">
-              {totals.executions}
-            </TableCell>
-            <TableCell className={cn(
-              'text-sm font-semibold',
-              totals.pnl >= 0 ? 'text-positive' : 'text-negative'
-            )}>
-              {formatPnL(totals.pnl)}
-            </TableCell>
-            <TableCell colSpan={4}></TableCell>
-          </TableRow>
+          {/* Totals Row - Hidden on mobile */}
+          {!isMobile && (
+            <TableRow className="bg-gray-50 border-t-2 border-default font-medium hover:bg-gray-50">
+              {showCheckboxes && <TableCell className="sticky left-0 bg-gray-50 z-10"></TableCell>}
+              <TableCell colSpan={2} className="text-sm font-semibold text-primary">
+                TOTAL:
+              </TableCell>
+              <TableCell className="text-sm font-semibold text-primary">
+                {totals.trades} trades
+              </TableCell>
+              {visibleColumns.find(c => c.id === 'volume') && (
+                <TableCell className="text-sm font-semibold text-primary">
+                  {totals.volume.toLocaleString()}
+                </TableCell>
+              )}
+              {visibleColumns.find(c => c.id === 'executions') && (
+                <TableCell className="text-sm font-semibold text-primary">
+                  {totals.executions}
+                </TableCell>
+              )}
+              {visibleColumns.find(c => c.id === 'pnl') && (
+                <TableCell className={cn(
+                  'text-sm font-semibold',
+                  totals.pnl >= 0 ? 'text-positive' : 'text-negative'
+                )}>
+                  {formatPnL(totals.pnl)}
+                </TableCell>
+              )}
+              <TableCell></TableCell>
+            </TableRow>
+          )}
         </TableBody>
         </Table>
       </div>
+      
+      {/* Mobile Totals Summary */}
+      {isMobile && (
+        <div className="p-4 border-t border-default bg-gray-50">
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <span className="text-muted">Total Trades:</span>
+              <span className="ml-2 font-semibold">{totals.trades}</span>
+            </div>
+            <div>
+              <span className="text-muted">Total P&L:</span>
+              <span className={cn(
+                'ml-2 font-semibold',
+                totals.pnl >= 0 ? 'text-positive' : 'text-negative'
+              )}>
+                {formatPnL(totals.pnl)}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,15 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Settings } from 'lucide-react';
+import { Settings, ChevronDown, ChevronUp, Filter } from 'lucide-react';
 import DynamicFilterDropdown from '@/components/DynamicFilterDropdown';
 import AdvancedFiltersPanel from '@/components/AdvancedFiltersPanel';
 import { useTradesMetadata } from '@/hooks/useTradesMetadata';
 import { useGlobalFilters, type TimeFramePreset } from '@/contexts/GlobalFilterContext';
+import { cn } from '@/lib/utils';
 
 interface FilterPanelProps {
   showAdvanced?: boolean;
@@ -25,6 +26,9 @@ export default function FilterPanel({
   showTimeRangeTabs = false
 }: FilterPanelProps) {
   const [showAdvancedPanel, setShowAdvancedPanel] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  
   const { metadata, loading: metadataLoading } = useTradesMetadata(demo);
   const { 
     filters, 
@@ -40,15 +44,65 @@ export default function FilterPanel({
   // Check if custom date filters are applied
   const hasCustomDateFilters = Boolean(filters.customDateRange?.from || filters.customDateRange?.to || filters.timeFramePreset);
   const shouldShowClearButton = hasCustomDateFilters || hasAdvancedFilters;
+  
+  // Detect mobile viewport
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      // Auto-collapse on mobile
+      if (window.innerWidth < 768) {
+        setIsExpanded(false);
+      }
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const clearDateAndAdvancedFilters = () => {
     clearAdvancedFilters();
     setShowAdvancedPanel(false);
   };
+  
+  // Calculate active filter count for summary
+  const activeFilterCount = [
+    filters.symbol && filters.symbol !== 'Symbol' ? 1 : 0,
+    filters.tags && filters.tags.length > 0 ? 1 : 0,
+    filters.side && filters.side !== 'all' ? 1 : 0,
+    filters.duration && filters.duration !== 'all' ? 1 : 0,
+    hasCustomDateFilters ? 1 : 0,
+    hasAdvancedFilters ? 1 : 0
+  ].reduce((a, b) => a + b, 0);
+
   return (
-    <div className={`bg-surface border-b border-default px-6 py-4 ${className}`}>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4">
+    <div className={cn("bg-surface border-b border-default px-4 sm:px-6 py-3 sm:py-4", className)}>
+      {/* Mobile Collapse Header */}
+      {isMobile && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="w-full flex items-center justify-between mb-3 text-sm font-medium text-primary"
+        >
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4" />
+            <span>Filters</span>
+            {activeFilterCount > 0 && (
+              <Badge variant="secondary" className="ml-1">
+                {activeFilterCount} active
+              </Badge>
+            )}
+          </div>
+          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
+      )}
+      
+      {/* Collapsible Filter Content */}
+      <div className={cn(
+        "overflow-hidden transition-all duration-300",
+        !isExpanded && isMobile ? "max-h-0" : "max-h-[1000px]"
+      )}>
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+        <div className="grid grid-cols-2 md:flex md:items-center gap-2 md:gap-4">
           {/* Dynamic Symbol Filter */}
           <DynamicFilterDropdown
             label="Symbol"
@@ -57,7 +111,7 @@ export default function FilterPanel({
             options={metadata?.symbols.map(symbol => ({ value: symbol, label: symbol })) || []}
             placeholder="Symbol"
             loading={metadataLoading}
-            width="w-32"
+            width="w-full md:w-32"
           />
 
           {/* Dynamic Tags Filter */}
@@ -69,14 +123,14 @@ export default function FilterPanel({
             placeholder="Select"
             multiple={true}
             loading={metadataLoading}
-            width="w-32"
+            width="w-full md:w-32"
           />
 
           {/* Side Filter */}
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-primary">Side</label>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+            <label className="text-xs sm:text-sm font-medium text-primary">Side</label>
             <Select value={filters.side || 'all'} onValueChange={(value) => updateFilter('side', value as 'all' | 'long' | 'short')}>
-              <SelectTrigger className="w-24 h-8 text-sm">
+              <SelectTrigger className="w-full sm:w-24 h-8 text-sm">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
@@ -88,10 +142,10 @@ export default function FilterPanel({
           </div>
 
           {/* Duration Filter */}
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-primary">Duration</label>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+            <label className="text-xs sm:text-sm font-medium text-primary">Duration</label>
             <Select value={filters.duration || 'all'} onValueChange={(value) => updateFilter('duration', value as 'all' | 'intraday' | 'multiday')}>
-              <SelectTrigger className="w-28 h-8 text-sm">
+              <SelectTrigger className="w-full sm:w-28 h-8 text-sm">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
@@ -104,15 +158,15 @@ export default function FilterPanel({
         </div>
 
         {/* Right Side Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-2">
           {/* Time Frame Preset Dropdown */}
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-primary">Time Frame</label>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 w-full md:w-auto">
+            <label className="text-xs sm:text-sm font-medium text-primary">Time Frame</label>
             <Select 
               value={filters.timeFramePreset || 'default'} 
               onValueChange={(value) => setTimeFramePreset(value === 'default' ? null : value as TimeFramePreset)}
             >
-              <SelectTrigger className="w-32 h-8 text-sm">
+              <SelectTrigger className="w-full md:w-32 h-8 text-sm">
                 <SelectValue placeholder="Select" />
               </SelectTrigger>
               <SelectContent>
@@ -132,37 +186,40 @@ export default function FilterPanel({
           </div>
 
           {/* Custom Date Range Override */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full md:w-auto">
             <Input 
               type="date" 
               value={filters.customDateRange?.from || ''} 
               onChange={(e) => setCustomDateRange(e.target.value, filters.customDateRange?.to)}
-              className="w-36 h-8 text-sm"
+              className="w-full sm:w-36 h-8 text-sm"
               placeholder="From"
             />
-            <span className="text-muted">-</span>
+            <span className="hidden sm:block text-muted">-</span>
             <Input 
               type="date" 
               value={filters.customDateRange?.to || ''} 
               onChange={(e) => setCustomDateRange(filters.customDateRange?.from, e.target.value)}
-              className="w-36 h-8 text-sm"
+              className="w-full sm:w-36 h-8 text-sm"
               placeholder="To"
             />
             
-            {/* Time Range Tabs - moved below date inputs */}
+            {/* Time Range Tabs - responsive on mobile */}
             {showTimeRangeTabs && (
-              <div className={`flex rounded-lg border border-default bg-surface ml-2 ${hasCustomTimeFilter ? 'opacity-50' : ''}`}>
+              <div className={cn(
+                "hidden sm:flex rounded-lg border border-default bg-surface",
+                hasCustomTimeFilter ? 'opacity-50' : ''
+              )}>
                 {(['30', '60', '90'] as const).map((days) => (
                   <Button
                     key={days}
                     variant="ghost"
                     size="sm"
                     disabled={hasCustomTimeFilter}
-                    className={`
-                      rounded-none border-r last:border-r-0 last:rounded-r-lg first:rounded-l-lg h-8 text-xs px-3
-                      ${!hasCustomTimeFilter && filters.timeRange.value === days ? 'bg-muted/10' : ''}
-                      ${hasCustomTimeFilter ? 'cursor-not-allowed' : ''}
-                    `}
+                    className={cn(
+                      "rounded-none border-r last:border-r-0 last:rounded-r-lg first:rounded-l-lg h-8 text-xs px-3",
+                      !hasCustomTimeFilter && filters.timeRange.value === days ? 'bg-muted/10' : '',
+                      hasCustomTimeFilter ? 'cursor-not-allowed' : ''
+                    )}
                     onClick={() => !hasCustomTimeFilter && setTimeRange(days)}
                   >
                     {days} Days
@@ -177,35 +234,41 @@ export default function FilterPanel({
                 variant="outline"
                 size="sm"
                 onClick={clearDateAndAdvancedFilters}
-                className="h-8 text-red-600 border-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-700"
+                className="h-8 text-red-600 border-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-700 w-full sm:w-auto"
               >
                 Clear Filters
               </Button>
             )}
           </div>
 
-          {/* Advanced Button */}
-          {showAdvanced && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="h-8"
-              onClick={() => setShowAdvancedPanel(!showAdvancedPanel)}
-            >
-              <Settings className="h-3 w-3 mr-1" />
-              Advanced
-            </Button>
-          )}
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+            {/* Advanced Button */}
+            {showAdvanced && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 w-full sm:w-auto"
+                onClick={() => setShowAdvancedPanel(!showAdvancedPanel)}
+              >
+                <Settings className="h-3 w-3 mr-1" />
+                <span className="sm:hidden md:inline">Advanced</span>
+              </Button>
+            )}
 
-          {/* Apply Button */}
-          <Button className="h-8 bg-[#16A34A] hover:bg-[#15803d] text-white">
-            ✓
-          </Button>
+            {/* Apply Button */}
+            <Button 
+              className="h-8 bg-[#16A34A] hover:bg-[#15803d] text-white w-full sm:w-auto"
+              onClick={() => isMobile && setIsExpanded(false)}
+            >
+              ✓ Apply
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Applied Filters */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {filters.symbol && filters.symbol !== 'Symbol' && (
           <Badge variant="secondary" className="text-xs">
             Symbol: {filters.symbol}
@@ -276,6 +339,7 @@ export default function FilterPanel({
           />
         </div>
       )}
+      </div>
     </div>
   );
 }
