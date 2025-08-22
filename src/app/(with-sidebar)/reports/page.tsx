@@ -18,6 +18,7 @@ import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 // New enhanced components
 import StatsSection from '@/components/reports/StatsSection';
 import ChartContainer from '@/components/reports/ChartContainer';
+import WinVsLossReport from '@/components/reports/WinVsLossReport';
 import { useDetailedReportsData } from '@/hooks/useDetailedReportsData';
 import { 
   aggregateByDayOfWeek, 
@@ -688,52 +689,7 @@ export default function Reports() {
 
           {/* Win vs Loss Days Tab */}
           <TabsContent value="win-vs-loss" className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              <Card className="bg-surface border-default">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base font-medium text-primary">Win vs Loss Analysis</CardTitle>
-                </CardHeader>
-                <CardContent className="h-64">
-                  <div className="flex items-center justify-center h-full text-muted">
-                    Win vs Loss analysis charts
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-surface border-default">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base font-medium text-primary">Performance Metrics</CardTitle>
-                </CardHeader>
-                <CardContent className="h-64">
-                  <div className="space-y-4">
-                    <div className="flex justify-between">
-                      <span>Win Rate</span>
-                      <span className="text-[#16A34A] font-semibold">{((stats?.winningTrades || 0) / (stats?.totalTrades || 1) * 100).toFixed(1)}%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Average Win</span>
-                      <span className="text-[#16A34A] font-semibold">${stats?.avgWinningTrade?.toFixed(2) || '0.00'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Average Loss</span>
-                      <span className="text-[#DC2626] font-semibold">${stats?.avgLosingTrade?.toFixed(2) || '0.00'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Profit Factor</span>
-                      <span className="font-semibold">{stats?.profitFactor?.toFixed(2) || '0.00'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Max Consecutive Wins</span>
-                      <span className="font-semibold">{stats?.maxConsecutiveWins || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Max Consecutive Losses</span>
-                      <span className="font-semibold">{stats?.maxConsecutiveLosses || 0}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <WinVsLossReport />
           </TabsContent>
 
           {/* Drawdown Tab */}
