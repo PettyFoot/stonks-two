@@ -137,25 +137,35 @@ export default function WinVsLossReport() {
     };
 
     return (
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr] gap-2 md:gap-4 py-2 border-b border-border last:border-b-0">
-        <div className="text-sm text-muted-foreground">{label}</div>
-        <div className={`text-sm font-medium text-right md:text-right ${getValueColor(winValue, true)}`}>
-          <span className="md:hidden text-muted-foreground mr-2">Win:</span>
-          {formattedWinValue}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2 border-b border-border last:border-b-0">
+        {/* Winning Days Column */}
+        <div className="flex justify-between items-center gap-2 md:border-r md:border-border md:pr-4">
+          <div className="text-sm text-muted-foreground">{label}</div>
+          <div className={`text-sm font-medium ${getValueColor(winValue, true)}`}>
+            {formattedWinValue}
+          </div>
         </div>
-        <div className={`text-sm font-medium text-right md:text-right ${getValueColor(lossValue, false)}`}>
-          <span className="md:hidden text-muted-foreground mr-2">Loss:</span>
-          {formattedLossValue}
+        {/* Losing Days Column */}
+        <div className="flex justify-between items-center gap-2 md:pl-4">
+          <div className="text-sm text-muted-foreground">{label}</div>
+          <div className={`text-sm font-medium ${getValueColor(lossValue, false)}`}>
+            {formattedLossValue}
+          </div>
         </div>
       </div>
     );
   };
 
   const renderSkeletonRow = () => (
-    <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr] gap-2 md:gap-4 py-2 border-b border-border">
-      <Skeleton className="h-4 w-32" />
-      <Skeleton className="h-4 w-20 ml-auto md:ml-auto" />
-      <Skeleton className="h-4 w-20 ml-auto md:ml-auto" />
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2 border-b border-border">
+      <div className="flex justify-between items-center gap-2 md:border-r md:border-border md:pr-4">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-4 w-20" />
+      </div>
+      <div className="flex justify-between items-center gap-2 md:pl-4">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-4 w-20" />
+      </div>
     </div>
   );
 
@@ -173,8 +183,7 @@ export default function WinVsLossReport() {
     <Card className="bg-surface border-default">
       <CardHeader className="pb-4">
         <CardTitle className="text-lg font-medium text-primary">Win vs Loss Days Analysis</CardTitle>
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr] gap-4 mt-4 pb-2 border-b border-border">
-          <div className="hidden md:block"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pb-2 border-b border-border">
           <div className="text-center">
             <span 
               className="font-semibold text-lg text-primary"
