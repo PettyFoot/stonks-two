@@ -80,10 +80,8 @@ export default function EnhancedImportPage() {
   const handleUploadComplete = (result: Record<string, unknown>) => {
     console.log('Upload completed:', result);
     
-    // Show success message and redirect
-    setTimeout(() => {
-      router.push('/trades?imported=true');
-    }, 2000);
+    // Stay on the import page - no redirect
+    // The EnhancedFileUpload component will show success message
   };
 
   const handleMappingRequired = (result: Record<string, unknown>) => {

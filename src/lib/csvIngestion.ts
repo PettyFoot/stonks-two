@@ -477,6 +477,7 @@ export class CsvIngestionService {
         await prisma.order.create({
           data: {
             userId,
+            importBatchId: importBatch.id,
             orderId: normalizedOrder.orderId,
             parentOrderId: normalizedOrder.parentOrderId,
             symbol: normalizedOrder.symbol,
@@ -963,6 +964,7 @@ export class CsvIngestionService {
         await prisma.order.create({
           data: {
             userId,
+            importBatchId: importBatch.id,
             orderId: `schwab-${Date.now()}-${index}`,
             symbol: order.symbol || '',
             orderType: this.normalizeOrderType(order.orderType || 'Market'),
@@ -992,6 +994,7 @@ export class CsvIngestionService {
         await prisma.order.create({
           data: {
             userId,
+            importBatchId: importBatch.id,
             orderId: `schwab-working-${Date.now()}-${index}`,
             symbol: order.symbol || '',
             orderType: this.normalizeOrderType(order.orderType || 'Market'),
@@ -1021,6 +1024,7 @@ export class CsvIngestionService {
           await prisma.order.create({
             data: {
               userId,
+              importBatchId: importBatch.id,
               orderId: `schwab-cancelled-${Date.now()}-${index}`,
               symbol: order.symbol,
               orderType: this.normalizeOrderType(order.orderType || 'Market'),

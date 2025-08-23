@@ -1,28 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CsvIngestionService, FILE_SIZE_LIMITS } from '@/lib/csvIngestion';
+import { getCurrentUser } from '@/lib/auth0';
 import { z } from 'zod';
 
 export async function POST(request: NextRequest) {
   try {
-    // TEMPORARY WORKAROUND: Next.js 15 + Auth0 compatibility issue
-    // TODO: Remove this workaround when Auth0 releases Next.js 15 compatible version
-    // Issue: Auth0's getSession() internally calls cookies().getAll() without await
-    // This causes "cookies() should be awaited" error in Next.js 15
-    const { prisma } = await import('@/lib/prisma');
-    
-    // Skip auth check for now and use test user
-    let user = await prisma.user.findFirst({
-      where: { email: 'test@example.com' }
-    });
-    
+    // Get the authenticated user
+    const user = await getCurrentUser();
     if (!user) {
-      user = await prisma.user.create({
-        data: {
-          auth0Id: 'test-auth0-id',
-          email: 'test@example.com',
-          name: 'Test User'
-        }
-      });
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
     const formData = await request.formData();
@@ -95,23 +81,10 @@ export async function POST(request: NextRequest) {
 // Validate CSV endpoint
 export async function PUT(request: NextRequest) {
   try {
-    // TEMPORARY WORKAROUND: Next.js 15 + Auth0 compatibility issue
-    // TODO: Remove this workaround when Auth0 releases Next.js 15 compatible version
-    const { prisma } = await import('@/lib/prisma');
-    
-    // Skip auth check for now and use test user
-    let user = await prisma.user.findFirst({
-      where: { email: 'test@example.com' }
-    });
-    
+    // Get the authenticated user
+    const user = await getCurrentUser();
     if (!user) {
-      user = await prisma.user.create({
-        data: {
-          auth0Id: 'test-auth0-id',
-          email: 'test@example.com',
-          name: 'Test User'
-        }
-      });
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
     const formData = await request.formData();
