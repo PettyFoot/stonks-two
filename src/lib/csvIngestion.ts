@@ -17,7 +17,7 @@ import {
   type CsvFormat, 
   DATA_TRANSFORMERS 
 } from '@/lib/csvFormatRegistry';
-import { tradeCalculationService } from '@/services/tradeCalculation';
+import { TradeBuilder } from '@/lib/tradeBuilder';
 
 export type CustomCsvRow = Record<string, string>;
 
@@ -404,7 +404,9 @@ export class CsvIngestionService {
     // Calculate trades after successful import
     if (successCount > 0) {
       try {
-        await tradeCalculationService.buildTrades(userId);
+        const tradeBuilder = new TradeBuilder();
+        await tradeBuilder.processUserOrders(userId);
+        await tradeBuilder.persistTrades(userId);
       } catch (error) {
         console.error('Trade calculation error:', error);
         // Don't fail the import if trade calculation fails
@@ -523,7 +525,9 @@ export class CsvIngestionService {
     // Calculate trades after successful import
     if (successCount > 0) {
       try {
-        await tradeCalculationService.buildTrades(userId);
+        const tradeBuilder = new TradeBuilder();
+        await tradeBuilder.processUserOrders(userId);
+        await tradeBuilder.persistTrades(userId);
       } catch (error) {
         console.error('Trade calculation error:', error);
         // Don't fail the import if trade calculation fails
@@ -684,7 +688,9 @@ export class CsvIngestionService {
     // Calculate trades after successful import
     if (successCount > 0) {
       try {
-        await tradeCalculationService.buildTrades(userId);
+        const tradeBuilder = new TradeBuilder();
+        await tradeBuilder.processUserOrders(userId);
+        await tradeBuilder.persistTrades(userId);
       } catch (error) {
         console.error('Trade calculation error:', error);
         // Don't fail the import if trade calculation fails

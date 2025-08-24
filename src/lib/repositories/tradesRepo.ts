@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { Trade, TradeStatus, TradeSide, MarketSession } from '@prisma/client';
+import { Trade, TradeStatus, TradeSide, MarketSession, HoldingPeriod } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
 export interface CreateTradeData {
@@ -21,6 +21,7 @@ export interface CreateTradeData {
   timeInTrade: number;
   remainingQuantity?: number;
   marketSession: string;
+  holdingPeriod?: HoldingPeriod;
   costBasis?: number;
   proceeds?: number;
 }
@@ -50,6 +51,7 @@ export class TradesRepository {
         timeInTrade: tradeData.timeInTrade,
         remainingQuantity: tradeData.remainingQuantity,
         marketSession: tradeData.marketSession as MarketSession | undefined,
+        holdingPeriod: tradeData.holdingPeriod,
         costBasis: tradeData.costBasis ? new Decimal(tradeData.costBasis) : undefined,
         proceeds: tradeData.proceeds ? new Decimal(tradeData.proceeds) : undefined,
         entryDate: tradeData.openTime,

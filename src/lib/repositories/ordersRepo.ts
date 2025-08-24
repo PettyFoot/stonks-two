@@ -29,7 +29,7 @@ export class OrdersRepository {
   async updateOrdersWithTradeId(orderIds: string[], tradeId: string): Promise<void> {
     await prisma.order.updateMany({
       where: {
-        orderId: { in: orderIds },
+        id: { in: orderIds },
       },
       data: {
         tradeId,
@@ -43,7 +43,7 @@ export class OrdersRepository {
   async getOrdersByIds(orderIds: string[]): Promise<Order[]> {
     return await prisma.order.findMany({
       where: {
-        orderId: { in: orderIds },
+        id: { in: orderIds },
       },
     });
   }
