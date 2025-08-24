@@ -209,6 +209,13 @@ export default function EnhancedFileUpload({
         onMappingRequired?.(result);
       } else if (result.success) {
         onUploadComplete?.(result);
+        // Clear file selection after successful upload
+        setTimeout(() => {
+          resetState();
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+        }, 2000); // Wait 2 seconds to show success message before clearing
       }
 
     } catch (error) {
@@ -260,7 +267,7 @@ export default function EnhancedFileUpload({
           <div className="flex items-start space-x-4">
             <Info className="h-6 w-6 text-[#0369A1] mt-1 flex-shrink-0" />
             <div>
-              <h3 className="font-semibold text-[#0369A1] mb-2">Enhanced CSV Import</h3>
+              <h3 className="font-semibold text-[#0369A1] mb-2">Trade Import</h3>
               <ul className="text-sm text-[#0369A1] space-y-1">
                 <li>• <strong>Intelligent Detection:</strong> Automatically recognizes broker formats</li>
                 <li>• <strong>Standard Format:</strong> Use our template for instant processing</li>
@@ -295,28 +302,28 @@ export default function EnhancedFileUpload({
           <CardContent className="space-y-6">
             {/* Format Detection Status */}
             {state.validationResult?.detectedFormatInfo && (
-              <div className="p-4 bg-[#F0F9FF] border border-[#BAE6FD] rounded-lg">
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex items-center space-x-2 mb-2">
-                  <CheckCircle className="h-5 w-5 text-[#16A34A]" />
-                  <h4 className="font-medium text-[#0369A1]">Format Detected Automatically</h4>
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <h4 className="font-medium text-gray-900">Format Detected</h4>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-[#0369A1]">
+                    <span className="text-sm font-medium text-gray-700">
                       {state.validationResult.detectedFormatInfo.name}
                     </span>
                     <Badge 
                       variant={state.validationResult.detectedFormatInfo.confidence >= 0.8 ? "default" : "secondary"}
-                      className={state.validationResult.detectedFormatInfo.confidence >= 0.8 ? "bg-[#16A34A]" : ""}
+                      className={state.validationResult.detectedFormatInfo.confidence >= 0.8 ? "bg-green-600" : "bg-gray-500"}
                     >
-                      {Math.round(state.validationResult.detectedFormatInfo.confidence * 100)}% confident
+                      {Math.round(state.validationResult.detectedFormatInfo.confidence * 100)}% match
                     </Badge>
                   </div>
-                  <p className="text-xs text-[#0369A1]">
+                  <p className="text-xs text-gray-600">
                     {state.validationResult.detectedFormatInfo.description}
                   </p>
                   {state.validationResult.detectedFormatInfo.brokerName && (
-                    <p className="text-xs text-[#0369A1] font-medium">
+                    <p className="text-xs text-gray-700 font-medium">
                       Broker: {state.validationResult.detectedFormatInfo.brokerName}
                     </p>
                   )}
@@ -380,13 +387,13 @@ export default function EnhancedFileUpload({
                     </p>
                     {state.validationResult && (
                       <div className="mt-2 space-y-2">
-                        <Badge variant={state.validationResult.isStandardFormat ? "default" : "secondary"}>
-                          {state.validationResult.isStandardFormat ? "Standard Format" : 
-                           state.validationResult.detectedFormatInfo ? "Known Format" : "Custom Format"}
+                        <Badge variant={state.validationResult.detectedFormatInfo ? "outline" : "secondary"} className="bg-white">
+                          {state.validationResult.detectedFormatInfo?.brokerName || 
+                           (state.validationResult.isStandardFormat ? "Standard Format" : "Custom Format")}
                         </Badge>
                         {state.validationResult.detectedFormatInfo && (
                           <p className="text-xs text-[#16A34A]">
-                            ✓ {state.validationResult.detectedFormatInfo.name} detected
+                            ✓ {state.validationResult.detectedFormatInfo.name}
                           </p>
                         )}
                       </div>
@@ -476,10 +483,19 @@ export default function EnhancedFileUpload({
                 <div className="text-sm space-y-2">
                   <div className="flex justify-between">
                     <span>Format:</span>
-                    <span className={state.validationResult.isStandardFormat ? "text-[#16A34A]" : "text-[#F59E0B]"}>
-                      {state.validationResult.isStandardFormat ? "Standard" : "Custom"}
+                    <span className={state.validationResult.detectedFormatInfo ? "text-[#16A34A]" : "text-[#F59E0B]"}>
+                      {state.validationResult.detectedFormatInfo?.name || 
+                       (state.validationResult.isStandardFormat ? "Standard" : "Custom")}
                     </span>
                   </div>
+                  {state.validationResult.detectedFormatInfo?.brokerName && (
+                    <div className="flex justify-between">
+                      <span>Broker:</span>
+                      <span className="text-[#16A34A] font-medium">
+                        {state.validationResult.detectedFormatInfo.brokerName}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span>Rows:</span>
                     <span>{state.validationResult.rowCount.toLocaleString()}</span>
@@ -490,11 +506,11 @@ export default function EnhancedFileUpload({
                   </div>
                 </div>
 
-                {!state.validationResult.isStandardFormat && (
+                {!state.validationResult.isStandardFormat && !state.validationResult.detectedFormatInfo && (
                   <div className="p-3 bg-[#FEF3C7] border border-[#FDE68A] rounded-lg">
                     <div className="flex items-center space-x-2">
                       <AlertTriangle className="h-4 w-4 text-[#F59E0B]" />
-                      <p className="text-sm font-medium text-[#F59E0B]">Custom Format Detected</p>
+                      <p className="text-sm font-medium text-[#F59E0B]">Unknown Format Detected</p>
                     </div>
                     <p className="text-xs text-[#F59E0B] mt-1">
                       AI will attempt to map your columns automatically. You may need to review the mapping.

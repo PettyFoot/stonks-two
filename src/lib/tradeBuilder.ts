@@ -72,14 +72,34 @@ export class TradeBuilder {
    * Updated to handle order allocations for split orders
    */
   private async calculateTotalQuantity(orderIds: string[], allocations?: OrderAllocation[]): Promise<number> {
-    // If we have allocations, use those for accurate quantity calculation
-    if (allocations && allocations.length > 0) {
-      return this.calculateTotalQuantityFromAllocations(allocations);
+    // Get all orders in the trade
+    const orders = await ordersRepo.getOrdersByIds(orderIds);
+    
+    // If no allocations, use standard calculation
+    if (!allocations || allocations.length === 0) {
+      return orders.reduce((total, order) => total + order.orderQuantity, 0);
     }
     
-    // Fallback to original behavior if no allocations
-    const orders = await ordersRepo.getOrdersByIds(orderIds);
-    return orders.reduce((total, order) => total + order.orderQuantity, 0);
+    // Create a map of allocated quantities by order ID
+    const allocationMap = new Map<string, number>();
+    for (const alloc of allocations) {
+      allocationMap.set(alloc.orderId, alloc.quantityAllocated);
+    }
+    
+    // Calculate total: use allocation if exists, otherwise use full quantity
+    let totalQuantity = 0;
+    for (const order of orders) {
+      const allocatedQty = allocationMap.get(order.id);
+      if (allocatedQty !== undefined) {
+        // This order has an allocation (it's split), use allocated quantity
+        totalQuantity += allocatedQty;
+      } else {
+        // This order is not split, use full quantity
+        totalQuantity += order.orderQuantity;
+      }
+    }
+    
+    return totalQuantity;
   }
 
   /**
