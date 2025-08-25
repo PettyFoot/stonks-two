@@ -309,7 +309,7 @@ export default function EnhancedFileUpload({
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-sm font-medium text-black">
                       {state.validationResult.detectedFormatInfo.name}
                     </span>
                     <Badge 
@@ -323,7 +323,7 @@ export default function EnhancedFileUpload({
                     {state.validationResult.detectedFormatInfo.description}
                   </p>
                   {state.validationResult.detectedFormatInfo.brokerName && (
-                    <p className="text-xs text-gray-700 font-medium">
+                    <p className="text-xs text-black font-medium">
                       Broker: {state.validationResult.detectedFormatInfo.brokerName}
                     </p>
                   )}
@@ -461,13 +461,36 @@ export default function EnhancedFileUpload({
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {/* Error/Success Messages Area - Primary Location */}
             {state.error && (
               <div className="p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <XCircle className="h-5 w-5 text-[#DC2626]" />
-                  <p className="text-sm font-medium text-[#DC2626]">Error</p>
+                <div className="flex items-start space-x-2">
+                  <XCircle className="h-5 w-5 text-[#DC2626] flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-[#DC2626]">Error</p>
+                    <p className="text-sm text-[#DC2626] mt-1">{state.error}</p>
+                  </div>
                 </div>
-                <p className="text-sm text-[#DC2626] mt-1">{state.error}</p>
+              </div>
+            )}
+
+            {/* Validation Errors */}
+            {state.validationResult?.errors && state.validationResult.errors.length > 0 && (
+              <div className="p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-lg max-h-48 overflow-y-auto">
+                <div className="flex items-start space-x-2">
+                  <XCircle className="h-5 w-5 text-[#DC2626] flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-[#DC2626] mb-2">Validation Errors:</p>
+                    <ul className="text-xs text-[#DC2626] space-y-1">
+                      {state.validationResult.errors.slice(0, 10).map((error, index) => (
+                        <li key={index}>• {error}</li>
+                      ))}
+                      {state.validationResult.errors.length > 10 && (
+                        <li className="font-medium">... and {state.validationResult.errors.length - 10} more errors</li>
+                      )}
+                    </ul>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -475,23 +498,26 @@ export default function EnhancedFileUpload({
               <div className="space-y-4">
                 <div className="flex items-center space-x-2">
                   <CheckCircle className="h-5 w-5 text-[#16A34A]" />
-                  <Badge variant="default" className="bg-[#16A34A]">
-                    Validated
+                  <Badge 
+                    variant="default" 
+                    className={state.validationResult.errors?.length > 0 ? "bg-[#DC2626]" : "bg-[#16A34A]"}
+                  >
+                    {state.validationResult.errors?.length > 0 ? 'Validation Failed' : 'Validated'}
                   </Badge>
                 </div>
 
                 <div className="text-sm space-y-2">
                   <div className="flex justify-between">
-                    <span>Format:</span>
-                    <span className={state.validationResult.detectedFormatInfo ? "text-[#16A34A]" : "text-[#F59E0B]"}>
+                    <span className="text-black">Format:</span>
+                    <span className={state.validationResult.detectedFormatInfo ? "text-black" : "text-[#F59E0B]"}>
                       {state.validationResult.detectedFormatInfo?.name || 
                        (state.validationResult.isStandardFormat ? "Standard" : "Custom")}
                     </span>
                   </div>
                   {state.validationResult.detectedFormatInfo?.brokerName && (
                     <div className="flex justify-between">
-                      <span>Broker:</span>
-                      <span className="text-[#16A34A] font-medium">
+                      <span className="text-black">Broker:</span>
+                      <span className="text-black font-medium">
                         {state.validationResult.detectedFormatInfo.brokerName}
                       </span>
                     </div>
@@ -554,6 +580,38 @@ export default function EnhancedFileUpload({
                     <p className="text-xs text-[#F59E0B] mt-1">
                       Column mapping needs your attention before import can proceed.
                     </p>
+                  </div>
+                )}
+
+                {/* Error/Success Message Area */}
+                {state.uploadResult.errors && state.uploadResult.errors.length > 0 && (
+                  <div className="p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-lg max-h-48 overflow-y-auto">
+                    <div className="flex items-start space-x-2 mb-2">
+                      <XCircle className="h-5 w-5 text-[#DC2626] flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-[#DC2626] mb-2">Import Errors:</p>
+                        <ul className="text-xs text-[#DC2626] space-y-1">
+                          {state.uploadResult.errors.slice(0, 10).map((error: string, index: number) => (
+                            <li key={index}>• {error}</li>
+                          ))}
+                          {state.uploadResult.errors.length > 10 && (
+                            <li className="font-medium">... and {state.uploadResult.errors.length - 10} more errors</li>
+                          )}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {state.uploadResult.success && state.uploadResult.message && (
+                  <div className="p-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-lg">
+                    <div className="flex items-start space-x-2">
+                      <CheckCircle className="h-5 w-5 text-[#16A34A] flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-[#16A34A] mb-1">Success!</p>
+                        <p className="text-xs text-[#16A34A]">{state.uploadResult.message}</p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

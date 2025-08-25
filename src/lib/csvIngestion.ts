@@ -261,6 +261,18 @@ export class CsvIngestionService {
       const schwabPattern = /Today's Trade Activity for \d+\w*\s+.*on\s+\d{1,2}\/\d{1,2}\/\d{2,4}/i;
       const isSchwabFormat = schwabPattern.test(fileContent);
       
+      console.log('=== CSV Processing Debug ===');
+      console.log('Detected format:', validation.detectedFormat?.id);
+      console.log('Format confidence:', validation.formatConfidence);
+      console.log('Is standard format:', validation.isStandardFormat);
+      console.log('Is Schwab Today\'s format:', isSchwabFormat);
+      console.log('Processing path will be:', 
+        isSchwabFormat ? 'processSchwabCsv' :
+        validation.isStandardFormat ? 'processStandardCsv' :
+        validation.detectedFormat && validation.formatConfidence && validation.formatConfidence >= 0.7 ? 'processDetectedFormatCsv' :
+        'processCustomCsv'
+      );
+      
       if (isSchwabFormat && !userMappings) {
         // Process as Schwab CSV
         return await this.processSchwabCsv(
@@ -283,6 +295,7 @@ export class CsvIngestionService {
         );
       } else if (validation.detectedFormat && validation.formatConfidence && validation.formatConfidence >= 0.7 && !userMappings) {
         // Process with detected format
+        console.log('Using processDetectedFormatCsv for format:', validation.detectedFormat.id);
         return await this.processDetectedFormatCsv(
           fileContent,
           fileName,
@@ -294,6 +307,7 @@ export class CsvIngestionService {
         );
       } else {
         // Process as custom CSV with AI mapping
+        console.log('Using processCustomCsv, detected format:', validation.detectedFormat?.id || 'none');
         return await this.processCustomCsv(
           fileContent, 
           fileName, 
@@ -447,12 +461,14 @@ export class CsvIngestionService {
     }
 
     // Create import batch
+    const brokerType = this.getBrokerTypeFromFormat(detectedFormat);
+    console.log('processDetectedFormatCsv - Creating import batch with brokerType:', brokerType, 'for format:', detectedFormat.id);
     const importBatch = await prisma.importBatch.create({
       data: {
         userId,
         filename: fileName,
         fileSize,
-        brokerType: this.getBrokerTypeFromFormat(detectedFormat),
+        brokerType,
         importType: 'CUSTOM',
         status: 'PROCESSING',
         totalRecords: records.length,
@@ -476,6 +492,10 @@ export class CsvIngestionService {
         const normalizedOrder = this.applyDetectedFormatMapping(records[i] as Record<string, unknown>, detectedFormat, accountTags);
         
         // Create order record
+        const orderBrokerType = this.getBrokerTypeFromFormat(detectedFormat);
+        if (i === 0) {
+          console.log('Creating first order with brokerType:', orderBrokerType, 'for format:', detectedFormat.id);
+        }
         await prisma.order.create({
           data: {
             userId,
@@ -495,6 +515,7 @@ export class CsvIngestionService {
             accountId: normalizedOrder.accountId,
             orderAccount: normalizedOrder.orderAccount,
             orderRoute: normalizedOrder.orderRoute,
+            brokerType: orderBrokerType,
             tags: normalizedOrder.tags,
           },
         });
@@ -635,33 +656,86 @@ export class CsvIngestionService {
     let errorCount = 0;
 
     try {
-      const normalizedTrades = this.aiMapper.applyMappings(records as CustomCsvRow[], mappingResult.mappings, accountTags);
+      // Check if this is an order format (has orderId field mapping)
+      const isOrderFormat = mappingResult.mappings.some(m => m.tradeVoyagerField === 'orderId');
+      const brokerType = detectedFormat ? this.getBrokerTypeFromFormat(detectedFormat) : BrokerType.GENERIC_CSV;
+      
+      if (isOrderFormat) {
+        // Process as orders
+        for (const [index, row] of records.entries()) {
+          try {
+            const mappedData: Record<string, unknown> = {};
+            
+            // Apply mappings
+            for (const mapping of mappingResult.mappings) {
+              const value = (row as Record<string, unknown>)[mapping.csvColumn];
+              if (value !== undefined && value !== null && value !== '') {
+                mappedData[mapping.tradeVoyagerField] = value;
+              }
+            }
+            
+            // Create order record
+            await prisma.order.create({
+              data: {
+                userId,
+                importBatchId: importBatch.id,
+                orderId: String(mappedData.orderId || `auto-${Date.now()}-${index}`),
+                parentOrderId: mappedData.parentOrderId ? String(mappedData.parentOrderId) : null,
+                symbol: String(mappedData.symbol || ''),
+                orderType: this.normalizeOrderType(String(mappedData.orderType || 'MARKET')),
+                side: this.normalizeOrderSide(String(mappedData.side || 'BUY')),
+                timeInForce: this.normalizeTimeInForce(String(mappedData.timeInForce || 'DAY')),
+                orderQuantity: Number(mappedData.orderQuantity) || 0,
+                limitPrice: mappedData.limitPrice ? Number(mappedData.limitPrice) : null,
+                stopPrice: mappedData.stopPrice ? Number(mappedData.stopPrice) : null,
+                orderStatus: this.normalizeOrderStatus(String(mappedData.orderStatus || 'FILLED')),
+                orderPlacedTime: mappedData.orderPlacedTime ? new Date(String(mappedData.orderPlacedTime)) : new Date(),
+                orderExecutedTime: mappedData.orderExecutedTime ? new Date(String(mappedData.orderExecutedTime)) : new Date(),
+                accountId: mappedData.accountId ? String(mappedData.accountId) : null,
+                orderAccount: mappedData.orderAccount ? String(mappedData.orderAccount) : null,
+                orderRoute: mappedData.orderRoute ? String(mappedData.orderRoute) : null,
+                brokerType,
+                tags: [...accountTags, ...(mappedData.tags ? String(mappedData.tags).split(',') : [])],
+              },
+            });
+            
+            successCount++;
+          } catch (error) {
+            errorCount++;
+            errors.push(`Row ${index + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
+        }
+      } else {
+        // Process as trades (existing logic)
+        const normalizedTrades = this.aiMapper.applyMappings(records as CustomCsvRow[], mappingResult.mappings, accountTags);
 
-      for (const [index, trade] of normalizedTrades.entries()) {
-        try {
-          await prisma.trade.create({
-            data: {
-              userId,
-              importBatchId: importBatch.id,
-              date: trade.date,
-              entryDate: trade.date,
-              symbol: trade.symbol,
-              side: trade.side,
-              quantity: trade.volume,
-              executions: 1,
-              pnl: trade.pnl,
-              entryPrice: trade.price,
-              commission: trade.commission,
-              fees: trade.fees,
-              notes: trade.notes,
-              tags: trade.tags,
-            },
-          });
+        for (const [index, trade] of normalizedTrades.entries()) {
+          try {
+            await prisma.trade.create({
+              data: {
+                userId,
+                importBatchId: importBatch.id,
+                date: trade.date,
+                entryDate: trade.date,
+                symbol: trade.symbol,
+                side: trade.side,
+                quantity: trade.volume,
+                executions: 1,
+                pnl: trade.pnl,
+                entryPrice: trade.price,
+                commission: trade.commission,
+                fees: trade.fees,
+                notes: trade.notes,
+                tags: trade.tags,
+                brokerName: detectedFormat?.brokerName,
+              },
+            });
 
-          successCount++;
-        } catch (error) {
-          errorCount++;
-          errors.push(`Row ${index + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            successCount++;
+          } catch (error) {
+            errorCount++;
+            errors.push(`Row ${index + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
         }
       }
     } catch (error) {
@@ -814,6 +888,7 @@ export class CsvIngestionService {
       'custom-order-execution': BrokerType.GENERIC_CSV,
       'trade-voyager-orders': BrokerType.GENERIC_CSV,
       'schwab-todays-trades': BrokerType.CHARLES_SCHWAB,
+      'schwab-trade-execution': BrokerType.CHARLES_SCHWAB,  // Added missing mapping!
     };
     
     return brokerMap[format.id] || BrokerType.GENERIC_CSV;
@@ -981,6 +1056,7 @@ export class CsvIngestionService {
             orderStatus: this.normalizeOrderStatus(order.orderStatus || 'FILLED'),
             orderPlacedTime: order.orderExecutedTime || new Date(),
             orderExecutedTime: order.orderExecutedTime || new Date(),
+            brokerType: BrokerType.CHARLES_SCHWAB,
             tags: accountTags,
           },
         });
@@ -1010,6 +1086,7 @@ export class CsvIngestionService {
             limitPrice: order.limitPrice,
             orderStatus: this.normalizeOrderStatus('WORKING'), // Working orders are PENDING
             orderPlacedTime: order.orderPlacedTime || new Date(),
+            brokerType: BrokerType.CHARLES_SCHWAB,
             tags: accountTags,
           },
         });
@@ -1041,6 +1118,7 @@ export class CsvIngestionService {
               orderStatus: this.normalizeOrderStatus(order.orderStatus || 'CANCELLED'),
               orderPlacedTime: order.orderCancelledTime || new Date(),
               orderCancelledTime: order.orderCancelledTime || new Date(),
+              brokerType: BrokerType.CHARLES_SCHWAB,
               tags: accountTags,
             },
           });

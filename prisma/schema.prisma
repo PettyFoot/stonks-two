@@ -118,7 +118,7 @@ model Trade {
 model Order {
   id                    String      @id @default(cuid())
   userId                String
-  orderId               String      @unique // External order ID
+  orderId               String      // External order ID
   parentOrderId         String?     // For bracket/OCO orders
   symbol                String
   orderType             OrderType
@@ -135,6 +135,7 @@ model Order {
   accountId             String?     // Account ID associated with order
   orderAccount          String?     // Account associated with order
   orderRoute            String?     // Route/venue for order execution
+  brokerType            BrokerType  @default(GENERIC_CSV) // Broker this order came from
   tags                  String[]    // Tags for this order
   usedInTrade           Boolean     @default(false) // Whether this order has been used in trade calculation
   tradeId               String?     // ID of the calculated trade this order belongs to
@@ -144,6 +145,7 @@ model Order {
   user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   importBatch           ImportBatch? @relation(fields: [importBatchId], references: [id])
   
+  @@unique([orderId, brokerType]) // Composite unique constraint
   @@index([userId, symbol])
   @@index([userId, orderStatus])
   @@index([tradeId])
