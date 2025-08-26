@@ -34,10 +34,10 @@ export default function DistributionCharts({
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-medium text-primary">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="overflow-auto flex items-center" style={{ height: `calc(100% - 60px)` }}>
+      <CardContent className="overflow-y-auto overflow-x-hidden flex items-center" style={{ height: `calc(100% - 60px)` }}>
         <div className="space-y-3 w-full">
           {data.map((item, index) => (
-            <div key={index} className="flex items-center gap-2">
+            <div key={index} className={`flex items-center gap-2 ${index === 0 ? 'mt-6' : ''}`}>
               {/* Range Label */}
               <div className="flex-shrink-0 w-12 text-xs text-muted">
                 {item.range || item.category}
