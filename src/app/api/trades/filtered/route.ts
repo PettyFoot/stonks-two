@@ -225,6 +225,20 @@ export async function POST(request: Request) {
       };
     }
 
+    // Duration filter
+    if (filters.duration && filters.duration !== 'all') {
+      if (filters.duration === 'intraday') {
+        where.holdingPeriod = 'INTRADAY';
+      } else if (filters.duration === 'swing') {
+        where.holdingPeriod = 'SWING';
+      }
+    }
+
+    // Open trades filter - by default hide open trades unless checkbox is checked
+    if (!filters.showOpenTrades) {
+      where.status = 'CLOSED';
+    }
+
     // Time range filter (time of day) - we'll apply this in post-processing for simplicity
     // since Prisma doesn't easily support TIME() extraction in filters
 
@@ -273,6 +287,8 @@ export async function POST(request: Request) {
       tags: trade.tags,
       entryPrice: trade.entryPrice ? Number(trade.entryPrice) : undefined,
       exitPrice: trade.exitPrice ? Number(trade.exitPrice) : undefined,
+      holdingPeriod: trade.holdingPeriod || undefined,
+      status: trade.status || undefined,
       commission: trade.commission ? Number(trade.commission) : undefined,
       fees: trade.fees ? Number(trade.fees) : undefined
     }));

@@ -7,6 +7,10 @@ export interface Trade {
   quantity: number;
   executions: number;
   pnl: number;
+  entryPrice?: number;
+  exitPrice?: number;
+  holdingPeriod?: string;
+  status?: 'OPEN' | 'CLOSED';
   volume?: number;
   shared?: boolean;
   notes?: string;
@@ -60,7 +64,8 @@ export interface FilterOptions {
   dateFrom?: string;
   dateTo?: string;
   tags?: string[];
-  duration?: 'all' | 'intraday' | 'multiday';
+  duration?: 'all' | 'intraday' | 'swing';
+  showOpenTrades?: boolean;
   // Enhanced filtering options
   priceRange?: { min: number; max: number };
   volumeRange?: { min: number; max: number };
@@ -77,6 +82,8 @@ export interface TradeFilters {
   executionCountRange?: { min: number; max: number };
   dateRange?: { start: Date; end: Date };
   side?: 'all' | 'long' | 'short';
+  duration?: 'all' | 'intraday' | 'swing';
+  showOpenTrades?: boolean;
 }
 
 export interface TradesMetadata {

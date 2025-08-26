@@ -12,6 +12,8 @@ export async function GET(request: Request) {
   const dateFrom = searchParams.get('dateFrom');
   const dateTo = searchParams.get('dateTo');
   const tags = searchParams.get('tags')?.split(',');
+  const duration = searchParams.get('duration');
+  const showOpenTrades = searchParams.get('showOpenTrades') === 'true';
   const demo = searchParams.get('demo') === 'true';
   
   // Demo mode - return filtered mock data
@@ -87,6 +89,20 @@ export async function GET(request: Request) {
       };
     }
 
+    // Duration filter
+    if (duration && duration !== 'all') {
+      if (duration === 'intraday') {
+        where.holdingPeriod = 'INTRADAY';
+      } else if (duration === 'swing') {
+        where.holdingPeriod = 'SWING';
+      }
+    }
+
+    // Open trades filter - by default hide open trades unless checkbox is checked
+    if (!showOpenTrades) {
+      where.status = 'CLOSED';
+    }
+
     // Get only trades from trades table (not individual orders)
     const trades = await prisma.trade.findMany({
       where,
@@ -112,6 +128,10 @@ export async function GET(request: Request) {
       quantity: trade.quantity,
       executions: trade.executions,
       pnl: typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl,
+      entryPrice: trade.entryPrice ? (typeof trade.entryPrice === 'object' ? trade.entryPrice.toNumber() : trade.entryPrice) : undefined,
+      exitPrice: trade.exitPrice ? (typeof trade.exitPrice === 'object' ? trade.exitPrice.toNumber() : trade.exitPrice) : undefined,
+      holdingPeriod: trade.holdingPeriod || undefined,
+      status: trade.status || undefined,
       shared: false,
       notes: trade.notes,
       tags: trade.tags

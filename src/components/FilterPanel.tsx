@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Settings, ChevronDown, ChevronUp, Filter } from 'lucide-react';
 import DynamicFilterDropdown from '@/components/DynamicFilterDropdown';
 import AdvancedFiltersPanel from '@/components/AdvancedFiltersPanel';
@@ -71,6 +72,7 @@ export default function FilterPanel({
     filters.tags && filters.tags.length > 0 ? 1 : 0,
     filters.side && filters.side !== 'all' ? 1 : 0,
     filters.duration && filters.duration !== 'all' ? 1 : 0,
+    filters.showOpenTrades ? 1 : 0,
     hasCustomDateFilters ? 1 : 0,
     hasAdvancedFilters ? 1 : 0
   ].reduce((a, b) => a + b, 0);
@@ -144,16 +146,32 @@ export default function FilterPanel({
           {/* Duration Filter */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
             <label className="text-xs sm:text-sm font-medium text-primary">Duration</label>
-            <Select value={filters.duration || 'all'} onValueChange={(value) => updateFilter('duration', value as 'all' | 'intraday' | 'multiday')}>
+            <Select value={filters.duration || 'all'} onValueChange={(value) => updateFilter('duration', value as 'all' | 'intraday' | 'swing')}>
               <SelectTrigger className="w-full sm:w-28 h-8 text-sm">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
                 <SelectItem value="intraday">Intraday</SelectItem>
-                <SelectItem value="multiday">Multiday</SelectItem>
+                <SelectItem value="swing">Swing</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Open Trades Filter */}
+          <div className="flex items-center gap-2">
+            <Checkbox 
+              id="openTrades"
+              checked={filters.showOpenTrades || false}
+              onCheckedChange={(checked) => updateFilter('showOpenTrades', checked)}
+              className="h-4 w-4"
+            />
+            <label 
+              htmlFor="openTrades" 
+              className="text-xs sm:text-sm font-medium text-primary cursor-pointer"
+            >
+              Open Trades
+            </label>
           </div>
         </div>
 

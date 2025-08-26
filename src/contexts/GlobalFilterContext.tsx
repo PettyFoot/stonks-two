@@ -27,7 +27,8 @@ export interface GlobalFilterState {
   symbol?: string;
   side?: 'all' | 'long' | 'short';
   tags?: string[];
-  duration?: 'all' | 'intraday' | 'multiday';
+  duration?: 'all' | 'intraday' | 'swing';
+  showOpenTrades?: boolean;
   timeRange: TimeRange;
   timeFramePreset?: TimeFramePreset;
   priceRange?: { min: number; max: number };
@@ -310,6 +311,7 @@ export function GlobalFilterProvider({ children }: GlobalFilterProviderProps) {
       side: state.side,
       tags: state.tags,
       duration: state.duration,
+      showOpenTrades: state.showOpenTrades,
       dateFrom: effectiveDateRange.from,
       dateTo: effectiveDateRange.to,
       priceRange: state.priceRange,

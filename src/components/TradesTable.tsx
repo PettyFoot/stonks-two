@@ -17,7 +17,7 @@ interface TradesTableProps {
   columnConfig?: ColumnConfiguration[];
 }
 
-type SortField = 'date' | 'time' | 'symbol' | 'volume' | 'executions' | 'pnl';
+type SortField = 'date' | 'time' | 'symbol' | 'side' | 'holdingPeriod' | 'entryPrice' | 'exitPrice' | 'volume' | 'executions' | 'pnl';
 type SortDirection = 'asc' | 'desc';
 
 // Define priority columns for different screen sizes
@@ -48,6 +48,10 @@ export default function TradesTable({
     { id: 'date', label: 'Date', visible: true, sortable: true },
     { id: 'time', label: 'Time', visible: true, sortable: true },
     { id: 'symbol', label: 'Symbol', visible: true, sortable: true },
+    { id: 'side', label: 'Side', visible: true, sortable: true },
+    { id: 'holdingPeriod', label: 'Duration', visible: true, sortable: true },
+    { id: 'entryPrice', label: 'Entry Price', visible: true, sortable: true },
+    { id: 'exitPrice', label: 'Exit Price', visible: true, sortable: true },
     { id: 'volume', label: 'Volume', visible: true, sortable: true },
     { id: 'executions', label: 'Executions', visible: true, sortable: true },
     { id: 'pnl', label: 'P&L', visible: true, sortable: true },
@@ -172,6 +176,40 @@ export default function TradesTable({
         return (
           <TableCell className="text-sm font-medium text-primary">
             {trade.symbol}
+          </TableCell>
+        );
+      case 'side':
+        return (
+          <TableCell className={cn(
+            'text-sm font-medium uppercase',
+            trade.side === 'long' ? 'text-green-600' : 'text-red-600'
+          )}>
+            {trade.side || '-'}
+          </TableCell>
+        );
+      case 'holdingPeriod':
+        return (
+          <TableCell className="text-sm text-primary">
+            {trade.holdingPeriod ? (
+              trade.holdingPeriod === 'INTRADAY' ? 'Intraday' :
+              trade.holdingPeriod === 'SWING' ? 'Swing' :
+              trade.holdingPeriod === 'SCALP' ? 'Scalp' :
+              trade.holdingPeriod === 'POSITION' ? 'Position' :
+              trade.holdingPeriod === 'LONG_TERM' ? 'Long Term' :
+              trade.holdingPeriod
+            ) : '-'}
+          </TableCell>
+        );
+      case 'entryPrice':
+        return (
+          <TableCell className="text-sm text-primary">
+            {trade.entryPrice != null ? `$${trade.entryPrice.toFixed(2)}` : '-'}
+          </TableCell>
+        );
+      case 'exitPrice':
+        return (
+          <TableCell className="text-sm text-primary">
+            {trade.exitPrice != null ? `$${trade.exitPrice.toFixed(2)}` : '-'}
           </TableCell>
         );
       case 'volume':
@@ -391,30 +429,49 @@ export default function TradesTable({
           {!isMobile && (
             <TableRow className="bg-gray-50 border-t-2 border-default font-medium hover:bg-gray-50">
               {showCheckboxes && <TableCell className="sticky left-0 bg-gray-50 z-10"></TableCell>}
-              <TableCell colSpan={2} className="text-sm font-semibold text-primary">
-                TOTAL:
-              </TableCell>
-              <TableCell className="text-sm font-semibold text-primary">
-                {totals.trades} trades
-              </TableCell>
-              {visibleColumns.find(c => c.id === 'volume') && (
-                <TableCell className="text-sm font-semibold text-primary">
-                  {totals.volume.toLocaleString()}
-                </TableCell>
-              )}
-              {visibleColumns.find(c => c.id === 'executions') && (
-                <TableCell className="text-sm font-semibold text-primary">
-                  {totals.executions}
-                </TableCell>
-              )}
-              {visibleColumns.find(c => c.id === 'pnl') && (
-                <TableCell className={cn(
-                  'text-sm font-semibold',
-                  totals.pnl >= 0 ? 'text-positive' : 'text-negative'
-                )}>
-                  {formatPnL(totals.pnl)}
-                </TableCell>
-              )}
+              {visibleColumns.map((column, index) => {
+                // For the first column, show "TOTAL:"
+                if (index === 0) {
+                  return (
+                    <TableCell key={column.id} className="text-sm font-semibold text-primary">
+                      TOTAL:
+                    </TableCell>
+                  );
+                }
+                
+                // For other columns, show the appropriate total or empty cell
+                switch (column.id) {
+                  case 'symbol':
+                    return (
+                      <TableCell key={column.id} className="text-sm font-semibold text-primary">
+                        {totals.trades} trades
+                      </TableCell>
+                    );
+                  case 'volume':
+                    return (
+                      <TableCell key={column.id} className="text-sm font-semibold text-primary">
+                        {totals.volume.toLocaleString()}
+                      </TableCell>
+                    );
+                  case 'executions':
+                    return (
+                      <TableCell key={column.id} className="text-sm font-semibold text-primary">
+                        {totals.executions}
+                      </TableCell>
+                    );
+                  case 'pnl':
+                    return (
+                      <TableCell key={column.id} className={cn(
+                        'text-sm font-semibold',
+                        totals.pnl >= 0 ? 'text-positive' : 'text-negative'
+                      )}>
+                        {formatPnL(totals.pnl)}
+                      </TableCell>
+                    );
+                  default:
+                    return <TableCell key={column.id}></TableCell>;
+                }
+              })}
               <TableCell></TableCell>
             </TableRow>
           )}

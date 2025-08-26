@@ -50,6 +50,8 @@ export function useTradesData(
             symbols: filters.symbol && filters.symbol !== 'Symbol' ? [filters.symbol] : undefined,
             tags: filters.tags?.length ? filters.tags : undefined,
             side: filters.side,
+            duration: filters.duration,
+            showOpenTrades: filters.showOpenTrades,
             priceRange: filters.priceRange,
             volumeRange: filters.volumeRange,
             executionCountRange: filters.executionCountRange,
@@ -91,6 +93,8 @@ export function useTradesData(
           if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
           if (filters.dateTo) params.append('dateTo', filters.dateTo);
           if (filters.tags?.length) params.append('tags', filters.tags.join(','));
+          if (filters.duration) params.append('duration', filters.duration);
+          if (filters.showOpenTrades) params.append('showOpenTrades', 'true');
           if (demo) params.append('demo', 'true');
           
           const response = await fetch(`/api/trades?${params}`);
