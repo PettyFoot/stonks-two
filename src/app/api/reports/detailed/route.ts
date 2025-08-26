@@ -25,22 +25,22 @@ export async function GET(request: NextRequest) {
     const tags = searchParams.get('tags')?.split(',').filter(Boolean);
     const duration = searchParams.get('duration');
 
-    // Build where clause for Prisma query
+    // Build where clause for Prisma query (only include closed trades for accurate statistics)
     const where: Prisma.TradeWhereInput = {
       userId: user.id,
       status: 'CLOSED', // Only closed trades have realized P&L
     };
 
-    // Add date range filter
+    // Add date range filter (use date field to match Overview API)
     if (dateFrom || dateTo) {
-      where.entryDate = {};
+      where.date = {};
       if (dateFrom) {
-        where.entryDate.gte = new Date(dateFrom);
+        where.date.gte = new Date(dateFrom);
       }
       if (dateTo) {
         const endDate = new Date(dateTo);
         endDate.setHours(23, 59, 59, 999);
-        where.entryDate.lte = endDate;
+        where.date.lte = endDate;
       }
     }
 
@@ -61,16 +61,12 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    // Add duration filter
+    // Add duration filter (use holdingPeriod to match Overview API)
     if (duration && duration !== 'all') {
       if (duration === 'intraday') {
-        where.timeInTrade = {
-          lt: 86400 // Less than 24 hours in seconds
-        };
+        where.holdingPeriod = { in: ['SCALP', 'INTRADAY'] };
       } else if (duration === 'multiday') {
-        where.timeInTrade = {
-          gte: 86400 // 24 hours or more
-        };
+        where.holdingPeriod = { in: ['SWING', 'POSITION', 'LONG_TERM'] };
       }
     }
 
@@ -147,9 +143,9 @@ export async function GET(request: NextRequest) {
       ? scratchHoldTimes.reduce((a, b) => a + b, 0) / scratchHoldTimes.length 
       : 0;
 
-    // Calculate daily averages
+    // Calculate daily averages using date field (consistent with Overview API)
     const uniqueDates = [...new Set(trades.map(t => 
-      new Date(t.entryDate).toISOString().split('T')[0]
+      new Date(t.date).toISOString().split('T')[0]
     ))];
     const avgDailyGainLoss = uniqueDates.length > 0 ? totalPnl / uniqueDates.length : 0;
     const avgDailyVolume = uniqueDates.length > 0 ? totalVolume / uniqueDates.length : 0;
@@ -196,6 +192,7 @@ export async function GET(request: NextRequest) {
       profitFactor,
       totalCommissions,
       totalFees: 0, // Already included in totalCommissions
+      totalVolume,
     };
 
     // Convert trades for client-side processing

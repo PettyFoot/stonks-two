@@ -38,7 +38,8 @@
       "Bash(npx kill-port:*)",
       "Bash(true)",
       "Bash(npm run dev:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Read(/c:\\Users\\lcorr\\OneDrive\\Pictures\\CC/**)"
     ],
     "deny": [],
     "ask": []

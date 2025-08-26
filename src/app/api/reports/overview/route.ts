@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
     // Build filter conditions
     const whereConditions: Record<string, unknown> = {
       userId: user.id,
+      status: 'CLOSED', // Only closed trades for accurate statistics
       date: {
         gte: fromDate,
         lte: toDate
@@ -136,14 +137,20 @@ export async function GET(request: NextRequest) {
     const totalVolume = trades.reduce((sum, trade) => sum + (trade.quantity || 0), 0);
     const averageDailyVolume = totalVolume / daysDiff;
 
+    // Calculate average daily volume over trading days only (days with actual trades)
+    const tradingDaysCount = dailyPnlMap.size; // Number of unique days with trades
+    const averageDailyVolumeOnTradingDays = tradingDaysCount > 0 ? totalVolume / tradingDaysCount : 0;
+
     return NextResponse.json({
       dailyPnl,
       averageDailyPnl: parseFloat(averageDailyPnl.toFixed(2)),
       averageDailyVolume: parseFloat(averageDailyVolume.toFixed(2)),
+      averageDailyVolumeOnTradingDays: parseFloat(averageDailyVolumeOnTradingDays.toFixed(2)),
       cumulativePnl,
       winPercentage: parseFloat(winPercentage.toFixed(2)),
       totalVolume,
-      daysDiff
+      daysDiff,
+      tradingDaysCount
     });
 
   } catch (error) {

@@ -44,7 +44,7 @@ export default function Reports() {
   const { } = useGlobalFilters();
   
   // Original data hook for existing charts
-  const { dailyPnl, averageDailyVolume, cumulativePnl, loading, error } = useReportsData();
+  const { dailyPnl, averageDailyVolume, averageDailyVolumeOnTradingDays, cumulativePnl, loading, error } = useReportsData();
   
   // New enhanced data hook for statistics and new charts
   const { stats, trades, loading: detailedLoading, error: detailedError } = useDetailedReportsData();
@@ -58,14 +58,20 @@ export default function Reports() {
   }, [dailyPnl]);
 
 
-  // Calculate average daily volume for chart display
+  // Calculate average daily volume for chart display - now with two bars
   const dailyVolumeData = useMemo(() => {
-    if (averageDailyVolume === 0) return [];
-    return [{
-      date: 'Average',
-      value: averageDailyVolume
-    }];
-  }, [averageDailyVolume]);
+    if (averageDailyVolume === 0 && averageDailyVolumeOnTradingDays === 0) return [];
+    return [
+      {
+        date: 'Total Period',
+        value: averageDailyVolume
+      },
+      {
+        date: 'Trading Days',
+        value: averageDailyVolumeOnTradingDays
+      }
+    ];
+  }, [averageDailyVolume, averageDailyVolumeOnTradingDays]);
 
   // Transform win rate data for chart
   const winPercentageData = useMemo(() => {

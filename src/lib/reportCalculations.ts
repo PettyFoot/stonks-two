@@ -59,16 +59,32 @@ export function getMonthOfYear(date: Date | string): MonthOfYear {
 export function formatDuration(seconds: number | null | undefined): string {
   if (!seconds || seconds < 0) return '0s';
   
-  const hours = Math.floor(seconds / 3600);
+  const days = Math.floor(seconds / 86400); // 24 * 60 * 60
+  const hours = Math.floor((seconds % 86400) / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);
   
+  // If more than 24 hours, show days/hours/minutes
+  if (days > 0) {
+    if (hours > 0 && minutes > 0) {
+      return `${days}d ${hours}h ${minutes}m`;
+    } else if (hours > 0) {
+      return `${days}d ${hours}h`;
+    } else {
+      return `${days}d ${minutes}m`;
+    }
+  }
+  
+  // If more than 1 hour but less than 24 hours, show hours/minutes
   if (hours > 0) {
     return `${hours}h ${minutes}m`;
   }
+  
+  // If less than 1 hour, show minutes/seconds
   if (minutes > 0) {
     return `${minutes}m ${secs}s`;
   }
+  
   return `${secs}s`;
 }
 

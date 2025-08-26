@@ -28,6 +28,7 @@ interface DetailedReportsData {
     profitFactor: number;
     totalCommissions: number;
     totalFees: number;
+    totalVolume: number;
   };
   // Raw trades for chart calculations
   trades: Array<Record<string, unknown>>;
@@ -60,7 +61,8 @@ export function useDetailedReportsData() {
       tradePnlStdDev: 0,
       profitFactor: 0,
       totalCommissions: 0,
-      totalFees: 0
+      totalFees: 0,
+      totalVolume: 0
     },
     trades: [],
     loading: true,

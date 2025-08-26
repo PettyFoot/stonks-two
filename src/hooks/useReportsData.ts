@@ -15,10 +15,12 @@ interface ReportsData {
   dailyPnl: DailyPnlData[];
   averageDailyPnl: number;
   averageDailyVolume: number;
+  averageDailyVolumeOnTradingDays: number;
   cumulativePnl: { date: string; value: number }[];
   winPercentage: number;
   totalVolume: number;
   daysDiff: number;
+  tradingDaysCount: number;
   loading: boolean;
   error: string | null;
 }
@@ -29,10 +31,12 @@ export function useReportsData() {
     dailyPnl: [],
     averageDailyPnl: 0,
     averageDailyVolume: 0,
+    averageDailyVolumeOnTradingDays: 0,
     cumulativePnl: [],
     winPercentage: 0,
     totalVolume: 0,
     daysDiff: 1,
+    tradingDaysCount: 0,
     loading: true,
     error: null
   });
@@ -65,10 +69,12 @@ export function useReportsData() {
           dailyPnl: result.dailyPnl || [],
           averageDailyPnl: result.averageDailyPnl || 0,
           averageDailyVolume: result.averageDailyVolume || 0,
+          averageDailyVolumeOnTradingDays: result.averageDailyVolumeOnTradingDays || 0,
           cumulativePnl: result.cumulativePnl || [],
           winPercentage: result.winPercentage || 0,
           totalVolume: result.totalVolume || 0,
           daysDiff: result.daysDiff || 1,
+          tradingDaysCount: result.tradingDaysCount || 0,
           loading: false,
           error: null
         });

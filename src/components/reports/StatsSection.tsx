@@ -124,10 +124,8 @@ export default function StatsSection({ stats }: StatsSectionProps) {
     // Average Metrics
     { label: 'Average Daily Gain/Loss', value: currentStats.avgDailyGainLoss, formatter: 'currency', colorCode: 'positive' },
     { label: 'Average Daily Volume', value: currentStats.avgDailyVolume, formatter: 'number' },
-    { label: 'Average Per-share Gain/Loss', value: currentStats.avgPerShareGainLoss, formatter: 'currency', colorCode: 'positive' },
-    
-    // Trade Metrics
     { label: 'Average Trade Gain/Loss', value: currentStats.avgTradeGainLoss, formatter: 'currency', colorCode: 'positive' },
+    { label: 'Average Per-share Gain/Loss', value: currentStats.avgPerShareGainLoss, formatter: 'currency', colorCode: 'positive' },
     { label: 'Average Winning Trade', value: currentStats.avgWinningTrade, formatter: 'currency', colorCode: 'positive' },
     { label: 'Average Losing Trade', value: currentStats.avgLosingTrade, formatter: 'currency', colorCode: 'negative' },
     
@@ -146,7 +144,8 @@ export default function StatsSection({ stats }: StatsSectionProps) {
     { label: 'Max Consecutive Wins', value: currentStats.maxConsecutiveWins, formatter: 'number' },
     { label: 'Max Consecutive Losses', value: currentStats.maxConsecutiveLosses, formatter: 'number' },
     
-    // Risk & Cost Metrics
+    // Volume & Cost Metrics
+    { label: 'Total Volume', value: currentStats.totalVolume, formatter: 'number' },
     { label: 'Trade P&L Standard Deviation', value: currentStats.tradePnlStdDev, formatter: 'currency' },
     { label: 'Profit Factor', value: currentStats.profitFactor, formatter: 'number' },
     { label: 'Total Commissions', value: currentStats.totalCommissions, formatter: 'currency', colorCode: 'negative' },
