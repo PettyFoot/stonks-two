@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CHART_HEIGHTS } from '@/constants/chartHeights';
 
 interface BarData {
   label: string;
@@ -22,7 +23,7 @@ export default function HorizontalBarChart({
   title, 
   data, 
   formatter,
-  height = 120,
+  height = CHART_HEIGHTS.XS,
   showValues = true 
 }: HorizontalBarChartProps) {
   // Find the maximum value for scaling
@@ -36,33 +37,50 @@ export default function HorizontalBarChart({
   };
 
   return (
-    <Card className="bg-surface border-default">
+    <Card className="bg-surface border-default overflow-hidden" style={{ height }}>
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-medium text-primary">{title}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4" style={{ minHeight: height }}>
+      <CardContent style={{ height: `calc(100% - 52px)`, padding: '0.75rem 1rem' }}>
+        <div className="h-full flex flex-col justify-center gap-3">
           {data.map((item, index) => {
-            const percentage = (Math.abs(item.value) / maxValue) * 100;
+            // Calculate percentage, ensuring minimum visibility
+            const percentage = Math.max((Math.abs(item.value) / maxValue) * 100, 2);
+            
             return (
-              <div key={index} className="space-y-1">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted font-medium">{item.label}</span>
-                  {showValues && (
-                    <span className="font-semibold" style={{ color: item.color }}>
-                      {formatValue(item)}
-                    </span>
-                  )}
+              <div key={index} className="flex items-center gap-3">
+                {/* Label */}
+                <span className="text-xs text-muted font-medium min-w-[60px]">
+                  {item.label}
+                </span>
+                
+                {/* Bar container */}
+                <div className="flex-1">
+                  <div className="w-full h-6 bg-gray-200 dark:bg-gray-700 rounded-sm overflow-hidden">
+                    <div
+                      className="h-full transition-all duration-500 ease-out rounded-sm flex items-center"
+                      style={{
+                        width: `${percentage}%`,
+                        backgroundColor: item.color,
+                        minWidth: item.value !== 0 ? '2px' : '0'
+                      }}
+                    >
+                      {/* Value inside bar if there's space */}
+                      {percentage > 30 && showValues && (
+                        <span className="text-xs text-white font-semibold px-2">
+                          {formatValue(item)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="w-full h-6 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden">
-                  <div
-                    className="h-full transition-all duration-500 ease-out rounded"
-                    style={{
-                      width: `${percentage}%`,
-                      backgroundColor: item.color,
-                    }}
-                  />
-                </div>
+                
+                {/* Value outside if not enough space in bar */}
+                {(percentage <= 30 || !showValues) && showValues && (
+                  <span className="text-xs font-semibold min-w-[60px] text-right" style={{ color: item.color }}>
+                    {formatValue(item)}
+                  </span>
+                )}
               </div>
             );
           })}

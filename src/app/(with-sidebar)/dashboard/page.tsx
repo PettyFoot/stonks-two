@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
+import { CHART_HEIGHTS } from '@/constants/chartHeights';
 
 
 export default function Dashboard() {
@@ -111,21 +112,29 @@ export default function Dashboard() {
     { name: 'Losing', value: metrics.losingTradesCount, percentage: 100 - metrics.winRate, color: '#DC2626' }
   ];
 
-  // Performance by day of week data
-  const dayOfWeekData = metrics.performanceByDayOfWeek?.map(day => ({
-    range: day.day.substring(0, 3), // Short day name
-    value: day.pnl,
-    percentage: day.winRate,
-    count: day.trades
-  })) || [];
+  // Performance by day of week data - ensure all 7 days are included
+  const allDaysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const dayOfWeekData = allDaysOfWeek.map(dayName => {
+    const existingData = metrics.performanceByDayOfWeek?.find(day => day.day === dayName);
+    return {
+      range: dayName.substring(0, 3), // Short day name
+      value: existingData?.pnl || 0,
+      percentage: existingData?.winRate || 0,
+      count: existingData?.trades || 0
+    };
+  });
 
-  // Performance by month of year data  
-  const monthOfYearData = metrics.performanceByMonthOfYear?.map(month => ({
-    range: month.month,
-    value: month.pnl,
-    percentage: month.winRate,
-    count: month.trades
-  })) || [];
+  // Performance by month of year data - ensure all 12 months are included
+  const allMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthOfYearData = allMonths.map(monthName => {
+    const existingData = metrics.performanceByMonthOfYear?.find(month => month.month === monthName);
+    return {
+      range: monthName,
+      value: existingData?.pnl || 0,
+      percentage: existingData?.winRate || 0,
+      count: existingData?.trades || 0
+    };
+  });
 
   // Hold time data for bar chart
   const holdTimeData = [
@@ -188,95 +197,114 @@ export default function Dashboard() {
         </div>
 
         {/* Charts Grid */}
-        <div className="grid grid-cols-12 gap-6">
-          {/* Cumulative P&L - Large Chart */}
-          <div className="col-span-8">
+        <div className="grid grid-cols-6 gap-6">
+          {/* Row 1: Main P&L Chart and Key Metrics */}
+          {/* Cumulative P&L - Reduced Width */}
+          <div className="col-span-4 row-span-2">
             <EquityChart 
               data={performanceData}
               title="Cumulative P&L"
-              height={350}
+              height={CHART_HEIGHTS.LG}
             />
           </div>
 
           {/* Winning vs Losing Trades - Pie Chart */}
-          <div className="col-span-4">
+          <div className="col-span-1">
             <CustomPieChart 
               data={winLossData}
               title="Winning vs Losing Trades"
-              height={200}
+              height={CHART_HEIGHTS.SM}
             />
           </div>
 
           {/* Win % Chart */}
-          <div className="col-span-4">
-            <Card className="bg-surface border-default">
+          <div className="col-span-1">
+            <Card className="bg-surface border-default overflow-hidden" style={{ height: CHART_HEIGHTS.SM }}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-medium text-primary">Win %</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="h-48 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-4xl font-bold text-[#16A34A] mb-2">
-                      {metrics.winRate.toFixed(1)}%
-                    </div>
-                    <div className="w-32 h-32 mx-auto bg-[#16A34A] rounded-full opacity-20"></div>
+              <CardContent className="flex items-center justify-center" style={{ height: `calc(100% - 60px)` }}>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-[#16A34A] mb-2">
+                    {metrics.winRate.toFixed(1)}%
                   </div>
+                  <div className="w-20 h-20 mx-auto bg-[#16A34A] rounded-full opacity-20"></div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
+          {/* Second Row - Fill gap under Cumulative P&L */}
+          {/* Max Consecutive Wins */}
+          <div className="col-span-1">
+            <Card className="bg-surface border-default overflow-hidden" style={{ height: CHART_HEIGHTS.SM }}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-primary">Max Consecutive Wins</CardTitle>
+              </CardHeader>
+              <CardContent className="flex items-center justify-center" style={{ height: `calc(100% - 60px)` }}>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-[#16A34A] mb-1">
+                    {metrics.maxConsecutiveWins}
+                  </div>
+                  <div className="text-xs text-muted">Consecutive Wins</div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Max Consecutive Losses */}
+          <div className="col-span-1">
+            <Card className="bg-surface border-default overflow-hidden" style={{ height: CHART_HEIGHTS.SM }}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-primary">Max Consecutive Losses</CardTitle>
+              </CardHeader>
+              <CardContent className="flex items-center justify-center" style={{ height: `calc(100% - 60px)` }}>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-[#DC2626] mb-1">
+                    {metrics.maxConsecutiveLosses}
+                  </div>
+                  <div className="text-xs text-muted">Consecutive Losses</div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Row 2: Horizontal Bar Charts and Metrics */}
           {/* Hold Time Winning Trades vs Losing Trades */}
-          <div className="col-span-4">
+          <div className="col-span-2">
             <HorizontalBarChart
               title="Hold Time Winning vs Losing Trades"
               data={holdTimeData}
-              height={120}
+              height={CHART_HEIGHTS.SM}
             />
           </div>
 
           {/* Average Winning Trade vs Losing Trade */}
-          <div className="col-span-4">
+          <div className="col-span-2">
             <HorizontalBarChart
               title="Average Winning vs Losing Trade"
               data={avgWinLossData}
-              height={120}
-            />
-          </div>
-
-          {/* Performance By Day Of Week */}
-          <div className="col-span-4">
-            <DistributionCharts 
-              data={dayOfWeekData}
-              title="Performance By Day Of Week"
-            />
-          </div>
-
-          {/* Performance By Month Of Year */}
-          <div className="col-span-4">
-            <DistributionCharts 
-              data={monthOfYearData}
-              title="Performance By Month Of Year"
+              height={CHART_HEIGHTS.SM}
             />
           </div>
 
           {/* Largest Gain vs Largest Loss */}
-          <div className="col-span-4">
-            <Card className="bg-surface border-default">
+          <div className="col-span-2">
+            <Card className="bg-surface border-default overflow-hidden" style={{ height: CHART_HEIGHTS.SM }}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-medium text-primary">Largest Gain vs Largest Loss</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className="flex flex-col justify-center" style={{ height: `calc(100% - 60px)` }}>
+                <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted">Largest Gain</span>
-                    <span className="text-lg font-bold text-[#16A34A]">
+                    <span className="text-xl font-bold text-[#16A34A]">
                       {formatCurrency(metrics.largestGain || 0)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted">Largest Loss</span>
-                    <span className="text-lg font-bold text-[#DC2626]">
+                    <span className="text-xl font-bold text-[#DC2626]">
                       {formatCurrency(metrics.largestLoss || 0)}
                     </span>
                   </div>
@@ -286,42 +314,53 @@ export default function Dashboard() {
           </div>
 
           {/* Performance By Duration */}
-          <div className="col-span-4">
+          <div className="col-span-2">
             <HorizontalBarChart
               title="Performance By Duration"
               data={durationData}
-              height={120}
+              height={CHART_HEIGHTS.SM}
             />
           </div>
 
-          {/* Max Consecutive Wins/Losses */}
+          {/* Placeholder for future metrics - Fill remaining space */}
           <div className="col-span-4">
-            <div className="grid grid-rows-2 gap-4 h-full">
-              <Card className="bg-surface border-default">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-primary">Max Consecutive Wins</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center">
-                    <div className="text-4xl font-bold text-[#16A34A]">
-                      {metrics.maxConsecutiveWins}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-surface border-default">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-primary">Max Consecutive Losses</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center">
-                    <div className="text-4xl font-bold text-[#DC2626]">
-                      {metrics.maxConsecutiveLosses}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <Card className="bg-surface border-default overflow-hidden" style={{ height: CHART_HEIGHTS.SM }}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-medium text-primary">Additional Metrics</CardTitle>
+              </CardHeader>
+              <CardContent className="flex items-center justify-center" style={{ height: `calc(100% - 60px)` }}>
+                <div className="text-center text-muted">
+                  <div className="text-sm">Space available for additional dashboard metrics</div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Row 3: Performance Distribution Charts - Larger Size */}
+          {/* Performance By Day Of Week */}
+          <div className="col-span-3">
+            <DistributionCharts 
+              data={dayOfWeekData}
+              title="Performance By Day Of Week"
+              height={CHART_HEIGHTS.LG}
+            />
+          </div>
+
+          {/* Performance By Month Of Year */}
+          <div className="col-span-3">
+            <DistributionCharts 
+              data={monthOfYearData}
+              title="Performance By Month Of Year"
+              height={CHART_HEIGHTS.LG}
+            />
+          </div>
+
+
+          {/* Empty space filler or additional metrics can go here */}
+          <div className="col-span-6">
+            {/* This space can be used for additional metrics or left empty for balance */}
+            <div className="h-full flex items-center justify-center text-muted-foreground">
+              {/* Future metrics or charts can go here */}
             </div>
           </div>
         </div>

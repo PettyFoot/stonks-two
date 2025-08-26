@@ -3,6 +3,7 @@
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CHART_HEIGHTS } from '@/constants/chartHeights';
 
 interface PieChartData {
   name: string;
@@ -24,12 +25,17 @@ interface PieChartProps {
 export default function CustomPieChart({ 
   data, 
   title, 
-  height = 200,
+  height = CHART_HEIGHTS.SM,
   showLegend = false,
   showTooltip = true,
-  innerRadius = 40,
-  outerRadius = 80
+  innerRadius,
+  outerRadius
 }: PieChartProps) {
+  // Calculate radius based on available height
+  const containerHeight = height - 60; // Account for header only
+  const maxRadius = Math.min(containerHeight / 2.2, 100); // Leave more space for better centering
+  const calculatedOuterRadius = outerRadius || maxRadius * 0.85;
+  const calculatedInnerRadius = innerRadius || maxRadius * 0.45;
   const formatTooltipValue = (value: number, name: string) => {
     const item = data.find(d => d.name === name);
     const percentage = item?.percentage || ((value / data.reduce((sum, d) => sum + Math.abs(d.value), 0)) * 100);
@@ -37,19 +43,19 @@ export default function CustomPieChart({
   };
 
   return (
-    <Card className="bg-surface border-default">
+    <Card className="bg-surface border-default" style={{ height }}>
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-medium text-primary">{title}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={height}>
+      <CardContent className="flex items-center justify-center" style={{ height: `calc(100% - 50px)`, padding: '0.5rem' }}>
+        <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius={innerRadius}
-              outerRadius={outerRadius}
+              innerRadius={calculatedInnerRadius}
+              outerRadius={calculatedOuterRadius}
               paddingAngle={2}
               dataKey="value"
             >
