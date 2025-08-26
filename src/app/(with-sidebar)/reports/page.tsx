@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EquityChart from '@/components/charts/EquityChart';
 import CustomBarChart from '@/components/charts/BarChart';
-import MonthTradeDistributionChart from '@/components/charts/MonthTradeDistributionChart';
 import DistributionCharts from '@/components/charts/DistributionCharts';
 import { mockMonthlyPerformance } from '@/data/mockData';
 import { useReportsData } from '@/hooks/useReportsData';
