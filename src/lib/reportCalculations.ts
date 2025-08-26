@@ -90,7 +90,7 @@ export function formatDuration(seconds: number | null | undefined): string {
 
 // Aggregate trades by day of week
 export function aggregateByDayOfWeek(trades: TradeData[]) {
-  const days: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  const days: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   const distribution: Record<DayOfWeek, number> = {} as Record<DayOfWeek, number>;
   const performance: Record<DayOfWeek, number> = {} as Record<DayOfWeek, number>;
   
@@ -106,7 +106,7 @@ export function aggregateByDayOfWeek(trades: TradeData[]) {
     if (date) {
       const day = getDayOfWeek(date);
       if (days.includes(day)) {
-        distribution[day]++;
+        distribution[day] += Number(trade.quantity || 0);
         performance[day] += Number(trade.pnl || 0);
       }
     }
@@ -141,7 +141,7 @@ export function aggregateByHourOfDay(trades: TradeData[]) {
     const date = trade.entryDate || trade.date;
     if (date) {
       const hour = getHourOfDay(date);
-      distribution[hour]++;
+      distribution[hour] += Number(trade.quantity || 0);
       performance[hour] += Number(trade.pnl || 0);
     }
   });
@@ -175,7 +175,7 @@ export function aggregateByMonthOfYear(trades: TradeData[]) {
     const date = trade.entryDate || trade.date;
     if (date) {
       const month = getMonthOfYear(date);
-      distribution[month]++;
+      distribution[month] += Number(trade.quantity || 0);
       performance[month] += Number(trade.pnl || 0);
     }
   });
@@ -200,7 +200,7 @@ export function aggregateBySimpleDuration(trades: TradeData[]) {
   trades.forEach(trade => {
     const seconds = trade.timeInTrade || 0;
     const category = seconds < 86400 ? 'Intraday' : 'Multiday'; // 86400 seconds = 24 hours
-    distribution[category]++;
+    distribution[category] += Number(trade.quantity || 0);
     performance[category] += Number(trade.pnl || 0);
   });
   
@@ -251,7 +251,7 @@ export function aggregateByIntradayDuration(trades: TradeData[]) {
   // Aggregate
   intradayTrades.forEach(trade => {
     const bucket = getIntradayBucket(trade.timeInTrade || 0);
-    distribution[bucket]++;
+    distribution[bucket] += Number(trade.quantity || 0);
     performance[bucket] += Number(trade.pnl || 0);
   });
   
@@ -283,7 +283,7 @@ export function aggregateByDuration(trades: TradeData[]) {
   trades.forEach(trade => {
     const bucket = getTimeBucket(trade.timeInTrade);
     if (buckets.includes(bucket)) {
-      distribution[bucket]++;
+      distribution[bucket] += Number(trade.quantity || 0);
       performance[bucket] += Number(trade.pnl || 0);
     }
   });
@@ -389,7 +389,7 @@ export function aggregateByPrice(trades: TradeData[]) {
     const price = Number(trade.avgEntryPrice || trade.entryPrice || 0);
     if (price > 0) {
       const bucket = getPriceBucket(price);
-      distribution[bucket]++;
+      distribution[bucket] += Number(trade.quantity || 0);
       performance[bucket] += Number(trade.pnl || 0);
     }
   });
@@ -437,7 +437,7 @@ export function aggregateByVolume(trades: TradeData[]) {
   trades.forEach(trade => {
     const volume = Number(trade.quantity || 0);
     const bucket = getVolumeBucket(volume);
-    distribution[bucket]++;
+    distribution[bucket] += Number(trade.quantity || 0);
     performance[bucket] += Number(trade.pnl || 0);
   });
   

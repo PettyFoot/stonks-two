@@ -141,9 +141,13 @@ export async function GET(request: NextRequest) {
     const tradingDaysCount = dailyPnlMap.size; // Number of unique days with trades
     const averageDailyVolumeOnTradingDays = tradingDaysCount > 0 ? totalVolume / tradingDaysCount : 0;
 
+    // Calculate average daily P&L over trading days only (days with actual trades)
+    const averageDailyPnlOnTradingDays = tradingDaysCount > 0 ? totalPnl / tradingDaysCount : 0;
+
     return NextResponse.json({
       dailyPnl,
       averageDailyPnl: parseFloat(averageDailyPnl.toFixed(2)),
+      averageDailyPnlOnTradingDays: parseFloat(averageDailyPnlOnTradingDays.toFixed(2)),
       averageDailyVolume: parseFloat(averageDailyVolume.toFixed(2)),
       averageDailyVolumeOnTradingDays: parseFloat(averageDailyVolumeOnTradingDays.toFixed(2)),
       cumulativePnl,

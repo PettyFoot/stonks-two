@@ -44,19 +44,25 @@ export default function Reports() {
   const { } = useGlobalFilters();
   
   // Original data hook for existing charts
-  const { dailyPnl, averageDailyVolume, averageDailyVolumeOnTradingDays, cumulativePnl, loading, error } = useReportsData();
+  const { dailyPnl, averageDailyPnl, averageDailyPnlOnTradingDays, averageDailyVolume, averageDailyVolumeOnTradingDays, cumulativePnl, loading, error } = useReportsData();
   
   // New enhanced data hook for statistics and new charts
   const { stats, trades, loading: detailedLoading, error: detailedError } = useDetailedReportsData();
 
-  // Transform daily P&L data for the MonthTradeDistributionChart
-  const dailyPnlChartData = useMemo(() => {
-    return dailyPnl.map(day => ({
-      date: day.date,
-      pnl: day.pnl
-    }));
-  }, [dailyPnl]);
-
+  // Calculate average daily P&L for chart display - two bars like Daily Volume
+  const dailyPnlData = useMemo(() => {
+    if (averageDailyPnl === 0 && averageDailyPnlOnTradingDays === 0) return [];
+    return [
+      {
+        date: 'Total Period',
+        value: averageDailyPnl
+      },
+      {
+        date: 'Trading Days',
+        value: averageDailyPnlOnTradingDays
+      }
+    ];
+  }, [averageDailyPnl, averageDailyPnlOnTradingDays]);
 
   // Calculate average daily volume for chart display - now with two bars
   const dailyVolumeData = useMemo(() => {
@@ -96,6 +102,35 @@ export default function Reports() {
   const tradeExpectation = useMemo(() => calculateTradeExpectation(trades), [trades]);
   const cumulativePnlData = useMemo(() => calculateCumulativePnl(trades), [trades]);
   const cumulativeDrawdownData = useMemo(() => calculateCumulativeDrawdown(trades), [trades]);
+
+  // Calculate dynamic scale for Trade Expectation chart
+  const expectationScale = useMemo(() => {
+    const expectation = tradeExpectation.expectation;
+    if (expectation === 0) {
+      return { min: -5, max: 5, range: 10, ticks: [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5] };
+    }
+    
+    // Calculate dynamic range with padding
+    const absExpectation = Math.abs(expectation);
+    const paddedValue = absExpectation * 1.5; // Add 50% padding
+    const maxRange = Math.max(paddedValue, 5); // Minimum range of 5
+    
+    // Round to nice numbers
+    const roundedMax = Math.ceil(maxRange);
+    const min = -roundedMax;
+    const max = roundedMax;
+    const range = max - min;
+    
+    // Generate tick marks
+    const tickCount = 9;
+    const tickInterval = range / (tickCount - 1);
+    const ticks = [];
+    for (let i = 0; i < tickCount; i++) {
+      ticks.push(min + (i * tickInterval));
+    }
+    
+    return { min, max, range, ticks };
+  }, [tradeExpectation.expectation]);
 
   return (
     <div className="flex flex-col h-full">
@@ -215,11 +250,14 @@ export default function Reports() {
             {/* Four chart grid - Original Overview Charts */}
             {!loading && !error && (
               <div className="grid grid-cols-2 gap-6">
-                {/* Daily P&L Distribution Chart */}
-                <MonthTradeDistributionChart 
-                  data={dailyPnlChartData}
+                {/* Daily P&L Average Chart */}
+                <CustomBarChart 
+                  data={dailyPnlData}
                   title="GROSS DAILY P&L"
                   height={300}
+                  dataKey="value"
+                  chartType="currency"
+                  useConditionalColors={true}
                 />
                 
                 {/* Cumulative P&L Chart */}
@@ -490,9 +528,11 @@ export default function Reports() {
                                 top: 0,
                                 height: '100%',
                                 backgroundColor: tradeExpectation.expectation >= 0 ? '#16A34A' : '#DC2626',
-                                // Scale: -3 to 5 = 8 units total, 0 is at 3/8 = 37.5% from left
-                                left: tradeExpectation.expectation >= 0 ? '37.5%' : `${37.5 + (tradeExpectation.expectation / 8 * 100)}%`,
-                                width: `${Math.abs(tradeExpectation.expectation) / 8 * 100}%`,
+                                // Calculate position and width based on dynamic scale
+                                left: tradeExpectation.expectation >= 0 
+                                  ? `${((-expectationScale.min) / expectationScale.range) * 100}%`
+                                  : `${((tradeExpectation.expectation - expectationScale.min) / expectationScale.range) * 100}%`,
+                                width: `${(Math.abs(tradeExpectation.expectation) / expectationScale.range) * 100}%`,
                                 borderRadius: '2px',
                                 cursor: 'pointer',
                                 transition: 'opacity 0.2s'
@@ -525,7 +565,7 @@ export default function Reports() {
                             {/* Zero line indicator */}
                             <div style={{
                               position: 'absolute',
-                              left: '37.5%',
+                              left: `${((-expectationScale.min) / expectationScale.range) * 100}%`,
                               top: 0,
                               bottom: 0,
                               width: '1px',
@@ -548,15 +588,11 @@ export default function Reports() {
                           fontSize: '11px',
                           color: '#6B7280'
                         }}>
-                          <span>-$3</span>
-                          <span>-$2</span>
-                          <span>-$1</span>
-                          <span>$0</span>
-                          <span>$1</span>
-                          <span>$2</span>
-                          <span>$3</span>
-                          <span>$4</span>
-                          <span>$5</span>
+                          {expectationScale.ticks.map((tick, index) => (
+                            <span key={index}>
+                              {tick >= 0 ? '$' + tick.toFixed(tick % 1 === 0 ? 0 : 1) : '-$' + Math.abs(tick).toFixed(tick % 1 === 0 ? 0 : 1)}
+                            </span>
+                          ))}
                         </div>
                       </div>
                     </CardContent>

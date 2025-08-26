@@ -14,6 +14,7 @@ interface DailyPnlData {
 interface ReportsData {
   dailyPnl: DailyPnlData[];
   averageDailyPnl: number;
+  averageDailyPnlOnTradingDays: number;
   averageDailyVolume: number;
   averageDailyVolumeOnTradingDays: number;
   cumulativePnl: { date: string; value: number }[];
@@ -30,6 +31,7 @@ export function useReportsData() {
   const [data, setData] = useState<ReportsData>({
     dailyPnl: [],
     averageDailyPnl: 0,
+    averageDailyPnlOnTradingDays: 0,
     averageDailyVolume: 0,
     averageDailyVolumeOnTradingDays: 0,
     cumulativePnl: [],
@@ -68,6 +70,7 @@ export function useReportsData() {
         setData({
           dailyPnl: result.dailyPnl || [],
           averageDailyPnl: result.averageDailyPnl || 0,
+          averageDailyPnlOnTradingDays: result.averageDailyPnlOnTradingDays || 0,
           averageDailyVolume: result.averageDailyVolume || 0,
           averageDailyVolumeOnTradingDays: result.averageDailyVolumeOnTradingDays || 0,
           cumulativePnl: result.cumulativePnl || [],
