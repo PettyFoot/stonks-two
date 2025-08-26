@@ -209,7 +209,7 @@ export default function Dashboard() {
           </div>
 
           {/* Winning vs Losing Trades - Pie Chart */}
-          <div className="col-span-1">
+          <div className="col-span-1 flex flex-col justify-center">
             <CustomPieChart 
               data={winLossData}
               title="Winning vs Losing Trades"
@@ -218,7 +218,7 @@ export default function Dashboard() {
           </div>
 
           {/* Win % Chart */}
-          <div className="col-span-1">
+          <div className="col-span-1 flex flex-col justify-center">
             <Card className="bg-surface border-default overflow-hidden" style={{ height: CHART_HEIGHTS.SM }}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-medium text-primary">Win %</CardTitle>
@@ -236,7 +236,7 @@ export default function Dashboard() {
 
           {/* Second Row - Fill gap under Cumulative P&L */}
           {/* Max Consecutive Wins */}
-          <div className="col-span-1">
+          <div className="col-span-1 flex flex-col justify-center">
             <Card className="bg-surface border-default overflow-hidden" style={{ height: CHART_HEIGHTS.SM }}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-primary">Max Consecutive Wins</CardTitle>
@@ -253,7 +253,7 @@ export default function Dashboard() {
           </div>
 
           {/* Max Consecutive Losses */}
-          <div className="col-span-1">
+          <div className="col-span-1 flex flex-col justify-center">
             <Card className="bg-surface border-default overflow-hidden" style={{ height: CHART_HEIGHTS.SM }}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-primary">Max Consecutive Losses</CardTitle>
