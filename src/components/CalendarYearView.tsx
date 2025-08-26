@@ -31,11 +31,7 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
     setYear(initialYear);
   }, [initialYear]);
 
-  useEffect(() => {
-    fetchYearData();
-  }, [year]);
-
-  const fetchYearData = async () => {
+  const fetchYearData = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/calendar/year-daily?year=${year}`);
@@ -48,7 +44,11 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [year]);
+
+  useEffect(() => {
+    fetchYearData();
+  }, [fetchYearData]);
 
   const handlePrevYear = () => setYear(prev => prev - 1);
   const handleNextYear = () => setYear(prev => prev + 1);
@@ -95,14 +95,14 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
     return calendarDays;
   };
 
-  const getDayColor = (dayData: any) => {
+  const getDayColor = (dayData: DayData | undefined) => {
     if (!dayData || !dayData.tradeCount) return 'text-gray-700';
     if (dayData.pnl > 0) return 'text-white font-bold';
     if (dayData.pnl < 0) return 'text-white font-bold';
     return 'text-gray-700';
   };
 
-  const getDayBackground = (dayData: any) => {
+  const getDayBackground = (dayData: DayData | undefined) => {
     if (!dayData || !dayData.tradeCount) return 'bg-white';
     if (dayData.pnl > 0) return 'bg-green-500 hover:bg-green-600';
     if (dayData.pnl < 0) return 'bg-red-500 hover:bg-red-600';

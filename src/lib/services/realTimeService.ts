@@ -184,7 +184,7 @@ export class RealTimeService {
           }, 30000); // 30 seconds
 
           // Clean up on close
-          const cleanup = () => {
+          const _cleanup = () => {
             clearInterval(heartbeat);
             unsubscribe();
           };

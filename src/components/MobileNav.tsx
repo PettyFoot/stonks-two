@@ -11,8 +11,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { 
@@ -22,12 +20,11 @@ import {
   TrendingUp, 
   BookOpen, 
   Plus, 
-  Users, 
+  Users,
   Search,
   User,
   LogOut,
-  Menu,
-  X
+  Menu
 } from 'lucide-react';
 
 const navigation = [

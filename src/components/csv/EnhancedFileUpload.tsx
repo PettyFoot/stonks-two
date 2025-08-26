@@ -583,8 +583,7 @@ export default function EnhancedFileUpload({
                   </div>
                 )}
 
-                {/* Error/Success Message Area */}
-                {state.uploadResult.errors && state.uploadResult.errors.length > 0 && (
+                {Array.isArray(state.uploadResult.errors) && state.uploadResult.errors.length > 0 && (
                   <div className="p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-lg max-h-48 overflow-y-auto">
                     <div className="flex items-start space-x-2 mb-2">
                       <XCircle className="h-5 w-5 text-[#DC2626] flex-shrink-0 mt-0.5" />
@@ -603,13 +602,13 @@ export default function EnhancedFileUpload({
                   </div>
                 )}
 
-                {state.uploadResult.success && state.uploadResult.message && (
+                {Boolean(state.uploadResult.success && state.uploadResult.message) && (
                   <div className="p-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-lg">
                     <div className="flex items-start space-x-2">
                       <CheckCircle className="h-5 w-5 text-[#16A34A] flex-shrink-0 mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-[#16A34A] mb-1">Success!</p>
-                        <p className="text-xs text-[#16A34A]">{state.uploadResult.message}</p>
+                        <p className="text-xs text-[#16A34A]">{String(state.uploadResult.message)}</p>
                       </div>
                     </div>
                   </div>

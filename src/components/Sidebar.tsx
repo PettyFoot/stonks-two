@@ -22,7 +22,6 @@ import {
   TrendingUp, 
   BookOpen, 
   Plus, 
-  Users, 
   Search,
   User,
   LogOut,

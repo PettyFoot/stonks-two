@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,11 +16,7 @@ export default function CalendarSummaryChartsRecharts() {
   const [data, setData] = useState<ChartData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchSummaryData();
-  }, [timeframe]);
-
-  const fetchSummaryData = async () => {
+  const fetchSummaryData = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/calendar/summary?timeframe=${timeframe}`);
@@ -33,7 +29,11 @@ export default function CalendarSummaryChartsRecharts() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [timeframe]);
+
+  useEffect(() => {
+    fetchSummaryData();
+  }, [fetchSummaryData]);
 
   if (isLoading || !data) {
     return <div className="flex items-center justify-center h-64">Loading charts...</div>;
@@ -76,7 +76,7 @@ export default function CalendarSummaryChartsRecharts() {
     useConditionalColors = false
   }: {
     title: string;
-    data: any[];
+    data: Record<string, unknown>[];
     dataKey: string;
     xKey: string;
     formatter: (value: number) => string;
@@ -109,7 +109,7 @@ export default function CalendarSummaryChartsRecharts() {
               tickFormatter={formatter}
             />
             <Tooltip 
-              formatter={(value: any) => formatter(value)}
+              formatter={(value: number | string) => formatter(Number(value))}
               contentStyle={{
                 backgroundColor: '#ffffff',
                 border: '1px solid #e1e3e5',
@@ -127,7 +127,7 @@ export default function CalendarSummaryChartsRecharts() {
               {useConditionalColors && data.map((entry, index) => (
                 <Cell 
                   key={`cell-${index}`} 
-                  fill={entry[dataKey] >= 0 ? '#16A34A' : '#DC2626'} 
+                  fill={Number(entry[dataKey]) >= 0 ? '#16A34A' : '#DC2626'} 
                 />
               ))}
             </Bar>
@@ -137,13 +137,13 @@ export default function CalendarSummaryChartsRecharts() {
     </Card>
   );
 
-  const formatCurrency = (value: any) => {
+  const formatCurrency = (value: number | string) => {
     const num = typeof value === 'number' ? value : Number(value);
     if (isNaN(num)) return '$0';
     return `$${num.toFixed(0)}`;
   };
   
-  const formatTrades = (value: any) => {
+  const formatTrades = (value: number | string) => {
     const num = typeof value === 'number' ? value : Number(value);
     if (isNaN(num)) return '0';
     return num.toString();
@@ -153,7 +153,7 @@ export default function CalendarSummaryChartsRecharts() {
     <div className="space-y-6">
       {/* Timeframe Selector */}
       <div className="flex justify-end">
-        <Select value={timeframe} onValueChange={(v) => setTimeframe(v as any)}>
+        <Select value={timeframe} onValueChange={(v) => setTimeframe(v as 'month' | 'year' | 'all')}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select timeframe" />
           </SelectTrigger>

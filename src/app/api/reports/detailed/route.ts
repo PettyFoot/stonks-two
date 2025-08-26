@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
     const loseHoldTimes = losingTrades.map(t => t.timeInTrade || 0).filter(t => t > 0);
     const scratchHoldTimes = scratchTrades.map(t => t.timeInTrade || 0).filter(t => t > 0);
 
-    const avgHoldTime = allHoldTimes.length > 0 
+    const _avgHoldTime = allHoldTimes.length > 0 
       ? allHoldTimes.reduce((a, b) => a + b, 0) / allHoldTimes.length 
       : 0;
     const avgHoldTimeWin = winHoldTimes.length > 0 

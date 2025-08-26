@@ -8,7 +8,7 @@ import FilterPanel from '@/components/FilterPanel';
 import KPICards from '@/components/KPICards';
 import EquityChart from '@/components/charts/EquityChart';
 import CustomPieChart from '@/components/charts/PieChart';
-import DistributionCharts, { GaugeChart } from '@/components/charts/DistributionCharts';
+import DistributionCharts from '@/components/charts/DistributionCharts';
 import HorizontalBarChart, { formatDuration, formatCurrency } from '@/components/charts/HorizontalBarChart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, FileText } from 'lucide-react';

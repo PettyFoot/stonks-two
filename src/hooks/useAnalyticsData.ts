@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { AnalyticsData, ReportsFilterOptions, WinLossMetrics, PerformanceMetrics, StandardTimeframe, PredefinedTimeframe } from '@/types';
 import { getDateRangeFromTimeframe } from '@/contexts/FilterContext';
 
@@ -214,9 +214,9 @@ export const useAnalyticsData = (standardTimeframe: StandardTimeframe, filters: 
   const [retryCount, setRetryCount] = useState(0);
 
   // Memoize the filters and timeframe to prevent unnecessary re-renders
-  const memoizedParams = useMemo(() => ({ standardTimeframe, filters }), [standardTimeframe, JSON.stringify(filters)]);
+  const memoizedParams = useMemo(() => ({ standardTimeframe, filters }), [standardTimeframe, filters]);
 
-  const fetchAnalyticsData = async (isRetry: boolean = false) => {
+  const fetchAnalyticsData = useCallback(async (isRetry: boolean = false) => {
     setLoading(true);
     setError(null);
     setErrorType(null);
@@ -467,7 +467,7 @@ export const useAnalyticsData = (standardTimeframe: StandardTimeframe, filters: 
     } finally {
       setLoading(false);
     }
-  };
+  }, [standardTimeframe, filters]);
 
   // Refetch function with retry logic
   const refetch = () => {
@@ -478,7 +478,7 @@ export const useAnalyticsData = (standardTimeframe: StandardTimeframe, filters: 
   // Fetch data when filters or timeframe change
   useEffect(() => {
     fetchAnalyticsData();
-  }, [memoizedParams]);
+  }, [fetchAnalyticsData, memoizedParams]);
 
   return {
     data,

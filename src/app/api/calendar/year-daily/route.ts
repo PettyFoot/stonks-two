@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
     `;
 
     // Convert to a map for easy lookup
-    const dailyMap: Record<string, any> = {};
+    const dailyMap: Record<string, {tradeCount: number; pnl: number; winRate: number}> = {};
     dailyData.forEach(d => {
       const dateStr = d.day.toISOString().slice(0, 10);
       dailyMap[dateStr] = {

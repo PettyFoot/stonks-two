@@ -14,6 +14,8 @@ import CalendarSummaryChartsRecharts from '@/components/CalendarSummaryChartsRec
 import CalendarYearView from '@/components/CalendarYearView';
 import { useUser } from '@auth0/nextjs-auth0/client';
 
+import { Trade } from '@/types';
+
 type ViewType = 'summary' | 'year' | 'month';
 
 interface DayData {
@@ -34,8 +36,8 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(startOfMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [monthData, setMonthData] = useState<DayData[]>([]);
-  const [trades, setTrades] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [trades, setTrades] = useState<Trade[]>([]);
+  const [, setIsLoading] = useState(false);
 
   // Handle URL parameter changes
   useEffect(() => {

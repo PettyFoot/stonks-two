@@ -657,7 +657,7 @@ export class CsvIngestionService {
 
     try {
       // Check if this is an order format (has orderId field mapping)
-      const isOrderFormat = mappingResult.mappings.some(m => m.tradeVoyagerField === 'orderId');
+      const isOrderFormat = mappingResult.mappings.some(m => 'tradeVoyagerField' in m && m.tradeVoyagerField === 'orderId');
       const brokerType = detectedFormat ? this.getBrokerTypeFromFormat(detectedFormat) : BrokerType.GENERIC_CSV;
       
       if (isOrderFormat) {
@@ -668,9 +668,11 @@ export class CsvIngestionService {
             
             // Apply mappings
             for (const mapping of mappingResult.mappings) {
-              const value = (row as Record<string, unknown>)[mapping.csvColumn];
-              if (value !== undefined && value !== null && value !== '') {
-                mappedData[mapping.tradeVoyagerField] = value;
+              if ('csvColumn' in mapping && 'tradeVoyagerField' in mapping) {
+                const value = (row as Record<string, unknown>)[mapping.csvColumn as string];
+                if (value !== undefined && value !== null && value !== '') {
+                  (mappedData as Record<string, unknown>)[mapping.tradeVoyagerField as string] = value;
+                }
               }
             }
             
@@ -858,7 +860,7 @@ export class CsvIngestionService {
   async retryImportWithUserMappings(
     importBatchId: string,
     userId: string,
-    userMappings: ColumnMapping[],
+    _userMappings: ColumnMapping[],
   ): Promise<CsvIngestionResult> {
     // Get the original import batch
     const importBatch = await prisma.importBatch.findFirst({

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ChartData {
@@ -15,11 +15,7 @@ export default function CalendarSummaryChartsSimple() {
   const [data, setData] = useState<ChartData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchSummaryData();
-  }, [timeframe]);
-
-  const fetchSummaryData = async () => {
+  const fetchSummaryData = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/calendar/summary?timeframe=${timeframe}`);
@@ -32,14 +28,23 @@ export default function CalendarSummaryChartsSimple() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [timeframe]);
+
+  useEffect(() => {
+    fetchSummaryData();
+  }, [fetchSummaryData]);
 
   if (isLoading || !data) {
     return <div className="flex items-center justify-center h-64">Loading charts...</div>;
   }
 
   // Simple bar chart component
-  const SimpleBarChart = ({ title, data, maxValue, formatter = (v: number) => v.toString() }: any) => {
+  const SimpleBarChart = ({ title, data, maxValue, formatter = (v: number) => v.toString() }: {
+    title: string;
+    data: number[];
+    maxValue: number;
+    formatter?: (v: number) => string;
+  }) => {
     const barHeight = 200;
     const scale = maxValue > 0 ? barHeight / maxValue : 1;
     
@@ -111,7 +116,7 @@ export default function CalendarSummaryChartsSimple() {
     <div className="space-y-6">
       {/* Timeframe Selector */}
       <div className="flex justify-end">
-        <Select value={timeframe} onValueChange={(v) => setTimeframe(v as any)}>
+        <Select value={timeframe} onValueChange={(v) => setTimeframe(v as 'month' | 'year' | 'all')}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select timeframe" />
           </SelectTrigger>

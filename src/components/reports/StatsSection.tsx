@@ -145,7 +145,7 @@ export default function StatsSection({ stats }: StatsSectionProps) {
     { label: 'Max Consecutive Losses', value: currentStats.maxConsecutiveLosses, formatter: 'number' },
     
     // Volume & Cost Metrics
-    { label: 'Total Volume', value: currentStats.totalVolume, formatter: 'number' },
+    { label: 'Avg Daily Volume', value: currentStats.avgDailyVolume, formatter: 'number' },
     { label: 'Trade P&L Standard Deviation', value: currentStats.tradePnlStdDev, formatter: 'currency' },
     { label: 'Profit Factor', value: currentStats.profitFactor, formatter: 'number' },
     { label: 'Total Commissions', value: currentStats.totalCommissions, formatter: 'currency', colorCode: 'negative' },

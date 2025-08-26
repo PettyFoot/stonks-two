@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
@@ -41,7 +41,7 @@ export default function TradesTable({
   // Media queries
   const isMobile = useMediaQuery('(max-width: 639px)');
   const isTablet = useMediaQuery('(min-width: 640px) and (max-width: 1023px)');
-  const isDesktop = useMediaQuery('(min-width: 1024px)');
+  const _isDesktop = useMediaQuery('(min-width: 1024px)');
 
   // Define default column configuration
   const defaultColumns: ColumnConfiguration[] = [

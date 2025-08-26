@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth0';
 import { processUserOrders } from '@/lib/tradeBuilder';
 import { tradesRepo } from '@/lib/repositories/tradesRepo';
 
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     const user = await requireAuth();
     

@@ -72,7 +72,15 @@ export async function GET(request: Request) {
     }
 
     // Build filter conditions
-    const filters: any = {};
+    const filters: {
+      dateFrom?: Date;
+      dateTo?: Date;
+      symbol?: string;
+      side?: 'LONG' | 'SHORT';
+      tags?: string[];
+      duration?: 'all' | 'intraday' | 'swing';
+      showOpenTrades?: boolean;
+    } = {};
     if (dateFrom) filters.dateFrom = new Date(dateFrom);
     if (dateTo) filters.dateTo = new Date(dateTo);
     if (symbol && symbol !== 'all') filters.symbol = symbol;
@@ -82,7 +90,8 @@ export async function GET(request: Request) {
     if (showOpenTrades !== undefined) filters.showOpenTrades = showOpenTrades;
 
     // Build where clause for Prisma queries
-    const whereClause: any = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const whereClause: Record<string, any> = {
       userId: user.id,
     };
     

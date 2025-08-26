@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getSession } from '@auth0/nextjs-auth0';
 import { processUserOrders } from '@/lib/tradeBuilder';
 
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     // Get the authenticated user
     const session = await getSession();
@@ -72,7 +72,7 @@ export async function POST(_request: NextRequest) {
   }
 }
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     // Get the authenticated user
     const session = await getSession();
