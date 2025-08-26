@@ -39,6 +39,43 @@ export interface KPIData {
   worstDay: number;
   avgPositionMae: number;
   avgPositionMfe: number;
+  // New fields for enhanced dashboard
+  performanceByDayOfWeek: Array<{ 
+    day: string; 
+    dayNum: number;
+    pnl: number; 
+    trades: number;
+    avgPnl: number;
+    winRate: number;
+    wins: number;
+    losses: number;
+  }>;
+  performanceByMonthOfYear: Array<{ 
+    month: string;
+    monthNum: number;
+    pnl: number; 
+    trades: number;
+    avgPnl: number;
+    winRate: number;
+    wins: number;
+    losses: number;
+  }>;
+  avgHoldTimeWinning: number; // in seconds
+  avgHoldTimeLosing: number;  // in seconds
+  largestGain: number;
+  largestLoss: number;
+  performanceByDuration: Array<{ 
+    category: string; 
+    pnl: number; 
+    trades: number;
+    avgPnl: number;
+    winRate: number;
+    wins: number;
+    losses: number;
+    avgHoldTime: number;
+  }>;
+  winningTradesCount: number;
+  losingTradesCount: number;
 }
 
 

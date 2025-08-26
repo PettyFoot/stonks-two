@@ -32,9 +32,18 @@ export function useDashboardData(demo: boolean = false) {
         const filterOptions = toFilterOptions();
         const params = new URLSearchParams();
         
-        // Use date range from global filters
+        // Pass ALL filter parameters to the API
         if (filterOptions.dateFrom) params.append('dateFrom', filterOptions.dateFrom);
         if (filterOptions.dateTo) params.append('dateTo', filterOptions.dateTo);
+        if (filterOptions.symbol) params.append('symbol', filterOptions.symbol);
+        if (filterOptions.side) params.append('side', filterOptions.side);
+        if (filterOptions.tags && filterOptions.tags.length > 0) {
+          params.append('tags', filterOptions.tags.join(','));
+        }
+        if (filterOptions.duration) params.append('duration', filterOptions.duration);
+        if (filterOptions.showOpenTrades !== undefined) {
+          params.append('showOpenTrades', filterOptions.showOpenTrades.toString());
+        }
         if (demo) params.append('demo', 'true');
         
         const response = await fetch(`/api/dashboard?${params.toString()}`);
@@ -59,8 +68,18 @@ export function useDashboardData(demo: boolean = false) {
     const filterOptions = toFilterOptions();
     const params = new URLSearchParams();
     
+    // Pass ALL filter parameters to the API
     if (filterOptions.dateFrom) params.append('dateFrom', filterOptions.dateFrom);
     if (filterOptions.dateTo) params.append('dateTo', filterOptions.dateTo);
+    if (filterOptions.symbol) params.append('symbol', filterOptions.symbol);
+    if (filterOptions.side) params.append('side', filterOptions.side);
+    if (filterOptions.tags && filterOptions.tags.length > 0) {
+      params.append('tags', filterOptions.tags.join(','));
+    }
+    if (filterOptions.duration) params.append('duration', filterOptions.duration);
+    if (filterOptions.showOpenTrades !== undefined) {
+      params.append('showOpenTrades', filterOptions.showOpenTrades.toString());
+    }
     if (demo) params.append('demo', 'true');
     
     fetch(`/api/dashboard?${params.toString()}`)

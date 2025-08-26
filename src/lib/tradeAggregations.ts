@@ -494,22 +494,44 @@ function buildFilterConditions(filters?: Partial<{
   dateTo: Date;
   symbol: string;
   side: 'LONG' | 'SHORT';
+  tags: string[];
+  duration: 'all' | 'intraday' | 'swing';
 }>): Prisma.Sql {
   if (!filters) return Prisma.empty;
 
   const conditions: Prisma.Sql[] = [];
 
+  // Date filters - use 'date' column for trade date
   if (filters.dateFrom) {
-    conditions.push(Prisma.sql`AND exit_date >= ${filters.dateFrom}`);
+    conditions.push(Prisma.sql`AND "date" >= ${filters.dateFrom}`);
   }
   if (filters.dateTo) {
-    conditions.push(Prisma.sql`AND exit_date <= ${filters.dateTo}`);
+    conditions.push(Prisma.sql`AND "date" <= ${filters.dateTo}`);
   }
-  if (filters.symbol) {
-    conditions.push(Prisma.sql`AND symbol = ${filters.symbol}`);
+  
+  // Symbol filter
+  if (filters.symbol && filters.symbol !== 'all') {
+    conditions.push(Prisma.sql`AND "symbol" = ${filters.symbol}`);
   }
+  
+  // Side filter
   if (filters.side) {
-    conditions.push(Prisma.sql`AND side = ${filters.side}`);
+    conditions.push(Prisma.sql`AND "side" = ${filters.side}`);
+  }
+  
+  // Tags filter
+  if (filters.tags && filters.tags.length > 0) {
+    // Check if any of the tags match
+    conditions.push(Prisma.sql`AND "tags" && ${filters.tags}`);
+  }
+  
+  // Duration filter
+  if (filters.duration && filters.duration !== 'all') {
+    if (filters.duration === 'intraday') {
+      conditions.push(Prisma.sql`AND "timeInTrade" <= 86400`); // Less than 24 hours
+    } else if (filters.duration === 'swing') {
+      conditions.push(Prisma.sql`AND "timeInTrade" > 86400`); // More than 24 hours
+    }
   }
 
   return conditions.length > 0 ? Prisma.join(conditions, ' ') : Prisma.empty;
@@ -611,4 +633,331 @@ export async function calculateDashboardMetrics(
   `;
 
   return result[0] || {};
+}
+
+/**
+ * Calculate performance by day of week
+ */
+export async function calculatePerformanceByDayOfWeek(
+  userId: string,
+  filters?: Partial<{
+    dateFrom: Date;
+    dateTo: Date;
+    symbol: string;
+    side: 'LONG' | 'SHORT';
+    tags: string[];
+    duration: 'all' | 'intraday' | 'swing';
+    showOpenTrades: boolean;
+  }>
+) {
+  const filterConditions = buildFilterConditions(filters);
+  const statusFilter = filters?.showOpenTrades 
+    ? Prisma.sql`` 
+    : Prisma.sql`AND "status" = 'CLOSED'`;
+  
+  const result = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+    WITH day_stats AS (
+      SELECT 
+        EXTRACT(DOW FROM "date") as day_num,
+        CASE EXTRACT(DOW FROM "date")
+          WHEN 0 THEN 'Sunday'
+          WHEN 1 THEN 'Monday'
+          WHEN 2 THEN 'Tuesday'
+          WHEN 3 THEN 'Wednesday'
+          WHEN 4 THEN 'Thursday'
+          WHEN 5 THEN 'Friday'
+          WHEN 6 THEN 'Saturday'
+        END as day_name,
+        COUNT(*) as trades,
+        SUM("pnl"::NUMERIC) as total_pnl,
+        AVG("pnl"::NUMERIC) as avg_pnl,
+        COUNT(*) FILTER (WHERE "pnl" > 0) as wins,
+        COUNT(*) FILTER (WHERE "pnl" < 0) as losses
+      FROM "trades"
+      WHERE 
+        "userId" = ${userId}
+        ${statusFilter}
+        ${filterConditions}
+      GROUP BY EXTRACT(DOW FROM "date")
+    )
+    SELECT 
+      day_num,
+      day_name,
+      trades,
+      total_pnl,
+      avg_pnl,
+      wins,
+      losses,
+      CASE 
+        WHEN trades > 0 THEN ROUND(((wins::FLOAT / trades) * 100)::NUMERIC, 2)
+        ELSE 0
+      END as win_rate
+    FROM day_stats
+    ORDER BY day_num
+  `;
+
+  return result.map(row => ({
+    day: String(row.day_name),
+    dayNum: Number(row.day_num),
+    pnl: Number(row.total_pnl) || 0,
+    trades: Number(row.trades) || 0,
+    avgPnl: Number(row.avg_pnl) || 0,
+    winRate: Number(row.win_rate) || 0,
+    wins: Number(row.wins) || 0,
+    losses: Number(row.losses) || 0
+  }));
+}
+
+/**
+ * Calculate performance by month of year
+ */
+export async function calculatePerformanceByMonthOfYear(
+  userId: string,
+  filters?: Partial<{
+    dateFrom: Date;
+    dateTo: Date;
+    symbol: string;
+    side: 'LONG' | 'SHORT';
+    tags: string[];
+    duration: 'all' | 'intraday' | 'swing';
+    showOpenTrades: boolean;
+  }>
+) {
+  const filterConditions = buildFilterConditions(filters);
+  const statusFilter = filters?.showOpenTrades 
+    ? Prisma.sql`` 
+    : Prisma.sql`AND "status" = 'CLOSED'`;
+  
+  const result = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+    WITH month_stats AS (
+      SELECT 
+        EXTRACT(MONTH FROM "date") as month_num,
+        TO_CHAR("date", 'Mon') as month_name,
+        COUNT(*) as trades,
+        SUM("pnl"::NUMERIC) as total_pnl,
+        AVG("pnl"::NUMERIC) as avg_pnl,
+        COUNT(*) FILTER (WHERE "pnl" > 0) as wins,
+        COUNT(*) FILTER (WHERE "pnl" < 0) as losses
+      FROM "trades"
+      WHERE 
+        "userId" = ${userId}
+        ${statusFilter}
+        ${filterConditions}
+      GROUP BY EXTRACT(MONTH FROM "date"), TO_CHAR("date", 'Mon')
+    )
+    SELECT 
+      month_num,
+      month_name,
+      trades,
+      total_pnl,
+      avg_pnl,
+      wins,
+      losses,
+      CASE 
+        WHEN trades > 0 THEN ROUND(((wins::FLOAT / trades) * 100)::NUMERIC, 2)
+        ELSE 0
+      END as win_rate
+    FROM month_stats
+    ORDER BY month_num
+  `;
+
+  // Fill in missing months with zero values
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthData = months.map((month, index) => {
+    const data = result.find(row => Number(row.month_num) === index + 1);
+    if (data) {
+      return {
+        month,
+        monthNum: index + 1,
+        pnl: Number(data.total_pnl) || 0,
+        trades: Number(data.trades) || 0,
+        avgPnl: Number(data.avg_pnl) || 0,
+        winRate: Number(data.win_rate) || 0,
+        wins: Number(data.wins) || 0,
+        losses: Number(data.losses) || 0
+      };
+    }
+    return {
+      month,
+      monthNum: index + 1,
+      pnl: 0,
+      trades: 0,
+      avgPnl: 0,
+      winRate: 0,
+      wins: 0,
+      losses: 0
+    };
+  });
+
+  return monthData;
+}
+
+/**
+ * Calculate hold time statistics for winning vs losing trades
+ */
+export async function calculateHoldTimeStatistics(
+  userId: string,
+  filters?: Partial<{
+    dateFrom: Date;
+    dateTo: Date;
+    symbol: string;
+    side: 'LONG' | 'SHORT';
+    tags: string[];
+    duration: 'all' | 'intraday' | 'swing';
+    showOpenTrades: boolean;
+  }>
+) {
+  const filterConditions = buildFilterConditions(filters);
+  const statusFilter = filters?.showOpenTrades 
+    ? Prisma.sql`` 
+    : Prisma.sql`AND "status" = 'CLOSED'`;
+  
+  const result = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+    SELECT 
+      AVG("timeInTrade") FILTER (WHERE "pnl" > 0) as avg_hold_time_winning,
+      AVG("timeInTrade") FILTER (WHERE "pnl" < 0) as avg_hold_time_losing,
+      AVG("timeInTrade") as avg_hold_time_overall,
+      PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY "timeInTrade") FILTER (WHERE "pnl" > 0) as median_hold_time_winning,
+      PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY "timeInTrade") FILTER (WHERE "pnl" < 0) as median_hold_time_losing,
+      MAX("timeInTrade") FILTER (WHERE "pnl" > 0) as max_hold_time_winning,
+      MAX("timeInTrade") FILTER (WHERE "pnl" < 0) as max_hold_time_losing,
+      MIN("timeInTrade") FILTER (WHERE "pnl" > 0) as min_hold_time_winning,
+      MIN("timeInTrade") FILTER (WHERE "pnl" < 0) as min_hold_time_losing
+    FROM "trades"
+    WHERE 
+      "userId" = ${userId}
+      ${statusFilter}
+      AND "timeInTrade" IS NOT NULL
+      ${filterConditions}
+  `;
+
+  const stats = result[0] || {};
+  
+  return {
+    avgHoldTimeWinning: Number(stats.avg_hold_time_winning) || 0,
+    avgHoldTimeLosing: Number(stats.avg_hold_time_losing) || 0,
+    avgHoldTimeOverall: Number(stats.avg_hold_time_overall) || 0,
+    medianHoldTimeWinning: Number(stats.median_hold_time_winning) || 0,
+    medianHoldTimeLosing: Number(stats.median_hold_time_losing) || 0,
+    maxHoldTimeWinning: Number(stats.max_hold_time_winning) || 0,
+    maxHoldTimeLosing: Number(stats.max_hold_time_losing) || 0,
+    minHoldTimeWinning: Number(stats.min_hold_time_winning) || 0,
+    minHoldTimeLosing: Number(stats.min_hold_time_losing) || 0
+  };
+}
+
+/**
+ * Calculate largest gain and loss
+ */
+export async function calculateLargestGainLoss(
+  userId: string,
+  filters?: Partial<{
+    dateFrom: Date;
+    dateTo: Date;
+    symbol: string;
+    side: 'LONG' | 'SHORT';
+    tags: string[];
+    duration: 'all' | 'intraday' | 'swing';
+    showOpenTrades: boolean;
+  }>
+) {
+  const filterConditions = buildFilterConditions(filters);
+  const statusFilter = filters?.showOpenTrades 
+    ? Prisma.sql`` 
+    : Prisma.sql`AND "status" = 'CLOSED'`;
+  
+  const result = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+    SELECT 
+      MAX("pnl"::NUMERIC) as largest_gain,
+      MIN("pnl"::NUMERIC) as largest_loss,
+      MAX("pnl"::NUMERIC) FILTER (WHERE "date" >= CURRENT_DATE - INTERVAL '30 days') as largest_gain_30d,
+      MIN("pnl"::NUMERIC) FILTER (WHERE "date" >= CURRENT_DATE - INTERVAL '30 days') as largest_loss_30d
+    FROM "trades"
+    WHERE 
+      "userId" = ${userId}
+      ${statusFilter}
+      ${filterConditions}
+  `;
+
+  const stats = result[0] || {};
+  
+  return {
+    largestGain: Number(stats.largest_gain) || 0,
+    largestLoss: Number(stats.largest_loss) || 0,
+    largestGain30d: Number(stats.largest_gain_30d) || 0,
+    largestLoss30d: Number(stats.largest_loss_30d) || 0
+  };
+}
+
+/**
+ * Calculate performance by duration (intraday vs multiday)
+ */
+export async function calculatePerformanceByDuration(
+  userId: string,
+  filters?: Partial<{
+    dateFrom: Date;
+    dateTo: Date;
+    symbol: string;
+    side: 'LONG' | 'SHORT';
+    tags: string[];
+    duration: 'all' | 'intraday' | 'swing';
+    showOpenTrades: boolean;
+  }>
+) {
+  const filterConditions = buildFilterConditions(filters);
+  const statusFilter = filters?.showOpenTrades 
+    ? Prisma.sql`` 
+    : Prisma.sql`AND "status" = 'CLOSED'`;
+  
+  const result = await prisma.$queryRaw<Array<Record<string, unknown>>>`
+    WITH duration_stats AS (
+      SELECT 
+        CASE 
+          WHEN "timeInTrade" <= 86400 THEN 'Intraday'  -- Less than 24 hours
+          ELSE 'Multiday'
+        END as duration_category,
+        COUNT(*) as trades,
+        SUM("pnl"::NUMERIC) as total_pnl,
+        AVG("pnl"::NUMERIC) as avg_pnl,
+        COUNT(*) FILTER (WHERE "pnl" > 0) as wins,
+        COUNT(*) FILTER (WHERE "pnl" < 0) as losses,
+        AVG("timeInTrade") as avg_hold_time
+      FROM "trades"
+      WHERE 
+        "userId" = ${userId}
+        ${statusFilter}
+        AND "timeInTrade" IS NOT NULL
+        ${filterConditions}
+      GROUP BY 
+        CASE 
+          WHEN "timeInTrade" <= 86400 THEN 'Intraday'
+          ELSE 'Multiday'
+        END
+    )
+    SELECT 
+      duration_category,
+      trades,
+      total_pnl,
+      avg_pnl,
+      wins,
+      losses,
+      avg_hold_time,
+      CASE 
+        WHEN trades > 0 THEN ROUND(((wins::FLOAT / trades) * 100)::NUMERIC, 2)
+        ELSE 0
+      END as win_rate
+    FROM duration_stats
+    ORDER BY duration_category
+  `;
+
+  return result.map(row => ({
+    category: String(row.duration_category),
+    pnl: Number(row.total_pnl) || 0,
+    trades: Number(row.trades) || 0,
+    avgPnl: Number(row.avg_pnl) || 0,
+    winRate: Number(row.win_rate) || 0,
+    wins: Number(row.wins) || 0,
+    losses: Number(row.losses) || 0,
+    avgHoldTime: Number(row.avg_hold_time) || 0
+  }));
 }

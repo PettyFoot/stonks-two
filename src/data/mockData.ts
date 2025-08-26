@@ -281,7 +281,16 @@ export const mockKPIData: KPIData = {
   bestDay: 244.23,
   worstDay: -156.45,
   avgPositionMae: -11.42,
-  avgPositionMfe: 14.46
+  avgPositionMfe: 14.46,
+  performanceByDayOfWeek: [],
+  performanceByMonthOfYear: [],
+  avgHoldTimeWinning: 0,
+  avgHoldTimeLosing: 0,
+  largestGain: 0,
+  largestLoss: 0,
+  performanceByDuration: [],
+  winningTradesCount: 9,
+  losingTradesCount: 9
 };
 
 // Journal entries
