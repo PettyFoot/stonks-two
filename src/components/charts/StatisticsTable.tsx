@@ -64,11 +64,11 @@ export default function StatisticsTable({
     ];
     
     if (positiveMetrics.some(metric => label.includes(metric))) {
-      return value > 0 ? 'text-[#16A34A] font-semibold' : 'text-[#DC2626] font-semibold';
+      return value > 0 ? 'text-positive font-semibold' : 'text-negative font-semibold';
     }
     
     if (negativeMetrics.some(metric => label.includes(metric))) {
-      return value < 0 ? 'text-[#DC2626] font-semibold' : 'text-[#16A34A] font-semibold';
+      return value < 0 ? 'text-negative font-semibold' : 'text-positive font-semibold';
     }
     
     return 'text-primary font-semibold';

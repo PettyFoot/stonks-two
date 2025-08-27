@@ -501,6 +501,6 @@ export const transformChartData = (data: Array<Record<string, unknown>>, _type: 
     label: item.label,
     count: item.count,
     percentage: item.percentage,
-    color: Number(item.value) >= 0 ? '#16A34A' : '#DC2626', // Green for positive, red for negative
+    color: Number(item.value) >= 0 ? 'var(--theme-positive)' : 'var(--theme-negative)', // Green for positive, red for negative
   }));
 };

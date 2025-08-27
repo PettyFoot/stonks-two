@@ -191,14 +191,14 @@ export default function TradeCandlestickChart({
     
     const yAxisAnnotations = executions.map((execution, index) => ({
       y: Number(execution.limitPrice) / 100 || 0,
-      borderColor: execution.side === 'BUY' ? '#16A34A' : '#DC2626',
+      borderColor: execution.side === 'BUY' ? 'var(--theme-green)' : 'var(--theme-red)',
       borderWidth: 2,
       strokeDashArray: selectedExecution === execution.id ? 0 : 5,
       label: {
         text: `${execution.side} ${execution.orderQuantity}@$${((Number(execution.limitPrice) / 100) || 0).toFixed(2)}`,
         style: {
-          background: execution.side === 'BUY' ? '#16A34A' : '#DC2626',
-          color: '#fff',
+          background: execution.side === 'BUY' ? 'var(--theme-green)' : 'var(--theme-red)',
+          color: 'var(--theme-surface)',
           fontSize: '10px'
         },
         position: 'left',
@@ -211,16 +211,16 @@ export default function TradeCandlestickChart({
       y: Number(execution.limitPrice) / 100 || 0,
       marker: {
         size: selectedExecution === execution.id ? 10 : 6,
-        fillColor: execution.side === 'BUY' ? '#16A34A' : '#DC2626',
-        strokeColor: '#fff',
+        fillColor: execution.side === 'BUY' ? 'var(--theme-green)' : 'var(--theme-red)',
+        strokeColor: 'var(--theme-surface)',
         strokeWidth: 2,
         shape: execution.side === 'BUY' ? 'circle' : 'square'
       },
       label: {
         text: `${execution.orderQuantity}`,
         style: {
-          background: execution.side === 'BUY' ? '#16A34A' : '#DC2626',
-          color: '#fff',
+          background: execution.side === 'BUY' ? 'var(--theme-green)' : 'var(--theme-red)',
+          color: 'var(--theme-surface)',
           fontSize: '8px'
         }
       }
@@ -338,8 +338,8 @@ export default function TradeCandlestickChart({
     plotOptions: {
       candlestick: {
         colors: {
-          upward: '#16A34A',
-          downward: '#DC2626'
+          upward: 'var(--theme-green)',
+          downward: 'var(--theme-red)'
         },
         wick: {
           useFillColor: true
@@ -352,17 +352,17 @@ export default function TradeCandlestickChart({
       max: xAxisRange.max,  // 8:00 PM (after-hours end) based on actual data date
       labels: {
         style: {
-          colors: '#94a3b8'
+          colors: 'var(--theme-secondary-text)'
         },
         datetimeFormatter: {
           hour: 'HH:mm'
         }
       },
       axisBorder: {
-        color: '#334155'
+        color: 'var(--theme-chart-axis)'
       },
       axisTicks: {
-        color: '#334155'
+        color: 'var(--theme-chart-axis)'
       }
     },
     yaxis: {
@@ -371,16 +371,16 @@ export default function TradeCandlestickChart({
       },
       labels: {
         style: {
-          colors: '#94a3b8'
+          colors: 'var(--theme-secondary-text)'
         },
         formatter: (value) => `$${value.toFixed(2)}`
       },
       axisBorder: {
-        color: '#334155'
+        color: 'var(--theme-chart-axis)'
       }
     },
     grid: {
-      borderColor: '#334155',
+      borderColor: 'var(--theme-chart-grid)',
       strokeDashArray: 1,
       xaxis: {
         lines: {
@@ -505,8 +505,8 @@ export default function TradeCandlestickChart({
                       size="sm"
                       className={`text-xs h-7 ${
                         execution.side === 'BUY' 
-                          ? 'border-green-500 text-green-600 hover:bg-green-50' 
-                          : 'border-red-500 text-red-600 hover:bg-red-50'
+                          ? 'border-[var(--theme-green)] text-[var(--theme-green)] hover:bg-[var(--theme-green)]/10' 
+                          : 'border-[var(--theme-red)] text-[var(--theme-red)] hover:bg-[var(--theme-red)]/10'
                       }`}
                       onClick={() => handleExecutionClick(execution)}
                     >

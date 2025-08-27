@@ -53,7 +53,7 @@ export default function NewTrade() {
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-screen">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563EB]"></div>
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--theme-tertiary)]"></div>
     </div>;
   }
 
@@ -155,7 +155,7 @@ export default function NewTrade() {
       
       <div className="flex-1 overflow-auto p-6">
         {/* Instructions Banner */}
-        <div className="mb-6 p-4 bg-[#3B82F6] text-white rounded-lg">
+        <div className="mb-6 p-4 bg-tertiary text-white rounded-lg">
           <p className="text-sm">
             Create a new trade entry manually. You can enter basic information or expand the form for detailed trade data including P&L, execution count, and custom tags.
           </p>
@@ -163,7 +163,7 @@ export default function NewTrade() {
 
         {/* Success Message */}
         {success && (
-          <div className="mb-6 p-4 bg-[#16A34A] text-white rounded-lg flex items-center gap-2">
+          <div className="mb-6 p-4 bg-[var(--theme-green)] text-white rounded-lg flex items-center gap-2">
             <CheckCircle className="h-5 w-5" />
             <span>Trade created successfully!</span>
           </div>
@@ -171,7 +171,7 @@ export default function NewTrade() {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-[#DC2626] text-white rounded-lg flex items-center gap-2">
+          <div className="mb-6 p-4 bg-[var(--theme-red)] text-white rounded-lg flex items-center gap-2">
             <AlertCircle className="h-5 w-5" />
             <span>{error}</span>
           </div>
@@ -354,7 +354,7 @@ export default function NewTrade() {
                 <div>
                   <Button 
                     variant="link" 
-                    className="text-[#16A34A] hover:text-[#15803d] p-0 h-auto text-sm"
+                    className="text-[var(--theme-green)] hover:text-[var(--theme-green)]/80 p-0 h-auto text-sm"
                     onClick={handleAddMore}
                   >
                     {expanded ? 'Show less «' : 'Add more »'}
@@ -363,7 +363,7 @@ export default function NewTrade() {
 
                 <div>
                   <Button 
-                    className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white"
+                    className="w-full bg-[var(--theme-green)] hover:bg-[var(--theme-green)]/80 text-white"
                     onClick={handleCreateTrade}
                     disabled={loading || !form.symbol || !form.volume}
                   >
@@ -397,7 +397,7 @@ export default function NewTrade() {
             <h3 className="text-sm font-medium text-primary mb-2">Note!</h3>
             <p className="text-sm text-muted mb-2">
               This form creates a trade to be matched later with execution data imported from your broker. If you want to manually input your trade executions, the easiest way to do this is to use Excel. Go to the{' '}
-              <span className="text-[#2563EB] cursor-pointer hover:underline">Help</span> page, download the Sample Excel Template, and fill in your data. Then follow the instructions on that page to import your data into Trade Voyager.
+              <span className="text-[var(--theme-tertiary)] cursor-pointer hover:underline">Help</span> page, download the Sample Excel Template, and fill in your data. Then follow the instructions on that page to import your data into Trade Voyager.
             </p>
             <p className="text-sm text-muted">
               If you prefer, you can manually enter executions as well. To do this, open the trade, click the Advanced link, and then click the add execution button.

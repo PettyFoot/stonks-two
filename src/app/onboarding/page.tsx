@@ -88,10 +88,10 @@ export default function OnboardingPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#F6F7FB] via-[#FFFFFF] to-[#E5E7EB] flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[var(--theme-background)] via-[var(--theme-surface)] to-[var(--theme-background)] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#2563EB] mx-auto mb-4"></div>
-          <p className="text-[#6B7280]">Loading...</p>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[var(--theme-tertiary)] mx-auto mb-4"></div>
+          <p className="text-[var(--theme-secondary-text)]">Loading...</p>
         </div>
       </div>
     );
@@ -114,28 +114,28 @@ export default function OnboardingPage() {
                 height={48} 
                 className="rounded-lg"
               />
-              <h1 className="text-3xl font-bold text-[#0B1220]">Trade Voyager</h1>
+              <h1 className="text-3xl font-bold text-[var(--theme-primary-text)]">Trade Voyager</h1>
             </div>
-            <h2 className="text-2xl font-bold text-[#0B1220]">Welcome, {user.name}!</h2>
-            <p className="text-lg text-[#6B7280] max-w-md mx-auto">
+            <h2 className="text-2xl font-bold text-[var(--theme-primary-text)]">Welcome, {user.name}!</h2>
+            <p className="text-lg text-[var(--theme-secondary-text)] max-w-md mx-auto">
               You&apos;re about to transform how you track and analyze your trading performance. 
               Let&apos;s get you set up in just a few steps.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
-              <div className="p-4 bg-[#F0F9FF] rounded-lg">
-                <TrendingUp className="h-8 w-8 text-[#2563EB] mx-auto mb-2" />
-                <h3 className="font-semibold text-[#0B1220]">Analytics</h3>
-                <p className="text-sm text-[#6B7280]">Comprehensive performance tracking</p>
+              <div className="p-4 bg-tertiary/10 rounded-lg">
+                <TrendingUp className="h-8 w-8 text-[var(--theme-tertiary)] mx-auto mb-2" />
+                <h3 className="font-semibold text-[var(--theme-primary-text)]">Analytics</h3>
+                <p className="text-sm text-[var(--theme-secondary-text)]">Comprehensive performance tracking</p>
               </div>
-              <div className="p-4 bg-[#F0FDF4] rounded-lg">
-                <FileSpreadsheet className="h-8 w-8 text-[#16A34A] mx-auto mb-2" />
-                <h3 className="font-semibold text-[#0B1220]">Data Import</h3>
-                <p className="text-sm text-[#6B7280]">Easy broker integration</p>
+              <div className="p-4 bg-positive/10 rounded-lg">
+                <FileSpreadsheet className="h-8 w-8 text-[var(--theme-green)] mx-auto mb-2" />
+                <h3 className="font-semibold text-[var(--theme-primary-text)]">Data Import</h3>
+                <p className="text-sm text-[var(--theme-secondary-text)]">Easy broker integration</p>
               </div>
-              <div className="p-4 bg-[#FEF7FF] rounded-lg">
-                <BarChart3 className="h-8 w-8 text-[#7C3AED] mx-auto mb-2" />
-                <h3 className="font-semibold text-[#0B1220]">Insights</h3>
-                <p className="text-sm text-[#6B7280]">Actionable trading insights</p>
+              <div className="p-4 bg-secondary/10 rounded-lg">
+                <BarChart3 className="h-8 w-8 text-secondary mx-auto mb-2" />
+                <h3 className="font-semibold text-[var(--theme-primary-text)]">Insights</h3>
+                <p className="text-sm text-[var(--theme-secondary-text)]">Actionable trading insights</p>
               </div>
             </div>
           </div>
@@ -145,13 +145,13 @@ export default function OnboardingPage() {
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-[#0B1220] mb-2">Trading Profile</h2>
-              <p className="text-[#6B7280]">Help us personalize your experience</p>
+              <h2 className="text-2xl font-bold text-[var(--theme-primary-text)] mb-2">Trading Profile</h2>
+              <p className="text-[var(--theme-secondary-text)]">Help us personalize your experience</p>
             </div>
             
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-[#0B1220] mb-2">
+                <label className="block text-sm font-medium text-[var(--theme-primary-text)] mb-2">
                   Trading Experience
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -169,7 +169,7 @@ export default function OnboardingPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#0B1220] mb-2">
+                <label className="block text-sm font-medium text-[var(--theme-primary-text)] mb-2">
                   Primary Trading Goal
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -187,7 +187,7 @@ export default function OnboardingPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#0B1220] mb-2">
+                <label className="block text-sm font-medium text-[var(--theme-primary-text)] mb-2">
                   Monthly Trading Volume
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -211,34 +211,34 @@ export default function OnboardingPage() {
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-[#0B1220] mb-2">Data Setup</h2>
-              <p className="text-[#6B7280]">Choose how you want to import your trading data</p>
+              <h2 className="text-2xl font-bold text-[var(--theme-primary-text)] mb-2">Data Setup</h2>
+              <p className="text-[var(--theme-secondary-text)]">Choose how you want to import your trading data</p>
             </div>
             
             <div className="grid gap-4">
-              <Card className="border-2 border-[#2563EB] bg-[#F0F9FF]">
+              <Card className="border-2 border-[var(--theme-tertiary)] bg-[var(--theme-tertiary)]/10">
                 <CardContent className="p-6">
                   <div className="flex items-start space-x-4">
-                    <FileSpreadsheet className="h-8 w-8 text-[#2563EB] mt-1" />
+                    <FileSpreadsheet className="h-8 w-8 text-[var(--theme-tertiary)] mt-1" />
                     <div className="flex-1">
-                      <h3 className="font-semibold text-[#0B1220] mb-2">CSV Import (Recommended)</h3>
-                      <p className="text-sm text-[#6B7280] mb-4">
+                      <h3 className="font-semibold text-[var(--theme-primary-text)] mb-2">CSV Import (Recommended)</h3>
+                      <p className="text-sm text-[var(--theme-secondary-text)] mb-4">
                         Import your trading data from a CSV file. Works with most brokers including 
                         Interactive Brokers, TD Ameritrade, and more.
                       </p>
-                      <Badge className="bg-[#16A34A] text-white">Most Popular</Badge>
+                      <Badge className="bg-[var(--theme-green)] text-white">Most Popular</Badge>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-[#E5E7EB]">
+              <Card className="border-default">
                 <CardContent className="p-6">
                   <div className="flex items-start space-x-4">
-                    <Target className="h-8 w-8 text-[#7C3AED] mt-1" />
+                    <Target className="h-8 w-8 text-secondary mt-1" />
                     <div className="flex-1">
-                      <h3 className="font-semibold text-[#0B1220] mb-2">Manual Entry</h3>
-                      <p className="text-sm text-[#6B7280] mb-4">
+                      <h3 className="font-semibold text-[var(--theme-primary-text)] mb-2">Manual Entry</h3>
+                      <p className="text-sm text-[var(--theme-secondary-text)] mb-4">
                         Add trades manually one by one. Perfect for getting started or 
                         for traders with low volume.
                       </p>
@@ -248,17 +248,17 @@ export default function OnboardingPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border-[#E5E7EB]">
+              <Card className="border-default">
                 <CardContent className="p-6">
                   <div className="flex items-start space-x-4">
-                    <DollarSign className="h-8 w-8 text-[#16A34A] mt-1" />
+                    <DollarSign className="h-8 w-8 text-[var(--theme-green)] mt-1" />
                     <div className="flex-1">
-                      <h3 className="font-semibold text-[#0B1220] mb-2">API Integration</h3>
-                      <p className="text-sm text-[#6B7280] mb-4">
+                      <h3 className="font-semibold text-[var(--theme-primary-text)] mb-2">API Integration</h3>
+                      <p className="text-sm text-[var(--theme-secondary-text)] mb-4">
                         Connect directly to your broker&apos;s API for real-time data sync. 
                         Available for supported brokers.
                       </p>
-                      <Badge variant="outline" className="border-[#F59E0B] text-[#F59E0B]">Coming Soon</Badge>
+                      <Badge variant="outline" className="border-warning text-warning">Coming Soon</Badge>
                     </div>
                   </div>
                 </CardContent>
@@ -270,20 +270,20 @@ export default function OnboardingPage() {
       case 3:
         return (
           <div className="text-center space-y-6">
-            <CheckCircle className="h-16 w-16 text-[#16A34A] mx-auto" />
-            <h2 className="text-2xl font-bold text-[#0B1220]">You&apos;re All Set!</h2>
-            <p className="text-lg text-[#6B7280] max-w-md mx-auto">
+            <CheckCircle className="h-16 w-16 text-[var(--theme-green)] mx-auto" />
+            <h2 className="text-2xl font-bold text-[var(--theme-primary-text)]">You&apos;re All Set!</h2>
+            <p className="text-lg text-[var(--theme-secondary-text)] max-w-md mx-auto">
               Your Trade Voyager dashboard is ready. Start by importing your first trades 
               or exploring the demo data to see how everything works.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 max-w-lg mx-auto">
-              <Card className="p-4 border-[#E5E7EB]">
-                <h3 className="font-semibold text-[#0B1220] mb-2">Import Data</h3>
-                <p className="text-sm text-[#6B7280]">Upload your trading history</p>
+              <Card className="p-4 border-default">
+                <h3 className="font-semibold text-[var(--theme-primary-text)] mb-2">Import Data</h3>
+                <p className="text-sm text-[var(--theme-secondary-text)]">Upload your trading history</p>
               </Card>
-              <Card className="p-4 border-[#E5E7EB]">
-                <h3 className="font-semibold text-[#0B1220] mb-2">View Dashboard</h3>
-                <p className="text-sm text-[#6B7280]">Explore your analytics</p>
+              <Card className="p-4 border-default">
+                <h3 className="font-semibold text-[var(--theme-primary-text)] mb-2">View Dashboard</h3>
+                <p className="text-sm text-[var(--theme-secondary-text)]">Explore your analytics</p>
               </Card>
             </div>
           </div>
@@ -295,7 +295,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F6F7FB] via-[#FFFFFF] to-[#E5E7EB]">
+    <div className="min-h-screen bg-gradient-to-br from-[var(--theme-background)] via-[var(--theme-surface)] to-[var(--theme-background)]">
       <div className="max-w-4xl mx-auto p-6">
         {/* Progress Steps */}
         <div className="mb-8">
@@ -304,8 +304,8 @@ export default function OnboardingPage() {
               <div key={step.id} className="flex items-center">
                 <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
                   index <= currentStep 
-                    ? 'bg-[#2563EB] border-[#2563EB] text-white' 
-                    : 'border-[#E5E7EB] text-[#6B7280]'
+                    ? 'bg-[var(--theme-tertiary)] border-[var(--theme-tertiary)] text-white' 
+                    : 'border-[var(--theme-primary)] text-[var(--theme-secondary-text)]'
                 }`}>
                   {step.completed ? (
                     <CheckCircle className="h-5 w-5" />
@@ -315,21 +315,21 @@ export default function OnboardingPage() {
                 </div>
                 {index < steps.length - 1 && (
                   <div className={`w-20 h-0.5 ml-2 ${
-                    index < currentStep ? 'bg-[#2563EB]' : 'bg-[#E5E7EB]'
+                    index < currentStep ? 'bg-[var(--theme-tertiary)]' : 'bg-[var(--theme-primary)]'
                   }`} />
                 )}
               </div>
             ))}
           </div>
           <div className="text-center">
-            <p className="text-sm text-[#6B7280]">
+            <p className="text-sm text-[var(--theme-secondary-text)]">
               Step {currentStep + 1} of {steps.length}: {steps[currentStep].title}
             </p>
           </div>
         </div>
 
         {/* Main Content */}
-        <Card className="bg-white border-[#E5E7EB] shadow-lg">
+        <Card className="bg-surface border-default shadow-lg">
           <CardContent className="p-8">
             {renderStepContent()}
           </CardContent>
@@ -340,13 +340,13 @@ export default function OnboardingPage() {
           <Button 
             variant="outline" 
             onClick={handleSkip}
-            className="border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]"
+            className="border-[var(--theme-primary)] text-[var(--theme-secondary-text)] hover:bg-[var(--theme-primary)]/30"
           >
             Skip for now
           </Button>
           <Button 
             onClick={handleNext}
-            className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
+            className="bg-[var(--theme-tertiary)] hover:bg-[var(--theme-tertiary)]/80 text-white"
           >
             {currentStep === steps.length - 1 ? 'Go to Dashboard' : 'Continue'}
             <ArrowRight className="h-4 w-4 ml-2" />

@@ -141,7 +141,7 @@ export function JournalNotesSection() {
             disabled={isSaving || !hasUnsavedChanges}
             className={`h-8 px-3 text-xs rounded font-medium transition-colors ${
               hasUnsavedChanges && !isSaving
-                ? 'bg-[#16A34A] hover:bg-[#15803d] text-white'
+                ? 'bg-positive hover:bg-positive text-white'
                 : 'bg-gray-200 text-gray-500 cursor-not-allowed'
             }`}
           >

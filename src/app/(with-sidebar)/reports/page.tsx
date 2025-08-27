@@ -370,9 +370,9 @@ export default function Reports() {
                           <PieChart>
                             <Pie
                               data={[
-                                { name: 'Wins', value: winLossRatio.wins, percentage: winLossRatio.winRate, color: '#16A34A' },
-                                { name: 'Losses', value: winLossRatio.losses, percentage: winLossRatio.lossRate, color: '#DC2626' },
-                                { name: 'Scratches', value: winLossRatio.scratches, percentage: winLossRatio.scratchRate, color: '#6B7280' }
+                                { name: 'Wins', value: winLossRatio.wins, percentage: winLossRatio.winRate, color: 'var(--theme-green)' },
+                                { name: 'Losses', value: winLossRatio.losses, percentage: winLossRatio.lossRate, color: 'var(--theme-red)' },
+                                { name: 'Scratches', value: winLossRatio.scratches, percentage: winLossRatio.scratchRate, color: 'var(--theme-secondary-text)' }
                               ].filter(item => item.value > 0)}
                               cx="50%"
                               cy="50%"
@@ -382,9 +382,9 @@ export default function Reports() {
                               dataKey="value"
                             >
                               {[
-                                { name: 'Wins', value: winLossRatio.wins, percentage: winLossRatio.winRate, color: '#16A34A' },
-                                { name: 'Losses', value: winLossRatio.losses, percentage: winLossRatio.lossRate, color: '#DC2626' },
-                                { name: 'Scratches', value: winLossRatio.scratches, percentage: winLossRatio.scratchRate, color: '#6B7280' }
+                                { name: 'Wins', value: winLossRatio.wins, percentage: winLossRatio.winRate, color: 'var(--theme-green)' },
+                                { name: 'Losses', value: winLossRatio.losses, percentage: winLossRatio.lossRate, color: 'var(--theme-red)' },
+                                { name: 'Scratches', value: winLossRatio.scratches, percentage: winLossRatio.scratchRate, color: 'var(--theme-secondary-text)' }
                               ].filter(item => item.value > 0).map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.color} />
                               ))}
@@ -394,8 +394,8 @@ export default function Reports() {
                                 `${value} (${props.payload?.percentage?.toFixed(1) || '0.0'}%)`,
                                 name
                               ]}
-                              contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
-                              labelStyle={{ color: '#E5E7EB' }}
+                              contentStyle={{ backgroundColor: 'var(--theme-surface)', border: '1px solid var(--theme-default)' }}
+                              labelStyle={{ color: 'var(--theme-primary-text)' }}
                             />
                             <Legend 
                               verticalAlign="bottom" 
@@ -447,7 +447,7 @@ export default function Reports() {
                           <span style={{ 
                             marginRight: '15px', 
                             fontSize: '12px', 
-                            color: '#9CA3AF',
+                            color: 'var(--theme-muted-foreground)',
                             minWidth: '70px'
                           }}>
                             Expectation
@@ -463,7 +463,7 @@ export default function Reports() {
                                 position: 'absolute',
                                 top: 0,
                                 height: '100%',
-                                backgroundColor: tradeExpectation.expectation >= 0 ? '#16A34A' : '#DC2626',
+                                backgroundColor: tradeExpectation.expectation >= 0 ? 'var(--theme-green)' : 'var(--theme-red)',
                                 // Calculate position and width based on dynamic scale
                                 left: tradeExpectation.expectation >= 0 
                                   ? `${((-expectationScale.min) / expectationScale.range) * 100}%`
@@ -483,12 +483,12 @@ export default function Reports() {
                                 top: '-40px',
                                 left: '50%',
                                 transform: 'translateX(-50%)',
-                                backgroundColor: '#1F2937',
-                                border: '1px solid #374151',
+                                backgroundColor: 'var(--theme-surface)',
+                                border: '1px solid var(--theme-default)',
                                 borderRadius: '4px',
                                 padding: '4px 8px',
                                 fontSize: '12px',
-                                color: '#E5E7EB',
+                                color: 'var(--theme-primary-text)',
                                 whiteSpace: 'nowrap',
                                 opacity: 0,
                                 pointerEvents: 'none',
@@ -505,7 +505,7 @@ export default function Reports() {
                               top: 0,
                               bottom: 0,
                               width: '1px',
-                              backgroundColor: '#4B5563',
+                              backgroundColor: 'var(--theme-default)',
                               zIndex: 1
                             }}></div>
                             {/* Add CSS for hover effect */}
@@ -522,7 +522,7 @@ export default function Reports() {
                           justifyContent: 'space-between',
                           marginLeft: '85px',
                           fontSize: '11px',
-                          color: '#6B7280'
+                          color: 'var(--theme-secondary-text)'
                         }}>
                           {expectationScale.ticks.map((tick, index) => (
                             <span key={index}>

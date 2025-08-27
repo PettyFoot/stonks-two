@@ -66,11 +66,11 @@ export default function WinLossStatsTable({
     ];
     
     if (positiveMetrics.some(metric => label.includes(metric))) {
-      return value > 0 ? 'text-[#16A34A] font-semibold' : 'text-[#DC2626] font-semibold';
+      return value > 0 ? 'text-positive font-semibold' : 'text-negative font-semibold';
     }
     
     if (negativeMetrics.some(metric => label.includes(metric))) {
-      return value < 0 ? 'text-[#DC2626] font-semibold' : 'text-[#16A34A] font-semibold';
+      return value < 0 ? 'text-negative font-semibold' : 'text-positive font-semibold';
     }
     
     return 'text-primary font-semibold';
@@ -165,7 +165,7 @@ export default function WinLossStatsTable({
         <div className="grid grid-cols-2 gap-8">
           {/* Winning Days Column */}
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-[#16A34A] border-b border-[#16A34A]/30 pb-2">
+            <h3 className="text-lg font-semibold text-positive border-b border-positive/30 pb-2">
               Winning Days
             </h3>
             
@@ -203,7 +203,7 @@ export default function WinLossStatsTable({
 
           {/* Losing Days Column */}
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-[#DC2626] border-b border-[#DC2626]/30 pb-2">
+            <h3 className="text-lg font-semibold text-negative border-b border-negative/30 pb-2">
               Losing Days
             </h3>
             
