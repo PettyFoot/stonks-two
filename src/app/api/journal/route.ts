@@ -92,21 +92,29 @@ export async function GET(request: Request) {
           
           executions = orders.map(order => ({
             id: order.id,
+            userId: order.userId,
             orderId: order.orderId,
+            parentOrderId: order.parentOrderId,
             symbol: order.symbol,
-            side: order.side,
             orderType: order.orderType,
-            quantity: order.orderQuantity,
-            price: order.limitPrice ? order.limitPrice.toNumber() : null,
-            stopPrice: order.stopPrice ? order.stopPrice.toNumber() : null,
-            status: order.orderStatus,
-            placedTime: order.orderPlacedTime,
-            executedTime: order.orderExecutedTime,
-            cancelledTime: order.orderCancelledTime,
-            route: order.orderRoute,
-            account: order.orderAccount,
+            side: order.side,
+            timeInForce: order.timeInForce,
+            orderQuantity: order.orderQuantity,
+            limitPrice: order.limitPrice,
+            stopPrice: order.stopPrice,
+            orderStatus: order.orderStatus,
+            orderPlacedTime: order.orderPlacedTime,
+            orderExecutedTime: order.orderExecutedTime,
+            orderUpdatedTime: order.orderUpdatedTime,
+            orderCancelledTime: order.orderCancelledTime,
+            accountId: order.accountId,
+            orderAccount: order.orderAccount,
+            orderRoute: order.orderRoute,
+            brokerType: order.brokerType,
             tags: order.tags,
-            brokerType: order.brokerType
+            usedInTrade: order.usedInTrade,
+            tradeId: order.tradeId,
+            importBatchId: order.importBatchId
           }));
         }
 
@@ -145,6 +153,14 @@ export async function GET(request: Request) {
       new Date(journalDate.setUTCHours(23, 59, 59, 999))
     );
 
+    // Aggregate all executions from all trades into a single array
+    const allExecutions = tradesWithExecutions.reduce((acc, trade) => {
+      if (trade.executionDetails && trade.executionDetails.length > 0) {
+        return [...acc, ...trade.executionDetails];
+      }
+      return acc;
+    }, [] as ExecutionOrder[]);
+
     // Create journal entry format
     const journalEntry = {
       id: `journal_${user.id}_${date}`,
@@ -155,7 +171,8 @@ export async function GET(request: Request) {
       winRate: summary.winRate,
       notes: tradesWithExecutions.find(t => t.status === 'BLANK')?.notes || '',
       trades: tradesWithExecutions.filter(t => t.status !== 'BLANK'), // Separate actual trades from journal notes
-      journalNotes: tradesWithExecutions.filter(t => t.status === 'BLANK') // Blank entries for notes
+      journalNotes: tradesWithExecutions.filter(t => t.status === 'BLANK'), // Blank entries for notes
+      executions: allExecutions // Include all executions from all trades
     };
 
     return NextResponse.json({

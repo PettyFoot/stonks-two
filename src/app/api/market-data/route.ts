@@ -1,122 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth0';
+import { marketDataService } from '@/lib/marketData/marketDataService';
+import { TradeContext } from '@/lib/marketData/types';
 
-export interface OHLCData {
-  timestamp: number;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume?: number;
-}
-
-export interface MarketDataResponse {
-  symbol: string;
-  date: string;
-  interval: string;
-  ohlc: OHLCData[];
-  success: boolean;
-  error?: string;
-}
-
-// Mock data generator for development
-function generateMockOHLCData(
-  symbol: string, 
-  date: string, 
-  interval: string,
-  basePrice?: number
-): OHLCData[] {
-  const data: OHLCData[] = [];
-  const startTime = new Date(`${date} 09:30:00`).getTime();
-  
-  // Interval in milliseconds
-  const intervalMs = interval === '1m' ? 60000 : 
-                    interval === '5m' ? 300000 :
-                    interval === '15m' ? 900000 :
-                    interval === '1h' ? 3600000 : 86400000;
-  
-  // Base price - use provided or generate based on symbol
-  let currentPrice = basePrice || getBasePrice(symbol);
-  
-  // Generate data points for market hours (6.5 hours = 390 minutes)
-  const dataPoints = interval === '1m' ? 390 : 
-                     interval === '5m' ? 78 :
-                     interval === '15m' ? 26 :
-                     interval === '1h' ? 7 : 1;
-  
-  for (let i = 0; i < dataPoints; i++) {
-    const timestamp = startTime + (i * intervalMs);
-    
-    // Skip lunch break (12:00-13:00) for realism
-    const currentHour = new Date(timestamp).getHours();
-    if (currentHour === 12) continue;
-    
-    // Volatility based on symbol (more volatile for smaller caps)
-    const volatility = getSymbolVolatility(symbol);
-    
-    const open = currentPrice;
-    const change = (Math.random() - 0.5) * volatility * currentPrice;
-    const high = Math.max(open, open + Math.abs(change) * (1 + Math.random()));
-    const low = Math.min(open, open - Math.abs(change) * (1 + Math.random()));
-    const close = open + change;
-    
-    // Add some trend bias based on time of day
-    const trendBias = getTrendBias(currentHour);
-    const finalClose = close + (trendBias * currentPrice * 0.001);
-    
-    data.push({
-      timestamp,
-      open: Number(open.toFixed(2)),
-      high: Number(high.toFixed(2)),
-      low: Number(low.toFixed(2)),
-      close: Number(finalClose.toFixed(2)),
-      volume: generateVolume(interval)
-    });
-    
-    currentPrice = finalClose;
-  }
-  
-  return data;
-}
-
-function getBasePrice(symbol: string): number {
-  // Generate consistent base prices based on symbol hash
-  const hash = symbol.split('').reduce((a, b) => {
-    a = ((a << 5) - a) + b.charCodeAt(0);
-    return a & a;
-  }, 0);
-  
-  // Price ranges for different symbol types
-  if (symbol.includes('SPY') || symbol.includes('QQQ')) return 400 + (Math.abs(hash) % 100);
-  if (symbol.length <= 3) return 50 + (Math.abs(hash) % 200); // Major stocks
-  return 10 + (Math.abs(hash) % 40); // Smaller stocks
-}
-
-function getSymbolVolatility(symbol: string): number {
-  if (symbol.includes('SPY') || symbol.includes('QQQ')) return 0.015; // ETFs - lower volatility
-  if (symbol.length <= 3) return 0.025; // Major stocks
-  return 0.035; // Smaller stocks - higher volatility
-}
-
-function getTrendBias(hour: number): number {
-  // Market opening bias (higher volatility)
-  if (hour === 9) return Math.random() > 0.5 ? 2 : -2;
-  // Power hour bias (late afternoon)
-  if (hour === 15) return Math.random() > 0.5 ? 1 : -1;
-  // Lunch time - less movement
-  if (hour >= 11 && hour <= 14) return (Math.random() - 0.5) * 0.5;
-  // Normal trading hours
-  return (Math.random() - 0.5) * 1;
-}
-
-function generateVolume(interval: string): number {
-  const baseVolume = interval === '1m' ? 10000 : 
-                     interval === '5m' ? 50000 :
-                     interval === '15m' ? 150000 :
-                     interval === '1h' ? 600000 : 5000000;
-  
-  return Math.floor(baseVolume + (Math.random() * baseVolume * 0.5));
-}
+// Legacy mock functions removed - now using MarketDataService
 
 export async function GET(request: Request) {
   try {
@@ -149,12 +36,7 @@ export async function GET(request: Request) {
       );
     }
     
-    // For now, always return mock data since we don't have real market data integration
-    // In the future, this would check for authentication and call a real market data provider
-    
-    let basePrice: number | undefined;
-    
-    // If not in demo mode, check authentication
+    // Check authentication for non-demo requests
     if (!demo) {
       const user = await getCurrentUser();
       if (!user) {
@@ -163,22 +45,33 @@ export async function GET(request: Request) {
           { status: 401 }
         );
       }
-      
-      // In a real implementation, you might fetch the user's recent trades for this symbol
-      // to get a realistic base price around their trading activity
-      // const recentTrades = await getRecentTradesForSymbol(user.id, symbol, date);
-      // basePrice = recentTrades[0]?.averagePrice;
     }
     
-    const ohlcData = generateMockOHLCData(symbol, date, interval, basePrice);
-    
-    const response: MarketDataResponse = {
+    // Build simple trade context with just basic info
+    const tradeContext: TradeContext = {
       symbol,
       date,
-      interval,
-      ohlc: ohlcData,
-      success: true
+      time: undefined,
+      side: 'long' // Default side, not used in current implementation
     };
+    
+    // Generate demo data if requested
+    if (demo) {
+      console.log(`Generating demo data for ${symbol} on ${date} (${interval})`);
+      const response = generateDemoData(symbol, date, interval);
+      return NextResponse.json(response);
+    }
+
+    // Use the market data service to fetch data
+    console.log(`Fetching market data for ${symbol} on ${date} (${interval})`);
+    const response = await marketDataService.fetchMarketData(tradeContext, interval);
+    
+    // Log the result for debugging
+    if (response.success) {
+      console.log(`Successfully fetched ${response.ohlc.length} candles from ${response.source}`);
+    } else {
+      console.error(`Market data fetch failed: ${response.error}`);
+    }
     
     return NextResponse.json(response);
     
@@ -187,11 +80,98 @@ export async function GET(request: Request) {
     return NextResponse.json(
       { 
         error: error instanceof Error ? error.message : 'Failed to fetch market data',
-        success: false
+        success: false,
+        source: 'error',
+        symbol: '',
+        date: '',
+        interval: '',
+        ohlc: []
       },
       { status: 500 }
     );
   }
+}
+
+/**
+ * Generate realistic demo data for testing
+ */
+function generateDemoData(symbol: string, date: string, interval: string) {
+  const intervalMs = interval === '1m' ? 60000 : 
+                   interval === '5m' ? 300000 :
+                   interval === '15m' ? 900000 :
+                   interval === '1h' ? 3600000 : 300000; // default 5m
+
+  const tradeDate = new Date(date);
+  const ohlc = [];
+  
+  // Generate data for extended trading hours (4 AM to 8 PM)
+  const startTime = new Date(tradeDate);
+  startTime.setHours(4, 0, 0, 0); // 4:00 AM
+  
+  const endTime = new Date(tradeDate);
+  endTime.setHours(20, 0, 0, 0); // 8:00 PM
+  
+  let currentTime = startTime.getTime();
+  const basePrice = 2.05; // Starting price for demo
+  let lastPrice = basePrice;
+  
+  while (currentTime <= endTime.getTime()) {
+    const hour = new Date(currentTime).getHours();
+    
+    // Determine if market is active and set volume accordingly
+    const isPreMarket = hour >= 4 && hour < 9.5;  // 4 AM - 9:30 AM
+    const isRegularHours = hour >= 9.5 && hour < 16; // 9:30 AM - 4 PM
+    const isAfterHours = hour >= 16 && hour < 20; // 4 PM - 8 PM
+    
+    // Skip some candles during inactive periods to simulate real trading patterns
+    if (isPreMarket && Math.random() > 0.3) {
+      currentTime += intervalMs;
+      continue;
+    }
+    if (isAfterHours && Math.random() > 0.4) {
+      currentTime += intervalMs;
+      continue;
+    }
+    
+    // Generate realistic price movement
+    const volatility = isRegularHours ? 0.02 : 0.01; // More volatile during regular hours
+    const priceChange = (Math.random() - 0.5) * volatility * lastPrice;
+    const open = lastPrice;
+    const close = Math.max(0.01, lastPrice + priceChange);
+    
+    // Generate high and low around open/close
+    const high = Math.max(open, close) * (1 + Math.random() * 0.01);
+    const low = Math.min(open, close) * (1 - Math.random() * 0.01);
+    
+    // Generate volume based on time of day
+    let baseVolume = 1000;
+    if (isRegularHours) baseVolume = 3000;
+    else if (isPreMarket || isAfterHours) baseVolume = 500;
+    
+    const volume = Math.floor(baseVolume * (0.5 + Math.random()));
+    
+    ohlc.push({
+      timestamp: currentTime,
+      open: Number(open.toFixed(4)),
+      high: Number(high.toFixed(4)),
+      low: Number(low.toFixed(4)),
+      close: Number(close.toFixed(4)),
+      volume
+    });
+    
+    lastPrice = close;
+    currentTime += intervalMs;
+  }
+  
+  return {
+    symbol,
+    date,
+    interval,
+    ohlc,
+    success: true,
+    source: 'demo',
+    cached: false
+  };
 }
 
 // TODO: Future implementation with real market data providers

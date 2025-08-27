@@ -8,25 +8,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { ApexOptions } from 'apexcharts';
 import { ExecutionOrder } from '@/components/ExecutionsTable';
+import { MarketDataCache } from '@/lib/marketData/cache';
+import { MarketDataResponse } from '@/lib/marketData/types';
 
 const Chart = dynamic(() => import('react-apexcharts'), { 
   ssr: false,
   loading: () => <div className="flex items-center justify-center h-64">Loading chart...</div>
 });
 
-export interface OHLCData {
-  timestamp: number;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume?: number;
-}
+// Using OHLCData from market data types - imported above
 
 interface TradeCandlestickChartProps {
   symbol: string;
   executions: ExecutionOrder[];
   tradeDate: string;
+  tradeTime?: string;
   height?: number;
   onExecutionSelect?: (execution: ExecutionOrder) => void;
 }
@@ -37,54 +33,28 @@ export default function TradeCandlestickChart({
   symbol,
   executions,
   tradeDate,
+  tradeTime,
   height = 400,
   onExecutionSelect
 }: TradeCandlestickChartProps) {
-  const [ohlcData, setOhlcData] = useState<OHLCData[]>([]);
+  const [marketData, setMarketData] = useState<MarketDataResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [timeInterval, setTimeInterval] = useState<TimeInterval>('5m');
   const [selectedExecution, setSelectedExecution] = useState<string | null>(null);
+  const [dataSource, setDataSource] = useState<string>('');
+  const [debugMode, setDebugMode] = useState<boolean>(false);
 
-  // Generate mock OHLC data for development
-  const generateMockOHLCData = React.useCallback((): OHLCData[] => {
-    const basePrice = executions.length > 0 ? 
-      Number(executions[0].limitPrice) / 100 || 100 : 100;
-    const data: OHLCData[] = [];
-    const startTime = new Date(`${tradeDate} 09:30:00`).getTime();
-    const intervalMs = timeInterval === '1m' ? 60000 : 
-                      timeInterval === '5m' ? 300000 :
-                      timeInterval === '15m' ? 900000 :
-                      timeInterval === '1h' ? 3600000 : 86400000;
-    
-    let currentPrice = basePrice;
-    
-    for (let i = 0; i < 78; i++) { // ~6.5 hours of market data
-      const timestamp = startTime + (i * intervalMs);
-      const volatility = 0.02; // 2% volatility
-      
-      const open = currentPrice;
-      const change = (Math.random() - 0.5) * volatility * currentPrice;
-      const high = Math.max(open, open + Math.abs(change) * 1.5);
-      const low = Math.min(open, open - Math.abs(change) * 1.5);
-      const close = open + change;
-      
-      data.push({
-        timestamp,
-        open: Number(open.toFixed(2)),
-        high: Number(high.toFixed(2)),
-        low: Number(low.toFixed(2)),
-        close: Number(close.toFixed(2)),
-        volume: Math.floor(Math.random() * 1000000)
-      });
-      
-      currentPrice = close;
-    }
-    
-    return data;
-  }, [executions, tradeDate, timeInterval]);
+  // Simple trade context with just the basic info needed
+  const tradeContext = useMemo(() => {
+    return {
+      symbol,
+      date: tradeDate,
+      time: tradeTime
+    };
+  }, [symbol, tradeDate, tradeTime]);
 
-  // Fetch market data when symbol or interval changes
+  // Fetch trade-aware market data with caching
   useEffect(() => {
     const fetchMarketData = async () => {
       if (!symbol) return;
@@ -93,28 +63,127 @@ export default function TradeCandlestickChart({
       setError(null);
       
       try {
-        const response = await fetch(
-          `/api/market-data?symbol=${symbol}&date=${tradeDate}&interval=${timeInterval}`
-        );
+        console.log(`🔍 Fetching market data for ${symbol} on ${tradeDate} (${timeInterval})`);
+        
+        // Check client-side cache first (unless bypassed)
+        const bypassCache = new URLSearchParams(window.location.search).get('nocache') === 'true';
+        if (!bypassCache) {
+          const cached = MarketDataCache.get(symbol, tradeDate, timeInterval, tradeTime);
+          if (cached) {
+            console.log(`📋 Using cached data for ${symbol}:`, {
+              source: cached.source,
+              candleCount: cached.ohlc?.length || 0,
+              dateRange: cached.ohlc?.length ? 
+                `${new Date(cached.ohlc[0].timestamp).toLocaleString()} to ${new Date(cached.ohlc[cached.ohlc.length - 1].timestamp).toLocaleString()}` : 
+                'No candles'
+            });
+            
+            // Validate cache data matches requested date
+            if (cached.ohlc?.length > 0) {
+              const firstCandleDate = new Date(cached.ohlc[0].timestamp).toDateString();
+              const requestedDate = new Date(tradeDate).toDateString();
+              if (firstCandleDate !== requestedDate) {
+                console.warn(`⚠️  Cache date mismatch: requested ${requestedDate}, cached data is from ${firstCandleDate}`);
+                console.log('💀 Clearing stale cache and fetching fresh data...');
+                MarketDataCache.clearSymbol(symbol);
+              } else {
+                setMarketData(cached);
+                setDataSource(`${cached.source} (cached)`);
+                setIsLoading(false);
+                return;
+              }
+            } else {
+              setMarketData(cached);
+              setDataSource(`${cached.source} (cached)`);
+              setIsLoading(false);
+              return;
+            }
+          } else {
+            console.log(`📥 No cache found for ${symbol} on ${tradeDate}`);
+          }
+        } else {
+          console.log(`🚫 Cache bypass enabled via ?nocache=true`);
+        }
+        
+        // Build simple API URL with just symbol, date, and interval
+        const params = new URLSearchParams({
+          symbol,
+          date: tradeDate,
+          interval: timeInterval
+        });
+        
+        const response = await fetch(`/api/market-data?${params.toString()}`);
         
         if (!response.ok) {
           throw new Error('Failed to fetch market data');
         }
         
-        const data = await response.json();
-        setOhlcData(data.ohlc || []);
+        const data: MarketDataResponse = await response.json();
+        
+        console.log(`📊 API Response for ${symbol}:`, {
+          success: data.success,
+          source: data.source,
+          cached: data.cached,
+          candleCount: data.ohlc?.length || 0,
+          error: data.error || null
+        });
+        
+        if (data.success) {
+          // Log data quality info
+          if (data.ohlc?.length > 0) {
+            const firstCandle = new Date(data.ohlc[0].timestamp);
+            const lastCandle = new Date(data.ohlc[data.ohlc.length - 1].timestamp);
+            const requestedDate = new Date(tradeDate);
+            
+            console.log(`📈 Data analysis:`, {
+              requestedDate: requestedDate.toDateString(),
+              actualDataDate: firstCandle.toDateString(),
+              dateMatch: firstCandle.toDateString() === requestedDate.toDateString(),
+              timeRange: `${firstCandle.toLocaleTimeString()} to ${lastCandle.toLocaleTimeString()}`,
+              priceRange: `$${Math.min(...data.ohlc.map(c => c.low)).toFixed(2)} - $${Math.max(...data.ohlc.map(c => c.high)).toFixed(2)}`
+            });
+            
+            // Warn about date mismatches
+            if (firstCandle.toDateString() !== requestedDate.toDateString()) {
+              console.warn(`⚠️  Date mismatch detected! This may cause chart rendering issues.`);
+            }
+          }
+          
+          setMarketData(data);
+          setDataSource(data.cached ? `${data.source} (cached)` : data.source);
+          
+          // Cache the response client-side
+          if (!data.cached) {
+            MarketDataCache.set(data);
+          }
+        } else {
+          throw new Error(data.error || 'Market data fetch failed');
+        }
+        
       } catch (err) {
         console.error('Error fetching market data:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load chart data');
-        // Generate mock data for development
-        setOhlcData(generateMockOHLCData());
+        const errorMsg = err instanceof Error ? err.message : 'Failed to load chart data';
+        setError(errorMsg);
+        
+        // Set empty market data to show error state
+        setMarketData({
+          symbol,
+          date: tradeDate,
+          interval: timeInterval,
+          ohlc: [],
+          success: false,
+          error: errorMsg,
+          source: 'yahoo' as const,
+          cached: false
+        });
+        setDataSource('error');
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchMarketData();
-  }, [symbol, tradeDate, timeInterval, generateMockOHLCData]);
+  }, [symbol, tradeDate, tradeTime, timeInterval, tradeContext]);
 
   // Process executions for annotations
   const executionAnnotations = useMemo(() => {
@@ -163,6 +232,83 @@ export default function TradeCandlestickChart({
     };
   }, [executions, selectedExecution]);
 
+  // Calculate x-axis range based on actual data availability
+  const getXAxisRange = () => {
+    if (marketData?.ohlc && marketData.ohlc.length > 0) {
+      const timestamps = marketData.ohlc.map(d => d.timestamp);
+      const minTimestamp = Math.min(...timestamps);
+      const maxTimestamp = Math.max(...timestamps);
+      const firstCandleDate = new Date(minTimestamp);
+      
+      // Use the actual date from the data, not the requested date
+      const actualTradingDate = new Date(firstCandleDate.getFullYear(), firstCandleDate.getMonth(), firstCandleDate.getDate());
+      
+      // Calculate data span in hours
+      const dataSpanHours = (maxTimestamp - minTimestamp) / (1000 * 60 * 60);
+      
+      console.log(`📊 Chart range calculation:`, {
+        actualDataDate: actualTradingDate.toDateString(),
+        requestedDate: new Date(tradeDate).toDateString(),
+        dataSpanHours: dataSpanHours.toFixed(2),
+        minTimestamp: new Date(minTimestamp).toLocaleString(),
+        maxTimestamp: new Date(maxTimestamp).toLocaleString()
+      });
+      
+      // Choose range based on data availability
+      if (dataSpanHours < 3) {
+        // Sparse data: show actual data range + 30 min padding
+        const padding = 30 * 60 * 1000; // 30 minutes in milliseconds
+        const range = {
+          min: minTimestamp - padding,
+          max: maxTimestamp + padding
+        };
+        console.log(`📏 Using sparse data range: ${new Date(range.min).toLocaleString()} to ${new Date(range.max).toLocaleString()}`);
+        return range;
+      } else if (dataSpanHours < 7) {
+        // Partial day: show regular trading hours for the ACTUAL data date
+        const rangeStart = new Date(actualTradingDate);
+        rangeStart.setHours(9, 30, 0, 0); // 9:30 AM
+        const rangeEnd = new Date(actualTradingDate);
+        rangeEnd.setHours(16, 0, 0, 0); // 4:00 PM
+        
+        const range = {
+          min: rangeStart.getTime(),
+          max: rangeEnd.getTime()
+        };
+        console.log(`📏 Using regular hours range: ${new Date(range.min).toLocaleString()} to ${new Date(range.max).toLocaleString()}`);
+        return range;
+      } else {
+        // Full day: show extended hours for the ACTUAL data date
+        const rangeStart = new Date(actualTradingDate);
+        rangeStart.setHours(4, 0, 0, 0); // 4:00 AM
+        const rangeEnd = new Date(actualTradingDate);
+        rangeEnd.setHours(20, 0, 0, 0); // 8:00 PM
+        
+        const range = {
+          min: rangeStart.getTime(),
+          max: rangeEnd.getTime()
+        };
+        console.log(`📏 Using extended hours range: ${new Date(range.min).toLocaleString()} to ${new Date(range.max).toLocaleString()}`);
+        return range;
+      }
+    } else {
+      // Fallback to requested trade date (regular hours since we don't know data availability)
+      const fallbackStart = new Date(tradeDate);
+      fallbackStart.setHours(9, 30, 0, 0);
+      const fallbackEnd = new Date(tradeDate);
+      fallbackEnd.setHours(16, 0, 0, 0);
+      
+      const range = {
+        min: fallbackStart.getTime(),
+        max: fallbackEnd.getTime()
+      };
+      console.log(`📏 Using fallback range: ${new Date(range.min).toLocaleString()} to ${new Date(range.max).toLocaleString()}`);
+      return range;
+    }
+  };
+
+  const xAxisRange = getXAxisRange();
+
   const chartOptions: ApexOptions = {
     chart: {
       type: 'candlestick',
@@ -202,6 +348,8 @@ export default function TradeCandlestickChart({
     },
     xaxis: {
       type: 'datetime',
+      min: xAxisRange.min,  // 4:00 AM (pre-market start) based on actual data date
+      max: xAxisRange.max,  // 8:00 PM (after-hours end) based on actual data date
       labels: {
         style: {
           colors: '#94a3b8'
@@ -251,7 +399,7 @@ export default function TradeCandlestickChart({
         const data = w.globals.seriesCandleO[seriesIndex][dataPointIndex];
         if (!data) return '';
         
-        const ohlc = ohlcData[dataPointIndex];
+        const ohlc = marketData?.ohlc[dataPointIndex];
         if (!ohlc) return '';
         
         return `
@@ -282,10 +430,10 @@ export default function TradeCandlestickChart({
   const chartSeries = [
     {
       name: symbol,
-      data: ohlcData.map(d => ({
+      data: marketData?.ohlc?.map(d => ({
         x: d.timestamp,
         y: [d.open, d.high, d.low, d.close]
-      }))
+      })) || []
     }
   ];
 
@@ -302,6 +450,7 @@ export default function TradeCandlestickChart({
             {symbol} Price Chart
             <span className="ml-2 text-xs font-normal text-muted">
               ({executions.length} execution{executions.length !== 1 ? 's' : ''})
+              {dataSource && ` • ${dataSource}`}
             </span>
           </CardTitle>
           <div className="flex items-center gap-2">
@@ -321,11 +470,10 @@ export default function TradeCandlestickChart({
         </div>
       </CardHeader>
       <CardContent>
-        {error && (
+        {error && marketData && !marketData.success && (
           <div className="text-center py-8">
-            <p className="text-red-500 mb-2">Error loading chart data</p>
-            <p className="text-sm text-muted">{error}</p>
-            <p className="text-xs text-muted mt-2">Showing mock data for development</p>
+            <p className="text-muted-foreground text-lg">Chart data not available</p>
+            <p className="text-sm text-muted mt-2">Unable to fetch market data for {symbol} on {tradeDate}</p>
           </div>
         )}
         
@@ -336,7 +484,7 @@ export default function TradeCandlestickChart({
               <p className="text-sm text-muted">Loading chart data...</p>
             </div>
           </div>
-        ) : (
+        ) : marketData && marketData.ohlc.length > 0 ? (
           <div className="relative">
             <Chart
               options={chartOptions}
@@ -368,6 +516,11 @@ export default function TradeCandlestickChart({
                 </div>
               </div>
             )}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground text-lg">Chart data not available</p>
+            <p className="text-sm text-muted">Unable to fetch market data for {symbol} on {tradeDate}</p>
           </div>
         )}
       </CardContent>
