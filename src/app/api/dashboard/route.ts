@@ -48,7 +48,9 @@ export async function GET(request: Request) {
         largestLoss: 0,
         performanceByDuration: [],
         winningTradesCount: 0,
-        losingTradesCount: 0
+        losingTradesCount: 0,
+        profitFactor: 0,
+        avgDailyVolume: 0
       },
       cumulativePnl: [],
       summary: {
@@ -175,6 +177,15 @@ export async function GET(request: Request) {
       }
     });
 
+    // Calculate profit factor (total wins / absolute total losses)
+    const totalWins = winningTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : Number(trade.pnl)), 0);
+    const totalLosses = Math.abs(losingTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : Number(trade.pnl)), 0));
+    const profitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? 999 : 0;
+    
+    // Calculate average daily volume
+    const uniqueDays = new Set(trades.map(trade => trade.date.toISOString().split('T')[0]));
+    const avgDailyVolume = uniqueDays.size > 0 ? totalVolume / uniqueDays.size : 0;
+
     // Calculate cumulative P&L for chart
     const cumulativePnl: { date: string; value: number }[] = [];
     let runningPnl = 0;
@@ -242,7 +253,9 @@ export async function GET(request: Request) {
         largestLoss: largestGainLoss.largestLoss,
         performanceByDuration,
         winningTradesCount: winningTrades.length,
-        losingTradesCount: losingTrades.length
+        losingTradesCount: losingTrades.length,
+        profitFactor,
+        avgDailyVolume
       },
       cumulativePnl,
       summary: {

@@ -45,7 +45,7 @@ export default function DistributionCharts({
               
               {/* Progress Bar */}
               <div className="flex-1 min-w-0">
-                <div className="relative h-4 bg-gray-100 rounded-sm overflow-hidden">
+                <div className="relative h-4 bg-gray-100 rounded-sm overflow-hidden w-full">
                   <div 
                     className="absolute left-0 top-0 h-full transition-all duration-300"
                     style={{ 

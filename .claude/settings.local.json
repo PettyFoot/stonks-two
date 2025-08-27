@@ -39,7 +39,10 @@
       "Bash(true)",
       "Bash(npm run dev:*)",
       "Bash(curl:*)",
-      "Read(/c:\\Users\\lcorr\\OneDrive\\Pictures\\CC/**)"
+      "Read(/c:\\Users\\lcorr\\OneDrive\\Pictures\\CC/**)",
+      "Read(c:\\Users\\lcorr\\OneDrive\\Pictures\\CC/**)",
+      "Read(c:\\Users\\lcorr\\OneDrive\\Pictures\\CC/**)",
+      "Read(c:\\Users\\lcorr\\OneDrive\\Pictures\\CC/**)"
     ],
     "deny": [],
     "ask": []

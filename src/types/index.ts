@@ -76,6 +76,8 @@ export interface KPIData {
   }>;
   winningTradesCount: number;
   losingTradesCount: number;
+  profitFactor: number;
+  avgDailyVolume: number;
 }
 
 

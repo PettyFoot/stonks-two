@@ -10,6 +10,8 @@ import EquityChart from '@/components/charts/EquityChart';
 import CustomPieChart from '@/components/charts/PieChart';
 import DistributionCharts from '@/components/charts/DistributionCharts';
 import HorizontalBarChart, { formatDuration, formatCurrency } from '@/components/charts/HorizontalBarChart';
+import GaugeChart from '@/components/charts/GaugeChart';
+import LargestGainLossGauge from '@/components/charts/LargestGainLossGauge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -217,21 +219,14 @@ export default function Dashboard() {
             />
           </div>
 
-          {/* Win % Chart */}
+          {/* Largest Gain vs Largest Loss Gauge */}
           <div className="col-span-1 flex flex-col justify-center">
-            <Card className="bg-surface border-default overflow-hidden" style={{ height: CHART_HEIGHTS.SM }}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-medium text-primary">Win %</CardTitle>
-              </CardHeader>
-              <CardContent className="flex items-center justify-center" style={{ height: `calc(100% - 60px)` }}>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-[#16A34A] mb-2">
-                    {metrics.winRate.toFixed(1)}%
-                  </div>
-                  <div className="w-20 h-20 mx-auto bg-[#16A34A] rounded-full opacity-20"></div>
-                </div>
-              </CardContent>
-            </Card>
+            <LargestGainLossGauge
+              title="Largest Gain vs Largest Loss"
+              largestGain={metrics.largestGain}
+              largestLoss={metrics.largestLoss}
+              height={CHART_HEIGHTS.SM}
+            />
           </div>
 
           {/* Second Row - Fill gap under Cumulative P&L */}
@@ -322,15 +317,29 @@ export default function Dashboard() {
             />
           </div>
 
-          {/* Placeholder for future metrics - Fill remaining space */}
-          <div className="col-span-4">
+          {/* Profit Factor Gauge */}
+          <div className="col-span-2">
+            <GaugeChart
+              title="Profit Factor"
+              value={metrics.profitFactor}
+              maxValue={3}
+              suffix=""
+              height={CHART_HEIGHTS.SM}
+            />
+          </div>
+
+          {/* Average Daily Volume */}
+          <div className="col-span-2">
             <Card className="bg-surface border-default overflow-hidden" style={{ height: CHART_HEIGHTS.SM }}>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base font-medium text-primary">Additional Metrics</CardTitle>
+                <CardTitle className="text-base font-medium text-primary">Average Daily Volume</CardTitle>
               </CardHeader>
               <CardContent className="flex items-center justify-center" style={{ height: `calc(100% - 60px)` }}>
-                <div className="text-center text-muted">
-                  <div className="text-sm">Space available for additional dashboard metrics</div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-primary mb-1">
+                    {metrics.avgDailyVolume.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  </div>
+                  <div className="text-xs text-muted">shares/day</div>
                 </div>
               </CardContent>
             </Card>
