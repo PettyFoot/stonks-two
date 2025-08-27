@@ -8,6 +8,7 @@ import { Trade, ColumnConfiguration } from '@/types';
 import { cn } from '@/lib/utils';
 import { ChevronUp, ChevronDown, MoreHorizontal, ChevronRight } from 'lucide-react';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { useRouter } from 'next/navigation';
 
 interface TradesTableProps {
   trades: Trade[];
@@ -33,6 +34,7 @@ export default function TradesTable({
   onTradeSelect,
   columnConfig = []
 }: TradesTableProps) {
+  const router = useRouter();
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
   const [sortField, setSortField] = useState<SortField>('time');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -152,6 +154,11 @@ export default function TradesTable({
     );
   };
 
+  // Navigate to journal page with selected trade's date
+  const handleTradeClick = (trade: Trade) => {
+    router.push(`/journal?date=${trade.date}`);
+  };
+
   const formatPnL = (pnl: number) => {
     const formatted = `$${Math.abs(pnl).toFixed(2)}`;
     return pnl >= 0 ? formatted : `-${formatted}`;
@@ -203,13 +210,13 @@ export default function TradesTable({
       case 'entryPrice':
         return (
           <TableCell className="text-sm text-primary">
-            {trade.entryPrice != null ? `$${trade.entryPrice.toFixed(2)}` : '-'}
+            {trade.entryPrice != null ? `$${Number(trade.entryPrice).toFixed(2)}` : '-'}
           </TableCell>
         );
       case 'exitPrice':
         return (
           <TableCell className="text-sm text-primary">
-            {trade.exitPrice != null ? `$${trade.exitPrice.toFixed(2)}` : '-'}
+            {trade.exitPrice != null ? `$${Number(trade.exitPrice).toFixed(2)}` : '-'}
           </TableCell>
         );
       case 'volume':
@@ -368,7 +375,12 @@ export default function TradesTable({
             <React.Fragment key={trade.id}>
               <TableRow 
                 className="hover:bg-gray-50 border-b border-default cursor-pointer"
-                onClick={() => !isMobile && onTradeSelect?.(trade)}
+                onClick={() => {
+                  // Call existing onTradeSelect callback if provided
+                  onTradeSelect?.(trade);
+                  // Navigate to journal page
+                  handleTradeClick(trade);
+                }}
               >
                 {showCheckboxes && !isMobile && (
                   <TableCell className="sticky left-0 bg-inherit z-10">

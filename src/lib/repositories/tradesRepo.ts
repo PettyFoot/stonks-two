@@ -146,6 +146,118 @@ export class TradesRepository {
       },
     });
   }
+
+  /**
+   * Get trades for a specific date for journal purposes
+   * Includes both calculated trades and blank journal entries
+   */
+  async getTradesForJournalDate(userId: string, date: Date): Promise<Trade[]> {
+    const startOfDay = new Date(date);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(date);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+
+    return await prisma.trade.findMany({
+      where: {
+        userId,
+        date: {
+          gte: startOfDay,
+          lte: endOfDay
+        }
+      },
+      orderBy: [
+        { status: 'asc' }, // BLANK trades first, then others
+        { date: 'asc' }
+      ]
+    });
+  }
+
+  /**
+   * Get trade with associated orders for journal display
+   * Uses Order.tradeId as primary relationship (as per schema comment line 86)
+   */
+  async getTradeWithOrders(userId: string, tradeId: string) {
+    const trade = await prisma.trade.findFirst({
+      where: {
+        id: tradeId,
+        userId
+      }
+    });
+
+    if (!trade) {
+      return null;
+    }
+
+    // Get associated orders using the ordersInTrade array (direct order IDs)
+    const orders = trade.ordersInTrade && trade.ordersInTrade.length > 0
+      ? await prisma.order.findMany({
+          where: {
+            id: { in: trade.ordersInTrade }
+          },
+          orderBy: {
+            orderExecutedTime: 'asc'
+          }
+        })
+      : [];
+
+    // Enhanced data consistency logging for trade-order relationship integrity
+    const ordersInTradeCount = trade.ordersInTrade ? trade.ordersInTrade.length : 0;
+    const foundOrdersCount = orders.length;
+    
+    if (ordersInTradeCount !== foundOrdersCount) {
+      console.warn(`[TRADES REPO] Order fetching issue detected for trade ${trade.id}:`, {
+        tradeId: trade.id,
+        symbol: trade.symbol,
+        date: trade.date?.toISOString(),
+        status: trade.status,
+        ordersInTradeArray: trade.ordersInTrade || [],
+        ordersInTradeCount,
+        foundOrdersCount,
+        foundOrderIds: orders.map(o => o.id),
+        missingOrderIds: (trade.ordersInTrade || []).filter(id => !orders.some(o => o.id === id)),
+        issueType: ordersInTradeCount > foundOrdersCount ? 'ORDERS_NOT_FOUND_IN_DB' : 'UNEXPECTED_EXTRA_ORDERS',
+        recommendation: 'Check if order IDs in ordersInTrade array exist in orders table'
+      });
+    }
+
+    return {
+      trade,
+      orders
+    };
+  }
+
+  /**
+   * Get journal summary for a date range
+   */
+  async getJournalSummary(userId: string, startDate: Date, endDate: Date) {
+    const trades = await prisma.trade.findMany({
+      where: {
+        userId,
+        date: {
+          gte: startDate,
+          lte: endDate
+        },
+        status: {
+          not: 'BLANK' // Don't include blank entries in summary calculations
+        }
+      }
+    });
+
+    const totalPnl = trades.reduce((sum, trade) => sum + trade.pnl.toNumber(), 0);
+    const totalTrades = trades.length;
+    const totalVolume = trades.reduce((sum, trade) => sum + (trade.quantity || 0), 0);
+    const winningTrades = trades.filter(trade => trade.pnl.toNumber() > 0).length;
+    const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
+
+    return {
+      totalPnl,
+      totalTrades,
+      totalVolume,
+      winRate,
+      trades
+    };
+  }
 }
 
 export const tradesRepo = new TradesRepository();

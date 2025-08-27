@@ -12,7 +12,14 @@
     "test:coverage": "jest --coverage",
     "postinstall": "prisma generate",
     "calculate-trades": "tsx scripts/calculateTrades.ts",
-    "trades:calc": "tsx scripts/calculateTrades.ts"
+    "trades:calc": "tsx scripts/calculateTrades.ts",
+    "db:safe-reset": "tsx scripts/safe-reset.ts --force",
+    "db:backup-users": "tsx scripts/backup-users.ts create",
+    "db:restore-users": "tsx scripts/backup-users.ts restore",
+    "db:list-backups": "tsx scripts/backup-users.ts list",
+    "db:backup-info": "tsx scripts/backup-users.ts info",
+    "db:clean-backups": "tsx scripts/backup-users.ts clean",
+    "fix-trade-orders": "tsx scripts/fix-trade-order-data.ts"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^3.8.0",

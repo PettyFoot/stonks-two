@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,7 @@ const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export default function CalendarContent() {
   const { user, isLoading: authLoading } = useUser();
   const searchParams = useSearchParams();
+  const router = useRouter();
   
   // Initialize state
   const [view, setView] = useState<ViewType>('month');
@@ -129,6 +130,23 @@ export default function CalendarContent() {
   const handleNextMonth = () => {
     setCurrentDate(prev => addMonths(prev, 1));
     setSelectedDay(null);
+  };
+
+  // Helper function to check if a day has trade data
+  const dayHasTradeData = (dayStr: string): boolean => {
+    const dayData = monthData.find(d => d.day === dayStr);
+    return dayData ? (dayData.tradeCount || 0) > 0 : false;
+  };
+
+  // Handle day click with conditional navigation
+  const handleDayClick = (dayStr: string) => {
+    if (dayHasTradeData(dayStr)) {
+      // Navigate to journal page with the selected date
+      router.push(`/journal?date=${dayStr}`);
+    } else {
+      // Just update the selected day for display purposes
+      setSelectedDay(dayStr);
+    }
   };
 
   // Keyboard navigation
@@ -272,15 +290,19 @@ export default function CalendarContent() {
                   {generateCalendarDays().map((day, index) => (
                     <button
                       key={index}
-                      onClick={() => day && setSelectedDay(day.dayStr)}
+                      onClick={() => day && handleDayClick(day.dayStr)}
                       disabled={!day}
                       className={`
-                        min-h-[100px] border border-default rounded-lg p-2 text-left
-                        ${!day ? 'bg-muted/20 cursor-default' : 'bg-background hover:bg-muted/50 cursor-pointer transition-colors'}
+                        min-h-[100px] border border-default rounded-lg p-2 text-left transition-colors
+                        ${!day ? 'bg-muted/20 cursor-default' : 
+                          day && dayHasTradeData(day.dayStr) ? 
+                            'bg-background hover:bg-muted/50 cursor-pointer' : 
+                            'bg-background hover:bg-muted/30 cursor-default'
+                        }
                         ${selectedDay === day?.dayStr ? 'ring-2 ring-primary' : ''}
                         focus:outline-none focus:ring-2 focus:ring-primary
                       `}
-                      aria-label={day ? `${day.date} - ${day.tradeCount || 0} trades` : undefined}
+                      aria-label={day ? `${day.date} - ${day.tradeCount || 0} trades${dayHasTradeData(day.dayStr) ? ' (clickable)' : ''}` : undefined}
                     >
                       {day && (
                         <>

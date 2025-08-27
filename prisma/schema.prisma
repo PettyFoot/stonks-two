@@ -1,5 +1,12 @@
 // Enhanced Trade Data Schema - Comprehensive Trading Information
 // This schema captures all possible trade data points for professional trading analytics
+//
+// ⚠️  CRITICAL WARNING: PROTECTED TABLES
+// The following tables contain critical data and should NEVER be deleted:
+// - users: Contains Auth0 authentication data - DELETION WILL BREAK AUTH!
+//
+// NEVER run: prisma migrate reset (use npm run db:safe-reset instead)
+// Always backup users before schema changes: npm run db:backup-users
 
 generator client {
   provider = "prisma-client-js"
@@ -10,6 +17,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ⚠️  PROTECTED TABLE - NEVER DELETE! Contains Auth0 authentication data
+// Use npm run db:backup-users before any schema changes
+// Use npm run db:safe-reset instead of prisma migrate reset
 model User {
   id            String         @id @default(cuid())
   email         String         @unique
@@ -73,7 +83,7 @@ model Trade {
   quantity              Int?        // Total closed shares
   costBasis             Decimal?    @db.Decimal(10,2) // Sum of (buyQuantity * buyLimitPrice)
   proceeds              Decimal?    @db.Decimal(10,2) // Sum of (sellQuantity * sellLimitPrice)
-  ordersInTrade         String[]    // List of order IDs that make up this trade
+  ordersInTrade         String[]    // List of order IDs that make up this trade - for journal queries, use Order.tradeId instead
   ordersCount           Int?        // Number of orders in this trade
   isCalculated          Boolean     @default(false) // Flag to indicate if this is a calculated trade
   
@@ -111,6 +121,8 @@ model Trade {
   @@index([userId, fees])
   @@index([userId, entryDate])
   @@index([userId, exitDate])
+  @@index([userId, status, date])  // Optimized for journal queries filtering by status and date
+  @@index([userId, date, status])  // Alternative compound index for date-first queries
   @@map("trades")
 }
 
@@ -149,6 +161,7 @@ model Order {
   @@index([userId, symbol])
   @@index([userId, orderStatus])
   @@index([tradeId])
+  @@index([userId, tradeId])  // Optimized for journal queries fetching orders by user and trade
   @@map("orders")
 }
 
@@ -309,6 +322,7 @@ enum TradeSide {
 enum TradeStatus {
   OPEN
   CLOSED
+  BLANK    // For empty journal entries with notes only
   
   @@map("trade_status")
 }
