@@ -12,6 +12,7 @@ export interface JournalData {
   totalVolume: number;
   winRate: number;
   notes: string;
+  notesChanges: string;
   trades: Trade[];
   executions: ExecutionOrder[];
   commissions?: number;
@@ -62,6 +63,7 @@ export function useJournalData(date: string | null, demo: boolean = false): UseJ
           totalVolume: 0,
           winRate: 0,
           notes: '',
+          notesChanges: '',
           trades: [],
           executions: [],
           commissions: 0,
@@ -80,6 +82,7 @@ export function useJournalData(date: string | null, demo: boolean = false): UseJ
         totalVolume: journalEntry.totalVolume || (journalEntry.executions || []).reduce((sum: number, exec: ExecutionOrder) => sum + (exec.orderQuantity || 0), 0),
         winRate: journalEntry.winRate || 0,
         notes: journalEntry.notes || '',
+        notesChanges: journalEntry.notesChanges || '',
         trades: journalEntry.trades,
         executions: journalEntry.executions || [], // Use executions directly from API
         commissions: journalEntry.commissions || 0,

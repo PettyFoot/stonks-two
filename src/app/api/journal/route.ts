@@ -140,6 +140,7 @@ export async function GET(request: Request) {
           status: trade.status,
           shared: false,
           notes: trade.notes,
+          notesChanges: trade.notesChanges,
           tags: trade.tags,
           executionDetails: executions // Include detailed executions
         };
@@ -170,6 +171,7 @@ export async function GET(request: Request) {
       totalVolume: summary.totalVolume,
       winRate: summary.winRate,
       notes: tradesWithExecutions.find(t => t.status === 'BLANK')?.notes || '',
+      notesChanges: tradesWithExecutions.find(t => t.status === 'BLANK')?.notesChanges || '',
       trades: tradesWithExecutions.filter(t => t.status !== 'BLANK'), // Separate actual trades from journal notes
       journalNotes: tradesWithExecutions.filter(t => t.status === 'BLANK'), // Blank entries for notes
       executions: allExecutions // Include all executions from all trades
@@ -265,6 +267,7 @@ export async function POST(request: Request) {
       totalVolume: summary.totalVolume,
       winRate: summary.winRate,
       notes: blankTrade?.notes || '',
+      notesChanges: blankTrade?.notesChanges || '',
       chartImage: chartImage || null,
       trades: summary.trades.map(trade => ({
         id: trade.id,

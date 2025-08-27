@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { notes, date, tradeId } = body;
+    const { notes, date, tradeId, saveChanges = false } = body;
 
     // Validate input
     if (typeof notes !== 'string') {
@@ -51,18 +51,23 @@ export async function POST(request: Request) {
         );
       }
 
-      // Update the trade's notes
+      // Update the trade's notes based on the operation type
+      const updateData = saveChanges 
+        ? { notes, notesChanges: notes } // Save changes: copy notesChanges to notes
+        : { notesChanges: notes }; // Auto-save: save to notesChanges only
+
       const updatedTrade = await prisma.trade.update({
         where: { id: tradeId },
-        data: { notes }
+        data: updateData
       });
 
       return NextResponse.json({
         success: true,
-        message: 'Trade notes saved successfully',
+        message: saveChanges ? 'Trade notes saved successfully' : 'Trade notes auto-saved to draft',
         trade: {
           id: updatedTrade.id,
           notes: updatedTrade.notes,
+          notesChanges: updatedTrade.notesChanges,
           date: updatedTrade.date,
           symbol: updatedTrade.symbol
         }
@@ -84,32 +89,56 @@ export async function POST(request: Request) {
     });
 
     if (existingTradesForDate.length > 0) {
-      // If there are real trades for this date, update the first one or create a general note
-      // For now, we'll create a blank trade to hold the general journal notes for the day
-      const blankTrade = await prisma.trade.create({
-        data: {
+      // Check for existing blank trade to hold journal notes
+      let blankTrade = await prisma.trade.findFirst({
+        where: {
           userId: user.id,
-          date: journalDate,
-          entryDate: journalDate,
-          symbol: 'JOURNAL',
-          side: 'LONG',
-          quantity: 0,
-          executions: 0,
-          pnl: 0,
-          status: TradeStatus.BLANK,
-          notes,
-          ordersInTrade: [],
-          ordersCount: 0,
-          isCalculated: false
+          date: {
+            gte: new Date(journalDate.setUTCHours(0, 0, 0, 0)),
+            lt: new Date(journalDate.setUTCHours(23, 59, 59, 999))
+          },
+          status: TradeStatus.BLANK
         }
       });
 
+      const updateData = saveChanges 
+        ? { notes, notesChanges: notes } // Save changes: copy notesChanges to notes
+        : { notesChanges: notes }; // Auto-save: save to notesChanges only
+
+      if (blankTrade) {
+        // Update existing blank trade
+        blankTrade = await prisma.trade.update({
+          where: { id: blankTrade.id },
+          data: updateData
+        });
+      } else {
+        // Create new blank trade
+        blankTrade = await prisma.trade.create({
+          data: {
+            userId: user.id,
+            date: journalDate,
+            entryDate: journalDate,
+            symbol: 'JOURNAL',
+            side: 'LONG',
+            quantity: 0,
+            executions: 0,
+            pnl: 0,
+            status: TradeStatus.BLANK,
+            ...updateData,
+            ordersInTrade: [],
+            ordersCount: 0,
+            isCalculated: false
+          }
+        });
+      }
+
       return NextResponse.json({
         success: true,
-        message: 'Journal notes saved successfully',
+        message: saveChanges ? 'Journal notes saved successfully' : 'Journal notes auto-saved to draft',
         trade: {
           id: blankTrade.id,
           notes: blankTrade.notes,
+          notesChanges: blankTrade.notesChanges,
           date: blankTrade.date,
           symbol: blankTrade.symbol,
           status: blankTrade.status
@@ -118,6 +147,10 @@ export async function POST(request: Request) {
     }
 
     // No trades exist for this date, create a blank trade to hold the notes
+    const updateData = saveChanges 
+      ? { notes, notesChanges: notes } // Save changes: copy notesChanges to notes
+      : { notesChanges: notes }; // Auto-save: save to notesChanges only
+
     const blankTrade = await prisma.trade.create({
       data: {
         userId: user.id,
@@ -129,7 +162,7 @@ export async function POST(request: Request) {
         executions: 0,
         pnl: 0,
         status: TradeStatus.BLANK,
-        notes,
+        ...updateData,
         ordersInTrade: [],
         ordersCount: 0,
         isCalculated: false
@@ -138,10 +171,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: 'Journal notes saved successfully',
+      message: saveChanges ? 'Journal notes saved successfully' : 'Journal notes auto-saved to draft',
       trade: {
         id: blankTrade.id,
         notes: blankTrade.notes,
+        notesChanges: blankTrade.notesChanges,
         date: blankTrade.date,
         symbol: blankTrade.symbol,
         status: blankTrade.status
@@ -197,6 +231,7 @@ export async function GET(request: Request) {
         trade: {
           id: trade.id,
           notes: trade.notes || '',
+          notesChanges: trade.notesChanges || '',
           date: trade.date,
           symbol: trade.symbol,
           status: trade.status
@@ -224,10 +259,12 @@ export async function GET(request: Request) {
       });
 
       const tradesWithNotes = trades
-        .filter(trade => trade.notes && trade.notes.trim().length > 0)
+        .filter(trade => (trade.notes && trade.notes.trim().length > 0) || 
+                        (trade.notesChanges && trade.notesChanges.trim().length > 0))
         .map(trade => ({
           id: trade.id,
-          notes: trade.notes,
+          notes: trade.notes || '',
+          notesChanges: trade.notesChanges || '',
           date: trade.date,
           symbol: trade.symbol,
           status: trade.status,

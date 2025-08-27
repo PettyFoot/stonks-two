@@ -175,51 +175,54 @@ export default function FilterPanel({
           </div>
         </div>
 
-        {/* Right Side Controls */}
-        <div className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-2">
-          {/* Time Frame Preset Dropdown */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 w-full md:w-auto">
-            <label className="text-xs sm:text-sm font-medium text-primary">Time Frame</label>
-            <Select 
-              value={filters.timeFramePreset || 'default'} 
-              onValueChange={(value) => setTimeFramePreset(value === 'default' ? null : value as TimeFramePreset)}
-            >
-              <SelectTrigger className="w-full md:w-32 h-8 text-sm">
-                <SelectValue placeholder="Select" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="default">Default</SelectItem>
-                <SelectItem value="yesterday">Yesterday</SelectItem>
-                <SelectItem value="1week">1 Week</SelectItem>
-                <SelectItem value="2weeks">2 Weeks</SelectItem>
-                <SelectItem value="1month">1 Month</SelectItem>
-                <SelectItem value="3months">3 Months</SelectItem>
-                <SelectItem value="6months">6 Months</SelectItem>
-                <SelectItem value="1year">1 Year</SelectItem>
-                <SelectItem value="lastyear">Last Year</SelectItem>
-                <SelectItem value="ytd">Year to Date</SelectItem>
-                <SelectItem value="custom">Custom</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Right Side Controls - Two Row Layout */}
+        <div className="flex flex-col gap-3">
+          {/* First Row: Time Frame and Date Controls */}
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-2">
+            {/* Time Frame Preset Dropdown */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 w-full md:w-auto">
+              <label className="text-xs sm:text-sm font-medium text-primary">Time Frame</label>
+              <Select 
+                value={filters.timeFramePreset || 'default'} 
+                onValueChange={(value) => setTimeFramePreset(value === 'default' ? null : value as TimeFramePreset)}
+              >
+                <SelectTrigger className="w-full md:w-32 h-8 text-sm">
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">Default</SelectItem>
+                  <SelectItem value="yesterday">Yesterday</SelectItem>
+                  <SelectItem value="1week">1 Week</SelectItem>
+                  <SelectItem value="2weeks">2 Weeks</SelectItem>
+                  <SelectItem value="1month">1 Month</SelectItem>
+                  <SelectItem value="3months">3 Months</SelectItem>
+                  <SelectItem value="6months">6 Months</SelectItem>
+                  <SelectItem value="1year">1 Year</SelectItem>
+                  <SelectItem value="lastyear">Last Year</SelectItem>
+                  <SelectItem value="ytd">Year to Date</SelectItem>
+                  <SelectItem value="custom">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* Custom Date Range Override */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full md:w-auto">
-            <Input 
-              type="date" 
-              value={filters.customDateRange?.from || ''} 
-              onChange={(e) => setCustomDateRange(e.target.value, filters.customDateRange?.to)}
-              className="w-full sm:w-36 h-8 text-sm"
-              placeholder="From"
-            />
-            <span className="hidden sm:block text-muted">-</span>
-            <Input 
-              type="date" 
-              value={filters.customDateRange?.to || ''} 
-              onChange={(e) => setCustomDateRange(filters.customDateRange?.from, e.target.value)}
-              className="w-full sm:w-36 h-8 text-sm"
-              placeholder="To"
-            />
+            {/* Custom Date Range */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full md:w-auto">
+              <Input 
+                type="date" 
+                value={filters.customDateRange?.from || ''} 
+                onChange={(e) => setCustomDateRange(e.target.value, filters.customDateRange?.to)}
+                className="w-full sm:w-36 h-8 text-sm"
+                placeholder="From"
+              />
+              <span className="hidden sm:block text-muted">-</span>
+              <Input 
+                type="date" 
+                value={filters.customDateRange?.to || ''} 
+                onChange={(e) => setCustomDateRange(filters.customDateRange?.from, e.target.value)}
+                className="w-full sm:w-36 h-8 text-sm"
+                placeholder="To"
+              />
+            </div>
             
             {/* Time Range Tabs - responsive on mobile */}
             {showTimeRangeTabs && (
@@ -245,7 +248,10 @@ export default function FilterPanel({
                 ))}
               </div>
             )}
-            
+          </div>
+
+          {/* Second Row: Action Buttons */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full md:w-auto">
             {/* Clear Date and Advanced Filters Button */}
             {shouldShowClearButton && (
               <Button
@@ -257,10 +263,7 @@ export default function FilterPanel({
                 Clear Filters
               </Button>
             )}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+            
             {/* Advanced Button */}
             {showAdvanced && (
               <Button 

@@ -17,7 +17,7 @@ import TradeCandlestickChart from '@/components/charts/TradeCandlestickChart';
 export default function Journal() {
   const searchParams = useSearchParams();
   const selectedDate = searchParams.get('date');
-  // Removed selectedTrade state as it's no longer needed
+  const selectedTradeId = searchParams.get('tradeId'); // Get specific trade ID if provided
   
   // Use real journal data instead of mock data
   const { data: journalData, loading, error, refetch } = useJournalData(selectedDate);
@@ -29,28 +29,76 @@ export default function Journal() {
     totalPnl: journalData?.pnl || 0
   };
 
-  // Auto-save notes functionality with real API
-  const saveNotes = async (notes: string) => {
+  // Determine which trade we're editing notes for
+  // If tradeId is provided in URL, use that specific trade
+  // Otherwise, if there's only one trade, use that trade
+  // Otherwise, use journal-level notes (BLANK trade)
+  const targetTrade = selectedTradeId 
+    ? journalData?.trades.find(t => t.id === selectedTradeId)
+    : journalData?.trades.length === 1 
+      ? journalData.trades[0] 
+      : null;
+
+  // Auto-save notes functionality - saves to notesChanges field
+  const autoSaveNotes = async (notes: string) => {
     try {
       const response = await fetch('/api/journal/notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           notes, 
-          date: selectedDate
+          date: selectedDate,
+          tradeId: targetTrade?.id, // Pass specific trade ID if available
+          saveChanges: false // Auto-save to notesChanges
         })
       });
       
       if (!response.ok) {
-        throw new Error('Failed to save notes');
+        throw new Error('Failed to auto-save notes');
       }
       
-      // Refresh journal data after saving
-      refetch();
+      // Don't refresh the entire page - let the useAutoSave hook handle state
+      // The response contains the updated data but we don't need to refetch everything
     } catch (error) {
-      console.error('Error saving notes:', error);
+      console.error('Error auto-saving notes:', error);
       throw error;
     }
+  };
+
+  // Save changes functionality - copies notesChanges to notes
+  const saveChanges = async () => {
+    try {
+      const currentNotesChanges = targetTrade ? targetTrade.notesChanges : journalData?.notesChanges;
+      
+      const response = await fetch('/api/journal/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          notes: currentNotesChanges || '', 
+          date: selectedDate,
+          tradeId: targetTrade?.id, // Pass specific trade ID if available
+          saveChanges: true // Save changes: copy notesChanges to notes
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save changes');
+      }
+      
+      // Refresh journal data to get the updated notes state
+      refetch();
+    } catch (error) {
+      console.error('Error saving changes:', error);
+      throw error;
+    }
+  };
+
+  // Get the correct initial notes value from either specific trade or journal level
+  const getInitialNotes = () => {
+    if (targetTrade) {
+      return targetTrade.notesChanges || targetTrade.notes || '';
+    }
+    return journalData?.notesChanges || journalData?.notes || '';
   };
 
   const {
@@ -60,18 +108,33 @@ export default function Journal() {
     isSaving,
     error: saveError
   } = useAutoSave({
-    initialValue: journalData?.notes || '',
-    saveFunction: saveNotes,
+    initialValue: getInitialNotes(), // Initialize with the correct notes
+    saveFunction: autoSaveNotes, // Use auto-save function that saves to notesChanges
     debounceMs: 3000,
     enabled: !!journalData // Only enable auto-save when data is loaded
   });
 
-  // Update notes when journal data changes
+  // Update notes when journal data first loads (but don't override user input)
   useEffect(() => {
-    if (journalData && journalData.notes !== notes) {
-      setNotes(journalData.notes);
+    const initialValue = targetTrade 
+      ? targetTrade.notesChanges || targetTrade.notes || ''
+      : journalData?.notesChanges || journalData?.notes || '';
+    
+    if (journalData && notes === '' && initialValue) {
+      setNotes(initialValue);
     }
-  }, [journalData, notes, setNotes]);
+  }, [journalData, targetTrade, notes, setNotes]);
+
+  // Check if there are unsaved changes (notesChanges different from notes)
+  const hasUnsavedChanges = () => {
+    if (targetTrade) {
+      return targetTrade.notesChanges && targetTrade.notesChanges !== targetTrade.notes;
+    }
+    return journalData && journalData.notesChanges && journalData.notesChanges !== journalData.notes;
+  };
+
+  const shouldShowSaveButton = hasUnsavedChanges();
+
 
   // All executions for this journal entry
   const allExecutions = journalData?.executions || [];
@@ -242,9 +305,21 @@ export default function Journal() {
                 )}
               </div>
               <div className="flex gap-2">
-                <Button size="sm" className="h-8 bg-[#16A34A] hover:bg-[#15803d] text-white">
-                  Create Note
-                </Button>
+                {shouldShowSaveButton && (
+                  <Button 
+                    size="sm" 
+                    className="h-8 bg-[#16A34A] hover:bg-[#15803d] text-white"
+                    onClick={saveChanges}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                )}
+                {!shouldShowSaveButton && (
+                  <Button size="sm" className="h-8 bg-[#16A34A] hover:bg-[#15803d] text-white">
+                    Create Note
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>

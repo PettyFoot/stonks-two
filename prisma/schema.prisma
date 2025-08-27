@@ -93,7 +93,8 @@ model Trade {
   pnl                   Decimal     @default(0) @db.Decimal(10,2) // Realized P&L
   commission            Decimal?    @db.Decimal(10,2) // Commission fees
   fees                  Decimal?    @db.Decimal(10,2) // Other fees
-  notes                 String?     // User notes
+  notes                 String?     // User notes (final saved)
+  notesChanges          String?     // Auto-saved changes (before user confirms)
   tags                  String[]    // User tags
   
   // Metadata
