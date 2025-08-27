@@ -35,12 +35,12 @@ interface AnalyticsTabsSectionProps {
 
 // Placeholder component for tabs not yet implemented
 const PlaceholderTab: React.FC<AnalyticsTabContentProps> = ({  }) => (
-  <Card className="bg-surface border-default">
+  <Card className="bg-theme-surface border-theme-border">
     <CardHeader className="pb-2">
-      <CardTitle className="text-base font-medium text-primary">Coming Soon</CardTitle>
+      <CardTitle className="text-base font-medium text-theme-primary-text">Coming Soon</CardTitle>
     </CardHeader>
     <CardContent className="h-64">
-      <div className="flex items-center justify-center h-full text-muted-foreground">
+      <div className="flex items-center justify-center h-full text-theme-secondary-text">
         This tab will be implemented in the next phase
       </div>
     </CardContent>
@@ -109,9 +109,9 @@ export default function AnalyticsTabsSection({
   // Early return if no data
   if (!data) {
     return (
-      <Card className="bg-surface border-default">
+      <Card className="bg-theme-surface border-theme-border">
         <CardContent className="h-64">
-          <div className="flex items-center justify-center h-full text-muted-foreground">
+          <div className="flex items-center justify-center h-full text-theme-secondary-text">
             No analytics data available
           </div>
         </CardContent>
@@ -124,7 +124,7 @@ export default function AnalyticsTabsSection({
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         {/* Tab Navigation */}
         <div className="flex justify-center">
-          <TabsList className="grid w-fit bg-muted/10 p-1 rounded-lg" style={{ gridTemplateColumns: `repeat(${enabledTabs.length}, 1fr)` }}>
+          <TabsList className="grid w-fit bg-theme-surface/50 p-1 rounded-lg" style={{ gridTemplateColumns: `repeat(${enabledTabs.length}, 1fr)` }}>
           {enabledTabs.map((tabId) => {
             const tabConfig = tabConfigurations[tabId];
             if (!tabConfig) return null;

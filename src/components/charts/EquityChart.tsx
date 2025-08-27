@@ -25,10 +25,10 @@ const EquityChart = React.memo(function EquityChart({
   height = 300,
   showGrid = true,
   showTooltip = true,
-  color = '#16A34A',
+  color = 'var(--theme-green)',
   useConditionalColors = false,
-  positiveColor = '#16A34A',
-  negativeColor = '#DC2626'
+  positiveColor = 'var(--theme-green)',
+  negativeColor = 'var(--theme-red)'
 }: EquityChartProps) {
   // Determine optimal interval based on data range
   const timeInterval = React.useMemo(() => {
@@ -109,7 +109,7 @@ const EquityChart = React.memo(function EquityChart({
             {showGrid && (
               <CartesianGrid 
                 strokeDasharray="3 3" 
-                stroke="#E5E7EB" 
+                stroke="var(--theme-chart-grid)" 
                 horizontal={true}
                 vertical={false}
               />
@@ -118,14 +118,14 @@ const EquityChart = React.memo(function EquityChart({
               dataKey="date"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: '#6B7280' }}
+              tick={{ fontSize: 12, fill: 'var(--theme-secondary-text)' }}
               tickFormatter={formatXAxisTick}
               interval={tickInterval}
             />
             <YAxis 
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: '#6B7280' }}
+              tick={{ fontSize: 12, fill: 'var(--theme-secondary-text)' }}
               tickFormatter={(value) => `$${value}`}
             />
             {showTooltip && (
@@ -133,15 +133,15 @@ const EquityChart = React.memo(function EquityChart({
                 formatter={(value: number) => [formatTooltipValue(value), 'P&L']}
                 labelFormatter={(value) => formatTimeAxis(String(value), 'long')}
                 contentStyle={{
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid #E5E7EB',
+                  backgroundColor: 'var(--theme-chart-tooltip-bg)',
+                  border: '1px solid var(--theme-chart-grid)',
                   borderRadius: '8px',
                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                   fontSize: '12px'
                 }}
               />
             )}
-            <ReferenceLine y={0} stroke="#6B7280" strokeDasharray="2 2" />
+            <ReferenceLine y={0} stroke="var(--theme-secondary-text)" strokeDasharray="2 2" />
             <Line 
               type="monotone" 
               dataKey="value" 

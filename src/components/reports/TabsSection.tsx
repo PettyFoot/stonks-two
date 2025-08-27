@@ -185,47 +185,47 @@ export default function TabsSection({ trades = [] }: TabsSectionProps) {
       {/* Price/Volume Tab - Placeholder for future implementation */}
       <TabsContent value="price-volume" className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="bg-surface border-default">
+          <Card className="bg-theme-surface border-theme-border">
             <CardHeader>
-              <CardTitle className="text-base font-medium text-primary">
+              <CardTitle className="text-base font-medium text-theme-primary-text">
                 PERFORMANCE BY ENTRY PRICE RANGE
               </CardTitle>
             </CardHeader>
             <CardContent className="h-[300px] flex items-center justify-center">
-              <span className="text-muted">Chart coming soon</span>
+              <span className="text-theme-secondary-text">Chart coming soon</span>
             </CardContent>
           </Card>
           
-          <Card className="bg-surface border-default">
+          <Card className="bg-theme-surface border-theme-border">
             <CardHeader>
-              <CardTitle className="text-base font-medium text-primary">
+              <CardTitle className="text-base font-medium text-theme-primary-text">
                 PERFORMANCE BY VOLUME PROFILE
               </CardTitle>
             </CardHeader>
             <CardContent className="h-[300px] flex items-center justify-center">
-              <span className="text-muted">Chart coming soon</span>
+              <span className="text-theme-secondary-text">Chart coming soon</span>
             </CardContent>
           </Card>
           
-          <Card className="bg-surface border-default">
+          <Card className="bg-theme-surface border-theme-border">
             <CardHeader>
-              <CardTitle className="text-base font-medium text-primary">
+              <CardTitle className="text-base font-medium text-theme-primary-text">
                 AVERAGE TRADE SIZE BY PRICE
               </CardTitle>
             </CardHeader>
             <CardContent className="h-[300px] flex items-center justify-center">
-              <span className="text-muted">Chart coming soon</span>
+              <span className="text-theme-secondary-text">Chart coming soon</span>
             </CardContent>
           </Card>
           
-          <Card className="bg-surface border-default">
+          <Card className="bg-theme-surface border-theme-border">
             <CardHeader>
-              <CardTitle className="text-base font-medium text-primary">
+              <CardTitle className="text-base font-medium text-theme-primary-text">
                 WIN RATE BY VOLUME QUINTILE
               </CardTitle>
             </CardHeader>
             <CardContent className="h-[300px] flex items-center justify-center">
-              <span className="text-muted">Chart coming soon</span>
+              <span className="text-theme-secondary-text">Chart coming soon</span>
             </CardContent>
           </Card>
         </div>
@@ -234,47 +234,47 @@ export default function TabsSection({ trades = [] }: TabsSectionProps) {
       {/* Instrument Tab - Placeholder for future implementation */}
       <TabsContent value="instrument" className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="bg-surface border-default">
+          <Card className="bg-theme-surface border-theme-border">
             <CardHeader>
-              <CardTitle className="text-base font-medium text-primary">
+              <CardTitle className="text-base font-medium text-theme-primary-text">
                 PERFORMANCE BY SYMBOL
               </CardTitle>
             </CardHeader>
             <CardContent className="h-[300px] flex items-center justify-center">
-              <span className="text-muted">Chart coming soon</span>
+              <span className="text-theme-secondary-text">Chart coming soon</span>
             </CardContent>
           </Card>
           
-          <Card className="bg-surface border-default">
+          <Card className="bg-theme-surface border-theme-border">
             <CardHeader>
-              <CardTitle className="text-base font-medium text-primary">
+              <CardTitle className="text-base font-medium text-theme-primary-text">
                 TRADE COUNT BY SYMBOL
               </CardTitle>
             </CardHeader>
             <CardContent className="h-[300px] flex items-center justify-center">
-              <span className="text-muted">Chart coming soon</span>
+              <span className="text-theme-secondary-text">Chart coming soon</span>
             </CardContent>
           </Card>
           
-          <Card className="bg-surface border-default">
+          <Card className="bg-theme-surface border-theme-border">
             <CardHeader>
-              <CardTitle className="text-base font-medium text-primary">
+              <CardTitle className="text-base font-medium text-theme-primary-text">
                 WIN RATE BY SYMBOL
               </CardTitle>
             </CardHeader>
             <CardContent className="h-[300px] flex items-center justify-center">
-              <span className="text-muted">Chart coming soon</span>
+              <span className="text-theme-secondary-text">Chart coming soon</span>
             </CardContent>
           </Card>
           
-          <Card className="bg-surface border-default">
+          <Card className="bg-theme-surface border-theme-border">
             <CardHeader>
-              <CardTitle className="text-base font-medium text-primary">
+              <CardTitle className="text-base font-medium text-theme-primary-text">
                 AVERAGE P&L BY SECTOR
               </CardTitle>
             </CardHeader>
             <CardContent className="h-[300px] flex items-center justify-center">
-              <span className="text-muted">Chart coming soon</span>
+              <span className="text-theme-secondary-text">Chart coming soon</span>
             </CardContent>
           </Card>
         </div>

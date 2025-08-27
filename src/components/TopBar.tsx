@@ -3,14 +3,20 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, HelpCircle, User, LogOut } from 'lucide-react';
+import { Edit, HelpCircle, User, LogOut, Palette } from 'lucide-react';
 import { useUser } from '@auth0/nextjs-auth0/client';
+import { useTheme } from '@/contexts/ThemeContext';
+import { Theme } from '@/lib/themes';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
@@ -33,9 +39,9 @@ export default function TopBar({
     <div className="bg-surface border-b border-default px-6 py-4">
       {/* Notification Bar */}
       {notification && (
-        <div className="mb-4 rounded-lg bg-[#16A34A] text-white px-4 py-2 text-sm flex items-center justify-between">
+        <div className="mb-4 rounded-lg bg-positive text-white px-4 py-2 text-sm flex items-center justify-between">
           <span>{notification}</span>
-          <button className="text-white hover:text-gray-200">
+          <button className="text-white hover:text-secondary">
             <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
@@ -55,7 +61,7 @@ export default function TopBar({
               </Button>
             )}
             {subtitle && (
-              <Badge variant="secondary" className="self-start sm:self-auto sm:ml-2 bg-[#16A34A] text-white hover:bg-[#15803d]">
+              <Badge variant="secondary" className="self-start sm:self-auto sm:ml-2 bg-positive text-white hover:bg-positive">
                 {subtitle}
               </Badge>
             )}
@@ -80,16 +86,36 @@ export default function TopBar({
 // User menu component
 function UserMenu() {
   const { user, isLoading } = useUser();
+  const { theme: currentTheme, setTheme, availableThemes } = useTheme();
 
   if (isLoading) {
     return (
-      <div className="h-8 w-8 rounded-full bg-gray-200 animate-pulse" />
+      <div className="h-8 w-8 rounded-full bg-primary animate-pulse" />
     );
   }
 
   if (!user) {
     return null;
   }
+
+  const getThemePreview = (theme: Theme) => {
+    return (
+      <div className="flex space-x-1">
+        <div 
+          className="w-3 h-3 rounded-full border border-default/20"
+          style={{ backgroundColor: theme.colors.green }}
+        />
+        <div 
+          className="w-3 h-3 rounded-full border border-default/20"
+          style={{ backgroundColor: theme.colors.red }}
+        />
+        <div 
+          className="w-3 h-3 rounded-full border border-default/20"
+          style={{ backgroundColor: theme.colors.primary }}
+        />
+      </div>
+    );
+  };
 
   return (
     <DropdownMenu>
@@ -108,11 +134,47 @@ function UserMenu() {
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 bg-white border border-gray-200">
+      <DropdownMenuContent align="end" className="w-56 bg-surface border border-default">
         <div className="px-2 py-1.5">
           <p className="text-sm font-medium">{user.name || 'User'}</p>
           <p className="text-xs text-muted-foreground">{user.email}</p>
         </div>
+        
+        <DropdownMenuSeparator />
+        
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger className="flex items-center">
+            <Palette className="h-4 w-4 mr-2" />
+            <span>Theme</span>
+            <div className="ml-auto">
+              {getThemePreview(currentTheme)}
+            </div>
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent className="w-48 bg-surface border border-default">
+            {availableThemes.map((theme) => (
+              <DropdownMenuItem
+                key={theme.name}
+                onClick={() => setTheme(theme)}
+                className={`flex items-center justify-between ${
+                  currentTheme.name === theme.name 
+                    ? 'bg-positive/10 text-positive' 
+                    : 'hover:bg-primary/5'
+                }`}
+              >
+                <div className="flex items-center">
+                  <span className="text-sm">{theme.displayName}</span>
+                  {currentTheme.name === theme.name && (
+                    <div className="ml-2 w-2 h-2 rounded-full bg-positive" />
+                  )}
+                </div>
+                {getThemePreview(theme)}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+        
+        <DropdownMenuSeparator />
+        
         <DropdownMenuItem asChild>
           <Link href="/api/auth/logout" className="flex items-center">
             <LogOut className="h-4 w-4 mr-2" />

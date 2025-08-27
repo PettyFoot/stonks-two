@@ -25,7 +25,7 @@ const CustomBarChart = React.memo(function CustomBarChart({
   height = 300,
   showGrid = true,
   showTooltip = true,
-  color = '#16A34A',
+  color = 'var(--theme-green)',
   dataKey = 'value',
   chartType = 'currency',
   useConditionalColors = false
@@ -128,7 +128,7 @@ const CustomBarChart = React.memo(function CustomBarChart({
             {showGrid && (
               <CartesianGrid 
                 strokeDasharray="3 3" 
-                stroke="#E5E7EB" 
+                stroke="var(--theme-chart-grid)" 
                 horizontal={true}
                 vertical={false}
               />
@@ -137,14 +137,14 @@ const CustomBarChart = React.memo(function CustomBarChart({
               dataKey="date"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: '#6B7280' }}
+              tick={{ fontSize: 12, fill: 'var(--theme-secondary-text)' }}
               tickFormatter={formatXAxisTick}
               interval={tickInterval}
             />
             <YAxis 
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: '#6B7280' }}
+              tick={{ fontSize: 12, fill: 'var(--theme-secondary-text)' }}
               tickFormatter={(value) => formatter.formatAxisValue(value)}
             />
             {showTooltip && (
@@ -165,8 +165,8 @@ const CustomBarChart = React.memo(function CustomBarChart({
                   return value;
                 }}
                 contentStyle={{
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid #E5E7EB',
+                  backgroundColor: 'var(--theme-chart-tooltip-bg)',
+                  border: '1px solid var(--theme-chart-grid)',
                   borderRadius: '8px',
                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                   fontSize: '12px'
@@ -181,7 +181,7 @@ const CustomBarChart = React.memo(function CustomBarChart({
               {useConditionalColors && data.map((entry, index) => (
                 <Cell 
                   key={`cell-${index}`} 
-                  fill={(entry as unknown as Record<string, number>)[dataKey] >= 0 ? '#16A34A' : '#DC2626'} 
+                  fill={(entry as unknown as Record<string, number>)[dataKey] >= 0 ? 'var(--theme-green)' : 'var(--theme-red)'} 
                 />
               ))}
             </Bar>

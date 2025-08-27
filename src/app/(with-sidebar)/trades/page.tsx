@@ -67,7 +67,7 @@ export default function Trades() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563EB]"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--theme-tertiary)]"></div>
       </div>
     );
   }
@@ -91,7 +91,6 @@ export default function Trades() {
       <FilterPanel 
         showAdvanced={true}
         demo={false}
-        showTimeRangeTabs={true}
       />
 
       <div className="flex-1 overflow-auto p-6">
@@ -106,7 +105,7 @@ export default function Trades() {
                 onClick={calculateTrades}
                 disabled={calculating}
                 size="sm"
-                className="bg-[#16A34A] hover:bg-[#15803d] text-white"
+                className="bg-[var(--theme-green)] hover:bg-[var(--theme-green)]/80 text-white"
               >
                 <RefreshCw className={`mr-2 h-4 w-4 ${calculating ? 'animate-spin' : ''}`} />
                 {calculating ? 'Calculating...' : 'Calculate Trades'}
@@ -180,7 +179,7 @@ export default function Trades() {
           </div>
           <div className="bg-surface border border-default rounded-lg p-4">
             <div className="text-sm text-muted mb-1">Win Rate</div>
-            <div className="text-2xl font-bold text-[#16A34A]">
+            <div className="text-2xl font-bold text-[var(--theme-green)]">
               {filteredTrades.length > 0 
                 ? ((filteredTrades.filter(t => t.pnl > 0).length / filteredTrades.length) * 100).toFixed(1)
                 : '0'
@@ -196,7 +195,7 @@ export default function Trades() {
           <div className="bg-surface border border-default rounded-lg p-4">
             <div className="text-sm text-muted mb-1">Total P&L</div>
             <div className={`text-2xl font-bold ${
-              (tradesData?.totalPnl || 0) >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'
+              (tradesData?.totalPnl || 0) >= 0 ? 'text-[var(--theme-green)]' : 'text-[var(--theme-red)]'
             }`}>
               ${(tradesData?.totalPnl || 0).toFixed(2)}
             </div>

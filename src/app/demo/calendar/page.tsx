@@ -149,7 +149,7 @@ export default function DemoCalendar() {
         <div className="grid grid-cols-4 gap-4">
           <Card className="bg-surface border-default">
             <CardContent className="p-4">
-              <div className="text-2xl font-bold text-[#16A34A] mb-1">$519.61</div>
+              <div className="text-2xl font-bold text-[var(--theme-green)] mb-1">$519.61</div>
               <div className="text-sm text-muted">Total P&L This Month</div>
             </CardContent>
           </Card>
@@ -161,7 +161,7 @@ export default function DemoCalendar() {
           </Card>
           <Card className="bg-surface border-default">
             <CardContent className="p-4">
-              <div className="text-2xl font-bold text-[#16A34A] mb-1">58.8%</div>
+              <div className="text-2xl font-bold text-[var(--theme-green)] mb-1">58.8%</div>
               <div className="text-sm text-muted">Win Rate</div>
             </CardContent>
           </Card>

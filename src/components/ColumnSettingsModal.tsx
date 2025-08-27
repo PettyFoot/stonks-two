@@ -159,13 +159,13 @@ export default function ColumnSettingsModal({
         
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563EB]"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-theme-tertiary"></div>
           </div>
         ) : (
           <div className="space-y-4">
             {/* Header with controls */}
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted">
+              <span className="text-theme-secondary-text">
                 {visibleCount} of {selectedColumns.length} columns visible
               </span>
               <div className="flex gap-2">
@@ -202,7 +202,7 @@ export default function ColumnSettingsModal({
               {selectedColumns.map((column) => (
                 <div
                   key={column.id}
-                  className="flex items-center space-x-3 p-2 hover:bg-muted/50 rounded-md"
+                  className="flex items-center space-x-3 p-2 hover:bg-theme-surface/50 rounded-md"
                 >
                   <Checkbox
                     checked={column.visible}
@@ -211,7 +211,7 @@ export default function ColumnSettingsModal({
                   <div className="flex-1">
                     <span className="text-sm font-medium">{column.label}</span>
                     {column.sortable && (
-                      <span className="ml-2 text-xs text-muted">(sortable)</span>
+                      <span className="ml-2 text-xs text-theme-secondary-text">(sortable)</span>
                     )}
                   </div>
                 </div>
@@ -220,8 +220,8 @@ export default function ColumnSettingsModal({
 
             {/* Warning for no columns */}
             {noneSelected && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-                <p className="text-sm text-yellow-800">
+              <div className="bg-theme-warning/10 border border-theme-warning/30 rounded-md p-3">
+                <p className="text-sm text-theme-warning">
                   ⚠️ At least one column should be visible for the table to display properly.
                 </p>
               </div>
@@ -239,7 +239,7 @@ export default function ColumnSettingsModal({
               <Button
                 onClick={handleSave}
                 disabled={noneSelected}
-                className="bg-[#16A34A] hover:bg-[#15803d] text-white"
+                className="bg-theme-green hover:bg-theme-green/90 text-white"
                 size="sm"
               >
                 Apply Changes

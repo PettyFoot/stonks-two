@@ -150,7 +150,7 @@ export default function ImportHistoryPage() {
   if (isLoading || loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#2563EB]"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[var(--theme-tertiary)]"></div>
       </div>
     );
   }

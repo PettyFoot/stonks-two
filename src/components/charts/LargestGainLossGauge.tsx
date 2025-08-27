@@ -30,12 +30,12 @@ export default function LargestGainLossGauge({
     {
       name: 'gain',
       value: gainValue,
-      fill: '#16A34A'
+      fill: 'var(--theme-green)'
     },
     {
       name: 'loss',
       value: lossValue,
-      fill: '#DC2626'
+      fill: 'var(--theme-red)'
     }
   ];
   
@@ -45,13 +45,13 @@ export default function LargestGainLossGauge({
       const data = payload[0];
       if (data.payload.name === 'gain') {
         return (
-          <div className="bg-gray-900 text-white text-xs rounded px-2 py-1 shadow-lg">
+          <div className="text-xs rounded px-2 py-1 shadow-lg" style={{backgroundColor: 'var(--theme-chart-tooltip-bg)', color: 'var(--theme-primary-text)'}}>
             Gain: {formatCurrency(largestGain)}
           </div>
         );
       } else if (data.payload.name === 'loss') {
         return (
-          <div className="bg-gray-900 text-white text-xs rounded px-2 py-1 shadow-lg">
+          <div className="text-xs rounded px-2 py-1 shadow-lg" style={{backgroundColor: 'var(--theme-chart-tooltip-bg)', color: 'var(--theme-primary-text)'}}>
             Loss: {formatCurrency(largestLoss)}
           </div>
         );
@@ -93,10 +93,10 @@ export default function LargestGainLossGauge({
           
           {/* Values display */}
           <div className="flex justify-between w-full text-xs px-4">
-            <div className="text-center text-[#16A34A] font-medium">
+            <div className="text-center font-medium" style={{color: 'var(--theme-green)'}}>
               {formatCurrency(largestGain)}
             </div>
-            <div className="text-center text-[#DC2626] font-medium">
+            <div className="text-center font-medium" style={{color: 'var(--theme-red)'}}>
               {formatCurrency(largestLoss)}
             </div>
           </div>

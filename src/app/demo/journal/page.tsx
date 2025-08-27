@@ -46,7 +46,7 @@ export default function DemoJournal() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-primary">Trading Journal</h2>
-          <Button className="bg-[#16A34A] hover:bg-[#15803d] text-white">
+          <Button className="bg-[var(--theme-green)] hover:bg-[var(--theme-green)/80] text-white">
             <Plus className="h-4 w-4 mr-2" />
             New Entry
           </Button>

@@ -31,9 +31,9 @@ export default function GaugeChart({
   const getColor = () => {
     if (color) return color;
     if (suffix === '%') {
-      return value >= 50 ? '#16A34A' : '#DC2626';
+      return value >= 50 ? 'var(--theme-green)' : 'var(--theme-red)';
     }
-    return value >= 1 ? '#16A34A' : '#DC2626';
+    return value >= 1 ? 'var(--theme-green)' : 'var(--theme-red)';
   };
   
   const gaugeColor = getColor();
@@ -48,7 +48,7 @@ export default function GaugeChart({
     {
       name: 'remaining',
       value: 100 - percentage,
-      fill: '#374151'
+      fill: 'var(--theme-chart-grid)'
     }
   ];
   
@@ -59,7 +59,7 @@ export default function GaugeChart({
       // Only show tooltip for the value portion (not the remaining/background)
       if (data.payload.name === 'value') {
         return (
-          <div className="bg-gray-900 text-white text-xs rounded px-2 py-1 shadow-lg">
+          <div className="text-xs rounded px-2 py-1 shadow-lg" style={{backgroundColor: 'var(--theme-chart-tooltip-bg)', color: 'var(--theme-primary-text)'}}>
             {suffix === '%' ? value.toFixed(1) : value.toFixed(2)}{suffix}
           </div>
         );

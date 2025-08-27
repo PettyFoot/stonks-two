@@ -262,13 +262,13 @@ export default function EnhancedFileUpload({
   return (
     <div className="space-y-6">
       {/* Instructions */}
-      <Card className="bg-gradient-to-r from-[#F0F9FF] to-[#E0F2FE] border-[#BAE6FD]">
+      <Card className="bg-gradient-to-r from-theme-tertiary/10 to-theme-tertiary/5 border-theme-tertiary/30">
         <CardContent className="p-6">
           <div className="flex items-start space-x-4">
-            <Info className="h-6 w-6 text-[#0369A1] mt-1 flex-shrink-0" />
+            <Info className="h-6 w-6 text-theme-tertiary mt-1 flex-shrink-0" />
             <div>
-              <h3 className="font-semibold text-[#0369A1] mb-2">Trade Import</h3>
-              <ul className="text-sm text-[#0369A1] space-y-1">
+              <h3 className="font-semibold text-theme-tertiary mb-2">Trade Import</h3>
+              <ul className="text-sm text-theme-tertiary space-y-1">
                 <li>• <strong>Intelligent Detection:</strong> Automatically recognizes broker formats</li>
                 <li>• <strong>Standard Format:</strong> Use our template for instant processing</li>
                 <li>• <strong>Custom Format:</strong> AI will help map unknown columns automatically</li>
@@ -280,7 +280,7 @@ export default function EnhancedFileUpload({
                   variant="outline" 
                   size="sm" 
                   onClick={downloadTemplate}
-                  className="text-[#0369A1] border-[#0369A1] hover:bg-[#0369A1] hover:text-white"
+                  className="text-theme-tertiary border-theme-tertiary hover:bg-theme-tertiary hover:text-white"
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Download Standard Template
@@ -293,37 +293,37 @@ export default function EnhancedFileUpload({
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* Upload Section */}
-        <Card className="bg-surface border-default">
+        <Card className="bg-theme-surface border-theme-border">
           <CardHeader>
-            <CardTitle className="text-base font-medium text-primary">
+            <CardTitle className="text-base font-medium text-theme-primary-text">
               Upload CSV File
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Format Detection Status */}
             {state.validationResult?.detectedFormatInfo && (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="p-4 bg-theme-tertiary/10 border border-theme-tertiary/30 rounded-lg">
                 <div className="flex items-center space-x-2 mb-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <h4 className="font-medium text-gray-900">Format Detected</h4>
+                  <CheckCircle className="h-5 w-5 text-theme-green" />
+                  <h4 className="font-medium text-theme-primary-text">Format Detected</h4>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-black">
+                    <span className="text-sm font-medium text-theme-primary-text">
                       {state.validationResult.detectedFormatInfo.name}
                     </span>
                     <Badge 
                       variant={state.validationResult.detectedFormatInfo.confidence >= 0.8 ? "default" : "secondary"}
-                      className={state.validationResult.detectedFormatInfo.confidence >= 0.8 ? "bg-green-600" : "bg-gray-500"}
+                      className={state.validationResult.detectedFormatInfo.confidence >= 0.8 ? "bg-theme-green" : "bg-theme-surface"}
                     >
                       {Math.round(state.validationResult.detectedFormatInfo.confidence * 100)}% match
                     </Badge>
                   </div>
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-theme-secondary-text">
                     {state.validationResult.detectedFormatInfo.description}
                   </p>
                   {state.validationResult.detectedFormatInfo.brokerName && (
-                    <p className="text-xs text-black font-medium">
+                    <p className="text-xs text-theme-primary-text font-medium">
                       Broker: {state.validationResult.detectedFormatInfo.brokerName}
                     </p>
                   )}
@@ -333,7 +333,7 @@ export default function EnhancedFileUpload({
 
             {/* Account Tags Input */}
             <div>
-              <label className="block text-sm font-medium text-primary mb-2">
+              <label className="block text-sm font-medium text-theme-primary-text mb-2">
                 Account Tags (Optional)
               </label>
               <input
@@ -342,25 +342,25 @@ export default function EnhancedFileUpload({
                 onChange={(e) => setCustomAccountTags(e.target.value)}
                 placeholder="Enter tags separated by commas (e.g., main-account, live-trading)"
                 disabled={state.isUploading}
-                className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg focus:ring-2 focus:ring-[#2563EB] focus:border-transparent disabled:opacity-50"
+                className="w-full px-3 py-2 border border-theme-border rounded-lg focus:ring-2 focus:ring-theme-tertiary focus:border-transparent disabled:opacity-50 bg-white text-theme-primary-text"
               />
-              <p className="text-xs text-muted mt-1">
+              <p className="text-xs text-theme-secondary-text mt-1">
                 Tags will be applied to all trades in this import
               </p>
             </div>
 
             {/* File Drop Zone */}
             <div>
-              <label className="block text-sm font-medium text-primary mb-2">
+              <label className="block text-sm font-medium text-theme-primary-text mb-2">
                 CSV File
               </label>
               <div
                 className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
                   state.isUploading
-                    ? 'border-[#E5E7EB] bg-[#F9FAFB] opacity-50'
+                    ? 'border-theme-border bg-theme-surface opacity-50'
                     : state.isDragOver 
-                      ? 'border-[#2563EB] bg-[#F0F9FF]' 
-                      : 'border-[#E5E7EB] hover:border-[#2563EB]'
+                      ? 'border-theme-tertiary bg-theme-tertiary/10' 
+                      : 'border-theme-border hover:border-theme-tertiary'
                 }`}
                 onDrop={state.isUploading ? undefined : handleDrop}
                 onDragOver={state.isUploading ? undefined : handleDragOver}
@@ -368,9 +368,9 @@ export default function EnhancedFileUpload({
               >
                 {state.isUploading ? (
                   <div className="space-y-4">
-                    <RefreshCw className="h-12 w-12 text-[#2563EB] mx-auto animate-spin" />
+                    <RefreshCw className="h-12 w-12 text-theme-tertiary mx-auto animate-spin" />
                     <div>
-                      <p className="text-sm font-medium text-primary">
+                      <p className="text-sm font-medium text-theme-primary-text">
                         {state.uploadProgress < 50 ? 'Validating...' : 'Processing...'}
                       </p>
                       <Progress value={state.uploadProgress} className="w-full mt-2" />
@@ -379,10 +379,10 @@ export default function EnhancedFileUpload({
                 ) : state.file ? (
                   <div className="space-y-2">
                     <div className="flex items-center justify-center space-x-2">
-                      <CheckCircle className="h-4 w-4 text-[#16A34A]" />
-                      <p className="text-sm font-medium text-primary">{state.file.name}</p>
+                      <CheckCircle className="h-4 w-4 text-theme-green" />
+                      <p className="text-sm font-medium text-theme-primary-text">{state.file.name}</p>
                     </div>
-                    <p className="text-xs text-muted">
+                    <p className="text-xs text-theme-secondary-text">
                       {(state.file.size / 1024).toFixed(1)} KB
                     </p>
                     {state.validationResult && (
@@ -392,7 +392,7 @@ export default function EnhancedFileUpload({
                            (state.validationResult.isStandardFormat ? "Standard Format" : "Custom Format")}
                         </Badge>
                         {state.validationResult.detectedFormatInfo && (
-                          <p className="text-xs text-[#16A34A]">
+                          <p className="text-xs text-theme-green">
                             ✓ {state.validationResult.detectedFormatInfo.name}
                           </p>
                         )}
@@ -409,8 +409,8 @@ export default function EnhancedFileUpload({
                   </div>
                 ) : (
                   <div>
-                    <Upload className="h-12 w-12 text-[#6B7280] mx-auto mb-4" />
-                    <p className="text-sm text-primary mb-2">
+                    <Upload className="h-12 w-12 text-theme-secondary-text mx-auto mb-4" />
+                    <p className="text-sm text-theme-primary-text mb-2">
                       Drag and drop your CSV file here, or click to browse
                     </p>
                     <input
@@ -436,7 +436,7 @@ export default function EnhancedFileUpload({
             <Button 
               onClick={handleUpload}
               disabled={!state.file || state.isUploading || !state.validationResult?.isValid}
-              className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white"
+              className="w-full bg-theme-green hover:bg-theme-green/90 text-white"
             >
               {state.isUploading ? (
                 <>
@@ -454,21 +454,21 @@ export default function EnhancedFileUpload({
         </Card>
 
         {/* Status Section */}
-        <Card className="bg-surface border-default">
+        <Card className="bg-theme-surface border-theme-border">
           <CardHeader>
-            <CardTitle className="text-base font-medium text-primary">
+            <CardTitle className="text-base font-medium text-theme-primary-text">
               Import Status
             </CardTitle>
           </CardHeader>
           <CardContent>
             {/* Error/Success Messages Area - Primary Location */}
             {state.error && (
-              <div className="p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-lg">
+              <div className="p-4 bg-theme-red/10 border border-theme-red/30 rounded-lg">
                 <div className="flex items-start space-x-2">
-                  <XCircle className="h-5 w-5 text-[#DC2626] flex-shrink-0 mt-0.5" />
+                  <XCircle className="h-5 w-5 text-theme-red flex-shrink-0 mt-0.5" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-[#DC2626]">Error</p>
-                    <p className="text-sm text-[#DC2626] mt-1">{state.error}</p>
+                    <p className="text-sm font-medium text-theme-red">Error</p>
+                    <p className="text-sm text-theme-red mt-1">{state.error}</p>
                   </div>
                 </div>
               </div>
@@ -476,12 +476,12 @@ export default function EnhancedFileUpload({
 
             {/* Validation Errors */}
             {state.validationResult?.errors && state.validationResult.errors.length > 0 && (
-              <div className="p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-lg max-h-48 overflow-y-auto">
+              <div className="p-4 bg-theme-red/10 border border-theme-red/30 rounded-lg max-h-48 overflow-y-auto">
                 <div className="flex items-start space-x-2">
-                  <XCircle className="h-5 w-5 text-[#DC2626] flex-shrink-0 mt-0.5" />
+                  <XCircle className="h-5 w-5 text-theme-red flex-shrink-0 mt-0.5" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-[#DC2626] mb-2">Validation Errors:</p>
-                    <ul className="text-xs text-[#DC2626] space-y-1">
+                    <p className="text-sm font-medium text-theme-red mb-2">Validation Errors:</p>
+                    <ul className="text-xs text-theme-red space-y-1">
                       {state.validationResult.errors.slice(0, 10).map((error, index) => (
                         <li key={index}>• {error}</li>
                       ))}
@@ -497,10 +497,10 @@ export default function EnhancedFileUpload({
             {state.validationResult && !state.error && (
               <div className="space-y-4">
                 <div className="flex items-center space-x-2">
-                  <CheckCircle className="h-5 w-5 text-[#16A34A]" />
+                  <CheckCircle className="h-5 w-5 text-theme-green" />
                   <Badge 
                     variant="default" 
-                    className={state.validationResult.errors?.length > 0 ? "bg-[#DC2626]" : "bg-[#16A34A]"}
+                    className={state.validationResult.errors?.length > 0 ? "bg-theme-red" : "bg-theme-green"}
                   >
                     {state.validationResult.errors?.length > 0 ? 'Validation Failed' : 'Validated'}
                   </Badge>
@@ -508,16 +508,16 @@ export default function EnhancedFileUpload({
 
                 <div className="text-sm space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-black">Format:</span>
-                    <span className={state.validationResult.detectedFormatInfo ? "text-black" : "text-[#F59E0B]"}>
+                    <span className="text-theme-primary-text">Format:</span>
+                    <span className={state.validationResult.detectedFormatInfo ? "text-theme-primary-text" : "text-theme-warning"}>
                       {state.validationResult.detectedFormatInfo?.name || 
                        (state.validationResult.isStandardFormat ? "Standard" : "Custom")}
                     </span>
                   </div>
                   {state.validationResult.detectedFormatInfo?.brokerName && (
                     <div className="flex justify-between">
-                      <span className="text-black">Broker:</span>
-                      <span className="text-black font-medium">
+                      <span className="text-theme-primary-text">Broker:</span>
+                      <span className="text-theme-primary-text font-medium">
                         {state.validationResult.detectedFormatInfo.brokerName}
                       </span>
                     </div>
@@ -533,12 +533,12 @@ export default function EnhancedFileUpload({
                 </div>
 
                 {!state.validationResult.isStandardFormat && !state.validationResult.detectedFormatInfo && (
-                  <div className="p-3 bg-[#FEF3C7] border border-[#FDE68A] rounded-lg">
+                  <div className="p-3 bg-theme-warning/10 border border-theme-warning/30 rounded-lg">
                     <div className="flex items-center space-x-2">
-                      <AlertTriangle className="h-4 w-4 text-[#F59E0B]" />
-                      <p className="text-sm font-medium text-[#F59E0B]">Unknown Format Detected</p>
+                      <AlertTriangle className="h-4 w-4 text-theme-warning" />
+                      <p className="text-sm font-medium text-theme-warning">Unknown Format Detected</p>
                     </div>
-                    <p className="text-xs text-[#F59E0B] mt-1">
+                    <p className="text-xs text-theme-warning mt-1">
                       AI will attempt to map your columns automatically. You may need to review the mapping.
                     </p>
                   </div>
@@ -550,9 +550,9 @@ export default function EnhancedFileUpload({
               <div className="space-y-4">
                 <div className="flex items-center space-x-2">
                   {state.uploadResult.success ? (
-                    <CheckCircle className="h-5 w-5 text-[#16A34A]" />
+                    <CheckCircle className="h-5 w-5 text-theme-green" />
                   ) : (
-                    <XCircle className="h-5 w-5 text-[#DC2626]" />
+                    <XCircle className="h-5 w-5 text-theme-red" />
                   )}
                   <Badge variant={state.uploadResult.success ? "default" : "destructive"}>
                     {state.uploadResult.success ? 'Success' : 'Needs Review'}
@@ -560,36 +560,36 @@ export default function EnhancedFileUpload({
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-3 bg-[#F9FAFB] rounded">
-                    <div className="text-2xl font-bold text-[#16A34A]">
+                  <div className="text-center p-3 bg-theme-surface rounded">
+                    <div className="text-2xl font-bold text-theme-green">
                       {String(state.uploadResult.successCount || 0)}
                     </div>
-                    <div className="text-xs text-muted">Imported</div>
+                    <div className="text-xs text-theme-secondary-text">Imported</div>
                   </div>
-                  <div className="text-center p-3 bg-[#F9FAFB] rounded">
-                    <div className="text-2xl font-bold text-[#DC2626]">
+                  <div className="text-center p-3 bg-theme-surface rounded">
+                    <div className="text-2xl font-bold text-theme-red">
                       {String(state.uploadResult.errorCount || 0)}
                     </div>
-                    <div className="text-xs text-muted">Errors</div>
+                    <div className="text-xs text-theme-secondary-text">Errors</div>
                   </div>
                 </div>
 
                 {Boolean(state.uploadResult.requiresUserReview) && (
-                  <div className="p-3 bg-[#FEF3C7] border border-[#FDE68A] rounded-lg">
-                    <p className="text-sm font-medium text-[#F59E0B]">Review Required</p>
-                    <p className="text-xs text-[#F59E0B] mt-1">
+                  <div className="p-3 bg-theme-warning/10 border border-theme-warning/30 rounded-lg">
+                    <p className="text-sm font-medium text-theme-warning">Review Required</p>
+                    <p className="text-xs text-theme-warning mt-1">
                       Column mapping needs your attention before import can proceed.
                     </p>
                   </div>
                 )}
 
                 {Array.isArray(state.uploadResult.errors) && state.uploadResult.errors.length > 0 && (
-                  <div className="p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-lg max-h-48 overflow-y-auto">
+                  <div className="p-4 bg-theme-red/10 border border-theme-red/30 rounded-lg max-h-48 overflow-y-auto">
                     <div className="flex items-start space-x-2 mb-2">
-                      <XCircle className="h-5 w-5 text-[#DC2626] flex-shrink-0 mt-0.5" />
+                      <XCircle className="h-5 w-5 text-theme-red flex-shrink-0 mt-0.5" />
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-[#DC2626] mb-2">Import Errors:</p>
-                        <ul className="text-xs text-[#DC2626] space-y-1">
+                        <p className="text-sm font-medium text-theme-red mb-2">Import Errors:</p>
+                        <ul className="text-xs text-theme-red space-y-1">
                           {state.uploadResult.errors.slice(0, 10).map((error: string, index: number) => (
                             <li key={index}>• {error}</li>
                           ))}
@@ -603,12 +603,12 @@ export default function EnhancedFileUpload({
                 )}
 
                 {Boolean(state.uploadResult.success && state.uploadResult.message) && (
-                  <div className="p-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-lg">
+                  <div className="p-4 bg-theme-green/10 border border-theme-green/30 rounded-lg">
                     <div className="flex items-start space-x-2">
-                      <CheckCircle className="h-5 w-5 text-[#16A34A] flex-shrink-0 mt-0.5" />
+                      <CheckCircle className="h-5 w-5 text-theme-green flex-shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-sm font-medium text-[#16A34A] mb-1">Success!</p>
-                        <p className="text-xs text-[#16A34A]">{String(state.uploadResult.message)}</p>
+                        <p className="text-sm font-medium text-theme-green mb-1">Success!</p>
+                        <p className="text-xs text-theme-green">{String(state.uploadResult.message)}</p>
                       </div>
                     </div>
                   </div>
@@ -618,8 +618,8 @@ export default function EnhancedFileUpload({
 
             {!state.file && !state.error && !state.isUploading && (
               <div className="text-center py-8">
-                <FileText className="h-12 w-12 text-[#6B7280] mx-auto mb-4" />
-                <p className="text-sm text-muted">
+                <FileText className="h-12 w-12 text-theme-secondary-text mx-auto mb-4" />
+                <p className="text-sm text-theme-secondary-text">
                   Select a CSV file to begin validation and import
                 </p>
               </div>

@@ -53,7 +53,7 @@ export default function DemoSearch() {
                 className="pl-10"
               />
             </div>
-            <Button onClick={handleSearch} className="bg-[#16A34A] hover:bg-[#15803d] text-white">
+            <Button onClick={handleSearch} className="bg-[var(--theme-green)] hover:bg-[var(--theme-green)]/80 text-white">
               <SearchIcon className="h-4 w-4 mr-2" />
               Search
             </Button>
@@ -134,7 +134,7 @@ export default function DemoSearch() {
                       <div className="flex items-center gap-4">
                         <div className="text-right">
                           <div className={`text-lg font-semibold ${
-                            trade.pnl >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'
+                            trade.pnl >= 0 ? 'text-[var(--theme-green)]' : 'text-[var(--theme-red)]'
                           }`}>
                             ${trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)}
                           </div>

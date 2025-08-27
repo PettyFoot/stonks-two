@@ -217,7 +217,7 @@ export default function CalendarContent() {
         showTimeRangeFilters={false}
       />
       
-      <FilterPanel showTimeRangeTabs={false} />
+      <FilterPanel />
       
       <div className="flex-1 overflow-auto p-6">
         {/* Tab Navigation */}
@@ -243,7 +243,7 @@ export default function CalendarContent() {
             {/* Calendar Header */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-4">
-                <h1 className="text-2xl font-bold text-primary">
+                <h1 className="text-2xl font-bold text-theme-primary-text">
                   {format(currentDate, 'MMMM yyyy')}
                 </h1>
                 <div className="flex items-center space-x-2">
@@ -268,7 +268,7 @@ export default function CalendarContent() {
             </div>
 
         {/* Calendar Grid */}
-        <Card className="bg-surface border-default">
+        <Card className="bg-theme-surface border-theme-border">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Calendar className="h-5 w-5 mr-2" />
@@ -279,7 +279,7 @@ export default function CalendarContent() {
             {/* Days of Week Header */}
             <div className="grid grid-cols-7 gap-1 mb-2">
               {daysOfWeek.map(day => (
-                <div key={day} className="p-2 text-center text-sm font-medium text-muted-foreground">
+                <div key={day} className="p-2 text-center text-sm font-medium text-theme-secondary-text">
                   {day}
                 </div>
               ))}
@@ -293,31 +293,31 @@ export default function CalendarContent() {
                       onClick={() => day && handleDayClick(day.dayStr)}
                       disabled={!day}
                       className={`
-                        min-h-[100px] border border-default rounded-lg p-2 text-left transition-colors
-                        ${!day ? 'bg-muted/20 cursor-default' : 
+                        min-h-[100px] border border-theme-border rounded-lg p-2 text-left transition-colors
+                        ${!day ? 'bg-theme-surface/20 cursor-default' : 
                           day && dayHasTradeData(day.dayStr) ? 
-                            'bg-background hover:bg-muted/50 cursor-pointer' : 
-                            'bg-background hover:bg-muted/30 cursor-default'
+                            'bg-white hover:bg-theme-surface/50 cursor-pointer' : 
+                            'bg-white hover:bg-theme-surface/30 cursor-default'
                         }
-                        ${selectedDay === day?.dayStr ? 'ring-2 ring-primary' : ''}
-                        focus:outline-none focus:ring-2 focus:ring-primary
+                        ${selectedDay === day?.dayStr ? 'ring-2 ring-theme-primary' : ''}
+                        focus:outline-none focus:ring-2 focus:ring-theme-primary
                       `}
                       aria-label={day ? `${day.date} - ${day.tradeCount || 0} trades${dayHasTradeData(day.dayStr) ? ' (clickable)' : ''}` : undefined}
                     >
                       {day && (
                         <>
-                          <div className="text-sm font-medium text-primary mb-1">{day.date}</div>
+                          <div className="text-sm font-medium text-theme-primary-text mb-1">{day.date}</div>
                           {day.pnl !== undefined && (
                             <div className="space-y-1">
-                              <div className={`text-xs font-medium ${Number(day.pnl) >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
+                              <div className={`text-xs font-medium ${Number(day.pnl) >= 0 ? 'text-theme-green' : 'text-theme-red'}`}>
                                 ${Number(day.pnl) >= 0 ? '+' : ''}{Number(day.pnl).toFixed(2)}
                               </div>
                               {(day.tradeCount || 0) > 0 && (
                                 <>
-                                  <div className="text-xs text-muted-foreground">
+                                  <div className="text-xs text-theme-secondary-text">
                                     {day.tradeCount || 0} trade{(day.tradeCount || 0) !== 1 ? 's' : ''}
                                   </div>
-                                  <div className="text-xs text-muted-foreground">
+                                  <div className="text-xs text-theme-secondary-text">
                                     {day.winRate}% win
                                   </div>
                                 </>
@@ -334,40 +334,40 @@ export default function CalendarContent() {
 
             {/* Summary Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-              <Card className="bg-surface border-default">
+              <Card className="bg-theme-surface border-theme-border">
                 <CardContent className="p-4">
-                  <div className="text-sm text-muted-foreground">Monthly P&L</div>
-                  <div className={`text-xl font-bold ${summaryStats.monthlyPnl >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
+                  <div className="text-sm text-theme-secondary-text">Monthly P&L</div>
+                  <div className={`text-xl font-bold ${summaryStats.monthlyPnl >= 0 ? 'text-theme-green' : 'text-theme-red'}`}>
                     ${summaryStats.monthlyPnl >= 0 ? '+' : ''}{summaryStats.monthlyPnl.toFixed(2)}
                   </div>
                 </CardContent>
               </Card>
               
-              <Card className="bg-surface border-default">
+              <Card className="bg-theme-surface border-theme-border">
                 <CardContent className="p-4">
-                  <div className="text-sm text-muted-foreground">Trading Days</div>
-                  <div className="text-xl font-bold text-primary">{summaryStats.tradingDays}</div>
+                  <div className="text-sm text-theme-secondary-text">Trading Days</div>
+                  <div className="text-xl font-bold text-theme-primary-text">{summaryStats.tradingDays}</div>
                 </CardContent>
               </Card>
               
-              <Card className="bg-surface border-default">
+              <Card className="bg-theme-surface border-theme-border">
                 <CardContent className="p-4">
-                  <div className="text-sm text-muted-foreground">Total Trades</div>
-                  <div className="text-xl font-bold text-primary">{summaryStats.totalTrades}</div>
+                  <div className="text-sm text-theme-secondary-text">Total Trades</div>
+                  <div className="text-xl font-bold text-theme-primary-text">{summaryStats.totalTrades}</div>
                 </CardContent>
               </Card>
               
-              <Card className="bg-surface border-default">
+              <Card className="bg-theme-surface border-theme-border">
                 <CardContent className="p-4">
-                  <div className="text-sm text-muted-foreground">Avg Win Rate</div>
-                  <div className="text-xl font-bold text-primary">{summaryStats.avgWinRate}%</div>
+                  <div className="text-sm text-theme-secondary-text">Avg Win Rate</div>
+                  <div className="text-xl font-bold text-theme-primary-text">{summaryStats.avgWinRate}%</div>
                 </CardContent>
               </Card>
             </div>
 
             {/* Trades Table */}
             <div className="mt-6">
-              <Card className="bg-surface border-default">
+              <Card className="bg-theme-surface border-theme-border">
                 <CardHeader>
                   <CardTitle>
                     {selectedDay 

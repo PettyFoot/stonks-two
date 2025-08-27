@@ -189,7 +189,7 @@ export default function TradesTable({
         return (
           <TableCell className={cn(
             'text-sm font-medium uppercase',
-            trade.side === 'long' ? 'text-green-600' : 'text-red-600'
+            trade.side === 'long' ? 'text-positive' : 'text-negative'
           )}>
             {trade.side || '-'}
           </TableCell>
@@ -253,7 +253,7 @@ export default function TradesTable({
               {trade.tags?.slice(0, 2).map((tag) => (
                 <span 
                   key={tag}
-                  className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-800"
+                  className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-primary text-primary"
                 >
                   {tag}
                 </span>
@@ -281,7 +281,7 @@ export default function TradesTable({
     return (
       <TableRow>
         <TableCell colSpan={visibleColumns.length + (showCheckboxes ? 1 : 0) + (isMobile ? 1 : 2)}>
-          <div className="px-4 py-3 bg-gray-50 rounded-lg">
+          <div className="px-4 py-3 bg-surface rounded-lg">
             <div className="grid grid-cols-2 gap-3 text-sm">
               {hiddenColumns.map(col => (
                 <div key={col.id}>
@@ -374,7 +374,7 @@ export default function TradesTable({
           {sortedTrades.map((trade) => (
             <React.Fragment key={trade.id}>
               <TableRow 
-                className="hover:bg-gray-50 border-b border-default cursor-pointer"
+                className="hover:bg-surface/50 border-b border-default cursor-pointer"
                 onClick={() => {
                   // Call existing onTradeSelect callback if provided
                   onTradeSelect?.(trade);
@@ -439,8 +439,8 @@ export default function TradesTable({
           
           {/* Totals Row - Hidden on mobile */}
           {!isMobile && (
-            <TableRow className="bg-gray-50 border-t-2 border-default font-medium hover:bg-gray-50">
-              {showCheckboxes && <TableCell className="sticky left-0 bg-gray-50 z-10"></TableCell>}
+            <TableRow className="bg-surface border-t-2 border-default font-medium hover:bg-surface">
+              {showCheckboxes && <TableCell className="sticky left-0 bg-surface z-10"></TableCell>}
               {visibleColumns.map((column, index) => {
                 // For the first column, show "TOTAL:"
                 if (index === 0) {
@@ -493,7 +493,7 @@ export default function TradesTable({
       
       {/* Mobile Totals Summary */}
       {isMobile && (
-        <div className="p-4 border-t border-default bg-gray-50">
+        <div className="p-4 border-t border-default bg-surface">
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
               <span className="text-muted">Total Trades:</span>

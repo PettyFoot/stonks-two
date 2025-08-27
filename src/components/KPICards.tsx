@@ -25,8 +25,8 @@ export default function KPICards({ days, className }: KPICardsProps) {
             key={day.date} 
             className={cn(
               'min-h-[120px] cursor-pointer transition-all hover:shadow-md',
-              hasData ? 'bg-surface border-default' : 'bg-gray-50 border-gray-200',
-              isToday && 'ring-2 ring-blue-500'
+              hasData ? 'bg-surface border-default' : 'bg-primary border-primary',
+              isToday && 'ring-2 ring-tertiary'
             )}
           >
             <CardContent className="p-3">

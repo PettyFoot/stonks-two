@@ -2,17 +2,43 @@
 @import "tailwindcss";
 
 :root {
-  /* Trade Voyager Color System */
-  --background: #F6F7FB;
-  --surface: #FFFFFF;
-  --foreground: #0B1220;
-  --muted: #6B7280;
-  --primary: #0f172a;
-  --accent-blue: #2563EB;
-  --accent-purple: #7C3AED;
-  --positive: #16A34A;
-  --negative: #DC2626;
-  --border: #E5E7EB;
+  /* Theme System Variables - Dynamically updated by ThemeProvider */
+  --theme-green: #15A349;
+  --theme-red: #F40000;
+  --theme-primary: #D8D4D5;
+  --theme-secondary: #2B4141;
+  --theme-tertiary: #5688C7;
+  --theme-primary-text: #000000;
+  --theme-secondary-text: #53565c;
+  --theme-background: #F6F7FB;
+  --theme-surface: #FFFFFF;
+  --theme-border: #E5E7EB;
+  --theme-muted: #9CA3AF;
+  --theme-positive: #15A349;
+  --theme-negative: #F40000;
+  --theme-warning: #F59E0B;
+  --theme-info: #5688C7;
+  --theme-chart-grid: #E5E7EB;
+  --theme-chart-axis: #6B7280;
+  --theme-chart-tooltip-bg: #1F2937;
+  --theme-chart-tooltip-text: #FFFFFF;
+  --theme-green-hover: #0F7A35;
+  --theme-red-hover: #C80000;
+  --theme-primary-hover: #C0BCBD;
+  --theme-secondary-hover: #1E2D2D;
+  --theme-tertiary-hover: #4A73A3;
+  
+  /* Legacy variables for backward compatibility - mapped to new theme system */
+  --background: var(--theme-background);
+  --surface: var(--theme-surface);
+  --foreground: var(--theme-primary-text);
+  --muted: var(--theme-muted);
+  --primary: var(--theme-secondary);
+  --accent-blue: var(--theme-tertiary);
+  --accent-purple: var(--theme-tertiary);
+  --positive: var(--theme-positive);
+  --negative: var(--theme-negative);
+  --border: var(--theme-border);
 }
 
 @theme {
@@ -60,19 +86,72 @@ body {
   background: var(--foreground);
 }
 
-/* Utility classes */
+/* Theme-based utility classes */
 .text-positive {
-  color: var(--positive);
+  color: var(--theme-positive);
 }
 
 .text-negative {
-  color: var(--negative);
+  color: var(--theme-negative);
+}
+
+.text-theme-green {
+  color: var(--theme-green);
+}
+
+.text-theme-red {
+  color: var(--theme-red);
+}
+
+.text-primary {
+  color: var(--theme-primary-text);
+}
+
+.text-secondary {
+  color: var(--theme-secondary-text);
 }
 
 .bg-surface {
-  background-color: var(--surface);
+  background-color: var(--theme-surface);
+}
+
+.bg-primary {
+  background-color: var(--theme-primary);
+}
+
+.bg-secondary {
+  background-color: var(--theme-secondary);
+}
+
+.bg-positive {
+  background-color: var(--theme-positive);
+}
+
+.bg-negative {
+  background-color: var(--theme-negative);
 }
 
 .border-default {
-  border-color: var(--border);
+  border-color: var(--theme-border);
+}
+
+.border-primary {
+  border-color: var(--theme-primary);
+}
+
+/* Hover states */
+.hover\:bg-positive:hover {
+  background-color: var(--theme-green-hover);
+}
+
+.hover\:bg-negative:hover {
+  background-color: var(--theme-red-hover);
+}
+
+.hover\:bg-primary:hover {
+  background-color: var(--theme-primary-hover);
+}
+
+.hover\:bg-secondary:hover {
+  background-color: var(--theme-secondary-hover);
 }

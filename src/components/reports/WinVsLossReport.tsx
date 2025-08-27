@@ -123,15 +123,15 @@ export default function WinVsLossReport() {
 
     const getValueColor = (value: number, isWinColumn: boolean) => {
       if (label.includes('Loss') || label.includes('Losing')) {
-        return value < 0 ? 'text-red-500' : 'text-muted-foreground';
+        return value < 0 ? 'text-theme-red' : 'text-theme-secondary-text';
       }
       if (label.includes('Gain') || label.includes('Winning')) {
-        return value > 0 ? 'text-green-500' : 'text-muted-foreground';
+        return value > 0 ? 'text-theme-green' : 'text-theme-secondary-text';
       }
       if (label === 'Total Gain / Loss' || label === 'Average Daily Gain / Loss') {
         return isWinColumn 
-          ? (value > 0 ? 'text-green-500' : 'text-muted-foreground')
-          : (value < 0 ? 'text-red-500' : 'text-muted-foreground');
+          ? (value > 0 ? 'text-theme-green' : 'text-theme-secondary-text')
+          : (value < 0 ? 'text-theme-red' : 'text-theme-secondary-text');
       }
       return 'text-foreground';
     };
@@ -140,14 +140,14 @@ export default function WinVsLossReport() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2 border-b border-border last:border-b-0">
         {/* Winning Days Column */}
         <div className="flex justify-between items-center gap-2 md:border-r md:border-border md:pr-4">
-          <div className="text-sm text-muted-foreground">{label}</div>
+          <div className="text-sm text-theme-secondary-text">{label}</div>
           <div className={`text-sm font-medium ${getValueColor(winValue, true)}`}>
             {formattedWinValue}
           </div>
         </div>
         {/* Losing Days Column */}
         <div className="flex justify-between items-center gap-2 md:pl-4">
-          <div className="text-sm text-muted-foreground">{label}</div>
+          <div className="text-sm text-theme-secondary-text">{label}</div>
           <div className={`text-sm font-medium ${getValueColor(lossValue, false)}`}>
             {formattedLossValue}
           </div>
@@ -171,22 +171,22 @@ export default function WinVsLossReport() {
 
   if (error) {
     return (
-      <Card className="bg-surface border-default">
+      <Card className="bg-theme-surface border-theme-border">
         <CardContent className="flex items-center justify-center h-64">
-          <div className="text-red-500">Error: {error}</div>
+          <div className="text-theme-red">Error: {error}</div>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="bg-surface border-default">
+    <Card className="bg-theme-surface border-theme-border">
       <CardHeader className="pb-4">
-        <CardTitle className="text-lg font-medium text-primary">Win vs Loss Days Analysis</CardTitle>
+        <CardTitle className="text-lg font-medium text-theme-primary-text">Win vs Loss Days Analysis</CardTitle>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pb-2 border-b border-border">
           <div className="text-center">
             <span 
-              className="font-semibold text-lg text-primary"
+              className="font-semibold text-lg text-theme-primary-text"
               aria-label="Winning Days Column"
             >
               Winning Days
@@ -194,7 +194,7 @@ export default function WinVsLossReport() {
           </div>
           <div className="text-center">
             <span 
-              className="font-semibold text-lg text-primary"
+              className="font-semibold text-lg text-theme-primary-text"
               aria-label="Losing Days Column"
             >
               Losing Days
@@ -206,7 +206,7 @@ export default function WinVsLossReport() {
         <div className="space-y-0">
           {/* P&L Metrics Section */}
           <div className="pt-3 pb-2">
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <div className="text-xs font-semibold text-theme-secondary-text uppercase tracking-wider">
               P&L Metrics
             </div>
           </div>
@@ -231,7 +231,7 @@ export default function WinVsLossReport() {
           
           {/* Trading Activity Section */}
           <div className="pt-4 pb-2">
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <div className="text-xs font-semibold text-theme-secondary-text uppercase tracking-wider">
               Trading Activity
             </div>
           </div>
@@ -252,7 +252,7 @@ export default function WinVsLossReport() {
           
           {/* Performance Metrics Section */}
           <div className="pt-4 pb-2">
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <div className="text-xs font-semibold text-theme-secondary-text uppercase tracking-wider">
               Performance Metrics
             </div>
           </div>
@@ -282,7 +282,7 @@ export default function WinVsLossReport() {
           
           {/* Costs Section */}
           <div className="pt-4 pb-2">
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <div className="text-xs font-semibold text-theme-secondary-text uppercase tracking-wider">
               Costs
             </div>
           </div>

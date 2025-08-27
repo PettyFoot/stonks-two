@@ -41,7 +41,6 @@ export default function DemoTrades() {
       <FilterPanel 
         showAdvanced={true}
         demo={true}
-        showTimeRangeTabs={false}
       />
 
       <div className="flex-1 overflow-auto p-6">
@@ -120,7 +119,7 @@ export default function DemoTrades() {
           </div>
           <div className="bg-surface border border-default rounded-lg p-4">
             <div className="text-sm text-muted mb-1">Win Rate</div>
-            <div className="text-2xl font-bold text-[#16A34A]">
+            <div className="text-2xl font-bold text-[var(--theme-green)]">
               {((filteredTrades.filter(t => t.pnl > 0).length / filteredTrades.length) * 100).toFixed(1)}%
             </div>
           </div>
@@ -133,7 +132,7 @@ export default function DemoTrades() {
           <div className="bg-surface border border-default rounded-lg p-4">
             <div className="text-sm text-muted mb-1">Total P&L</div>
             <div className={`text-2xl font-bold ${
-              filteredTrades.reduce((sum, trade) => sum + trade.pnl, 0) >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'
+              filteredTrades.reduce((sum, trade) => sum + trade.pnl, 0) >= 0 ? 'text-[var(--theme-green)]' : 'text-[var(--theme-red)]'
             }`}>
               ${filteredTrades.reduce((sum, trade) => sum + trade.pnl, 0).toFixed(2)}
             </div>

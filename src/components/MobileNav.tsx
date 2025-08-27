@@ -13,6 +13,7 @@ import {
   SheetContent,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import ThemeSelector from '@/components/ThemeSelector';
 import { 
   Home, 
   Calendar, 
@@ -55,7 +56,7 @@ export default function MobileNav() {
           <span className="sr-only">Toggle navigation menu</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[280px] p-0 bg-[#0f172a]">
+      <SheetContent side="left" className="w-[280px] p-0 bg-theme-secondary">
         <div className="flex h-full flex-col">
           {/* Logo and Brand - Now Clickable */}
           <Link href="/dashboard" onClick={() => setOpen(false)}>
@@ -95,7 +96,7 @@ export default function MobileNav() {
             
             {/* Upgrade Button - Moved here after Search (matching desktop) */}
             <div className="pt-4">
-              <Button className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white rounded-lg font-medium">
+              <Button className="w-full bg-theme-green hover:bg-theme-green/90 text-white rounded-lg font-medium">
                 ⚡ Upgrade
               </Button>
             </div>
@@ -104,10 +105,16 @@ export default function MobileNav() {
           {/* Import Trades Button */}
           <div className="px-4 py-4">
             <Link href="/import" onClick={() => setOpen(false)}>
-              <Button className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white rounded-lg font-medium">
+              <Button className="w-full bg-theme-green hover:bg-theme-green/90 text-white rounded-lg font-medium">
                 📊 Import Trades
               </Button>
             </Link>
+          </div>
+
+          {/* Theme Selector */}
+          <div className="px-4 py-2 border-t border-white/10">
+            <div className="text-xs text-gray-400 mb-2">Theme</div>
+            <ThemeSelector />
           </div>
 
           {/* User Profile */}
@@ -116,7 +123,7 @@ export default function MobileNav() {
               <>
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={user.picture || ''} alt={user.name || ''} />
-                  <AvatarFallback className="bg-[#16A34A] text-white">
+                  <AvatarFallback className="bg-theme-green text-white">
                     {user.name?.charAt(0) || user.email?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
@@ -136,7 +143,7 @@ export default function MobileNav() {
               </>
             ) : (
               <>
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-500">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-theme-surface">
                   <User className="h-5 w-5 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">

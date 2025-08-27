@@ -1,17 +1,17 @@
 /* ApexCharts candlestick chart custom styles */
 .apex-tooltip-candlestick {
-  background: rgba(15, 23, 42, 0.95) !important;
-  border: 1px solid #334155 !important;
+  background: var(--theme-chart-tooltip-bg) !important;
+  border: 1px solid var(--theme-chart-grid) !important;
   border-radius: 8px !important;
-  color: #e2e8f0 !important;
+  color: var(--theme-primary-text) !important;
   font-family: inherit !important;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
 }
 
 .apex-tooltip-candlestick .apex-tooltip-title {
   background: transparent !important;
-  border-bottom: 1px solid #334155 !important;
-  color: #e2e8f0 !important;
+  border-bottom: 1px solid var(--theme-chart-grid) !important;
+  color: var(--theme-primary-text) !important;
   font-weight: 600 !important;
   padding: 8px 12px 6px !important;
   margin: 0 !important;
@@ -32,30 +32,30 @@
 
 .apex-tooltip-candlestick .value {
   font-weight: 600 !important;
-  color: #16a34a !important;
+  color: var(--theme-green) !important;
 }
 
 /* Override ApexCharts default toolbar styles */
 .apexcharts-toolbar {
-  background: rgba(15, 23, 42, 0.9) !important;
-  border: 1px solid #334155 !important;
+  background: var(--theme-chart-tooltip-bg) !important;
+  border: 1px solid var(--theme-chart-grid) !important;
   border-radius: 6px !important;
 }
 
 .apexcharts-toolbar svg {
-  fill: #94a3b8 !important;
+  fill: var(--theme-secondary-text) !important;
 }
 
 .apexcharts-toolbar svg:hover {
-  fill: #e2e8f0 !important;
+  fill: var(--theme-primary-text) !important;
 }
 
 /* Annotation label styles */
 .apexcharts-yaxis-annotations .apexcharts-yaxis-annotation-label,
 .apexcharts-point-annotations .apexcharts-point-annotation-label {
-  background: rgba(15, 23, 42, 0.95) !important;
-  border: 1px solid #334155 !important;
-  color: #e2e8f0 !important;
+  background: var(--theme-chart-tooltip-bg) !important;
+  border: 1px solid var(--theme-chart-grid) !important;
+  color: var(--theme-primary-text) !important;
   font-family: inherit !important;
   font-size: 10px !important;
   font-weight: 500 !important;
@@ -73,26 +73,26 @@
 
 /* Grid line customization for dark theme */
 .apexcharts-gridline {
-  stroke: #334155 !important;
+  stroke: var(--theme-chart-grid) !important;
   stroke-opacity: 0.5 !important;
 }
 
 .apexcharts-gridlines-horizontal .apexcharts-gridline,
 .apexcharts-gridlines-vertical .apexcharts-gridline {
-  stroke: #334155 !important;
+  stroke: var(--theme-chart-grid) !important;
 }
 
 /* Axis styles */
 .apexcharts-xaxis-label,
 .apexcharts-yaxis-label {
-  fill: #94a3b8 !important;
+  fill: var(--theme-secondary-text) !important;
   font-family: inherit !important;
   font-size: 11px !important;
 }
 
 /* Legend styles */
 .apexcharts-legend-text {
-  color: #e2e8f0 !important;
+  color: var(--theme-primary-text) !important;
   font-family: inherit !important;
 }
 
@@ -110,13 +110,13 @@
   min-height: 300px;
   background: rgba(15, 23, 42, 0.02);
   border-radius: 8px;
-  border: 1px dashed #334155;
+  border: 1px dashed var(--theme-chart-grid);
 }
 
 .chart-loading-spinner {
   animation: spin 1s linear infinite;
-  border: 2px solid #334155;
-  border-top: 2px solid #16a34a;
+  border: 2px solid var(--theme-chart-grid);
+  border-top: 2px solid var(--theme-green);
   border-radius: 50%;
   width: 24px;
   height: 24px;
@@ -131,7 +131,7 @@
 .chart-error {
   padding: 2rem;
   text-align: center;
-  color: #ef4444;
+  color: var(--theme-red);
   background: rgba(239, 68, 68, 0.05);
   border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: 8px;
@@ -149,13 +149,13 @@
 }
 
 .execution-button.buy {
-  border-color: #16a34a;
-  color: #16a34a;
+  border-color: var(--theme-green);
+  color: var(--theme-green);
 }
 
 .execution-button.sell {
-  border-color: #dc2626;
-  color: #dc2626;
+  border-color: var(--theme-red);
+  color: var(--theme-red);
 }
 
 .execution-button.selected {
@@ -164,9 +164,9 @@
 }
 
 .execution-button.buy.selected {
-  background-color: #16a34a;
+  background-color: var(--theme-green);
 }
 
 .execution-button.sell.selected {
-  background-color: #dc2626;
+  background-color: var(--theme-red);
 }

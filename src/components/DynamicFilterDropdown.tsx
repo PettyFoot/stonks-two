@@ -48,7 +48,9 @@ export default function DynamicFilterDropdown({
     if (multiple && Array.isArray(value)) {
       return value.length > 0 ? `${value.length} selected` : `All ${label}`;
     }
-    return (typeof value === 'string' ? value : '') || `All ${label}`;
+    // For single select, show "All [Label]" when no value is selected or when value is empty
+    const singleValue = typeof value === 'string' ? value : '';
+    return singleValue && singleValue !== '' ? singleValue : `All ${label}`;
   };
 
   const isSelected = (optionValue: string) => {

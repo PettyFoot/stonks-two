@@ -144,7 +144,7 @@ export default function DemoNewTrade() {
               </div>
 
               <div className="flex gap-3 pt-4">
-                <Button className="flex-1 bg-[#16A34A] hover:bg-[#15803d] text-white">
+                <Button className="flex-1 bg-[var(--theme-green)] hover:bg-[var(--theme-green)/80] text-white">
                   Add Trade
                 </Button>
                 <Button variant="outline" className="flex-1">

@@ -50,7 +50,7 @@ export default function Dashboard() {
   if (isLoading || loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#2563EB] mx-auto mb-4"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[var(--theme-tertiary)] mx-auto mb-4"></div>
       </div>
     );
   }
@@ -61,7 +61,7 @@ export default function Dashboard() {
     return (
       <div className="flex flex-col h-full">
         <TopBar title="Dashboard" showTimeRangeFilters={false} />
-        <FilterPanel showTimeRangeTabs={true} />
+        <FilterPanel />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-md">
             {error ? (
@@ -72,7 +72,7 @@ export default function Dashboard() {
                 <p className="text-gray-600 mb-4">{error}</p>
                 <Button 
                   onClick={() => window.location.reload()} 
-                  className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white"
+                  className="bg-[var(--theme-tertiary)] hover:bg-[var(--theme-tertiary)]/80 text-white"
                 >
                   Retry
                 </Button>
@@ -87,7 +87,7 @@ export default function Dashboard() {
                 </p>
                 <div className="space-y-3">
                   <Link href="/import">
-                    <Button className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white">
+                    <Button className="w-full bg-[var(--theme-tertiary)] hover:bg-[var(--theme-tertiary)]/80 text-white">
                       <Upload className="h-4 w-4 mr-2" />
                       Import Trades
                     </Button>
@@ -110,8 +110,8 @@ export default function Dashboard() {
 
   // Prepare pie chart data for winning vs losing trades
   const winLossData = [
-    { name: 'Winning', value: metrics.winningTradesCount, percentage: metrics.winRate, color: '#16A34A' },
-    { name: 'Losing', value: metrics.losingTradesCount, percentage: 100 - metrics.winRate, color: '#DC2626' }
+    { name: 'Winning', value: metrics.winningTradesCount, percentage: metrics.winRate, color: 'var(--theme-green)' },
+    { name: 'Losing', value: metrics.losingTradesCount, percentage: 100 - metrics.winRate, color: 'var(--theme-red)' }
   ];
 
   // Performance by day of week data - ensure all 7 days are included
@@ -143,13 +143,13 @@ export default function Dashboard() {
     { 
       label: 'Winning', 
       value: metrics.avgHoldTimeWinning || 0, 
-      color: '#16A34A',
+      color: 'var(--theme-green)',
       displayValue: formatDuration(metrics.avgHoldTimeWinning || 0)
     },
     { 
       label: 'Losing', 
       value: metrics.avgHoldTimeLosing || 0, 
-      color: '#DC2626',
+      color: 'var(--theme-red)',
       displayValue: formatDuration(metrics.avgHoldTimeLosing || 0)
     }
   ];
@@ -159,13 +159,13 @@ export default function Dashboard() {
     { 
       label: 'Winning', 
       value: metrics.avgWinningTrade || 0, 
-      color: '#16A34A',
+      color: 'var(--theme-green)',
       displayValue: formatCurrency(metrics.avgWinningTrade || 0)
     },
     { 
       label: 'Losing', 
       value: Math.abs(metrics.avgLosingTrade || 0), 
-      color: '#DC2626',
+      color: 'var(--theme-red)',
       displayValue: formatCurrency(metrics.avgLosingTrade || 0)
     }
   ];
@@ -174,7 +174,7 @@ export default function Dashboard() {
   const durationData = metrics.performanceByDuration?.map(item => ({
     label: item.category,
     value: item.pnl,
-    color: item.pnl >= 0 ? '#16A34A' : '#DC2626',
+    color: item.pnl >= 0 ? 'var(--theme-green)' : 'var(--theme-red)',
     displayValue: formatCurrency(item.pnl)
   })) || [];
 
@@ -187,7 +187,7 @@ export default function Dashboard() {
         showTimeRangeFilters={false}
       />
       
-      <FilterPanel showTimeRangeTabs={true} />
+      <FilterPanel />
       
       <div className="flex-1 overflow-auto p-6">
         {/* Daily Calendar Cards */}
@@ -238,7 +238,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="flex items-center justify-center" style={{ height: `calc(100% - 60px)` }}>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-[#16A34A] mb-1">
+                  <div className="text-3xl font-bold text-[var(--theme-green)] mb-1">
                     {metrics.maxConsecutiveWins}
                   </div>
                   <div className="text-xs text-muted">Consecutive Wins</div>
@@ -255,7 +255,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="flex items-center justify-center" style={{ height: `calc(100% - 60px)` }}>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-[#DC2626] mb-1">
+                  <div className="text-3xl font-bold text-[var(--theme-red)] mb-1">
                     {metrics.maxConsecutiveLosses}
                   </div>
                   <div className="text-xs text-muted">Consecutive Losses</div>
@@ -293,13 +293,13 @@ export default function Dashboard() {
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted">Largest Gain</span>
-                    <span className="text-xl font-bold text-[#16A34A]">
+                    <span className="text-xl font-bold text-[var(--theme-green)]">
                       {formatCurrency(metrics.largestGain || 0)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted">Largest Loss</span>
-                    <span className="text-xl font-bold text-[#DC2626]">
+                    <span className="text-xl font-bold text-[var(--theme-red)]">
                       {formatCurrency(metrics.largestLoss || 0)}
                     </span>
                   </div>

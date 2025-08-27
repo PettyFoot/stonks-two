@@ -12,8 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 export default function DemoPage() {
   // Prepare pie chart data for winning vs losing trades
   const winLossData = [
-    { name: 'Winning', value: mockKPIData.totalPnl * 0.65, percentage: 65, color: '#16A34A' },
-    { name: 'Losing', value: mockKPIData.totalPnl * 0.35, percentage: 35, color: '#DC2626' }
+    { name: 'Winning', value: mockKPIData.totalPnl * 0.65, percentage: 65, color: 'var(--theme-green)' },
+    { name: 'Losing', value: mockKPIData.totalPnl * 0.35, percentage: 35, color: 'var(--theme-red)' }
   ];
 
   // Performance by day of week data
@@ -72,10 +72,10 @@ export default function DemoPage() {
               <CardContent>
                 <div className="h-48 flex items-center justify-center">
                   <div className="text-center">
-                    <div className="text-4xl font-bold text-[#16A34A] mb-2">
+                    <div className="text-4xl font-bold text-[var(--theme-green)] mb-2">
                       {mockKPIData.winRate}%
                     </div>
-                    <div className="w-32 h-32 mx-auto bg-[#16A34A] rounded-full opacity-20"></div>
+                    <div className="w-32 h-32 mx-auto bg-[var(--theme-green)] rounded-full opacity-20"></div>
                   </div>
                 </div>
               </CardContent>
@@ -93,13 +93,13 @@ export default function DemoPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted">Half a minute</span>
                     <div className="flex-1 mx-3 h-2 bg-gray-200 rounded">
-                      <div className="h-2 bg-[#16A34A] rounded" style={{width: '80%'}}></div>
+                      <div className="h-2 bg-[var(--theme-green)] rounded" style={{width: '80%'}}></div>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted">Less than 20 seconds</span>
                     <div className="flex-1 mx-3 h-2 bg-gray-200 rounded">
-                      <div className="h-2 bg-[#DC2626] rounded" style={{width: '60%'}}></div>
+                      <div className="h-2 bg-[var(--theme-red)] rounded" style={{width: '60%'}}></div>
                     </div>
                   </div>
                 </div>
@@ -117,10 +117,10 @@ export default function DemoPage() {
                 <CardContent>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <div className="text-lg font-bold text-[#16A34A]">${mockKPIData.avgWinningTrade.toFixed(2)}</div>
+                      <div className="text-lg font-bold text-[var(--theme-green)]">${mockKPIData.avgWinningTrade.toFixed(2)}</div>
                     </div>
                     <div className="flex items-center justify-between">
-                      <div className="text-lg font-bold text-[#DC2626]">-${Math.abs(mockKPIData.avgLosingTrade).toFixed(2)}</div>
+                      <div className="text-lg font-bold text-[var(--theme-red)]">-${Math.abs(mockKPIData.avgLosingTrade).toFixed(2)}</div>
                     </div>
                   </div>
                 </CardContent>
@@ -179,7 +179,7 @@ export default function DemoPage() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>Intraday</span>
-                      <span className="text-[#16A34A]">$437.28</span>
+                      <span className="text-[var(--theme-green)]">$437.28</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Multiday</span>
@@ -200,7 +200,7 @@ export default function DemoPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-center">
-                    <div className="text-4xl font-bold text-[#16A34A]">
+                    <div className="text-4xl font-bold text-[var(--theme-green)]">
                       {mockKPIData.maxConsecutiveWins}
                     </div>
                   </div>
@@ -213,7 +213,7 @@ export default function DemoPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-center">
-                    <div className="text-4xl font-bold text-[#DC2626]">
+                    <div className="text-4xl font-bold text-[var(--theme-red)]">
                       {mockKPIData.maxConsecutiveLosses}
                     </div>
                   </div>

@@ -96,11 +96,11 @@ export default function MonthTradeDistributionChart({
       if (!data) return null;
       
       return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-          <p className="text-sm font-medium text-gray-600">
+        <div className="p-3 border rounded-lg shadow-lg" style={{backgroundColor: 'var(--theme-chart-tooltip-bg)', borderColor: 'var(--theme-chart-grid)'}}>
+          <p className="text-sm font-medium" style={{color: 'var(--theme-secondary-text)'}}>
             {formatDate(data.date)}
           </p>
-          <p className={`text-lg font-bold ${data.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <p className="text-lg font-bold" style={{color: data.pnl >= 0 ? 'var(--theme-green)' : 'var(--theme-red)'}}>
             {data.pnl >= 0 ? '+' : ''}{formatCurrency(data.pnl)}
           </p>
         </div>
@@ -139,7 +139,7 @@ export default function MonthTradeDistributionChart({
             {showGrid && (
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="#E5E7EB"
+                stroke="var(--theme-chart-grid)"
                 horizontal={true}
                 vertical={false}
               />
@@ -147,9 +147,9 @@ export default function MonthTradeDistributionChart({
             
             <XAxis
               dataKey="date"
-              axisLine={{ stroke: '#9CA3AF' }}
-              tickLine={{ stroke: '#9CA3AF' }}
-              tick={{ fontSize: 10, fill: '#6B7280' }}
+              axisLine={{ stroke: 'var(--theme-chart-axis)' }}
+              tickLine={{ stroke: 'var(--theme-chart-axis)' }}
+              tick={{ fontSize: 10, fill: 'var(--theme-secondary-text)' }}
               tickFormatter={formatDate}
               angle={-45}
               textAnchor="end"
@@ -157,9 +157,9 @@ export default function MonthTradeDistributionChart({
             
             <YAxis
               domain={yDomain}
-              axisLine={{ stroke: '#9CA3AF' }}
-              tickLine={{ stroke: '#9CA3AF' }}
-              tick={{ fontSize: 11, fill: '#6B7280' }}
+              axisLine={{ stroke: 'var(--theme-chart-axis)' }}
+              tickLine={{ stroke: 'var(--theme-chart-axis)' }}
+              tick={{ fontSize: 11, fill: 'var(--theme-secondary-text)' }}
               tickFormatter={formatCurrency}
             />
             
@@ -167,7 +167,7 @@ export default function MonthTradeDistributionChart({
             {hasNegativeValues && (
               <ReferenceLine 
                 y={0} 
-                stroke="#6B7280" 
+                stroke="var(--theme-secondary-text)" 
                 strokeDasharray="5 5"
                 strokeWidth={1}
               />
@@ -179,7 +179,7 @@ export default function MonthTradeDistributionChart({
               {validData.map((entry, index) => (
                 <Cell 
                   key={`cell-${index}`} 
-                  fill={entry.pnl >= 0 ? '#16A34A' : '#DC2626'} 
+                  fill={entry.pnl >= 0 ? 'var(--theme-green)' : 'var(--theme-red)'} 
                 />
               ))}
             </Bar>

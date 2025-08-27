@@ -34,7 +34,7 @@ export default function DemoSidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="flex h-screen w-64 flex-col bg-[#0f172a] text-white">
+    <div className="flex h-screen w-64 flex-col bg-theme-secondary text-white">
       {/* Logo and Brand */}
       <div className="flex items-center gap-3 px-6 py-6">
         <Image 
@@ -55,7 +55,7 @@ export default function DemoSidebar() {
       {/* Upgrade Button */}
       <div className="px-4 pb-6">
         <Link href="/api/auth/signup">
-          <Button className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white rounded-lg font-medium">
+          <Button className="w-full bg-theme-green hover:bg-theme-green/90 text-white rounded-lg font-medium">
             ⚡ Get Full Access
           </Button>
         </Link>
@@ -100,7 +100,7 @@ export default function DemoSidebar() {
       {/* Import Trades Button */}
       <div className="px-4 py-2">
         <Link href="/demo/import">
-          <Button className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white rounded-lg font-medium">
+          <Button className="w-full bg-theme-green hover:bg-theme-green/90 text-white rounded-lg font-medium">
             📊 Import Trades
           </Button>
         </Link>
@@ -108,7 +108,7 @@ export default function DemoSidebar() {
 
       {/* Demo User Profile */}
       <div className="flex items-center gap-3 px-4 py-4 border-t border-white/10">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-500">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-theme-surface">
           <User className="h-5 w-5 text-white" />
         </div>
         <div className="flex-1 min-w-0">

@@ -79,7 +79,8 @@ export default function TradeDistributionChart({
                   <div className="flex-1 relative">
                     <div className="h-6 bg-muted/20 rounded">
                       <div 
-                        className="h-full bg-[#16A34A] rounded transition-all duration-300"
+                        className="h-full rounded transition-all duration-300"
+                        style={{ backgroundColor: 'var(--theme-green)', width: `${barWidth}%` }}
                         style={{ width: `${barWidth}%` }}
                       />
                     </div>
@@ -112,7 +113,7 @@ export default function TradeDistributionChart({
           >
             <CartesianGrid 
               strokeDasharray="3 3" 
-              stroke="#E5E7EB" 
+              stroke="var(--theme-chart-grid)" 
               horizontal={true} 
               vertical={false} 
             />
@@ -120,14 +121,14 @@ export default function TradeDistributionChart({
               dataKey="category"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: '#6B7280' }}
+              tick={{ fontSize: 12, fill: 'var(--theme-secondary-text)' }}
               tickFormatter={formatAxisLabel}
               interval="preserveStartEnd"
             />
             <YAxis 
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: '#6B7280' }}
+              tick={{ fontSize: 12, fill: 'var(--theme-secondary-text)' }}
               tickFormatter={(value) => {
                 if (showPercentages) {
                   return `${value}%`;
@@ -139,8 +140,8 @@ export default function TradeDistributionChart({
               formatter={formatTooltip}
               labelFormatter={(label) => `Period: ${label}`}
               contentStyle={{
-                backgroundColor: '#FFFFFF',
-                border: '1px solid #E5E7EB',
+                backgroundColor: 'var(--theme-chart-tooltip-bg)',
+                border: '1px solid var(--theme-chart-grid)',
                 borderRadius: '8px',
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                 fontSize: '12px',
@@ -148,7 +149,7 @@ export default function TradeDistributionChart({
             />
             <Bar 
               dataKey="value" 
-              fill="#16A34A"
+              fill="var(--theme-green)"
               radius={[2, 2, 0, 0]}
             />
           </BarChart>

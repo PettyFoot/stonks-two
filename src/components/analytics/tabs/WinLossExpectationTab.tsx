@@ -110,7 +110,7 @@ export default function WinLossExpectationTab({ data }: AnalyticsTabContentProps
   if (loading && !dashboardData) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-muted-foreground">Loading dashboard data...</div>
+        <div className="text-theme-secondary-text">Loading dashboard data...</div>
       </div>
     );
   }
@@ -118,7 +118,7 @@ export default function WinLossExpectationTab({ data }: AnalyticsTabContentProps
   if (error && !dashboardData) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-red-500">Error: {error}</div>
+        <div className="text-theme-red">Error: {error}</div>
       </div>
     );
   }
@@ -127,11 +127,11 @@ export default function WinLossExpectationTab({ data }: AnalyticsTabContentProps
     <div className="space-y-6">
       {/* Data Quality Warning */}
       {showDataQualityWarning && (
-        <Card className="bg-yellow-900/20 border-yellow-600/50">
+        <Card className="bg-theme-warning/20 border-theme-warning/50">
           <CardContent className="py-3">
             <div className="flex items-center gap-2">
-              <span className="text-yellow-600 text-sm">⚠️</span>
-              <span className="text-yellow-600 text-sm">
+              <span className="text-theme-warning text-sm">⚠️</span>
+              <span className="text-theme-warning text-sm">
                 Limited data available ({dashboardData?.metadata?.totalTrades || 0} trades across {dashboardData?.metadata?.tradingDays || 0} days). 
                 Statistics may not be fully representative.
               </span>
@@ -142,89 +142,89 @@ export default function WinLossExpectationTab({ data }: AnalyticsTabContentProps
 
       {/* First Row: Win/Loss Ratio and P&L Comparison */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-surface border border-default rounded-lg p-6 h-[350px] flex items-center justify-center">
-          <span className="text-muted">Win/Loss Ratio Chart - Coming Soon</span>
+        <div className="bg-theme-surface border border-theme-border rounded-lg p-6 h-[350px] flex items-center justify-center">
+          <span className="text-theme-secondary-text">Win/Loss Ratio Chart - Coming Soon</span>
         </div>
         
-        <div className="bg-surface border border-default rounded-lg p-6 h-[350px] flex items-center justify-center">
-          <span className="text-muted">Win/Loss P&L Comparison Chart - Coming Soon</span>
+        <div className="bg-theme-surface border border-theme-border rounded-lg p-6 h-[350px] flex items-center justify-center">
+          <span className="text-theme-secondary-text">Win/Loss P&L Comparison Chart - Coming Soon</span>
         </div>
       </div>
 
       {/* Second Row: Trade Expectation (Full Width) */}
-      <div className="bg-surface border border-default rounded-lg p-6 h-[320px] flex items-center justify-center">
-        <span className="text-muted">Trade Expectation Chart - Coming Soon</span>
+      <div className="bg-theme-surface border border-theme-border rounded-lg p-6 h-[320px] flex items-center justify-center">
+        <span className="text-theme-secondary-text">Trade Expectation Chart - Coming Soon</span>
       </div>
 
       {/* Third Row: Cumulative P&L and Drawdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-surface border border-default rounded-lg p-6 h-[350px] flex items-center justify-center">
-          <span className="text-muted">Cumulative P&L Chart - Coming Soon</span>
+        <div className="bg-theme-surface border border-theme-border rounded-lg p-6 h-[350px] flex items-center justify-center">
+          <span className="text-theme-secondary-text">Cumulative P&L Chart - Coming Soon</span>
         </div>
         
-        <div className="bg-surface border border-default rounded-lg p-6 h-[350px] flex items-center justify-center">
-          <span className="text-muted">Cumulative Drawdown Chart - Coming Soon</span>
+        <div className="bg-theme-surface border border-theme-border rounded-lg p-6 h-[350px] flex items-center justify-center">
+          <span className="text-theme-secondary-text">Cumulative Drawdown Chart - Coming Soon</span>
         </div>
       </div>
 
       {/* Statistics Summary Card */}
-      <Card className="bg-surface border-default">
+      <Card className="bg-theme-surface border-theme-border">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-medium text-primary">Performance Summary</CardTitle>
+          <CardTitle className="text-base font-medium text-theme-primary-text">Performance Summary</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="space-y-1">
-              <div className="text-xs text-muted-foreground">Total Trades</div>
-              <div className="text-lg font-semibold text-primary">
+              <div className="text-xs text-theme-secondary-text">Total Trades</div>
+              <div className="text-lg font-semibold text-theme-primary-text">
                 {dashboardData?.metadata?.totalTrades || 0}
               </div>
             </div>
             <div className="space-y-1">
-              <div className="text-xs text-muted-foreground">Win Rate</div>
+              <div className="text-xs text-theme-secondary-text">Win Rate</div>
               <div className={`text-lg font-semibold ${
-                (dashboardData?.winLossRatio?.winRate || 0) >= 50 ? 'text-[#16A34A]' : 'text-[#DC2626]'
+                (dashboardData?.winLossRatio?.winRate || 0) >= 50 ? 'text-theme-green' : 'text-theme-red'
               }`}>
                 {(dashboardData?.winLossRatio?.winRate || 0).toFixed(1)}%
               </div>
             </div>
             <div className="space-y-1">
-              <div className="text-xs text-muted-foreground">Profit Factor</div>
+              <div className="text-xs text-theme-secondary-text">Profit Factor</div>
               <div className={`text-lg font-semibold ${
-                (dashboardData?.tradeExpectation?.profitFactor || 0) > 1 ? 'text-[#16A34A]' : 'text-[#DC2626]'
+                (dashboardData?.tradeExpectation?.profitFactor || 0) > 1 ? 'text-theme-green' : 'text-theme-red'
               }`}>
                 {(dashboardData?.tradeExpectation?.profitFactor || 0).toFixed(2)}
               </div>
             </div>
             <div className="space-y-1">
-              <div className="text-xs text-muted-foreground">Expectancy</div>
+              <div className="text-xs text-theme-secondary-text">Expectancy</div>
               <div className={`text-lg font-semibold ${
-                (dashboardData?.tradeExpectation?.expectationPerTrade || 0) > 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'
+                (dashboardData?.tradeExpectation?.expectationPerTrade || 0) > 0 ? 'text-theme-green' : 'text-theme-red'
               }`}>
                 ${(dashboardData?.tradeExpectation?.expectationPerTrade || 0).toFixed(2)}
               </div>
             </div>
             <div className="space-y-1">
-              <div className="text-xs text-muted-foreground">Avg Win</div>
-              <div className="text-lg font-semibold text-[#16A34A]">
+              <div className="text-xs text-theme-secondary-text">Avg Win</div>
+              <div className="text-lg font-semibold text-theme-green">
                 ${(dashboardData?.tradeExpectation?.avgWin || 0).toFixed(2)}
               </div>
             </div>
             <div className="space-y-1">
-              <div className="text-xs text-muted-foreground">Avg Loss</div>
-              <div className="text-lg font-semibold text-[#DC2626]">
+              <div className="text-xs text-theme-secondary-text">Avg Loss</div>
+              <div className="text-lg font-semibold text-theme-red">
                 ${(dashboardData?.tradeExpectation?.avgLoss || 0).toFixed(2)}
               </div>
             </div>
             <div className="space-y-1">
-              <div className="text-xs text-muted-foreground">Payoff Ratio</div>
-              <div className="text-lg font-semibold text-primary">
+              <div className="text-xs text-theme-secondary-text">Payoff Ratio</div>
+              <div className="text-lg font-semibold text-theme-primary-text">
                 {(dashboardData?.tradeExpectation?.payoffRatio || 0).toFixed(2)}:1
               </div>
             </div>
             <div className="space-y-1">
-              <div className="text-xs text-muted-foreground">Kelly %</div>
-              <div className="text-lg font-semibold text-[#3B82F6]">
+              <div className="text-xs text-theme-secondary-text">Kelly %</div>
+              <div className="text-lg font-semibold text-theme-tertiary">
                 {(dashboardData?.tradeExpectation?.kellyPercentage || 0).toFixed(1)}%
               </div>
             </div>

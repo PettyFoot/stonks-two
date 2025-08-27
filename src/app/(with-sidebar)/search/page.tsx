@@ -101,7 +101,7 @@ export default function Search() {
               {/* Search Button */}
               <div className="text-center">
                 <Button 
-                  className="bg-[#16A34A] hover:bg-[#15803d] text-white px-8"
+                  className="bg-[var(--theme-green)] hover:bg-[var(--theme-green)]/80 text-white px-8"
                   onClick={handleSearch}
                 >
                   Search

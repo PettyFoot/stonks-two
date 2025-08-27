@@ -127,33 +127,33 @@ export default function PriceVolumeTab({ data }: AnalyticsTabContentProps) {
               title="P&L BY POSITION SIZE"
               valueFormatter={(value) => `$${value.toFixed(2)}`}
             />
-            <Card className="bg-surface border-default">
+            <Card className="bg-theme-surface border-theme-border">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base font-medium text-primary">Position Size Statistics</CardTitle>
+                <CardTitle className="text-base font-medium text-theme-primary-text">Position Size Statistics</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex justify-between py-2 border-b border-default/30">
-                    <span className="text-sm text-muted-foreground">Average Position Size</span>
-                    <span className="text-sm font-semibold text-primary">
+                  <div className="flex justify-between py-2 border-b border-theme-border/30">
+                    <span className="text-sm text-theme-secondary-text">Average Position Size</span>
+                    <span className="text-sm font-semibold text-theme-primary-text">
                       {data.statistics.avgPerSharePnl > 0 ? '~500 shares' : '~300 shares'}
                     </span>
                   </div>
-                  <div className="flex justify-between py-2 border-b border-default/30">
-                    <span className="text-sm text-muted-foreground">Optimal Size Range</span>
-                    <span className="text-sm font-semibold text-primary">
+                  <div className="flex justify-between py-2 border-b border-theme-border/30">
+                    <span className="text-sm text-theme-secondary-text">Optimal Size Range</span>
+                    <span className="text-sm font-semibold text-theme-primary-text">
                       100-1000 shares
                     </span>
                   </div>
-                  <div className="flex justify-between py-2 border-b border-default/30">
-                    <span className="text-sm text-muted-foreground">Size Consistency</span>
-                    <span className="text-sm font-semibold text-[#16A34A]">
+                  <div className="flex justify-between py-2 border-b border-theme-border/30">
+                    <span className="text-sm text-theme-secondary-text">Size Consistency</span>
+                    <span className="text-sm font-semibold text-theme-green">
                       {data.statistics.winRate > 50 ? 'Good' : 'Needs Improvement'}
                     </span>
                   </div>
                   <div className="flex justify-between py-2">
-                    <span className="text-sm text-muted-foreground">Risk per Trade</span>
-                    <span className="text-sm font-semibold text-primary">
+                    <span className="text-sm text-theme-secondary-text">Risk per Trade</span>
+                    <span className="text-sm font-semibold text-theme-primary-text">
                       ${Math.abs(data.statistics.avgLoss).toFixed(2)}
                     </span>
                   </div>
@@ -166,45 +166,45 @@ export default function PriceVolumeTab({ data }: AnalyticsTabContentProps) {
         {/* Risk/Reward Tab */}
         <TabsContent value="risk-reward" className="space-y-6">
           <div className="grid grid-cols-2 gap-6">
-            <Card className="bg-surface border-default">
+            <Card className="bg-theme-surface border-theme-border">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base font-medium text-primary">Risk/Reward Metrics</CardTitle>
+                <CardTitle className="text-base font-medium text-theme-primary-text">Risk/Reward Metrics</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex justify-between py-2 border-b border-default/30">
-                    <span className="text-sm text-muted-foreground">Risk/Reward Ratio</span>
-                    <span className="text-sm font-semibold text-primary">
+                  <div className="flex justify-between py-2 border-b border-theme-border/30">
+                    <span className="text-sm text-theme-secondary-text">Risk/Reward Ratio</span>
+                    <span className="text-sm font-semibold text-theme-primary-text">
                       1:{data.statistics.avgLoss !== 0 ? Math.abs(data.statistics.avgWin / data.statistics.avgLoss).toFixed(2) : 'N/A'}
                     </span>
                   </div>
-                  <div className="flex justify-between py-2 border-b border-default/30">
-                    <span className="text-sm text-muted-foreground">Profit Factor</span>
-                    <span className={`text-sm font-semibold ${data.statistics.profitFactor > 1 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
+                  <div className="flex justify-between py-2 border-b border-theme-border/30">
+                    <span className="text-sm text-theme-secondary-text">Profit Factor</span>
+                    <span className={`text-sm font-semibold ${data.statistics.profitFactor > 1 ? 'text-theme-green' : 'text-theme-red'}`}>
                       {data.statistics.profitFactor.toFixed(2)}
                     </span>
                   </div>
-                  <div className="flex justify-between py-2 border-b border-default/30">
-                    <span className="text-sm text-muted-foreground">Expectancy</span>
-                    <span className={`text-sm font-semibold ${data.statistics.avgTradePnl > 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
+                  <div className="flex justify-between py-2 border-b border-theme-border/30">
+                    <span className="text-sm text-theme-secondary-text">Expectancy</span>
+                    <span className={`text-sm font-semibold ${data.statistics.avgTradePnl > 0 ? 'text-theme-green' : 'text-theme-red'}`}>
                       ${data.statistics.avgTradePnl.toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between py-2">
-                    <span className="text-sm text-muted-foreground">Sharpe Ratio</span>
-                    <span className={`text-sm font-semibold ${data.statistics.sharpeRatio > 1 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
+                    <span className="text-sm text-theme-secondary-text">Sharpe Ratio</span>
+                    <span className={`text-sm font-semibold ${data.statistics.sharpeRatio > 1 ? 'text-theme-green' : 'text-theme-red'}`}>
                       {data.statistics.sharpeRatio.toFixed(2)}
                     </span>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-surface border-default">
+            <Card className="bg-theme-surface border-theme-border">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base font-medium text-primary">Volume vs Price Correlation</CardTitle>
+                <CardTitle className="text-base font-medium text-theme-primary-text">Volume vs Price Correlation</CardTitle>
               </CardHeader>
               <CardContent className="h-64">
-                <div className="flex items-center justify-center h-full text-muted-foreground">
+                <div className="flex items-center justify-center h-full text-theme-secondary-text">
                   Correlation analysis will be displayed here
                 </div>
               </CardContent>

@@ -56,7 +56,7 @@ export default function HorizontalBarChart({
                 
                 {/* Bar container */}
                 <div className="flex-1">
-                  <div className="w-full h-6 bg-gray-200 dark:bg-gray-700 rounded-sm overflow-hidden">
+                  <div className="w-full h-6 rounded-sm overflow-hidden" style={{backgroundColor: 'var(--theme-chart-grid)'}}>
                     <div
                       className="h-full transition-all duration-500 ease-out rounded-sm flex items-center"
                       style={{

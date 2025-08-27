@@ -65,7 +65,7 @@ export default function Sidebar() {
   return (
     <TooltipProvider>
       <div className={cn(
-        "flex h-screen flex-col bg-[#0f172a] text-white transition-all duration-300 ease-in-out relative",
+        "flex h-screen flex-col bg-secondary text-white transition-all duration-300 ease-in-out relative",
         isCollapsed ? "w-20" : "w-64"
       )}>
         {/* Logo and Brand - Now Clickable */}
@@ -93,7 +93,7 @@ export default function Sidebar() {
         <div className="px-4 pb-4">
           <button
             onClick={toggleCollapse}
-            className="w-full flex items-center justify-center py-2 px-3 rounded-lg bg-[#16A34A] hover:bg-[#15803d] text-white transition-colors"
+            className="w-full flex items-center justify-center py-2 px-3 rounded-lg bg-positive hover:bg-positive text-white transition-colors"
             title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {isCollapsed ? (
@@ -119,7 +119,7 @@ export default function Sidebar() {
                   'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                   isActive 
                     ? 'bg-white/10 text-white' 
-                    : 'text-gray-300 hover:bg-white/5 hover:text-white',
+                    : 'text-secondary hover:bg-white/5 hover:text-white',
                   isCollapsed && 'justify-center'
                 )}
               >
@@ -135,7 +135,7 @@ export default function Sidebar() {
                   <TooltipTrigger asChild>
                     {navLink}
                   </TooltipTrigger>
-                  <TooltipContent side="right" className="bg-gray-800 text-white">
+                  <TooltipContent side="right" className="bg-secondary text-white">
                     {item.name}
                   </TooltipContent>
                 </Tooltip>
@@ -148,7 +148,7 @@ export default function Sidebar() {
           {/* Upgrade Button - Moved here after Search */}
           {!isCollapsed ? (
             <div className="pt-4">
-              <Button className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white rounded-lg font-medium">
+              <Button className="w-full bg-positive hover:bg-positive text-white rounded-lg font-medium">
                 ⚡ Upgrade
               </Button>
             </div>
@@ -156,11 +156,11 @@ export default function Sidebar() {
             <div className="pt-4">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button className="w-full p-2 bg-[#16A34A] hover:bg-[#15803d] text-white rounded-lg">
+                  <Button className="w-full p-2 bg-positive hover:bg-positive text-white rounded-lg">
                     ⚡
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="right" className="bg-gray-800 text-white">
+                <TooltipContent side="right" className="bg-secondary text-white">
                   Upgrade
                 </TooltipContent>
               </Tooltip>
@@ -172,7 +172,7 @@ export default function Sidebar() {
         {!isCollapsed ? (
           <div className="px-4 py-4">
             <Link href="/import">
-              <Button className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white rounded-lg font-medium">
+              <Button className="w-full bg-positive hover:bg-positive text-white rounded-lg font-medium">
                 📊 Import Trades
               </Button>
             </Link>
@@ -182,12 +182,12 @@ export default function Sidebar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link href="/import">
-                  <Button className="w-full p-2 bg-[#16A34A] hover:bg-[#15803d] text-white rounded-lg">
+                  <Button className="w-full p-2 bg-positive hover:bg-positive text-white rounded-lg">
                     📊
                   </Button>
                 </Link>
               </TooltipTrigger>
-              <TooltipContent side="right" className="bg-gray-800 text-white">
+              <TooltipContent side="right" className="bg-secondary text-white">
                 Import Trades
               </TooltipContent>
             </Tooltip>
@@ -203,7 +203,7 @@ export default function Sidebar() {
             <>
               <Avatar className="h-10 w-10 flex-shrink-0">
                 <AvatarImage src={user.picture || ''} alt={user.name || ''} />
-                <AvatarFallback className="bg-[#16A34A] text-white">
+                <AvatarFallback className="bg-positive text-white">
                   {user.name?.charAt(0) || user.email?.charAt(0) || 'U'}
                 </AvatarFallback>
               </Avatar>
@@ -213,11 +213,11 @@ export default function Sidebar() {
                     <p className="text-sm font-medium text-white truncate">
                       {user.name || user.email || 'User'}
                     </p>
-                    <p className="text-xs text-gray-400">Plan: Free</p>
+                    <p className="text-xs text-secondary">Plan: Free</p>
                   </div>
                   <Link 
                     href="/api/auth/logout" 
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-secondary hover:text-white transition-colors"
                     title="Logout"
                   >
                     <LogOut className="h-4 w-4" />
@@ -227,18 +227,18 @@ export default function Sidebar() {
             </>
           ) : (
             <>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-500 flex-shrink-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary flex-shrink-0">
                 <User className="h-5 w-5 text-white" />
               </div>
               {!isCollapsed && (
                 <>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white">Guest</p>
-                    <p className="text-xs text-gray-400">Not logged in</p>
+                    <p className="text-xs text-secondary">Not logged in</p>
                   </div>
                   <Link 
                     href="/api/auth/login" 
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-secondary hover:text-white transition-colors"
                     title="Login"
                   >
                     <User className="h-4 w-4" />

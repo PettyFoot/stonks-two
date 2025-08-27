@@ -85,7 +85,7 @@ export default function DemoImport() {
                   or click to browse your computer
                 </div>
                 <Input type="file" multiple className="hidden" />
-                <Button className="bg-[#16A34A] hover:bg-[#15803d] text-white">
+                <Button className="bg-[var(--theme-green)] hover:bg-[var(--theme-green)/80] text-white">
                   Choose Files
                 </Button>
               </div>

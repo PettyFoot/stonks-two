@@ -29,7 +29,7 @@ export default function ChartContainer({
   // Determine chart colors based on type
   const getChartColor = () => {
     if (chartType === 'distribution') {
-      return '#16A34A'; // Green for distribution charts
+      return 'var(--theme-green)'; // Green for distribution charts
     }
     return undefined; // Let BarChart handle conditional colors for performance
   };
@@ -47,9 +47,9 @@ export default function ChartContainer({
   const hasData = data && data.length > 0 && data.some(item => item.value !== 0);
 
   return (
-    <Card className="bg-surface border-default">
+    <Card className="bg-theme-surface border-theme-border">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-medium text-primary">
+        <CardTitle className="text-base font-medium text-theme-primary-text">
           {title}
         </CardTitle>
       </CardHeader>
@@ -67,7 +67,7 @@ export default function ChartContainer({
               showTooltip={true}
             />
           ) : (
-            <div className="flex items-center justify-center h-[300px] text-muted">
+            <div className="flex items-center justify-center h-[300px] text-theme-secondary-text">
               No data available for the selected period
             </div>
           )}

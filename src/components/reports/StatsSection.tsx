@@ -38,30 +38,30 @@ interface StatsSectionProps {
 }
 
 export default function StatsSection({ stats }: StatsSectionProps) {
-  // Mock data for initial implementation
+  // Mock data for initial implementation (matches screenshot values with some negative values for testing)
   const mockStats = {
-    totalGainLoss: 5234.50,
-    largestGain: 1250.00,
-    largestLoss: -450.75,
-    avgDailyGainLoss: 125.50,
-    avgDailyVolume: 15000,
-    avgPerShareGainLoss: 0.85,
-    avgTradeGainLoss: 45.25,
-    avgWinningTrade: 125.00,
-    avgLosingTrade: -75.50,
-    totalTrades: 145,
-    winningTrades: 85,
-    losingTrades: 55,
-    avgHoldTimeScratch: '5m 30s',
-    avgHoldTimeWinning: '12m 45s',
-    avgHoldTimeLosing: '8m 15s',
-    scratchTrades: 5,
-    maxConsecutiveWins: 8,
-    maxConsecutiveLosses: 4,
-    tradePnlStdDev: 125.50,
-    profitFactor: 1.45,
-    totalCommissions: 245.00,
-    totalFees: 125.00
+    totalGainLoss: 637.00,
+    largestGain: 600.00,
+    largestLoss: -150.00, // Made negative to test red coloring
+    avgDailyGainLoss: -50.25, // Made negative to test red coloring
+    avgDailyVolume: 700,
+    avgPerShareGainLoss: 0.46,
+    avgTradeGainLoss: 318.50,
+    avgWinningTrade: 318.50,
+    avgLosingTrade: -125.75, // Made negative to test red coloring
+    totalTrades: 2,
+    winningTrades: 2,
+    losingTrades: 1, // Changed to show some losing trades
+    avgHoldTimeScratch: '0s',
+    avgHoldTimeWinning: '38m 30s',
+    avgHoldTimeLosing: '0s',
+    scratchTrades: 0,
+    maxConsecutiveWins: 2,
+    maxConsecutiveLosses: 0,
+    tradePnlStdDev: 281.50,
+    profitFactor: 0, // N/A in screenshot
+    totalCommissions: -15.50, // Made negative to test red coloring
+    totalFees: -8.25 // Made negative to test red coloring
   };
 
   const currentStats = stats || mockStats;
@@ -98,28 +98,22 @@ export default function StatsSection({ stats }: StatsSectionProps) {
   };
 
   const getColorClass = (value: unknown, colorCode?: TradingStatistic['colorCode']): string => {
-    if (!colorCode || value === null || value === undefined) return 'text-primary';
+    if (!colorCode || value === null || value === undefined) return 'text-theme-primary-text';
     
-    if (colorCode === 'positive') {
-      return typeof value === 'number' && value >= 0 
-        ? 'text-[#16A34A]' 
-        : 'text-[#DC2626]';
+    if (colorCode === 'positive' || colorCode === 'negative') {
+      if (typeof value === 'number') {
+        return value > 0 ? 'text-theme-green' : value < 0 ? 'text-theme-red' : 'text-theme-primary-text';
+      }
     }
     
-    if (colorCode === 'negative') {
-      return typeof value === 'number' && value < 0 
-        ? 'text-[#DC2626]' 
-        : 'text-primary';
-    }
-    
-    return 'text-primary';
+    return 'text-theme-primary-text';
   };
 
   const statistics: TradingStatistic[] = [
     // P&L Metrics
     { label: 'Total Gain/Loss', value: currentStats.totalGainLoss, formatter: 'currency', colorCode: 'positive' },
     { label: 'Largest Gain', value: currentStats.largestGain, formatter: 'currency', colorCode: 'positive' },
-    { label: 'Largest Loss', value: currentStats.largestLoss, formatter: 'currency', colorCode: 'negative' },
+    { label: 'Largest Loss', value: currentStats.largestLoss, formatter: 'currency', colorCode: 'positive' },
     
     // Average Metrics
     { label: 'Average Daily Gain/Loss', value: currentStats.avgDailyGainLoss, formatter: 'currency', colorCode: 'positive' },
@@ -127,7 +121,7 @@ export default function StatsSection({ stats }: StatsSectionProps) {
     { label: 'Average Trade Gain/Loss', value: currentStats.avgTradeGainLoss, formatter: 'currency', colorCode: 'positive' },
     { label: 'Average Per-share Gain/Loss', value: currentStats.avgPerShareGainLoss, formatter: 'currency', colorCode: 'positive' },
     { label: 'Average Winning Trade', value: currentStats.avgWinningTrade, formatter: 'currency', colorCode: 'positive' },
-    { label: 'Average Losing Trade', value: currentStats.avgLosingTrade, formatter: 'currency', colorCode: 'negative' },
+    { label: 'Average Losing Trade', value: currentStats.avgLosingTrade, formatter: 'currency', colorCode: 'positive' },
     
     // Trade Counts
     { label: 'Total Number of Trades', value: currentStats.totalTrades, formatter: 'number' },
@@ -146,10 +140,10 @@ export default function StatsSection({ stats }: StatsSectionProps) {
     
     // Volume & Cost Metrics
     { label: 'Avg Daily Volume', value: currentStats.avgDailyVolume, formatter: 'number' },
-    { label: 'Trade P&L Standard Deviation', value: currentStats.tradePnlStdDev, formatter: 'currency' },
+    { label: 'Trade P&L Standard Deviation', value: currentStats.tradePnlStdDev, formatter: 'currency', colorCode: 'positive' },
     { label: 'Profit Factor', value: currentStats.profitFactor, formatter: 'number' },
-    { label: 'Total Commissions', value: currentStats.totalCommissions, formatter: 'currency', colorCode: 'negative' },
-    { label: 'Total Fees', value: currentStats.totalFees, formatter: 'currency', colorCode: 'negative' }
+    { label: 'Total Commissions', value: currentStats.totalCommissions, formatter: 'currency', colorCode: 'positive' },
+    { label: 'Total Fees', value: currentStats.totalFees, formatter: 'currency', colorCode: 'positive' }
   ];
 
   /* 
@@ -181,15 +175,15 @@ export default function StatsSection({ stats }: StatsSectionProps) {
 
   return (
     <div className="mb-6">
-      <h3 className="text-lg font-semibold text-primary mb-4">Trading Statistics</h3>
+      <h3 className="text-lg font-semibold text-theme-primary-text mb-4">Trading Statistics</h3>
       
       {/* Frontend Engineer Review Point: Responsive grid layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {statistics.map((stat, index) => (
-          <Card key={index} className="bg-surface border-default hover:shadow-sm transition-shadow">
+          <Card key={index} className="bg-theme-surface border-theme-border hover:shadow-sm transition-shadow">
             <CardContent className="p-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted truncate pr-2">
+                <span className="text-sm text-theme-secondary-text truncate pr-2">
                   {stat.label}
                 </span>
                 <span className={`text-sm font-semibold ${getColorClass(stat.value, stat.colorCode)}`}>

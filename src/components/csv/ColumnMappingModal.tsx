@@ -123,11 +123,11 @@ export default function ColumnMappingModal({
 
   const getConfidenceBadge = (confidence: number) => {
     if (confidence >= 0.8) {
-      return <Badge className="bg-[#16A34A] text-white">High</Badge>;
+      return <Badge className="bg-theme-green text-white">High</Badge>;
     } else if (confidence >= 0.6) {
-      return <Badge className="bg-[#F59E0B] text-white">Medium</Badge>;
+      return <Badge className="bg-theme-warning text-white">Medium</Badge>;
     } else {
-      return <Badge className="bg-[#DC2626] text-white">Low</Badge>;
+      return <Badge className="bg-theme-red text-white">Low</Badge>;
     }
   };
 
@@ -151,7 +151,7 @@ export default function ColumnMappingModal({
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-[#F59E0B]" />
+            <AlertTriangle className="h-5 w-5 text-theme-warning" />
             Column Mapping Required
           </DialogTitle>
           <DialogDescription>
@@ -162,10 +162,10 @@ export default function ColumnMappingModal({
 
         <div className="space-y-6">
           {/* AI Analysis Summary */}
-          <Card className="bg-[#F8FAFC] border-[#E2E8F0]">
+          <Card className="bg-theme-surface border-theme-border">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Lightbulb className="h-4 w-4 text-[#F59E0B]" />
+                <Lightbulb className="h-4 w-4 text-theme-warning" />
                 AI Analysis Results
               </CardTitle>
             </CardHeader>
@@ -174,7 +174,7 @@ export default function ColumnMappingModal({
                 <span className="text-sm">Overall Confidence:</span>
                 <div className="flex items-center gap-2">
                   {getConfidenceBadge(aiMappingResult.overallConfidence)}
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-theme-secondary-text">
                     {(aiMappingResult.overallConfidence * 100).toFixed(0)}%
                   </span>
                 </div>
@@ -183,7 +183,7 @@ export default function ColumnMappingModal({
               {aiMappingResult.suggestions.length > 0 && (
                 <div>
                   <p className="text-sm font-medium mb-2">Suggestions:</p>
-                  <ul className="text-sm text-gray-600 space-y-1">
+                  <ul className="text-sm text-theme-secondary-text space-y-1">
                     {aiMappingResult.suggestions.map((suggestion, index) => (
                       <li key={index}>• {suggestion}</li>
                     ))}
@@ -195,13 +195,13 @@ export default function ColumnMappingModal({
 
           {/* Error Display */}
           {errors.length > 0 && (
-            <Card className="bg-[#FEF2F2] border-[#FECACA]">
+            <Card className="bg-theme-red/10 border-theme-red/30">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <XCircle className="h-4 w-4 text-[#DC2626]" />
-                  <span className="text-sm font-medium text-[#DC2626]">Validation Errors</span>
+                  <XCircle className="h-4 w-4 text-theme-red" />
+                  <span className="text-sm font-medium text-theme-red">Validation Errors</span>
                 </div>
-                <ul className="text-sm text-[#DC2626] space-y-1">
+                <ul className="text-sm text-theme-red space-y-1">
                   {errors.map((error, index) => (
                     <li key={index}>• {error}</li>
                   ))}
@@ -226,14 +226,14 @@ export default function ColumnMappingModal({
                     <div 
                       key={header}
                       className={`p-4 border rounded-lg ${
-                        isLowConfidence ? 'border-[#FDE68A] bg-[#FFFBEB]' : 'border-[#E2E8F0] bg-white'
+                        isLowConfidence ? 'border-theme-warning/30 bg-theme-warning/10' : 'border-theme-border bg-white'
                       }`}
                     >
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
                         {/* Source Column */}
                         <div>
                           <p className="text-sm font-medium">{header}</p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-theme-secondary-text">
                             Sample: {String(sampleData[0]?.[header] || 'N/A')}
                           </p>
                         </div>
@@ -246,10 +246,10 @@ export default function ColumnMappingModal({
                                 <span className="text-sm">{aiMapping.targetColumn}</span>
                                 {getConfidenceBadge(aiMapping.confidence)}
                               </div>
-                              <p className="text-xs text-gray-500">{aiMapping.reasoning}</p>
+                              <p className="text-xs text-theme-secondary-text">{aiMapping.reasoning}</p>
                             </div>
                           ) : (
-                            <span className="text-sm text-gray-400">No suggestion</span>
+                            <span className="text-sm text-theme-secondary-text">No suggestion</span>
                           )}
                         </div>
 
@@ -273,11 +273,11 @@ export default function ColumnMappingModal({
                         {/* Status */}
                         <div className="flex justify-center">
                           {currentMapping === 'none' ? (
-                            <XCircle className="h-5 w-5 text-gray-400" />
+                            <XCircle className="h-5 w-5 text-theme-secondary-text" />
                           ) : aiMapping && currentMapping === aiMapping.targetColumn ? (
-                            <CheckCircle className="h-5 w-5 text-[#16A34A]" />
+                            <CheckCircle className="h-5 w-5 text-theme-green" />
                           ) : (
-                            <AlertTriangle className="h-5 w-5 text-[#F59E0B]" />
+                            <AlertTriangle className="h-5 w-5 text-theme-warning" />
                           )}
                         </div>
                       </div>
@@ -289,18 +289,18 @@ export default function ColumnMappingModal({
           </Card>
 
           {/* Required Fields Legend */}
-          <Card className="bg-[#F0F9FF] border-[#BAE6FD]">
+          <Card className="bg-theme-tertiary/10 border-theme-tertiary/30">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-2">
-                <CheckCircle className="h-4 w-4 text-[#0369A1]" />
-                <span className="text-sm font-medium text-[#0369A1]">Required Fields</span>
+                <CheckCircle className="h-4 w-4 text-theme-tertiary" />
+                <span className="text-sm font-medium text-theme-tertiary">Required Fields</span>
               </div>
-              <p className="text-sm text-[#0369A1] mb-2">
+              <p className="text-sm text-theme-tertiary mb-2">
                 These columns must be mapped for successful import:
               </p>
               <div className="flex flex-wrap gap-2">
                 {STANDARD_COLUMNS.filter(col => col.required).map((col) => (
-                  <Badge key={col.value} variant="outline" className="text-[#0369A1] border-[#0369A1]">
+                  <Badge key={col.value} variant="outline" className="text-theme-tertiary border-theme-tertiary">
                     {col.label}
                   </Badge>
                 ))}
@@ -326,7 +326,7 @@ export default function ColumnMappingModal({
             <Button 
               onClick={handleApply} 
               disabled={errors.length > 0 || isProcessing}
-              className="bg-[#16A34A] hover:bg-[#15803d] text-white"
+              className="bg-theme-green hover:bg-theme-green/90 text-white"
             >
               {isProcessing ? (
                 <>

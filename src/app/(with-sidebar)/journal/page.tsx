@@ -164,7 +164,7 @@ export default function Journal() {
       <div className="flex flex-col h-full">
         <TopBar title="Journal" showTimeRangeFilters={false} />
         <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563EB]"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--theme-tertiary)]"></div>
         </div>
       </div>
     );
@@ -203,7 +203,6 @@ export default function Journal() {
       
       <FilterPanel 
         showAdvanced={true}
-        showTimeRangeTabs={true}
       />
 
       <div className="flex-1 overflow-auto p-6">
@@ -226,7 +225,7 @@ export default function Journal() {
             </div>
 
             <div className="text-right">
-              <Button className="bg-[#16A34A] hover:bg-[#15803d] text-white">
+              <Button className="bg-[var(--theme-green)] hover:bg-[var(--theme-green)]/80 text-white">
                 Create New Journal Entry
               </Button>
             </div>
@@ -308,7 +307,7 @@ export default function Journal() {
                 {shouldShowSaveButton && (
                   <Button 
                     size="sm" 
-                    className="h-8 bg-[#16A34A] hover:bg-[#15803d] text-white"
+                    className="h-8 bg-[var(--theme-green)] hover:bg-[var(--theme-green)]/80 text-white"
                     onClick={saveChanges}
                     disabled={isSaving}
                   >
@@ -316,7 +315,7 @@ export default function Journal() {
                   </Button>
                 )}
                 {!shouldShowSaveButton && (
-                  <Button size="sm" className="h-8 bg-[#16A34A] hover:bg-[#15803d] text-white">
+                  <Button size="sm" className="h-8 bg-[var(--theme-green)] hover:bg-[var(--theme-green)]/80 text-white">
                     Create Note
                   </Button>
                 )}

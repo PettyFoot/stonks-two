@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import TopBar from '@/components/TopBar';
 import FilterPanel from '@/components/FilterPanel';
+import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +15,43 @@ import { mockCumulativePnl, mockGapPerformance, mockVolumePerformance, mockMonth
 
 export default function DemoReports() {
   const [dateRange, setDateRange] = useState('30 Days');
+  const { filters } = useGlobalFilters();
+
+  // Calculate effective date range for display
+  const getEffectiveDateRange = () => {
+    // If custom dates are set, use those
+    if (filters.customDateRange?.from && filters.customDateRange?.to) {
+      return {
+        from: filters.customDateRange.from,
+        to: filters.customDateRange.to
+      };
+    }
+    
+    // Otherwise use default 30-day range
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    return {
+      from: thirtyDaysAgo.toISOString().split('T')[0],
+      to: today.toISOString().split('T')[0]
+    };
+  };
+
+  // Format date range for display
+  const formatDateRange = () => {
+    const range = getEffectiveDateRange();
+    const fromDate = new Date(range.from);
+    const toDate = new Date(range.to);
+    
+    const options: Intl.DateTimeFormatOptions = { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    };
+    
+    return `${fromDate.toLocaleDateString('en-US', options)} - ${toDate.toLocaleDateString('en-US', options)}`;
+  };
 
   // Chart data for different metrics
   const dailyPnlData = [
@@ -44,13 +82,12 @@ export default function DemoReports() {
       
       <FilterPanel 
         showAdvanced={true}
-        showTimeRangeTabs={true}
       />
 
       <div className="flex-1 overflow-auto p-6">
         {/* Report Type Selection */}
         <div className="mb-6">
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-center mb-4">
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium text-primary">P&L Type</label>
               <Select defaultValue="Gross">
@@ -63,6 +100,12 @@ export default function DemoReports() {
                 </SelectContent>
               </Select>
             </div>
+            
+            <div className="text-sm text-muted font-medium ml-6">
+              Current Period: {formatDateRange()}
+            </div>
+            
+            <div className="ml-auto flex items-center gap-2">
 
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium text-primary">View mode</label>
@@ -227,15 +270,15 @@ export default function DemoReports() {
                   <div className="space-y-4">
                     <div className="flex justify-between">
                       <span>Win Rate</span>
-                      <span className="text-[#16A34A] font-semibold">50.0%</span>
+                      <span className="text-[var(--theme-green)] font-semibold">50.0%</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Average Win</span>
-                      <span className="text-[#16A34A] font-semibold">$53.40</span>
+                      <span className="text-[var(--theme-green)] font-semibold">$53.40</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Average Loss</span>
-                      <span className="text-[#DC2626] font-semibold">-$39.58</span>
+                      <span className="text-[var(--theme-red)] font-semibold">-$39.58</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Profit Factor</span>
@@ -289,7 +332,7 @@ export default function DemoReports() {
                 <CardContent className="h-64">
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
-                      <div className="text-4xl font-bold text-[#DC2626] mb-2">
+                      <div className="text-4xl font-bold text-[var(--theme-red)] mb-2">
                         -$11.42
                       </div>
                       <div className="text-sm text-muted">Maximum Adverse Excursion</div>
@@ -305,7 +348,7 @@ export default function DemoReports() {
                 <CardContent className="h-64">
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
-                      <div className="text-4xl font-bold text-[#16A34A] mb-2">
+                      <div className="text-4xl font-bold text-[var(--theme-green)] mb-2">
                         $14.46
                       </div>
                       <div className="text-sm text-muted">Maximum Favorable Excursion</div>

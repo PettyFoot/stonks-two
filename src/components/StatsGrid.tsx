@@ -39,7 +39,7 @@ export default function StatsGrid({
           <div className="flex items-center justify-between">
             <div className="text-sm text-muted">Win %</div>
             <div className="flex items-center gap-2">
-              <div className="text-lg font-bold text-[#16A34A]">
+              <div className="text-lg font-bold text-positive">
                 {winRate ? winRate.toFixed(0) : '0'}%
               </div>
               <Lock className="h-3 w-3 text-muted" />

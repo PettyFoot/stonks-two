@@ -31,8 +31,8 @@ export default function DaysTimesSection({ data }: DaysTimesSectionProps) {
             key={tab.value}
             className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
               tab.value === 'days-times' || tab.value === 'win-loss'
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                ? 'bg-theme-primary text-white'
+                : 'bg-theme-surface text-theme-secondary-text hover:bg-theme-surface/80'
             }`}
             disabled={!tab.active}
           >
@@ -54,7 +54,7 @@ export default function DaysTimesSection({ data }: DaysTimesSectionProps) {
           
           {/* Timeframe selector - only show for hour tab */}
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-primary">TIMEFRAME:</label>
+            <label className="text-sm font-medium text-theme-primary-text">TIMEFRAME:</label>
             <Select value={timeframe} onValueChange={setTimeframe}>
               <SelectTrigger className="w-32 h-8 text-sm">
                 <SelectValue />

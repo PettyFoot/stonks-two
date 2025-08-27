@@ -11,7 +11,7 @@ export default function DemoLayout({
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Demo Mode Header */}
-      <div className="bg-gradient-to-r from-[#2563EB] to-[#7C3AED] text-white px-6 py-3 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-[var(--theme-tertiary)] to-[var(--theme-secondary)] text-white px-6 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <Info className="h-5 w-5" />
           <div>
@@ -27,7 +27,7 @@ export default function DemoLayout({
             </Button>
           </Link>
           <Link href="/api/auth/signup">
-            <Button size="sm" className="bg-white text-[#2563EB] hover:bg-gray-100">
+            <Button size="sm" className="bg-white text-[var(--theme-tertiary)] hover:bg-gray-100">
               Get Started
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>

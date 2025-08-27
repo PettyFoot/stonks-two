@@ -21,8 +21,8 @@ const ConditionalBarChart = React.memo(function ConditionalBarChart({
   data, 
   title, 
   height = 300,
-  positiveColor = '#16A34A',
-  negativeColor = '#DC2626',
+  positiveColor = 'var(--theme-green)',
+  negativeColor = 'var(--theme-red)',
   showValues = false,
   valueFormatter = (value: number) => `$${value.toFixed(2)}`
 }: ConditionalBarChartProps) {
@@ -61,7 +61,7 @@ const ConditionalBarChart = React.memo(function ConditionalBarChart({
         y={labelY} 
         textAnchor="middle" 
         fontSize="10" 
-        fill="#6B7280"
+        fill="var(--theme-secondary-text)"
       >
         {valueFormatter(value)}
       </text>
@@ -133,7 +133,7 @@ const ConditionalBarChart = React.memo(function ConditionalBarChart({
           >
             <CartesianGrid 
               strokeDasharray="3 3" 
-              stroke="#E5E7EB" 
+              stroke="var(--theme-chart-grid)" 
               horizontal={true} 
               vertical={false} 
             />
@@ -141,7 +141,7 @@ const ConditionalBarChart = React.memo(function ConditionalBarChart({
               dataKey="date"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: '#6B7280' }}
+              tick={{ fontSize: 12, fill: 'var(--theme-secondary-text)' }}
               tickFormatter={(value, index) => {
                 // For the first and middle ticks, show the overall range
                 if (index === 0 && data.length > 1) {
@@ -156,7 +156,7 @@ const ConditionalBarChart = React.memo(function ConditionalBarChart({
             <YAxis 
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: '#6B7280' }}
+              tick={{ fontSize: 12, fill: 'var(--theme-secondary-text)' }}
               tickFormatter={(value) => {
                 if (Math.abs(value) >= 1000) {
                   return `$${(value / 1000).toFixed(1)}K`;
@@ -168,8 +168,8 @@ const ConditionalBarChart = React.memo(function ConditionalBarChart({
               formatter={formatTooltipValue}
               labelFormatter={(label) => `Period: ${label}`}
               contentStyle={{
-                backgroundColor: '#FFFFFF',
-                border: '1px solid #E5E7EB',
+                backgroundColor: 'var(--theme-chart-tooltip-bg)',
+                border: '1px solid var(--theme-chart-grid)',
                 borderRadius: '8px',
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                 fontSize: '12px',

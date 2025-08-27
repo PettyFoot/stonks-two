@@ -65,26 +65,26 @@ export default function CalendarSummaryCharts() {
       categories: categories.map(c => c.toString()),
       labels: {
         style: {
-          colors: '#94a3b8'
+          colors: 'var(--theme-secondary-text)'
         }
       }
     },
     yaxis: {
       labels: {
         style: {
-          colors: '#94a3b8'
+          colors: 'var(--theme-secondary-text)'
         },
         formatter: (value) => `$${value.toFixed(0)}`
       }
     },
     grid: {
-      borderColor: '#334155',
+      borderColor: 'var(--theme-chart-grid)',
       strokeDashArray: 4,
     },
     theme: {
       mode: 'dark'
     },
-    colors: ['#16A34A'],
+    colors: ['var(--theme-green)'],
     tooltip: {
       theme: 'dark',
       y: {
@@ -94,7 +94,7 @@ export default function CalendarSummaryCharts() {
     title: {
       text: title,
       style: {
-        color: '#e2e8f0',
+        color: 'var(--theme-primary-text)',
         fontSize: '14px',
         fontWeight: 600
       }
@@ -146,7 +146,7 @@ export default function CalendarSummaryCharts() {
       <div className="space-y-6">
         {/* Row 1: Day of Month Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="bg-[#1e293b] border-gray-700">
+          <Card className="bg-surface border-default">
             <CardContent className="p-4">
               <Chart
                 options={getChartOptions('PERFORMANCE BY DAY OF MONTH', dayCategories)}
@@ -157,7 +157,7 @@ export default function CalendarSummaryCharts() {
             </CardContent>
           </Card>
 
-          <Card className="bg-[#1e293b] border-gray-700">
+          <Card className="bg-surface border-default">
             <CardContent className="p-4">
               <Chart
                 options={{
@@ -165,7 +165,7 @@ export default function CalendarSummaryCharts() {
                   yaxis: {
                     ...getChartOptions('', []).yaxis,
                     labels: {
-                      style: { colors: '#94a3b8' },
+                      style: { colors: 'var(--theme-secondary-text)' },
                       formatter: (value) => value.toString()
                     }
                   },
@@ -186,7 +186,7 @@ export default function CalendarSummaryCharts() {
 
         {/* Row 2: Month of Year Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="bg-[#1e293b] border-gray-700">
+          <Card className="bg-surface border-default">
             <CardContent className="p-4">
               <Chart
                 options={getChartOptions('PERFORMANCE BY MONTH', monthNames)}
@@ -197,7 +197,7 @@ export default function CalendarSummaryCharts() {
             </CardContent>
           </Card>
 
-          <Card className="bg-[#1e293b] border-gray-700">
+          <Card className="bg-surface border-default">
             <CardContent className="p-4">
               <Chart
                 options={{
@@ -205,7 +205,7 @@ export default function CalendarSummaryCharts() {
                   yaxis: {
                     ...getChartOptions('', []).yaxis,
                     labels: {
-                      style: { colors: '#94a3b8' },
+                      style: { colors: 'var(--theme-secondary-text)' },
                       formatter: (value) => value.toString()
                     }
                   },
@@ -226,7 +226,7 @@ export default function CalendarSummaryCharts() {
 
         {/* Row 3: Year Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="bg-[#1e293b] border-gray-700">
+          <Card className="bg-surface border-default">
             <CardContent className="p-4">
               <Chart
                 options={getChartOptions('PERFORMANCE BY YEAR', yearCategories)}
@@ -237,7 +237,7 @@ export default function CalendarSummaryCharts() {
             </CardContent>
           </Card>
 
-          <Card className="bg-[#1e293b] border-gray-700">
+          <Card className="bg-surface border-default">
             <CardContent className="p-4">
               <Chart
                 options={{
@@ -245,7 +245,7 @@ export default function CalendarSummaryCharts() {
                   yaxis: {
                     ...getChartOptions('', []).yaxis,
                     labels: {
-                      style: { colors: '#94a3b8' },
+                      style: { colors: 'var(--theme-secondary-text)' },
                       formatter: (value) => value.toString()
                     }
                   },

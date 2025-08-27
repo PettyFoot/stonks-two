@@ -27,7 +27,7 @@ export default function TimeframeSelector({ value, onValueChange, className }: T
   
   return (
     <div className={`flex items-center gap-2 ${className || ''}`}>
-      <label className="text-sm font-medium whitespace-nowrap text-primary">
+      <label className="text-sm font-medium whitespace-nowrap text-theme-primary-text">
         Timeframe
       </label>
       <Select value={selectValue} onValueChange={onValueChange}>

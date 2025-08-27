@@ -255,7 +255,7 @@ export default function AdvancedFiltersPanel({
           <div className="flex justify-end">
             <Button
               onClick={updateFilters}
-              className="bg-[#16A34A] hover:bg-[#15803d] text-white"
+              className="bg-positive hover:bg-positive text-white"
               size="sm"
             >
               Apply Advanced Filters

@@ -50,7 +50,7 @@ export default function CalendarSummaryChartsSimple() {
     
     return (
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-gray-300 uppercase">{title}</h3>
+        <h3 className="text-sm font-semibold uppercase" style={{color: 'var(--theme-primary-text)'}}>{title}</h3>
         <div className="flex items-end space-x-1 h-[200px]">
           {data.map((value: number, index: number) => {
             const height = Math.abs(value) * scale;
@@ -62,10 +62,11 @@ export default function CalendarSummaryChartsSimple() {
                 title={formatter(value)}
               >
                 <div
-                  className={`w-full transition-all duration-300 ${
-                    isPositive ? 'bg-[#16A34A]' : 'bg-[#DC2626]'
-                  }`}
-                  style={{ height: `${height}px` }}
+                  className="w-full transition-all duration-300"
+                  style={{ 
+                    height: `${height}px`,
+                    backgroundColor: isPositive ? 'var(--theme-green)' : 'var(--theme-red)'
+                  }}
                 />
               </div>
             );
@@ -132,7 +133,7 @@ export default function CalendarSummaryChartsSimple() {
       <div className="space-y-6">
         {/* Row 1: Day of Month Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="bg-[#1e293b] border-gray-700">
+          <Card className="bg-surface border-default">
             <CardContent className="p-4">
               <SimpleBarChart
                 title="PERFORMANCE BY DAY OF MONTH"
@@ -143,7 +144,7 @@ export default function CalendarSummaryChartsSimple() {
             </CardContent>
           </Card>
 
-          <Card className="bg-[#1e293b] border-gray-700">
+          <Card className="bg-surface border-default">
             <CardContent className="p-4">
               <SimpleBarChart
                 title="TRADE DISTRIBUTION BY DAY"
@@ -157,7 +158,7 @@ export default function CalendarSummaryChartsSimple() {
 
         {/* Row 2: Month of Year Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="bg-[#1e293b] border-gray-700">
+          <Card className="bg-surface border-default">
             <CardContent className="p-4">
               <SimpleBarChart
                 title="PERFORMANCE BY MONTH"
@@ -165,7 +166,7 @@ export default function CalendarSummaryChartsSimple() {
                 maxValue={maxPnl}
                 formatter={(v: number) => `$${v.toFixed(2)}`}
               />
-              <div className="flex justify-between mt-2 text-xs text-gray-500">
+              <div className="flex justify-between mt-2 text-xs" style={{color: 'var(--theme-secondary-text)'}}>
                 {monthNames.map(m => (
                   <span key={m}>{m}</span>
                 ))}
@@ -173,7 +174,7 @@ export default function CalendarSummaryChartsSimple() {
             </CardContent>
           </Card>
 
-          <Card className="bg-[#1e293b] border-gray-700">
+          <Card className="bg-surface border-default">
             <CardContent className="p-4">
               <SimpleBarChart
                 title="TRADE DISTRIBUTION BY MONTH"
@@ -181,7 +182,7 @@ export default function CalendarSummaryChartsSimple() {
                 maxValue={maxTrades}
                 formatter={(v: number) => `${v} trades`}
               />
-              <div className="flex justify-between mt-2 text-xs text-gray-500">
+              <div className="flex justify-between mt-2 text-xs" style={{color: 'var(--theme-secondary-text)'}}>
                 {monthNames.map(m => (
                   <span key={m}>{m}</span>
                 ))}
@@ -192,7 +193,7 @@ export default function CalendarSummaryChartsSimple() {
 
         {/* Row 3: Year Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="bg-[#1e293b] border-gray-700">
+          <Card className="bg-surface border-default">
             <CardContent className="p-4">
               <SimpleBarChart
                 title="PERFORMANCE BY YEAR"
@@ -200,7 +201,7 @@ export default function CalendarSummaryChartsSimple() {
                 maxValue={maxPnl}
                 formatter={(v: number) => `$${v.toFixed(2)}`}
               />
-              <div className="flex justify-between mt-2 text-xs text-gray-500">
+              <div className="flex justify-between mt-2 text-xs" style={{color: 'var(--theme-secondary-text)'}}>
                 {data.yearly.map(y => (
                   <span key={y.year}>{y.year}</span>
                 ))}
@@ -208,7 +209,7 @@ export default function CalendarSummaryChartsSimple() {
             </CardContent>
           </Card>
 
-          <Card className="bg-[#1e293b] border-gray-700">
+          <Card className="bg-surface border-default">
             <CardContent className="p-4">
               <SimpleBarChart
                 title="TRADE DISTRIBUTION BY YEAR"
@@ -216,7 +217,7 @@ export default function CalendarSummaryChartsSimple() {
                 maxValue={maxTrades}
                 formatter={(v: number) => `${v} trades`}
               />
-              <div className="flex justify-between mt-2 text-xs text-gray-500">
+              <div className="flex justify-between mt-2 text-xs" style={{color: 'var(--theme-secondary-text)'}}>
                 {data.yearly.map(y => (
                   <span key={y.year}>{y.year}</span>
                 ))}

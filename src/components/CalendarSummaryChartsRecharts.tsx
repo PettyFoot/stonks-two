@@ -82,16 +82,16 @@ export default function CalendarSummaryChartsRecharts() {
     formatter: (value: number) => string;
     useConditionalColors?: boolean;
   }) => (
-    <Card className="bg-white border-gray-200">
-      <CardHeader className="pb-2 bg-white">
-        <CardTitle className="text-sm font-semibold text-gray-700 uppercase">{title}</CardTitle>
+    <Card className="bg-surface border-default">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-semibold uppercase text-primary">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="bg-white">
+      <CardContent>
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={data} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
             <CartesianGrid 
               strokeDasharray="3 3" 
-              stroke="#e1e3e5" 
+              stroke="var(--theme-chart-grid)" 
               horizontal={true}
               vertical={false}
             />
@@ -99,35 +99,35 @@ export default function CalendarSummaryChartsRecharts() {
               dataKey={xKey}
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 10, fill: '#6b7280' }}
+              tick={{ fontSize: 10, fill: 'var(--theme-secondary-text)' }}
               interval={Math.floor(data.length / 10)}
             />
             <YAxis 
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 10, fill: '#6b7280' }}
+              tick={{ fontSize: 10, fill: 'var(--theme-secondary-text)' }}
               tickFormatter={formatter}
             />
             <Tooltip 
               formatter={(value: number | string) => formatter(Number(value))}
               contentStyle={{
-                backgroundColor: '#ffffff',
-                border: '1px solid #e1e3e5',
+                backgroundColor: 'var(--theme-chart-tooltip-bg)',
+                border: '1px solid var(--theme-chart-grid)',
                 borderRadius: '8px',
                 fontSize: '12px'
               }}
-              labelStyle={{ color: '#6b7280' }}
-              itemStyle={{ color: '#16A34A' }}
+              labelStyle={{ color: 'var(--theme-secondary-text)' }}
+              itemStyle={{ color: 'var(--theme-green)' }}
             />
             <Bar 
               dataKey={dataKey}
-              fill="#16A34A"
+              fill="var(--theme-green)"
               radius={[4, 4, 0, 0]}
             >
               {useConditionalColors && data.map((entry, index) => (
                 <Cell 
                   key={`cell-${index}`} 
-                  fill={Number(entry[dataKey]) >= 0 ? '#16A34A' : '#DC2626'} 
+                  fill={Number(entry[dataKey]) >= 0 ? 'var(--theme-green)' : 'var(--theme-red)'} 
                 />
               ))}
             </Bar>

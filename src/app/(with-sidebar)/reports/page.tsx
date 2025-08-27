@@ -35,7 +35,43 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 
 export default function Reports() {
   const [pnlType, setPnlType] = useState('Gross');
-  const { } = useGlobalFilters();
+  const { filters } = useGlobalFilters();
+
+  // Calculate effective date range for display
+  const getEffectiveDateRange = () => {
+    // If custom dates are set, use those
+    if (filters.customDateRange?.from && filters.customDateRange?.to) {
+      return {
+        from: filters.customDateRange.from,
+        to: filters.customDateRange.to
+      };
+    }
+    
+    // Otherwise use default 30-day range
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    return {
+      from: thirtyDaysAgo.toISOString().split('T')[0],
+      to: today.toISOString().split('T')[0]
+    };
+  };
+
+  // Format date range for display
+  const formatDateRange = () => {
+    const range = getEffectiveDateRange();
+    const fromDate = new Date(range.from);
+    const toDate = new Date(range.to);
+    
+    const options: Intl.DateTimeFormatOptions = { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    };
+    
+    return `${fromDate.toLocaleDateString('en-US', options)} - ${toDate.toLocaleDateString('en-US', options)}`;
+  };
   
   // Original data hook for existing charts
   const { dailyPnl, averageDailyPnl, averageDailyPnlOnTradingDays, averageDailyVolume, averageDailyVolumeOnTradingDays, cumulativePnl, loading, error } = useReportsData();
@@ -135,13 +171,12 @@ export default function Reports() {
       
       <FilterPanel 
         showAdvanced={true}
-        showTimeRangeTabs={true}
       />
 
       <div className="flex-1 overflow-auto p-6">
         {/* Report Type Selection */}
         <div className="mb-6">
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-center mb-4">
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium text-primary">P&L Type</label>
               <Select value={pnlType} onValueChange={setPnlType}>
@@ -154,8 +189,10 @@ export default function Reports() {
                 </SelectContent>
               </Select>
             </div>
-
-
+            
+            <div className="text-sm text-muted font-medium ml-6">
+              Current Period: {formatDateRange()}
+            </div>
           </div>
         </div>
 

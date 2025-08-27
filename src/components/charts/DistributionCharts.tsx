@@ -18,7 +18,7 @@ export default function DistributionCharts({
   height = CHART_HEIGHTS.SM
 }: DistributionChartsProps) {
   const getBarColor = (value: number) => {
-    return value >= 0 ? '#16A34A' : '#DC2626';
+    return value >= 0 ? 'var(--theme-green)' : 'var(--theme-red)';
   };
 
   const formatValue = (value: number) => {
@@ -45,7 +45,7 @@ export default function DistributionCharts({
               
               {/* Progress Bar */}
               <div className="flex-1 min-w-0">
-                <div className="relative h-4 bg-gray-100 rounded-sm overflow-hidden w-full">
+                <div className="relative h-4 rounded-sm overflow-hidden w-full" style={{backgroundColor: 'var(--theme-chart-grid)'}}>
                   <div 
                     className="absolute left-0 top-0 h-full transition-all duration-300"
                     style={{ 
@@ -103,7 +103,7 @@ export function GaugeChart({
             <path
               d="M 10 50 A 40 40 0 0 1 110 50"
               fill="none"
-              stroke="#E5E7EB"
+              stroke="var(--theme-chart-grid)"
               strokeWidth="8"
               strokeLinecap="round"
             />
@@ -111,7 +111,7 @@ export function GaugeChart({
             <path
               d={`M 10 50 A 40 40 0 0 1 ${Math.round((10 + (percentage / 100) * 100) * 1000) / 1000} ${Math.round((50 - Math.sin((percentage / 100) * Math.PI) * 40) * 1000) / 1000}`}
               fill="none"
-              stroke={isPositive ? '#16A34A' : '#DC2626'}
+              stroke={isPositive ? 'var(--theme-green)' : 'var(--theme-red)'}
               strokeWidth="8"
               strokeLinecap="round"
             />

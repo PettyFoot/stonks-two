@@ -73,7 +73,7 @@ export default function DemoCommunity() {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-primary">Trading Community</h2>
-            <Button className="bg-[#16A34A] hover:bg-[#15803d] text-white">
+            <Button className="bg-[var(--theme-green)] hover:bg-[var(--theme-green)/80] text-white">
               Share Strategy
             </Button>
           </div>
@@ -84,7 +84,7 @@ export default function DemoCommunity() {
           {/* Main Feed */}
           <div className="col-span-2 space-y-4">
             <div className="flex items-center gap-3 mb-4">
-              <Button variant="outline" size="sm" className="bg-[#16A34A] text-white border-[#16A34A]">
+              <Button variant="outline" size="sm" className="bg-[var(--theme-green)] text-white border-[var(--theme-green)]">
                 Latest
               </Button>
               <Button variant="outline" size="sm">
@@ -177,7 +177,7 @@ export default function DemoCommunity() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-semibold text-[#16A34A]">{voyager.pnl}</div>
+                      <div className="text-sm font-semibold text-[var(--theme-green)]">{voyager.pnl}</div>
                       <div className="text-xs text-muted">{voyager.winRate} WR</div>
                     </div>
                   </div>
@@ -204,7 +204,7 @@ export default function DemoCommunity() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted">Total P&L</span>
-                  <span className="text-sm font-medium text-[#16A34A]">+$847,392</span>
+                  <span className="text-sm font-medium text-[var(--theme-green)]">+$847,392</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted">Avg Win Rate</span>

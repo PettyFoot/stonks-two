@@ -105,13 +105,13 @@ export default function InstrumentTab({ data }: AnalyticsTabContentProps) {
           </div>
           
           {/* Symbol Performance Table */}
-          <Card className="bg-surface border-default">
+          <Card className="bg-theme-surface border-theme-border">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-medium text-primary">Symbol Performance Summary</CardTitle>
+              <CardTitle className="text-base font-medium text-theme-primary-text">Symbol Performance Summary</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <div className="grid grid-cols-5 gap-4 text-sm font-medium text-muted-foreground border-b border-default/30 pb-2">
+                <div className="grid grid-cols-5 gap-4 text-sm font-medium text-theme-secondary-text border-b border-theme-border/30 pb-2">
                   <span>Symbol</span>
                   <span>Trades</span>
                   <span>% of Total</span>
@@ -120,13 +120,13 @@ export default function InstrumentTab({ data }: AnalyticsTabContentProps) {
                 </div>
                 {symbolData.map((symbol) => (
                   <div key={symbol.category} className="grid grid-cols-5 gap-4 text-sm py-1">
-                    <span className="font-medium text-primary">{symbol.category}</span>
-                    <span className="text-muted-foreground">{symbol.count}</span>
-                    <span className="text-muted-foreground">{symbol.percentage.toFixed(1)}%</span>
-                    <span className={`font-semibold ${symbol.pnl >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
+                    <span className="font-medium text-theme-primary-text">{symbol.category}</span>
+                    <span className="text-theme-secondary-text">{symbol.count}</span>
+                    <span className="text-theme-secondary-text">{symbol.percentage.toFixed(1)}%</span>
+                    <span className={`font-semibold ${symbol.pnl >= 0 ? 'text-theme-green' : 'text-theme-red'}`}>
                       ${symbol.pnl.toFixed(2)}
                     </span>
-                    <span className={`font-semibold ${symbol.avgPnl >= 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
+                    <span className={`font-semibold ${symbol.avgPnl >= 0 ? 'text-theme-green' : 'text-theme-red'}`}>
                       ${symbol.avgPnl.toFixed(2)}
                     </span>
                   </div>
@@ -160,24 +160,24 @@ export default function InstrumentTab({ data }: AnalyticsTabContentProps) {
               title="PORTFOLIO CORRELATION ANALYSIS"
               valueFormatter={(value) => value.toFixed(3)}
             />
-            <Card className="bg-surface border-default">
+            <Card className="bg-theme-surface border-theme-border">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base font-medium text-primary">Correlation Insights</CardTitle>
+                <CardTitle className="text-base font-medium text-theme-primary-text">Correlation Insights</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex justify-between py-2 border-b border-default/30">
-                    <span className="text-sm text-muted-foreground">Average Correlation</span>
-                    <span className="text-sm font-semibold text-primary">
+                  <div className="flex justify-between py-2 border-b border-theme-border/30">
+                    <span className="text-sm text-theme-secondary-text">Average Correlation</span>
+                    <span className="text-sm font-semibold text-theme-primary-text">
                       {correlationData.length > 0 ? 
                         (correlationData.reduce((sum, item) => sum + Math.abs(item.value), 0) / correlationData.length).toFixed(3) 
                         : '0.000'
                       }
                     </span>
                   </div>
-                  <div className="flex justify-between py-2 border-b border-default/30">
-                    <span className="text-sm text-muted-foreground">Highest Correlation</span>
-                    <span className="text-sm font-semibold text-primary">
+                  <div className="flex justify-between py-2 border-b border-theme-border/30">
+                    <span className="text-sm text-theme-secondary-text">Highest Correlation</span>
+                    <span className="text-sm font-semibold text-theme-primary-text">
                       {correlationData.length > 0 ? 
                         Math.max(...correlationData.map(item => Math.abs(item.value))).toFixed(3)
                         : '0.000'
@@ -185,8 +185,8 @@ export default function InstrumentTab({ data }: AnalyticsTabContentProps) {
                     </span>
                   </div>
                   <div className="flex justify-between py-2">
-                    <span className="text-sm text-muted-foreground">Diversification Score</span>
-                    <span className={`text-sm font-semibold ${concentrationMetrics.diversificationScore > 60 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
+                    <span className="text-sm text-theme-secondary-text">Diversification Score</span>
+                    <span className={`text-sm font-semibold ${concentrationMetrics.diversificationScore > 60 ? 'text-theme-green' : 'text-theme-red'}`}>
                       {concentrationMetrics.diversificationScore.toFixed(1)}%
                     </span>
                   </div>
@@ -199,33 +199,33 @@ export default function InstrumentTab({ data }: AnalyticsTabContentProps) {
         {/* Concentration Tab */}
         <TabsContent value="concentration" className="space-y-6">
           <div className="grid grid-cols-2 gap-6">
-            <Card className="bg-surface border-default">
+            <Card className="bg-theme-surface border-theme-border">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base font-medium text-primary">Portfolio Concentration</CardTitle>
+                <CardTitle className="text-base font-medium text-theme-primary-text">Portfolio Concentration</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex justify-between py-2 border-b border-default/30">
-                    <span className="text-sm text-muted-foreground">Top Symbol</span>
-                    <span className="text-sm font-semibold text-primary">
+                  <div className="flex justify-between py-2 border-b border-theme-border/30">
+                    <span className="text-sm text-theme-secondary-text">Top Symbol</span>
+                    <span className="text-sm font-semibold text-theme-primary-text">
                       {concentrationMetrics.topSymbol} ({concentrationMetrics.topSymbolPercent.toFixed(1)}%)
                     </span>
                   </div>
-                  <div className="flex justify-between py-2 border-b border-default/30">
-                    <span className="text-sm text-muted-foreground">Top 3 Symbols</span>
-                    <span className="text-sm font-semibold text-primary">
+                  <div className="flex justify-between py-2 border-b border-theme-border/30">
+                    <span className="text-sm text-theme-secondary-text">Top 3 Symbols</span>
+                    <span className="text-sm font-semibold text-theme-primary-text">
                       {concentrationMetrics.top3Percent.toFixed(1)}%
                     </span>
                   </div>
-                  <div className="flex justify-between py-2 border-b border-default/30">
-                    <span className="text-sm text-muted-foreground">Diversification Score</span>
-                    <span className={`text-sm font-semibold ${concentrationMetrics.diversificationScore > 60 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>
+                  <div className="flex justify-between py-2 border-b border-theme-border/30">
+                    <span className="text-sm text-theme-secondary-text">Diversification Score</span>
+                    <span className={`text-sm font-semibold ${concentrationMetrics.diversificationScore > 60 ? 'text-theme-green' : 'text-theme-red'}`}>
                       {concentrationMetrics.diversificationScore.toFixed(1)}%
                     </span>
                   </div>
                   <div className="flex justify-between py-2">
-                    <span className="text-sm text-muted-foreground">Total Symbols Traded</span>
-                    <span className="text-sm font-semibold text-primary">
+                    <span className="text-sm text-theme-secondary-text">Total Symbols Traded</span>
+                    <span className="text-sm font-semibold text-theme-primary-text">
                       {symbolData.length}
                     </span>
                   </div>
@@ -233,23 +233,23 @@ export default function InstrumentTab({ data }: AnalyticsTabContentProps) {
               </CardContent>
             </Card>
             
-            <Card className="bg-surface border-default">
+            <Card className="bg-theme-surface border-theme-border">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base font-medium text-primary">Risk Assessment</CardTitle>
+                <CardTitle className="text-base font-medium text-theme-primary-text">Risk Assessment</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="text-center py-8">
                     <div className={`text-4xl font-bold mb-2 ${
-                      concentrationMetrics.diversificationScore > 70 ? 'text-[#16A34A]' : 
-                      concentrationMetrics.diversificationScore > 40 ? 'text-[#F59E0B]' : 'text-[#DC2626]'
+                      concentrationMetrics.diversificationScore > 70 ? 'text-theme-green' : 
+                      concentrationMetrics.diversificationScore > 40 ? 'text-theme-warning' : 'text-theme-red'
                     }`}>
                       {concentrationMetrics.diversificationScore > 70 ? 'LOW' : 
                        concentrationMetrics.diversificationScore > 40 ? 'MEDIUM' : 'HIGH'}
                     </div>
-                    <div className="text-sm text-muted-foreground">Concentration Risk</div>
+                    <div className="text-sm text-theme-secondary-text">Concentration Risk</div>
                   </div>
-                  <div className="text-xs text-muted-foreground text-center">
+                  <div className="text-xs text-theme-secondary-text text-center">
                     {concentrationMetrics.diversificationScore > 70 ? 
                       'Well diversified portfolio with good risk distribution' :
                       concentrationMetrics.diversificationScore > 40 ?

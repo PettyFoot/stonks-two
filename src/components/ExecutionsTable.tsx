@@ -151,25 +151,25 @@ export default function ExecutionsTable({
     switch (columnId) {
       case 'orderExecutedTime':
         return (
-          <TableCell className="text-sm text-primary font-medium whitespace-nowrap">
+          <TableCell className="text-sm text-theme-primary-text font-medium whitespace-nowrap">
             {formatTime(execution.orderExecutedTime)}
           </TableCell>
         );
       case 'symbol':
         return (
-          <TableCell className="text-sm font-medium text-primary">
+          <TableCell className="text-sm font-medium text-theme-primary-text">
             {execution.symbol}
           </TableCell>
         );
       case 'orderQuantity':
         return (
-          <TableCell className="text-sm text-primary">
+          <TableCell className="text-sm text-theme-primary-text">
             {execution.orderQuantity.toLocaleString()}
           </TableCell>
         );
       case 'executions':
         return (
-          <TableCell className="text-sm text-primary">
+          <TableCell className="text-sm text-theme-primary-text">
             1
           </TableCell>
         );
@@ -177,7 +177,7 @@ export default function ExecutionsTable({
         return (
           <TableCell className={cn(
             'text-sm font-medium whitespace-nowrap',
-            (execution.pnl || 0) >= 0 ? 'text-positive' : 'text-negative'
+            (execution.pnl || 0) >= 0 ? 'text-theme-green' : 'text-theme-red'
           )}>
             {formatPnL(execution.pnl)}
           </TableCell>
@@ -186,13 +186,13 @@ export default function ExecutionsTable({
         return (
           <TableCell className="text-sm text-center">
             {execution.shared && (
-              <Share className="h-4 w-4 text-muted mx-auto" />
+              <Share className="h-4 w-4 text-theme-secondary-text mx-auto" />
             )}
           </TableCell>
         );
       case 'notes':
         return (
-          <TableCell className="text-sm text-muted max-w-[200px] truncate">
+          <TableCell className="text-sm text-theme-secondary-text max-w-[200px] truncate">
             {execution.notes || ''}
           </TableCell>
         );
@@ -203,13 +203,13 @@ export default function ExecutionsTable({
               {execution.tags?.slice(0, 2).map((tag) => (
                 <span 
                   key={tag}
-                  className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-800"
+                  className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-theme-surface100 text-gray-800"
                 >
                   {tag}
                 </span>
               ))}
               {(execution.tags?.length || 0) > 2 && (
-                <span className="text-xs text-muted">
+                <span className="text-xs text-theme-secondary-text">
                   +{(execution.tags?.length || 0) - 2} more
                 </span>
               )}
@@ -218,7 +218,7 @@ export default function ExecutionsTable({
         );
       default:
         return (
-          <TableCell className="text-sm text-muted">
+          <TableCell className="text-sm text-theme-secondary-text">
             -
           </TableCell>
         );
@@ -236,18 +236,18 @@ export default function ExecutionsTable({
     return (
       <TableRow>
         <TableCell colSpan={visibleColumns.length + (isMobile ? 1 : 0) + (showActions ? 1 : 0)}>
-          <div className="px-4 py-3 bg-gray-50 rounded-lg">
+          <div className="px-4 py-3 bg-theme-surface50 rounded-lg">
             <div className="grid grid-cols-2 gap-3 text-sm">
               {hiddenColumns.map(col => (
                 <div key={col.id}>
-                  <span className="text-muted font-medium">{col.label}:</span>
-                  <span className="ml-2 text-primary">
+                  <span className="text-theme-secondary-text font-medium">{col.label}:</span>
+                  <span className="ml-2 text-theme-primary-text">
                     {col.id === 'orderExecutedTime' ? (
                       formatTime(execution.orderExecutedTime)
                     ) : col.id === 'pnl' ? (
                       <span className={cn(
                         'font-medium',
-                        (execution.pnl || 0) >= 0 ? 'text-positive' : 'text-negative'
+                        (execution.pnl || 0) >= 0 ? 'text-theme-green' : 'text-theme-red'
                       )}>
                         {formatPnL(execution.pnl)}
                       </span>
@@ -275,7 +275,7 @@ export default function ExecutionsTable({
   const SortButton = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
     <button
       onClick={() => handleSort(field)}
-      className="flex items-center gap-1 text-left font-medium text-primary hover:text-primary/80"
+      className="flex items-center gap-1 text-left font-medium text-theme-primary-text hover:text-theme-primary-text/80"
     >
       {children}
       {sortField === field && (
@@ -298,14 +298,14 @@ export default function ExecutionsTable({
   // Loading state
   if (loading) {
     return (
-      <div className="bg-surface border border-default rounded-lg">
+      <div className="bg-theme-surface border border-theme-border rounded-lg">
         <div className="overflow-x-auto">
           <Table className="w-full">
             <TableHeader>
-              <TableRow className="hover:bg-transparent border-b border-default">
+              <TableRow className="hover:bg-transparent border-b border-theme-border">
                 {isMobile && <TableHead className="w-8"></TableHead>}
                 {visibleColumns.map((column) => (
-                  <TableHead key={column.id} className="text-xs font-medium text-muted uppercase">
+                  <TableHead key={column.id} className="text-xs font-medium text-theme-secondary-text uppercase">
                     {column.label}
                   </TableHead>
                 ))}
@@ -318,7 +318,7 @@ export default function ExecutionsTable({
                   {isMobile && <TableCell className="w-8"></TableCell>}
                   {visibleColumns.map((column) => (
                     <TableCell key={column.id}>
-                      <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-4 bg-theme-surface200 rounded animate-pulse"></div>
                     </TableCell>
                   ))}
                   {showActions && !isMobile && <TableCell></TableCell>}
@@ -334,9 +334,9 @@ export default function ExecutionsTable({
   // Error state
   if (error) {
     return (
-      <div className="bg-surface border border-default rounded-lg p-8 text-center">
-        <p className="text-negative font-medium">Error loading executions</p>
-        <p className="text-muted text-sm mt-1">{error}</p>
+      <div className="bg-theme-surface border border-theme-border rounded-lg p-8 text-center">
+        <p className="text-theme-red font-medium">Error loading executions</p>
+        <p className="text-theme-secondary-text text-sm mt-1">{error}</p>
       </div>
     );
   }
@@ -344,26 +344,26 @@ export default function ExecutionsTable({
   // Empty state
   if (executions.length === 0) {
     return (
-      <div className="bg-surface border border-default rounded-lg p-8 text-center">
-        <p className="text-muted font-medium">No executions found</p>
-        <p className="text-muted text-sm mt-1">There are no order executions for this trade yet.</p>
+      <div className="bg-theme-surface border border-theme-border rounded-lg p-8 text-center">
+        <p className="text-theme-secondary-text font-medium">No executions found</p>
+        <p className="text-theme-secondary-text text-sm mt-1">There are no order executions for this trade yet.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-surface border border-default rounded-lg">
+    <div className="bg-theme-surface border border-theme-border rounded-lg">
       <div className="overflow-x-auto">
         <Table className="w-full">
           <TableHeader>
-            <TableRow className="hover:bg-transparent border-b border-default">
+            <TableRow className="hover:bg-transparent border-b border-theme-border">
               {isMobile && (
                 <TableHead className="w-8"></TableHead>
               )}
               {visibleColumns.map((column) => (
                 <TableHead 
                   key={column.id} 
-                  className="text-xs font-medium text-muted uppercase"
+                  className="text-xs font-medium text-theme-secondary-text uppercase"
                 >
                   {column.sortable ? (
                     <SortButton field={column.id as SortField}>{column.label}</SortButton>
@@ -379,7 +379,7 @@ export default function ExecutionsTable({
             {sortedExecutions.map((execution) => (
               <React.Fragment key={execution.id}>
                 <TableRow 
-                  className="hover:bg-gray-50 border-b border-default cursor-pointer"
+                  className="hover:bg-theme-surface50 border-b border-theme-border cursor-pointer"
                   onClick={() => !isMobile && onExecutionSelect?.(execution)}
                 >
                   {isMobile && (
@@ -418,12 +418,12 @@ export default function ExecutionsTable({
             
             {/* Totals Row - Hidden on mobile */}
             {!isMobile && (
-              <TableRow className="bg-gray-50 border-t-2 border-default font-medium hover:bg-gray-50">
+              <TableRow className="bg-theme-surface50 border-t-2 border-theme-border font-medium hover:bg-theme-surface50">
                 {visibleColumns.map((column, index) => {
                   // For the first column, show "TOTAL:"
                   if (index === 0) {
                     return (
-                      <TableCell key={column.id} className="text-sm font-semibold text-primary">
+                      <TableCell key={column.id} className="text-sm font-semibold text-theme-primary-text">
                         TOTAL:
                       </TableCell>
                     );
@@ -433,19 +433,19 @@ export default function ExecutionsTable({
                   switch (column.id) {
                     case 'symbol':
                       return (
-                        <TableCell key={column.id} className="text-sm font-semibold text-primary">
+                        <TableCell key={column.id} className="text-sm font-semibold text-theme-primary-text">
                           {totals.executions} exec{totals.executions !== 1 ? 's' : ''}
                         </TableCell>
                       );
                     case 'orderQuantity':
                       return (
-                        <TableCell key={column.id} className="text-sm font-semibold text-primary">
+                        <TableCell key={column.id} className="text-sm font-semibold text-theme-primary-text">
                           {totals.volume.toLocaleString()}
                         </TableCell>
                       );
                     case 'executions':
                       return (
-                        <TableCell key={column.id} className="text-sm font-semibold text-primary">
+                        <TableCell key={column.id} className="text-sm font-semibold text-theme-primary-text">
                           {totals.executions}
                         </TableCell>
                       );
@@ -453,7 +453,7 @@ export default function ExecutionsTable({
                       return (
                         <TableCell key={column.id} className={cn(
                           'text-sm font-semibold',
-                          totals.pnl >= 0 ? 'text-positive' : 'text-negative'
+                          totals.pnl >= 0 ? 'text-theme-green' : 'text-theme-red'
                         )}>
                           {formatPnL(totals.pnl)}
                         </TableCell>
@@ -471,21 +471,21 @@ export default function ExecutionsTable({
       
       {/* Mobile Totals Summary */}
       {isMobile && (
-        <div className="p-4 border-t border-default bg-gray-50">
+        <div className="p-4 border-t border-theme-border bg-theme-surface50">
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
-              <span className="text-muted">Total Executions:</span>
+              <span className="text-theme-secondary-text">Total Executions:</span>
               <span className="ml-2 font-semibold">{totals.executions}</span>
             </div>
             <div>
-              <span className="text-muted">Total Volume:</span>
+              <span className="text-theme-secondary-text">Total Volume:</span>
               <span className="ml-2 font-semibold">{totals.volume.toLocaleString()}</span>
             </div>
             <div>
-              <span className="text-muted">Total P&L:</span>
+              <span className="text-theme-secondary-text">Total P&L:</span>
               <span className={cn(
                 'ml-2 font-semibold',
-                totals.pnl >= 0 ? 'text-positive' : 'text-negative'
+                totals.pnl >= 0 ? 'text-theme-green' : 'text-theme-red'
               )}>
                 {formatPnL(totals.pnl)}
               </span>

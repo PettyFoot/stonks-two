@@ -96,17 +96,17 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
   };
 
   const getDayColor = (dayData: DayData | undefined) => {
-    if (!dayData || !dayData.tradeCount) return 'text-gray-700';
+    if (!dayData || !dayData.tradeCount) return 'text-theme-secondary-text';
     if (dayData.pnl > 0) return 'text-white font-bold';
     if (dayData.pnl < 0) return 'text-white font-bold';
-    return 'text-gray-700';
+    return 'text-theme-secondary-text';
   };
 
   const getDayBackground = (dayData: DayData | undefined) => {
     if (!dayData || !dayData.tradeCount) return 'bg-white';
-    if (dayData.pnl > 0) return 'bg-green-500 hover:bg-green-600';
-    if (dayData.pnl < 0) return 'bg-red-500 hover:bg-red-600';
-    return 'bg-gray-100';
+    if (dayData.pnl > 0) return 'bg-theme-green hover:bg-theme-green/80';
+    if (dayData.pnl < 0) return 'bg-theme-red hover:bg-theme-red/80';
+    return 'bg-theme-surface';
   };
 
   if (isLoading) {
@@ -126,7 +126,7 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="text-2xl font-bold text-primary">{year}</span>
+          <span className="text-2xl font-bold text-theme-primary-text">{year}</span>
           <Button
             variant="ghost"
             size="sm"
@@ -143,26 +143,26 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
         {monthNames.map((monthName, monthIndex) => (
           <Card 
             key={monthIndex}
-            className="bg-white border-[#e1e3e5] shadow-sm"
+            className="bg-theme-surface border-theme-border shadow-sm"
           >
-            <CardHeader className="pb-2 bg-white border-b border-[#e1e3e5]">
+            <CardHeader className="pb-2 bg-theme-surface border-b border-theme-border">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-base text-gray-800">{monthName}, {year}</h3>
+                <h3 className="font-semibold text-base text-theme-primary-text">{monthName}, {year}</h3>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleMonthOpen(monthIndex)}
-                  className="h-7 px-2 text-xs border-[#e1e3e5] hover:bg-[#f5f7fb] text-gray-700"
+                  className="h-7 px-2 text-xs border-theme-border hover:bg-theme-surface/50 text-theme-primary-text"
                 >
                   Open
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="p-3 bg-[#f5f7fb]">
+            <CardContent className="p-3 bg-theme-surface">
               {/* Days of Week Header */}
               <div className="grid grid-cols-7 gap-1 mb-2">
                 {daysOfWeek.map(day => (
-                  <div key={day} className="text-center text-xs font-medium text-gray-600 py-1">
+                  <div key={day} className="text-center text-xs font-medium text-theme-secondary-text py-1">
                     {day}
                   </div>
                 ))}
@@ -175,7 +175,7 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
                     key={index}
                     className={`
                       aspect-square flex items-center justify-center text-xs p-1
-                      ${!day ? 'bg-[#e1e3e5]' : `${getDayBackground(day)} cursor-pointer transition-colors border border-[#e1e3e5]`}
+                      ${!day ? 'bg-theme-border' : `${getDayBackground(day)} cursor-pointer transition-colors border border-theme-border`}
                     `}
                   >
                     {day && (
@@ -192,34 +192,34 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
       </div>
 
       {/* Year Summary */}
-      <Card className="bg-white border-[#e1e3e5] shadow-sm">
-        <CardContent className="p-6 bg-white">
+      <Card className="bg-theme-surface border-theme-border shadow-sm">
+        <CardContent className="p-6 bg-theme-surface">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <div className="text-sm text-muted-foreground">Total P&L</div>
+              <div className="text-sm text-theme-secondary-text">Total P&L</div>
               <div className={`text-2xl font-bold ${
                 Object.values(yearData).reduce((sum, d) => sum + (d?.pnl || 0), 0) >= 0 
-                  ? 'text-[#16A34A]' 
-                  : 'text-[#DC2626]'
+                  ? 'text-theme-green' 
+                  : 'text-theme-red'
               }`}>
                 ${Number(Object.values(yearData).reduce((sum, d) => sum + (d?.pnl || 0), 0)).toFixed(2)}
               </div>
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">Total Trades</div>
-              <div className="text-2xl font-bold">
+              <div className="text-sm text-theme-secondary-text">Total Trades</div>
+              <div className="text-2xl font-bold text-theme-primary-text">
                 {Number(Object.values(yearData).reduce((sum, d) => sum + (d?.tradeCount || 0), 0))}
               </div>
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">Trading Days</div>
-              <div className="text-2xl font-bold">
+              <div className="text-sm text-theme-secondary-text">Trading Days</div>
+              <div className="text-2xl font-bold text-theme-primary-text">
                 {Object.values(yearData).filter(d => d && d.tradeCount > 0).length}
               </div>
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">Win Days</div>
-              <div className="text-2xl font-bold text-[#16A34A]">
+              <div className="text-sm text-theme-secondary-text">Win Days</div>
+              <div className="text-2xl font-bold text-theme-green">
                 {Object.values(yearData).filter(d => d && d.pnl > 0).length}
               </div>
             </div>
