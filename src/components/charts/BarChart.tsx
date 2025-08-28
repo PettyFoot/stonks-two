@@ -137,14 +137,14 @@ const CustomBarChart = React.memo(function CustomBarChart({
               dataKey="date"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: 'var(--theme-secondary-text)' }}
+              tick={{ fontSize: 12, fill: 'var(--theme-primary-text)' }}
               tickFormatter={formatXAxisTick}
               interval={tickInterval}
             />
             <YAxis 
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: 'var(--theme-secondary-text)' }}
+              tick={{ fontSize: 12, fill: 'var(--theme-primary-text)' }}
               tickFormatter={(value) => formatter.formatAxisValue(value)}
             />
             {showTooltip && (

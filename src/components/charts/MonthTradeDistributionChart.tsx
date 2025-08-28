@@ -149,7 +149,7 @@ export default function MonthTradeDistributionChart({
               dataKey="date"
               axisLine={{ stroke: 'var(--theme-chart-axis)' }}
               tickLine={{ stroke: 'var(--theme-chart-axis)' }}
-              tick={{ fontSize: 10, fill: 'var(--theme-secondary-text)' }}
+              tick={{ fontSize: 10, fill: 'var(--theme-primary-text)' }}
               tickFormatter={formatDate}
               angle={-45}
               textAnchor="end"
@@ -159,7 +159,7 @@ export default function MonthTradeDistributionChart({
               domain={yDomain}
               axisLine={{ stroke: 'var(--theme-chart-axis)' }}
               tickLine={{ stroke: 'var(--theme-chart-axis)' }}
-              tick={{ fontSize: 11, fill: 'var(--theme-secondary-text)' }}
+              tick={{ fontSize: 11, fill: 'var(--theme-primary-text)' }}
               tickFormatter={formatCurrency}
             />
             
@@ -167,7 +167,7 @@ export default function MonthTradeDistributionChart({
             {hasNegativeValues && (
               <ReferenceLine 
                 y={0} 
-                stroke="var(--theme-secondary-text)" 
+                stroke="#f3f3f3" 
                 strokeDasharray="5 5"
                 strokeWidth={1}
               />

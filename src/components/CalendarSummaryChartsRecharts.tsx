@@ -3,16 +3,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ChartData {
-  daily: Array<{ day: number; pnl: number; trades: number }>;
-  monthly: Array<{ month: number; monthName: string; pnl: number; trades: number }>;
-  yearly: Array<{ year: number; pnl: number; trades: number }>;
+  daily: Array<{ day: number; pnl: number; trades: number; shares: number }>;
+  monthly: Array<{ month: number; monthName: string; pnl: number; trades: number; shares: number }>;
+  yearly: Array<{ year: number; pnl: number; trades: number; shares: number }>;
 }
 
 export default function CalendarSummaryChartsRecharts() {
-  const [timeframe, setTimeframe] = useState<'month' | 'year' | 'all'>('all');
+  const [timeframe] = useState<'month' | 'year' | 'all'>('all');
   const [data, setData] = useState<ChartData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -22,6 +21,25 @@ export default function CalendarSummaryChartsRecharts() {
       const response = await fetch(`/api/calendar/summary?timeframe=${timeframe}`);
       if (response.ok) {
         const data = await response.json();
+        
+        // Log the aggregated data received from API
+        console.log('\n=== SUMMARY CHARTS DATA ===');
+        console.log('Daily Performance (by day of month):');
+        data.daily.forEach((d) => {
+          console.log(`  Day ${d.day}: P&L $${d.pnl}, Trades: ${d.trades}`);
+        });
+        
+        console.log('\nMonthly Performance:');
+        data.monthly.forEach((m) => {
+          console.log(`  ${m.monthName} (${m.month}): P&L $${m.pnl}, Trades: ${m.trades}`);
+        });
+        
+        console.log('\nYearly Performance:');
+        data.yearly.forEach((y) => {
+          console.log(`  ${y.year}: P&L $${y.pnl}, Trades: ${y.trades}`);
+        });
+        console.log('=== END SUMMARY DATA ===\n');
+        
         setData(data);
       }
     } catch (error) {
@@ -46,7 +64,8 @@ export default function CalendarSummaryChartsRecharts() {
     return {
       day: day.toString(),
       pnl: dayItem?.pnl || 0,
-      trades: dayItem?.trades || 0
+      trades: dayItem?.trades || 0,
+      shares: dayItem?.shares || 0
     };
   });
 
@@ -56,14 +75,16 @@ export default function CalendarSummaryChartsRecharts() {
     return {
       month: name,
       pnl: monthItem?.pnl || 0,
-      trades: monthItem?.trades || 0
+      trades: monthItem?.trades || 0,
+      shares: monthItem?.shares || 0
     };
   });
 
   const yearData = data.yearly.map(y => ({
     year: y.year.toString(),
     pnl: y.pnl,
-    trades: y.trades
+    trades: y.trades,
+    shares: y.shares
   }));
 
   // Custom chart component
@@ -105,7 +126,7 @@ export default function CalendarSummaryChartsRecharts() {
             />
             <XAxis 
               dataKey={xKey}
-              axisLine={true}
+              axisLine={!showZeroLine}
               tickLine={true}
               tick={{ fontSize: 12, fill: '#53565c' }}
               interval={xAxisInterval}
@@ -141,7 +162,7 @@ export default function CalendarSummaryChartsRecharts() {
             {showZeroLine && (
               <ReferenceLine 
                 y={0} 
-                stroke="#5688C7" 
+                stroke="#f3f3f3" 
                 strokeWidth={2}
               />
             )}
@@ -186,22 +207,136 @@ export default function CalendarSummaryChartsRecharts() {
     return num.toString();
   };
 
+  const formatShares = (value: number | string) => {
+    const num = typeof value === 'number' ? value : Number(value);
+    if (isNaN(num)) return '0';
+    if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}M`;
+    } else if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}K`;
+    }
+    return num.toString();
+  };
+
+  // Dual-axis chart component for trade distribution
+  const DualAxisChart = ({ 
+    title, 
+    data, 
+    xKey,
+    xLabel,
+    xAxisInterval = 0
+  }: {
+    title: string;
+    data: Record<string, unknown>[];
+    xKey: string;
+    xLabel: string;
+    xAxisInterval?: number | 'preserveStart' | 'preserveEnd' | 'preserveStartEnd';
+  }) => (
+    <Card className="bg-surface border-default">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-semibold uppercase text-primary">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={data} margin={{ top: 10, right: 30, left: 40, bottom: 40 }}>
+            <CartesianGrid 
+              strokeDasharray="3 3" 
+              stroke="var(--theme-chart-grid)" 
+              horizontal={true}
+              vertical={false}
+            />
+            <XAxis 
+              dataKey={xKey}
+              axisLine={true}
+              tickLine={true}
+              tick={{ fontSize: 12, fill: '#53565c' }}
+              interval={xAxisInterval}
+              stroke="#E5E7EB"
+              label={{ 
+                value: xLabel, 
+                position: 'insideBottom', 
+                offset: -5, 
+                style: { 
+                  textAnchor: 'middle', 
+                  fontSize: '12px', 
+                  fill: '#53565c' 
+                } 
+              }}
+            />
+            <YAxis 
+              yAxisId="left"
+              orientation="left"
+              axisLine={true}
+              tickLine={true}
+              tick={{ fontSize: 12, fill: '#53565c' }}
+              tickFormatter={formatTrades}
+              stroke="#E5E7EB"
+              label={{ 
+                value: 'Trade Count', 
+                angle: -90, 
+                position: 'insideLeft', 
+                style: { 
+                  textAnchor: 'middle', 
+                  fontSize: '12px', 
+                  fill: 'var(--theme-green)' 
+                } 
+              }}
+            />
+            <YAxis 
+              yAxisId="right"
+              orientation="right"
+              axisLine={true}
+              tickLine={true}
+              tick={{ fontSize: 12, fill: '#53565c' }}
+              tickFormatter={formatShares}
+              stroke="#E5E7EB"
+              label={{ 
+                value: 'Share Volume', 
+                angle: 90, 
+                position: 'insideRight', 
+                style: { 
+                  textAnchor: 'middle', 
+                  fontSize: '12px', 
+                  fill: '#3b82f6' 
+                } 
+              }}
+            />
+            <Tooltip 
+              formatter={(value: number | string, name: string) => {
+                if (name === 'trades') return [formatTrades(value), 'Trades'];
+                if (name === 'shares') return [formatShares(value), 'Shares'];
+                return [value, name];
+              }}
+              contentStyle={{
+                backgroundColor: 'var(--theme-chart-tooltip-bg)',
+                border: '1px solid var(--theme-chart-grid)',
+                borderRadius: '8px',
+                fontSize: '12px'
+              }}
+              labelStyle={{ color: 'var(--theme-secondary-text)' }}
+            />
+            <Bar 
+              yAxisId="left"
+              dataKey="trades"
+              fill="var(--theme-green)"
+              name="trades"
+              radius={[4, 4, 0, 0]}
+            />
+            <Bar 
+              yAxisId="right"
+              dataKey="shares"
+              fill="#3b82f6"
+              name="shares"
+              radius={[4, 4, 0, 0]}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="space-y-6">
-      {/* Timeframe Selector */}
-      <div className="flex justify-end">
-        <Select value={timeframe} onValueChange={(v) => setTimeframe(v as 'month' | 'year' | 'all')}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select timeframe" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="month">Monthly</SelectItem>
-            <SelectItem value="year">Yearly</SelectItem>
-            <SelectItem value="all">All Time</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
       {/* Charts Grid - Exact order as specified */}
       <div className="space-y-6">
         {/* Row 1: Day of Month Charts */}
@@ -218,15 +353,11 @@ export default function CalendarSummaryChartsRecharts() {
             xAxisInterval={4}
             showZeroLine={true}
           />
-          <SummaryChart
+          <DualAxisChart
             title="TRADE DISTRIBUTION BY DAY"
             data={dayData}
-            dataKey="trades"
             xKey="day"
             xLabel="Day of Month"
-            yLabel="Trade Count"
-            formatter={formatTrades}
-            useConditionalColors={false}
             xAxisInterval={4}
           />
         </div>
@@ -245,15 +376,11 @@ export default function CalendarSummaryChartsRecharts() {
             xAxisInterval={1}
             showZeroLine={true}
           />
-          <SummaryChart
+          <DualAxisChart
             title="TRADE DISTRIBUTION BY MONTH"
             data={monthData}
-            dataKey="trades"
             xKey="month"
             xLabel="Month"
-            yLabel="Trade Count"
-            formatter={formatTrades}
-            useConditionalColors={false}
             xAxisInterval={1}
           />
         </div>
@@ -272,15 +399,11 @@ export default function CalendarSummaryChartsRecharts() {
             xAxisInterval={0}
             showZeroLine={true}
           />
-          <SummaryChart
+          <DualAxisChart
             title="TRADE DISTRIBUTION BY YEAR"
             data={yearData}
-            dataKey="trades"
             xKey="year"
             xLabel="Year"
-            yLabel="Trade Count"
-            formatter={formatTrades}
-            useConditionalColors={false}
             xAxisInterval={0}
           />
         </div>

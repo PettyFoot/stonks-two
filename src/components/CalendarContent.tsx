@@ -188,31 +188,69 @@ export default function CalendarContent() {
     const daysInMonth = getDaysInMonth(currentDate);
     const calendarDays = [];
 
-    // Empty cells before first day
-    for (let i = 0; i < startingDayOfWeek; i++) {
-      calendarDays.push(null);
+    // Add previous month days (grayed out)
+    const prevMonth = month === 1 ? 12 : month - 1;
+    const prevYear = month === 1 ? year - 1 : year;
+    const daysInPrevMonth = getDaysInMonth(new Date(prevYear, prevMonth - 1));
+    
+    for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+      const prevDay = daysInPrevMonth - i;
+      const dayStr = format(new Date(prevYear, prevMonth - 1, prevDay), 'yyyy-MM-dd');
+      calendarDays.push({
+        date: prevDay,
+        dayStr,
+        isPrevMonth: true,
+        pnl: 0,
+        tradeCount: 0,
+        winRate: 0
+      });
     }
 
-    // Days of month
+    // Days of current month
     for (let day = 1; day <= daysInMonth; day++) {
       const dayStr = format(new Date(year, month - 1, day), 'yyyy-MM-dd');
       const dayData = monthData.find(d => d.day === dayStr);
       calendarDays.push({
         date: day,
         dayStr,
+        isPrevMonth: false,
+        isNextMonth: false,
         ...dayData
       });
     }
 
+    // Add next month days to complete the grid (grayed out)
+    const totalCellsNeeded = Math.ceil(calendarDays.length / 7) * 7;
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+    
+    let nextMonthDay = 1;
+    while (calendarDays.length < totalCellsNeeded) {
+      const dayStr = format(new Date(nextYear, nextMonth - 1, nextMonthDay), 'yyyy-MM-dd');
+      calendarDays.push({
+        date: nextMonthDay,
+        dayStr,
+        isNextMonth: true,
+        pnl: 0,
+        tradeCount: 0,
+        winRate: 0
+      });
+      nextMonthDay++;
+    }
+
     // Add weekly totals at the end of each row
     const calendarWithWeekTotals = [];
+    let weekNumber = 1;
+    
     for (let i = 0; i < calendarDays.length; i += 7) {
       const weekDays = calendarDays.slice(i, i + 7);
       calendarWithWeekTotals.push(...weekDays);
       
       // Calculate and add weekly total for this row
       const weekTotal = calculateWeeklyTotal(weekDays);
+      weekTotal.weekNumber = weekNumber;
       calendarWithWeekTotals.push(weekTotal);
+      weekNumber++;
     }
 
     return calendarWithWeekTotals;
@@ -292,6 +330,11 @@ export default function CalendarContent() {
                   </Button>
                 </div>
               </div>
+              <div className="text-lg font-semibold text-theme-secondary-text">
+                Monthly P&L: <span className={`${summaryStats.monthlyPnl >= 0 ? 'text-theme-green' : 'text-theme-red'}`}>
+                  ${summaryStats.monthlyPnl >= 0 ? '+' : ''}{summaryStats.monthlyPnl.toFixed(2)}
+                </span>
+              </div>
             </div>
 
         {/* Calendar Grid */}
@@ -311,7 +354,7 @@ export default function CalendarContent() {
                 </div>
               ))}
               <div className="p-2 text-center text-sm font-medium text-theme-secondary-text">
-                Week Total
+                Total
               </div>
             </div>
 
@@ -325,6 +368,9 @@ export default function CalendarContent() {
                           key={index}
                           className="min-h-[100px] border border-theme-border rounded-lg p-2 bg-theme-surface/50 text-center flex flex-col justify-center"
                         >
+                          <div className="text-sm font-bold mb-2 text-theme-primary-text">
+                            Week {day.weekNumber}
+                          </div>
                           <div className={`text-sm font-bold mb-1 ${day.weekPnl >= 0 ? 'text-theme-green' : 'text-theme-red'}`}>
                             ${day.weekPnl >= 0 ? '+' : ''}{day.weekPnl.toFixed(2)}
                           </div>
@@ -345,11 +391,13 @@ export default function CalendarContent() {
                       return (
                         <button
                           key={index}
-                          onClick={() => day && handleDayClick(day.dayStr)}
-                          disabled={!day}
+                          onClick={() => day && !day.isPrevMonth && !day.isNextMonth && handleDayClick(day.dayStr)}
+                          disabled={!day || day.isPrevMonth || day.isNextMonth}
                           className={`
                             min-h-[100px] border border-theme-border rounded-lg p-2 text-left transition-colors
                             ${!day ? 'bg-theme-surface/20 cursor-default' : 
+                              day.isPrevMonth || day.isNextMonth ? 
+                                'bg-theme-surface/10 cursor-default opacity-50' :
                               day && dayHasTradeData(day.dayStr) ? 
                                 'bg-white hover:bg-theme-surface/50 cursor-pointer' : 
                                 'bg-white hover:bg-theme-surface/30 cursor-default'
@@ -357,12 +405,14 @@ export default function CalendarContent() {
                             ${selectedDay === day?.dayStr ? 'ring-2 ring-theme-primary' : ''}
                             focus:outline-none focus:ring-2 focus:ring-theme-primary
                           `}
-                          aria-label={day ? `${day.date} - ${day.tradeCount || 0} trades${dayHasTradeData(day.dayStr) ? ' (clickable)' : ''}` : undefined}
+                          aria-label={day ? `${day.date} - ${day.tradeCount || 0} trades${dayHasTradeData(day.dayStr) && !day.isPrevMonth && !day.isNextMonth ? ' (clickable)' : ''}` : undefined}
                         >
                           {day && (
                             <>
-                              <div className="text-sm font-medium text-theme-primary-text mb-1">{day.date}</div>
-                              {day.pnl !== undefined && (
+                              <div className={`text-sm font-medium mb-1 ${day.isPrevMonth || day.isNextMonth ? 'text-theme-secondary-text opacity-75' : 'text-theme-primary-text'}`}>
+                                {day.date}
+                              </div>
+                              {day.pnl !== undefined && !(day.isPrevMonth || day.isNextMonth) && (
                                 <div className="space-y-1">
                                   <div className={`text-xs font-medium ${Number(day.pnl) >= 0 ? 'text-theme-green' : 'text-theme-red'}`}>
                                     ${Number(day.pnl) >= 0 ? '+' : ''}{Number(day.pnl).toFixed(2)}

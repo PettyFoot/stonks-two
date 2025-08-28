@@ -484,7 +484,7 @@ export default function Reports() {
                           <span style={{ 
                             marginRight: '15px', 
                             fontSize: '12px', 
-                            color: 'var(--theme-muted-foreground)',
+                            color: 'var(--theme-primary-text)',
                             minWidth: '70px'
                           }}>
                             Expectation
@@ -492,6 +492,7 @@ export default function Reports() {
                           <div style={{ 
                             flex: 1,
                             height: '80px',
+                            color: 'var(--theme-primary-text)',
                             position: 'relative'
                           }}>
                             {/* The actual bar positioned based on value */}
@@ -559,7 +560,7 @@ export default function Reports() {
                           justifyContent: 'space-between',
                           marginLeft: '85px',
                           fontSize: '11px',
-                          color: 'var(--theme-secondary-text)'
+                          color: 'var(--theme-primary-text)'
                         }}>
                           {expectationScale.ticks.map((tick, index) => (
                             <span key={index}>

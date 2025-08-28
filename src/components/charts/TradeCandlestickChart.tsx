@@ -352,7 +352,7 @@ export default function TradeCandlestickChart({
       max: xAxisRange.max,  // 8:00 PM (after-hours end) based on actual data date
       labels: {
         style: {
-          colors: 'var(--theme-secondary-text)'
+          colors: 'var(--theme-primary-text)'
         },
         datetimeFormatter: {
           hour: 'HH:mm'
@@ -371,7 +371,7 @@ export default function TradeCandlestickChart({
       },
       labels: {
         style: {
-          colors: 'var(--theme-secondary-text)'
+          colors: 'var(--theme-primary-text)'
         },
         formatter: (value) => `$${value.toFixed(2)}`
       },

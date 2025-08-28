@@ -118,14 +118,14 @@ const EquityChart = React.memo(function EquityChart({
               dataKey="date"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: 'var(--theme-secondary-text)' }}
+              tick={{ fontSize: 12, fill: 'var(--theme-primary-text)' }}
               tickFormatter={formatXAxisTick}
               interval={tickInterval}
             />
             <YAxis 
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: 'var(--theme-secondary-text)' }}
+              tick={{ fontSize: 12, fill: 'var(--theme-primary-text)' }}
               tickFormatter={(value) => `$${value}`}
             />
             {showTooltip && (
@@ -141,7 +141,7 @@ const EquityChart = React.memo(function EquityChart({
                 }}
               />
             )}
-            <ReferenceLine y={0} stroke="var(--theme-secondary-text)" strokeDasharray="2 2" />
+            <ReferenceLine y={0} stroke="#f3f3f3" strokeDasharray="2 2" />
             <Line 
               type="monotone" 
               dataKey="value" 

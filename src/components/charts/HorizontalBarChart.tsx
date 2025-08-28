@@ -50,7 +50,7 @@ export default function HorizontalBarChart({
             return (
               <div key={index} className="flex items-center gap-3">
                 {/* Label */}
-                <span className="text-xs text-muted font-medium min-w-[60px]">
+                <span className="text-xs font-medium min-w-[60px]" style={{ color: 'var(--theme-primary-text)' }}>
                   {item.label}
                 </span>
                 

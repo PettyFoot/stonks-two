@@ -141,7 +141,7 @@ const ConditionalBarChart = React.memo(function ConditionalBarChart({
               dataKey="date"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: 'var(--theme-secondary-text)' }}
+              tick={{ fontSize: 12, fill: 'var(--theme-primary-text)' }}
               tickFormatter={(value, index) => {
                 // For the first and middle ticks, show the overall range
                 if (index === 0 && data.length > 1) {
@@ -156,7 +156,7 @@ const ConditionalBarChart = React.memo(function ConditionalBarChart({
             <YAxis 
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: 'var(--theme-secondary-text)' }}
+              tick={{ fontSize: 12, fill: 'var(--theme-primary-text)' }}
               tickFormatter={(value) => {
                 if (Math.abs(value) >= 1000) {
                   return `$${(value / 1000).toFixed(1)}K`;

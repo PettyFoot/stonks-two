@@ -121,14 +121,14 @@ export default function TradeDistributionChart({
               dataKey="category"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: 'var(--theme-secondary-text)' }}
+              tick={{ fontSize: 12, fill: 'var(--theme-primary-text)' }}
               tickFormatter={formatAxisLabel}
               interval="preserveStartEnd"
             />
             <YAxis 
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: 'var(--theme-secondary-text)' }}
+              tick={{ fontSize: 12, fill: 'var(--theme-primary-text)' }}
               tickFormatter={(value) => {
                 if (showPercentages) {
                   return `${value}%`;

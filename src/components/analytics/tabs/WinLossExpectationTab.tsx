@@ -153,7 +153,7 @@ export default function WinLossExpectationTab({ data }: AnalyticsTabContentProps
 
       {/* Second Row: Trade Expectation (Full Width) */}
       <div className="bg-theme-surface border border-theme-border rounded-lg p-6 h-[320px] flex items-center justify-center">
-        <span className="text-theme-secondary-text">Trade Expectation Chart - Coming Soon</span>
+        <span className="text-theme-primary-text">Trade Expectation Chart - Coming Soon</span>
       </div>
 
       {/* Third Row: Cumulative P&L and Drawdown */}

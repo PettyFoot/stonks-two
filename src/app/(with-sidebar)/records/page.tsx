@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import TopBar from '@/components/TopBar';
 import FilterPanel from '@/components/FilterPanel';
@@ -40,6 +40,12 @@ export default function Records() {
       ? recordsData.trades[0] 
       : null;
 
+  // Local state to track the current notesChanges value (for save button visibility)
+  const [localNotesChanges, setLocalNotesChanges] = useState<string>(() => {
+    return targetTrade ? (targetTrade.notesChanges || targetTrade.notes || '') 
+      : (recordsData?.notesChanges || recordsData?.notes || '');
+  });
+
   // Auto-save notes functionality - saves to notesChanges field
   const autoSaveNotes = async (notes: string) => {
     try {
@@ -58,8 +64,8 @@ export default function Records() {
         throw new Error('Failed to auto-save notes');
       }
       
-      // Don't refresh the entire page - let the useAutoSave hook handle state
-      // The response contains the updated data but we don't need to refetch everything
+      // Update local state to reflect that notesChanges now contains the current notes
+      setLocalNotesChanges(notes);
     } catch (error) {
       console.error('Error auto-saving notes:', error);
       throw error;
@@ -69,13 +75,11 @@ export default function Records() {
   // Save changes functionality - copies notesChanges to notes
   const saveChanges = async () => {
     try {
-      const currentNotesChanges = targetTrade ? targetTrade.notesChanges : recordsData?.notesChanges;
-      
       const response = await fetch('/api/records/notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          notes: currentNotesChanges || '', 
+          notes: localNotesChanges || '', 
           date: selectedDate,
           tradeId: targetTrade?.id, // Pass specific trade ID if available
           saveChanges: true // Save changes: copy notesChanges to notes
@@ -85,6 +89,10 @@ export default function Records() {
       if (!response.ok) {
         throw new Error('Failed to save changes');
       }
+      
+      // Update local tracking - now notes and notesChanges are the same
+      // This will hide the save button
+      setLocalNotesChanges(localNotesChanges || '');
       
       // Refresh records data to get the updated notes state
       refetch();
@@ -124,14 +132,16 @@ export default function Records() {
     if (recordsData && notes === '' && initialValue) {
       setNotes(initialValue);
     }
+
+    // Update local notesChanges tracking when data changes
+    setLocalNotesChanges(targetTrade ? (targetTrade.notesChanges || targetTrade.notes || '') 
+      : (recordsData?.notesChanges || recordsData?.notes || ''));
   }, [recordsData, targetTrade, notes, setNotes]);
 
   // Check if there are unsaved changes (notesChanges different from notes)
   const hasUnsavedChanges = () => {
-    if (targetTrade) {
-      return targetTrade.notesChanges && targetTrade.notesChanges !== targetTrade.notes;
-    }
-    return recordsData && recordsData.notesChanges && recordsData.notesChanges !== recordsData.notes;
+    const savedNotes = targetTrade ? targetTrade.notes : recordsData?.notes;
+    return localNotesChanges && localNotesChanges !== (savedNotes || '');
   };
 
   const shouldShowSaveButton = hasUnsavedChanges();
@@ -319,11 +329,6 @@ export default function Records() {
                     disabled={isSaving}
                   >
                     {isSaving ? 'Saving...' : 'Save Changes'}
-                  </Button>
-                )}
-                {!shouldShowSaveButton && (
-                  <Button size="sm" className="h-8 bg-[var(--theme-green)] hover:bg-[var(--theme-green)]/80 text-white">
-                    Create Note
                   </Button>
                 )}
               </div>
