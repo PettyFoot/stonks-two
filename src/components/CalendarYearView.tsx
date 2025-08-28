@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, getDaysInMonth, getDay, startOfMonth } from 'date-fns';
 import { useRouter } from 'next/navigation';
+import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 
 interface DayData {
   tradeCount: number;
@@ -23,6 +24,7 @@ const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function CalendarYearView({ year: initialYear }: CalendarYearViewProps) {
   const router = useRouter();
+  const { filters } = useGlobalFilters();
   const [year, setYear] = useState(initialYear);
   const [yearData, setYearData] = useState<Record<string, DayData>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +36,17 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
   const fetchYearData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/calendar/year-daily?year=${year}`);
+      const params = new URLSearchParams({
+        year: year.toString(),
+        // Add filter parameters
+        ...(filters.symbols?.length && { symbols: filters.symbols.join(',') }),
+        ...(filters.sides?.length && { sides: filters.sides.join(',') }),
+        ...(filters.tags?.length && { tags: filters.tags.join(',') }),
+        ...(filters.customDateRange?.from && { dateFrom: filters.customDateRange.from.toISOString() }),
+        ...(filters.customDateRange?.to && { dateTo: filters.customDateRange.to.toISOString() }),
+        ...(filters.timeFrame && filters.timeFrame !== 'all' && { timeFrame: filters.timeFrame }),
+      });
+      const response = await fetch(`/api/calendar/year-daily?${params}`);
       if (response.ok) {
         const data = await response.json();
         setYearData(data.dailyData || {});
@@ -44,7 +56,7 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
     } finally {
       setIsLoading(false);
     }
-  }, [year]);
+  }, [year, filters]);
 
   useEffect(() => {
     fetchYearData();
@@ -65,9 +77,10 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
     router.push(`/records?date=${dateStr}`);
   };
 
-  const dayHasTradeData = (dayData: any) => {
-    return dayData && dayData.tradeCount > 0;
+  const dayHasTradeData = (day: any) => {
+    return day && day.hasData && day.tradeCount > 0;
   };
+
 
   const generateMonthCalendar = (monthIndex: number) => {
     const firstDay = startOfMonth(new Date(year, monthIndex));
@@ -87,7 +100,10 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
       calendarDays.push({
         date: day,
         dateStr,
-        ...dayData
+        hasData: !!dayData,
+        tradeCount: dayData?.tradeCount || 0,
+        pnl: dayData?.pnl || 0,
+        winRate: dayData?.winRate || 0
       });
     }
 
@@ -104,17 +120,17 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
     return calendarDays;
   };
 
-  const getDayColor = (dayData: DayData | undefined) => {
-    if (!dayData || !dayData.tradeCount) return 'text-theme-secondary-text';
-    const pnl = Number(dayData.pnl || 0);
+  const getDayColor = (day: any) => {
+    if (!day || !day.hasData || !day.tradeCount) return 'text-theme-primary-text';
+    const pnl = Number(day.pnl || 0);
     if (pnl > 0) return 'text-white font-bold';
     if (pnl < 0) return 'text-white font-bold';
-    return 'text-theme-secondary-text';
+    return 'text-theme-primary-text';
   };
 
-  const getDayBackground = (dayData: DayData | undefined) => {
-    if (!dayData || !dayData.tradeCount) return 'bg-white';
-    const pnl = Number(dayData.pnl || 0);
+  const getDayBackground = (day: any) => {
+    if (!day || !day.hasData || !day.tradeCount) return 'bg-white';
+    const pnl = Number(day.pnl || 0);
     if (pnl > 0) return 'bg-theme-green hover:bg-theme-green/80';
     if (pnl < 0) return 'bg-theme-red hover:bg-theme-red/80';
     return 'bg-theme-surface';
@@ -186,7 +202,7 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
                     key={index}
                     className={`
                       aspect-square flex items-center justify-center text-xs p-1
-                      ${!day ? 'bg-theme-border' : `${getDayBackground(day)} ${dayHasTradeData(day) ? 'cursor-pointer hover:opacity-80' : 'cursor-default'} transition-colors border border-theme-border`}
+                      ${!day ? 'invisible' : `${getDayBackground(day)} ${dayHasTradeData(day) ? 'cursor-pointer hover:opacity-80' : 'cursor-default'} transition-colors border border-theme-border`}
                     `}
                     onClick={() => day && dayHasTradeData(day) && handleDayClick(day.dateStr)}
                     role={dayHasTradeData(day) ? "button" : undefined}

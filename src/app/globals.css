@@ -127,6 +127,27 @@ body {
   background-color: var(--theme-positive);
 }
 
+.bg-theme-green {
+  background-color: var(--theme-green);
+}
+
+.bg-theme-red {
+  background-color: var(--theme-red);
+}
+
+.bg-theme-surface {
+  background-color: var(--theme-surface);
+}
+
+/* Hover variants for calendar interactions */
+.hover\:bg-theme-green\/80:hover {
+  background-color: var(--theme-green-hover);
+}
+
+.hover\:bg-theme-red\/80:hover {
+  background-color: var(--theme-red-hover);
+}
+
 .bg-negative {
   background-color: var(--theme-negative);
 }

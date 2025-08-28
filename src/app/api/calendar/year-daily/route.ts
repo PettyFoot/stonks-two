@@ -11,6 +11,14 @@ export async function GET(req: NextRequest) {
 
     const url = new URL(req.url);
     const year = Number(url.searchParams.get('year')) || new Date().getFullYear();
+    
+    // Extract filter parameters
+    const symbols = url.searchParams.get('symbols')?.split(',').filter(Boolean) || [];
+    const sides = url.searchParams.get('sides')?.split(',').filter(Boolean) || [];
+    const tags = url.searchParams.get('tags')?.split(',').filter(Boolean) || [];
+    const dateFromParam = url.searchParams.get('dateFrom');
+    const dateToParam = url.searchParams.get('dateTo');
+    const timeFrame = url.searchParams.get('timeFrame');
 
     const dbUser = await prisma.user.findUnique({
       where: { auth0Id: user.auth0Id }
@@ -20,36 +28,88 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Get all daily data for the entire year
-    const startDate = new Date(Date.UTC(year, 0, 1));
-    const endDate = new Date(Date.UTC(year + 1, 0, 1));
+    // Calculate date range - use filter dates if provided, otherwise use year
+    let startDate: Date;
+    let endDate: Date;
+    
+    if (dateFromParam && dateToParam) {
+      startDate = new Date(dateFromParam);
+      endDate = new Date(dateToParam);
+    } else if (timeFrame && timeFrame !== 'all') {
+      // Handle time frame presets
+      endDate = new Date();
+      switch (timeFrame) {
+        case '7d':
+          startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case '30d':
+          startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        case '90d':
+          startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+          break;
+        case '1y':
+          startDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
+          break;
+        default:
+          startDate = new Date(Date.UTC(year, 0, 1));
+          endDate = new Date(Date.UTC(year + 1, 0, 1));
+      }
+    } else {
+      startDate = new Date(Date.UTC(year, 0, 1));
+      endDate = new Date(Date.UTC(year + 1, 0, 1));
+    }
 
-    const dailyData = await prisma.$queryRaw<
-      Array<{ day: Date; trade_count: bigint; total_pnl: number | null; wins: bigint }>
-    >`
-      SELECT 
-        DATE(date) as day,
-        COUNT(*) as trade_count,
-        SUM(pnl) as total_pnl,
-        SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) as wins
-      FROM trades
-      WHERE "userId" = ${dbUser.id}
-        AND date >= ${startDate}
-        AND date < ${endDate}
-        AND status = 'CLOSED'
-      GROUP BY DATE(date)
-      ORDER BY day;
-    `;
+    // Use Prisma's findMany with aggregation for better security and filter support
+    const whereConditions: any = {
+      userId: dbUser.id,
+      date: {
+        gte: startDate,
+        lt: endDate
+      },
+      status: 'CLOSED'
+    };
 
-    // Convert to a map for easy lookup
+    if (symbols.length > 0) {
+      whereConditions.symbol = { in: symbols };
+    }
+
+    if (sides.length > 0) {
+      whereConditions.side = { in: sides };
+    }
+
+    if (tags.length > 0) {
+      whereConditions.tags = { hasSome: tags };
+    }
+
+    // Get trades grouped by date using Prisma
+    const trades = await prisma.trade.findMany({
+      where: whereConditions,
+      select: {
+        date: true,
+        pnl: true
+      }
+    });
+
+    // Group by date and calculate statistics
     const dailyMap: Record<string, {tradeCount: number; pnl: number; winRate: number}> = {};
-    dailyData.forEach(d => {
-      const dateStr = d.day.toISOString().slice(0, 10);
-      dailyMap[dateStr] = {
-        tradeCount: Number(d.trade_count),
-        pnl: d.total_pnl || 0,
-        winRate: d.trade_count ? Math.round((Number(d.wins) / Number(d.trade_count)) * 100) : 0
-      };
+    
+    trades.forEach(trade => {
+      const dateStr = trade.date.toISOString().slice(0, 10);
+      if (!dailyMap[dateStr]) {
+        dailyMap[dateStr] = { tradeCount: 0, pnl: 0, winRate: 0 };
+      }
+      dailyMap[dateStr].tradeCount++;
+      dailyMap[dateStr].pnl += Number(trade.pnl);
+    });
+
+    // Calculate win rates
+    Object.keys(dailyMap).forEach(dateStr => {
+      const dayTrades = trades.filter(t => t.date.toISOString().slice(0, 10) === dateStr);
+      const wins = dayTrades.filter(t => Number(t.pnl) > 0).length;
+      dailyMap[dateStr].winRate = dailyMap[dateStr].tradeCount > 0 
+        ? Math.round((wins / dailyMap[dateStr].tradeCount) * 100) 
+        : 0;
     });
 
     return NextResponse.json({ year, dailyData: dailyMap });
