@@ -868,10 +868,10 @@ export async function calculateLargestGainLoss(
   
   const result = await prisma.$queryRaw<Array<Record<string, unknown>>>`
     SELECT 
-      MAX("pnl"::NUMERIC) as largest_gain,
-      MIN("pnl"::NUMERIC) as largest_loss,
-      MAX("pnl"::NUMERIC) FILTER (WHERE "date" >= CURRENT_DATE - INTERVAL '30 days') as largest_gain_30d,
-      MIN("pnl"::NUMERIC) FILTER (WHERE "date" >= CURRENT_DATE - INTERVAL '30 days') as largest_loss_30d
+      MAX("pnl"::NUMERIC) FILTER (WHERE "pnl"::NUMERIC > 0) as largest_gain,
+      MIN("pnl"::NUMERIC) FILTER (WHERE "pnl"::NUMERIC < 0) as largest_loss,
+      MAX("pnl"::NUMERIC) FILTER (WHERE "pnl"::NUMERIC > 0 AND "date" >= CURRENT_DATE - INTERVAL '30 days') as largest_gain_30d,
+      MIN("pnl"::NUMERIC) FILTER (WHERE "pnl"::NUMERIC < 0 AND "date" >= CURRENT_DATE - INTERVAL '30 days') as largest_loss_30d
     FROM "trades"
     WHERE 
       "userId" = ${userId}

@@ -38,33 +38,17 @@ interface StatsSectionProps {
 }
 
 export default function StatsSection({ stats }: StatsSectionProps) {
-  // Mock data for initial implementation (matches screenshot values with some negative values for testing)
-  const mockStats = {
-    totalGainLoss: 637.00,
-    largestGain: 600.00,
-    largestLoss: -150.00, // Made negative to test red coloring
-    avgDailyGainLoss: -50.25, // Made negative to test red coloring
-    avgDailyVolume: 700,
-    avgPerShareGainLoss: 0.46,
-    avgTradeGainLoss: 318.50,
-    avgWinningTrade: 318.50,
-    avgLosingTrade: -125.75, // Made negative to test red coloring
-    totalTrades: 2,
-    winningTrades: 2,
-    losingTrades: 1, // Changed to show some losing trades
-    avgHoldTimeScratch: '0s',
-    avgHoldTimeWinning: '38m 30s',
-    avgHoldTimeLosing: '0s',
-    scratchTrades: 0,
-    maxConsecutiveWins: 2,
-    maxConsecutiveLosses: 0,
-    tradePnlStdDev: 281.50,
-    profitFactor: 0, // N/A in screenshot
-    totalCommissions: -15.50, // Made negative to test red coloring
-    totalFees: -8.25 // Made negative to test red coloring
-  };
+  // Return early if no stats are provided
+  if (!stats) {
+    return (
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-theme-primary-text mb-4">Trading Statistics</h3>
+        <div className="text-theme-secondary-text">No trading statistics available.</div>
+      </div>
+    );
+  }
 
-  const currentStats = stats || mockStats;
+  const currentStats = stats;
 
   const formatValue = (value: unknown, formatter: TradingStatistic['formatter']): string => {
     if (value === null || value === undefined) return 'N/A';

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { getCurrentUser } from '@/lib/auth0';
 import { prisma } from '@/lib/prisma';
+import { TradeFilterService } from '@/lib/services/tradeFilterService';
 
 /**
  * Win vs Loss Days Report API
@@ -43,33 +44,51 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    // Extract query parameters
+    // Use centralized filter service to ensure consistency with all other APIs
     const searchParams = request.nextUrl.searchParams;
-    const dateFrom = searchParams.get('from');
-    const dateTo = searchParams.get('to');
-    const symbol = searchParams.get('symbol');
-    const side = searchParams.get('side');
-
-    // Prepare filter parameters
-    const filters = {
-      userId: user.id,
-      dateFrom: dateFrom ? new Date(dateFrom) : undefined,
-      dateTo: dateTo ? (() => {
-        const endDate = new Date(dateTo);
-        endDate.setHours(23, 59, 59, 999);
-        return endDate;
-      })() : undefined,
-      symbol: symbol && symbol !== 'all' ? symbol : undefined,
-      side: side && side !== 'all' ? side.toUpperCase() : undefined,
-    };
+    const filters = TradeFilterService.parseFiltersFromRequest(searchParams, user.id);
+    
+    // Debug logging to verify filters
+    TradeFilterService.logFilters('WIN-LOSS-DAYS', filters);
 
     // Calculate metrics for winning and losing days
     const dayMetrics = await calculateDayMetrics(filters);
 
-    // Prepare response
-    const response: WinLossDaysResponse = {
+    // Debug logging - check raw trades first
+    const rawTrades = await prisma.trade.findMany({
+      where: {
+        userId: user.id,
+        status: 'CLOSED',
+        exitDate: { not: null }
+      },
+      select: {
+        symbol: true,
+        pnl: true,
+        exitDate: true,
+        quantity: true
+      },
+      orderBy: { exitDate: 'desc' },
+      take: 10
+    });
+
+    console.log('\n=== WIN-LOSS-DAYS API DEBUG ===');
+    console.log('User ID:', user.id);
+    console.log('Filters:', filters);
+    console.log('Raw Recent Trades:', JSON.stringify(rawTrades, null, 2));
+    console.log('Winning Days Metrics:', JSON.stringify(dayMetrics.winningDays, null, 2));
+    console.log('Losing Days Metrics:', JSON.stringify(dayMetrics.losingDays, null, 2));
+    console.log('================================\n');
+
+    // Prepare response with debug info
+    const response: WinLossDaysResponse & { debug?: any } = {
       winningDays: dayMetrics.winningDays,
       losingDays: dayMetrics.losingDays,
+      debug: {
+        userId: user.id,
+        rawTradesCount: rawTrades.length,
+        rawTrades: rawTrades,
+        filters: filters
+      }
     };
 
     return NextResponse.json(response);
@@ -88,47 +107,74 @@ export async function GET(request: NextRequest) {
  */
 async function calculateDayMetrics(filters: {
   userId: string;
-  dateFrom?: Date;
-  dateTo?: Date;
   symbol?: string;
   side?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  tags?: string[];
+  duration?: string;
+  showOpenTrades?: boolean;
 }): Promise<{
   winningDays: DayMetrics;
   losingDays: DayMetrics;
 }> {
   
-  // First, calculate daily P&L to determine winning vs losing days
-  const dailyPnlResult = await prisma.$queryRaw<Array<{
-    trade_date: Date;
-    daily_pnl: number;
-    daily_volume: number;
-    trade_count: number;
-  }>>`
-    WITH daily_aggregates AS (
-      SELECT 
-        DATE("exitDate") as trade_date,
-        SUM(pnl::NUMERIC) as daily_pnl,
-        SUM(quantity) as daily_volume,
-        COUNT(*) as trade_count
-      FROM trades
-      WHERE 
-        "userId" = ${filters.userId}
-        AND status = 'CLOSED'
-        AND "exitDate" IS NOT NULL
-        ${filters.dateFrom ? Prisma.sql`AND "exitDate" >= ${filters.dateFrom}` : Prisma.empty}
-        ${filters.dateTo ? Prisma.sql`AND "exitDate" <= ${filters.dateTo}` : Prisma.empty}
-        ${filters.symbol ? Prisma.sql`AND symbol = ${filters.symbol}` : Prisma.empty}
-        ${filters.side ? Prisma.sql`AND side = ${filters.side}` : Prisma.empty}
-      GROUP BY DATE("exitDate")
-    )
-    SELECT 
-      trade_date,
-      daily_pnl,
-      daily_volume,
-      trade_count
-    FROM daily_aggregates
-    ORDER BY trade_date
-  `;
+  // Use centralized filtering to get ONLY the trades that match global filters
+  const whereClause = TradeFilterService.buildWhereClause(filters);
+  
+  // First, get the filtered trades using Prisma to ensure exact same filtering as other APIs
+  const filteredTrades = await prisma.trade.findMany({
+    where: whereClause,
+    select: {
+      exitDate: true,
+      pnl: true,
+      quantity: true,
+      symbol: true,
+      side: true,
+      commission: true,
+      fees: true,
+      timeInTrade: true,
+      entryDate: true
+    }
+  });
+
+  console.log('\n=== WIN VS LOSS DAYS API DEBUG ===');
+  console.log('User ID:', filters.userId);
+  console.log('TradeFilterService whereClause:', JSON.stringify(whereClause, null, 2));
+  console.log(`Found ${filteredTrades.length} filtered trades for win/loss analysis`);
+  console.log('Filtered trades details:');
+  filteredTrades.forEach((trade, index) => {
+    console.log(`  ${index + 1}. ${trade.symbol} | ExitDate: ${trade.exitDate?.toISOString().split('T')[0] || 'N/A'} | PnL: ${trade.pnl} | Quantity: ${trade.quantity}`);
+  });
+  console.log('=====================================\n');
+
+  // Group by day to calculate daily P&L
+  const dailyPnlMap = new Map<string, { daily_pnl: number; daily_volume: number; trade_count: number }>();
+  
+  filteredTrades.forEach(trade => {
+    if (!trade.exitDate) return;
+    
+    const dateKey = trade.exitDate.toISOString().split('T')[0];
+    const existing = dailyPnlMap.get(dateKey) || { daily_pnl: 0, daily_volume: 0, trade_count: 0 };
+    
+    existing.daily_pnl += Number(trade.pnl);
+    existing.daily_volume += Number(trade.quantity) || 0;
+    existing.trade_count += 1;
+    
+    dailyPnlMap.set(dateKey, existing);
+  });
+
+  const dailyPnlResult = Array.from(dailyPnlMap.entries()).map(([dateStr, data]) => ({
+    trade_date: new Date(dateStr),
+    daily_pnl: data.daily_pnl,
+    daily_volume: data.daily_volume,
+    trade_count: data.trade_count
+  })).sort((a, b) => a.trade_date.getTime() - b.trade_date.getTime());
+
+  console.log('Daily P&L Result (grouped by exitDate):');
+  dailyPnlResult.forEach(day => {
+    console.log(`  Date: ${day.trade_date.toISOString().split('T')[0]} | P&L: ${day.daily_pnl} | Trades: ${day.trade_count} | Volume: ${day.daily_volume}`);
+  });
 
   // Separate winning and losing days
   const winningDates = dailyPnlResult
@@ -139,14 +185,17 @@ async function calculateDayMetrics(filters: {
     .filter(day => Number(day.daily_pnl) <= 0)
     .map(day => day.trade_date);
 
-  // Calculate metrics for winning days
+  console.log('Winning Dates:', winningDates);
+  console.log('Losing Dates:', losingDates);
+
+  // Calculate metrics for winning days using pre-filtered trades
   const winningDaysMetrics = winningDates.length > 0
-    ? await calculateMetricsForDays(filters, winningDates)
+    ? await calculateMetricsForDays(filteredTrades, winningDates)
     : createEmptyMetrics();
 
-  // Calculate metrics for losing days
+  // Calculate metrics for losing days using pre-filtered trades
   const losingDaysMetrics = losingDates.length > 0
-    ? await calculateMetricsForDays(filters, losingDates)
+    ? await calculateMetricsForDays(filteredTrades, losingDates)
     : createEmptyMetrics();
 
   return {
@@ -159,13 +208,17 @@ async function calculateDayMetrics(filters: {
  * Calculate detailed metrics for a specific set of days
  */
 async function calculateMetricsForDays(
-  filters: {
-    userId: string;
-    dateFrom?: Date;
-    dateTo?: Date;
-    symbol?: string;
-    side?: string;
-  },
+  preFilteredTrades: Array<{
+    exitDate: Date | null;
+    pnl: any;
+    quantity: any;
+    symbol: string;
+    side: string;
+    commission: any;
+    fees: any;
+    timeInTrade: number | null;
+    entryDate: Date;
+  }>,
   dates: Date[]
 ): Promise<DayMetrics> {
   
@@ -173,127 +226,107 @@ async function calculateMetricsForDays(
     return createEmptyMetrics();
   }
 
-  // Build date filter using IN clause with string dates
+  // Filter the pre-filtered trades to only include those from the specified dates
   const dateStrings = dates.map(d => d.toISOString().split('T')[0]);
+  const trades = preFilteredTrades.filter(trade => {
+    if (!trade.exitDate) return false;
+    const tradeDateString = trade.exitDate.toISOString().split('T')[0];
+    return dateStrings.includes(tradeDateString);
+  });
 
-  // Execute comprehensive metrics query
-  const result = await prisma.$queryRaw<Array<Record<string, unknown>>>`
-    WITH trade_metrics AS (
-      SELECT 
-        DATE("exitDate") as trade_date,
-        pnl::NUMERIC as pnl,
-        quantity,
-        CASE 
-          WHEN quantity > 0 THEN pnl::NUMERIC / quantity 
-          ELSE 0 
-        END as per_share_pnl,
-        COALESCE(commission, 0)::NUMERIC as commission,
-        COALESCE(fees, 0)::NUMERIC as fees,
-        CASE 
-          WHEN "timeInTrade" IS NOT NULL THEN "timeInTrade" 
-          ELSE EXTRACT(EPOCH FROM ("exitDate" - "entryDate"))
-        END as hold_time_seconds,
-        CASE 
-          WHEN pnl > 0 THEN 'win'
-          WHEN pnl < 0 THEN 'loss'
-          ELSE 'scratch'
-        END as outcome
-      FROM trades
-      WHERE 
-        "userId" = ${filters.userId}
-        AND status = 'CLOSED'
-        AND "exitDate" IS NOT NULL
-        AND DATE("exitDate")::text = ANY(${dateStrings})
-        ${filters.symbol ? Prisma.sql`AND symbol = ${filters.symbol}` : Prisma.empty}
-        ${filters.side ? Prisma.sql`AND side = ${filters.side}` : Prisma.empty}
-    ),
-    daily_aggregates AS (
-      SELECT 
-        trade_date,
-        SUM(pnl) as daily_pnl,
-        SUM(quantity) as daily_volume,
-        COUNT(*) as daily_trades
-      FROM trade_metrics
-      GROUP BY trade_date
-    ),
-    overall_metrics AS (
-      SELECT 
-        -- Day-level metrics
-        COUNT(DISTINCT trade_date) as day_count,
-        SUM(daily_pnl) as total_pnl,
-        AVG(daily_pnl) as avg_daily_pnl,
-        AVG(daily_volume) as avg_daily_volume
-      FROM daily_aggregates
-    ),
-    trade_level_metrics AS (
-      SELECT 
-        -- Trade-level metrics
-        COUNT(*) as total_trades,
-        COUNT(*) FILTER (WHERE outcome = 'win') as winning_trades,
-        COUNT(*) FILTER (WHERE outcome = 'loss') as losing_trades,
-        AVG(pnl) as avg_trade_pnl,
-        AVG(per_share_pnl) as avg_per_share_pnl,
-        COALESCE(AVG(pnl) FILTER (WHERE outcome = 'win'), 0) as avg_win,
-        COALESCE(AVG(pnl) FILTER (WHERE outcome = 'loss'), 0) as avg_loss,
-        COALESCE(MAX(pnl), 0) as largest_gain,
-        COALESCE(MIN(pnl), 0) as largest_loss,
-        COALESCE(STDDEV(pnl), 0) as trade_pnl_std_dev,
-        COALESCE(AVG(hold_time_seconds) FILTER (WHERE outcome = 'win'), 0) as avg_hold_winning,
-        COALESCE(AVG(hold_time_seconds) FILTER (WHERE outcome = 'loss'), 0) as avg_hold_losing,
-        COALESCE(SUM(pnl) FILTER (WHERE outcome = 'win'), 0) as total_wins,
-        COALESCE(SUM(ABS(pnl)) FILTER (WHERE outcome = 'loss'), 0) as total_losses,
-        SUM(commission) as total_commissions,
-        SUM(fees) as total_fees
-      FROM trade_metrics
-    )
-    SELECT 
-      om.total_pnl,
-      om.avg_daily_pnl,
-      om.avg_daily_volume,
-      tm.total_trades,
-      tm.winning_trades,
-      tm.losing_trades,
-      tm.avg_trade_pnl,
-      tm.avg_per_share_pnl,
-      tm.avg_win,
-      tm.avg_loss,
-      tm.largest_gain,
-      tm.largest_loss,
-      tm.trade_pnl_std_dev,
-      tm.avg_hold_winning,
-      tm.avg_hold_losing,
-      CASE 
-        WHEN tm.total_losses > 0 THEN tm.total_wins / tm.total_losses
-        WHEN tm.total_wins > 0 THEN 999999
-        ELSE 0
-      END as profit_factor,
-      tm.total_commissions,
-      tm.total_fees
-    FROM overall_metrics om
-    CROSS JOIN trade_level_metrics tm
-  `;
+  console.log(`Using ${trades.length} pre-filtered trades for specific dates:`, dateStrings);
 
-  const metrics = result[0] || {};
+  if (trades.length === 0) {
+    return createEmptyMetrics();
+  }
+
+  // Calculate metrics using the filtered trades
+  let totalPnl = 0;
+  let totalVolume = 0;
+  let winningTrades = 0;
+  let losingTrades = 0;
+  let totalWins = 0;
+  let totalLosses = 0;
+  let largestGain = 0;
+  let largestLoss = 0;
+  let totalCommissions = 0;
+  let totalFees = 0;
+  let totalHoldWinning = 0;
+  let totalHoldLosing = 0;
+  let winningHoldCount = 0;
+  let losingHoldCount = 0;
+  const pnlValues: number[] = [];
+
+  trades.forEach(trade => {
+    const pnl = Number(trade.pnl) || 0;
+    const quantity = Number(trade.quantity) || 0;
+    const commission = Number(trade.commission) || 0;
+    const fees = Number(trade.fees) || 0;
+    
+    totalPnl += pnl;
+    totalVolume += quantity;
+    totalCommissions += commission;
+    totalFees += fees;
+    pnlValues.push(pnl);
+
+    // Calculate hold time
+    let holdTime = 0;
+    if (trade.timeInTrade) {
+      holdTime = Number(trade.timeInTrade);
+    } else if (trade.exitDate && trade.entryDate) {
+      holdTime = (trade.exitDate.getTime() - trade.entryDate.getTime()) / 1000;
+    }
+
+    if (pnl > 0) {
+      winningTrades++;
+      totalWins += pnl;
+      largestGain = Math.max(largestGain, pnl);
+      totalHoldWinning += holdTime;
+      winningHoldCount++;
+    } else if (pnl < 0) {
+      losingTrades++;
+      totalLosses += Math.abs(pnl);
+      largestLoss = Math.min(largestLoss, pnl);
+      totalHoldLosing += holdTime;
+      losingHoldCount++;
+    }
+  });
+
+  // Calculate derived metrics
+  const totalTrades = trades.length;
+  const avgWin = winningTrades > 0 ? totalWins / winningTrades : 0;
+  const avgLoss = losingTrades > 0 ? totalLosses / losingTrades : 0;
+  const avgHoldWinning = winningHoldCount > 0 ? totalHoldWinning / winningHoldCount : 0;
+  const avgHoldLosing = losingHoldCount > 0 ? totalHoldLosing / losingHoldCount : 0;
+  const profitFactor = totalLosses > 0 ? totalWins / totalLosses : (totalWins > 0 ? 999999 : 0);
+  
+  // Calculate standard deviation
+  const avgPnl = totalPnl / totalTrades;
+  const variance = pnlValues.reduce((sum, pnl) => sum + Math.pow(pnl - avgPnl, 2), 0) / totalTrades;
+  const stdDev = Math.sqrt(variance);
+
+  // Count unique days
+  const uniqueDays = new Set(trades.map(t => t.exitDate?.toISOString().split('T')[0])).size;
 
   return {
-    totalGainLoss: Number(metrics.total_pnl) || 0,
-    avgDailyGainLoss: Number(metrics.avg_daily_pnl) || 0,
-    avgDailyVolume: Number(metrics.avg_daily_volume) || 0,
-    avgPerShareGainLoss: Number(metrics.avg_per_share_pnl) || 0,
-    avgTradeGainLoss: Number(metrics.avg_trade_pnl) || 0,
-    totalTrades: Number(metrics.total_trades) || 0,
-    winningTrades: Number(metrics.winning_trades) || 0,
-    losingTrades: Number(metrics.losing_trades) || 0,
-    avgWinningTrade: Number(metrics.avg_win) || 0,
-    avgLosingTrade: Number(metrics.avg_loss) || 0,
-    tradeStdDev: Number(metrics.trade_pnl_std_dev) || 0,
-    avgHoldWinning: Number(metrics.avg_hold_winning) || 0,
-    avgHoldLosing: Number(metrics.avg_hold_losing) || 0,
-    profitFactor: Number(metrics.profit_factor) || 0,
-    largestGain: Number(metrics.largest_gain) || 0,
-    largestLoss: Number(metrics.largest_loss) || 0,
-    totalCommissions: Number(metrics.total_commissions) || 0,
-    totalFees: Number(metrics.total_fees) || 0,
+    totalGainLoss: totalPnl,
+    avgDailyGainLoss: uniqueDays > 0 ? totalPnl / uniqueDays : 0,
+    avgDailyVolume: uniqueDays > 0 ? totalVolume / uniqueDays : 0,
+    avgPerShareGainLoss: totalVolume > 0 ? totalPnl / totalVolume : 0,
+    avgTradeGainLoss: totalTrades > 0 ? totalPnl / totalTrades : 0,
+    totalTrades: totalTrades,
+    winningTrades: winningTrades,
+    losingTrades: losingTrades,
+    avgWinningTrade: avgWin,
+    avgLosingTrade: losingTrades > 0 ? -avgLoss : 0, // Make sure losing trade average is negative
+    tradeStdDev: stdDev,
+    avgHoldWinning: avgHoldWinning,
+    avgHoldLosing: avgHoldLosing,
+    profitFactor: profitFactor,
+    largestGain: largestGain,
+    largestLoss: largestLoss,
+    totalCommissions: totalCommissions,
+    totalFees: totalFees,
   };
 }
 

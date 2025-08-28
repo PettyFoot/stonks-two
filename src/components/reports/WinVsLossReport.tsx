@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 
 interface DayMetrics {
   totalGainLoss: number;
@@ -31,45 +30,216 @@ interface WinLossDaysData {
   losingDays: DayMetrics;
 }
 
-export default function WinVsLossReport() {
-  const [data, setData] = useState<WinLossDaysData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  
-  const { filters } = useGlobalFilters();
-  const { symbol, side, customDateRange } = filters;
+interface Trade {
+  pnl: number;
+  quantity: number;
+  commission?: number;
+  fees?: number;
+  timeInTrade?: number;
+  exitDate?: Date;
+  entryDate?: Date;
+  date?: Date;
+}
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+interface WinVsLossReportProps {
+  trades: Trade[];
+  loading: boolean;
+  error: string | null;
+}
 
-        // Build query params
-        const params = new URLSearchParams();
-        if (customDateRange?.from) params.append('from', customDateRange.from);
-        if (customDateRange?.to) params.append('to', customDateRange.to);
-        if (symbol && symbol !== 'all') params.append('symbol', symbol);
-        if (side && side !== 'all') params.append('side', side);
+export default function WinVsLossReport({ trades, loading, error }: WinVsLossReportProps) {
+  // Calculate metrics for a set of trades
+  const calculateMetrics = (trades: Trade[]): DayMetrics => {
+    if (trades.length === 0) {
+      return {
+        totalGainLoss: 0,
+        avgDailyGainLoss: 0,
+        avgDailyVolume: 0,
+        avgPerShareGainLoss: 0,
+        avgTradeGainLoss: 0,
+        totalTrades: 0,
+        winningTrades: 0,
+        losingTrades: 0,
+        avgWinningTrade: 0,
+        avgLosingTrade: 0,
+        tradeStdDev: 0,
+        avgHoldWinning: 0,
+        avgHoldLosing: 0,
+        profitFactor: 0,
+        largestGain: 0,
+        largestLoss: 0,
+        totalCommissions: 0,
+        totalFees: 0,
+      };
+    }
 
-        const response = await fetch(`/api/reports/win-loss-days?${params}`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch win/loss statistics');
-        }
+    let totalPnl = 0;
+    let totalVolume = 0;
+    let winningTrades = 0;
+    let losingTrades = 0;
+    let totalWins = 0;
+    let totalLosses = 0;
+    let largestGain = 0;
+    let largestLoss = 0;
+    let totalCommissions = 0;
+    let totalFees = 0;
+    let totalHoldWinning = 0;
+    let totalHoldLosing = 0;
+    let winningHoldCount = 0;
+    let losingHoldCount = 0;
+    const pnlValues: number[] = [];
 
-        const result = await response.json();
-        setData(result);
-      } catch (error) {
-        console.error('Error fetching win/loss stats:', error);
-        setError(error instanceof Error ? error.message : 'Failed to fetch win/loss statistics');
-      } finally {
-        setLoading(false);
+    trades.forEach(trade => {
+      const pnl = Number(trade.pnl) || 0;
+      const quantity = Number(trade.quantity) || 0;
+      const commission = Number(trade.commission) || 0;
+      const fees = Number(trade.fees) || 0;
+      
+      totalPnl += pnl;
+      totalVolume += quantity;
+      totalCommissions += commission;
+      totalFees += fees;
+      pnlValues.push(pnl);
+
+      // Calculate hold time
+      let holdTime = 0;
+      if (trade.timeInTrade) {
+        holdTime = Number(trade.timeInTrade);
+      } else if (trade.exitDate && trade.entryDate) {
+        const exit = new Date(trade.exitDate);
+        const entry = new Date(trade.entryDate);
+        holdTime = (exit.getTime() - entry.getTime()) / 1000;
       }
-    };
 
-    fetchData();
-  }, [customDateRange, symbol, side]);
+      if (pnl > 0) {
+        winningTrades++;
+        totalWins += pnl;
+        largestGain = Math.max(largestGain, pnl);
+        totalHoldWinning += holdTime;
+        winningHoldCount++;
+      } else if (pnl < 0) {
+        losingTrades++;
+        totalLosses += Math.abs(pnl);
+        largestLoss = Math.min(largestLoss, pnl);
+        totalHoldLosing += holdTime;
+        losingHoldCount++;
+      }
+    });
+
+    // Calculate derived metrics
+    const totalTrades = trades.length;
+    const avgWin = winningTrades > 0 ? totalWins / winningTrades : 0;
+    const avgLoss = losingTrades > 0 ? totalLosses / losingTrades : 0;
+    const avgHoldWinning = winningHoldCount > 0 ? totalHoldWinning / winningHoldCount : 0;
+    const avgHoldLosing = losingHoldCount > 0 ? totalHoldLosing / losingHoldCount : 0;
+    // Calculate profit factor with better edge case handling
+    let profitFactor: number;
+    if (totalLosses > 0 && totalWins > 0) {
+      // Normal case: both wins and losses exist
+      profitFactor = totalWins / totalLosses;
+    } else if (totalWins > 0 && totalLosses === 0) {
+      // Only winning trades: use total P&L as profit factor
+      profitFactor = totalPnl;
+    } else if (totalLosses > 0 && totalWins === 0) {
+      // Only losing trades: use negative total P&L as profit factor
+      profitFactor = totalPnl; // This will be negative
+    } else {
+      // No trades or all zero P&L trades
+      profitFactor = 0;
+    }
+    
+    // Calculate standard deviation
+    const avgPnl = totalPnl / totalTrades;
+    const variance = pnlValues.reduce((sum, pnl) => sum + Math.pow(pnl - avgPnl, 2), 0) / totalTrades;
+    const stdDev = Math.sqrt(variance);
+
+    // Count unique days
+    const uniqueDates = new Set(trades.map(t => {
+      const tradeDate = t.exitDate || t.date;
+      return tradeDate instanceof Date 
+        ? tradeDate.toISOString().split('T')[0]
+        : new Date(tradeDate!).toISOString().split('T')[0];
+    }));
+    const uniqueDays = uniqueDates.size;
+
+    return {
+      totalGainLoss: totalPnl,
+      avgDailyGainLoss: uniqueDays > 0 ? totalPnl / uniqueDays : 0,
+      avgDailyVolume: uniqueDays > 0 ? totalVolume / uniqueDays : 0,
+      avgPerShareGainLoss: totalVolume > 0 ? totalPnl / totalVolume : 0,
+      avgTradeGainLoss: totalTrades > 0 ? totalPnl / totalTrades : 0,
+      totalTrades: totalTrades,
+      winningTrades: winningTrades,
+      losingTrades: losingTrades,
+      avgWinningTrade: avgWin,
+      avgLosingTrade: losingTrades > 0 ? -avgLoss : 0,
+      tradeStdDev: stdDev,
+      avgHoldWinning: avgHoldWinning,
+      avgHoldLosing: avgHoldLosing,
+      profitFactor: profitFactor,
+      largestGain: largestGain,
+      largestLoss: largestLoss,
+      totalCommissions: totalCommissions,
+      totalFees: totalFees,
+    };
+  };
+
+  // Calculate win/loss days metrics from trades
+  const data = useMemo((): WinLossDaysData | null => {
+    if (!trades || trades.length === 0) return null;
+
+    console.log('\n=== WIN VS LOSS CLIENT-SIDE CALCULATION ===');
+    console.log(`Processing ${trades.length} trades:`, trades);
+
+    // Group trades by date to calculate daily P&L
+    const dailyPnlMap = new Map<string, { daily_pnl: number; daily_volume: number; trades: Trade[] }>();
+    
+    trades.forEach(trade => {
+      // Use exitDate if available, otherwise fall back to date
+      const tradeDate = trade.exitDate || trade.date;
+      if (!tradeDate) return;
+      
+      const dateKey = tradeDate instanceof Date 
+        ? tradeDate.toISOString().split('T')[0]
+        : new Date(tradeDate).toISOString().split('T')[0];
+      
+      const existing = dailyPnlMap.get(dateKey) || { daily_pnl: 0, daily_volume: 0, trades: [] };
+      
+      existing.daily_pnl += Number(trade.pnl) || 0;
+      existing.daily_volume += Number(trade.quantity) || 0;
+      existing.trades.push(trade);
+      
+      dailyPnlMap.set(dateKey, existing);
+    });
+
+    const dailyResults = Array.from(dailyPnlMap.entries()).map(([dateStr, data]) => ({
+      date: dateStr,
+      daily_pnl: data.daily_pnl,
+      daily_volume: data.daily_volume,
+      trades: data.trades
+    }));
+
+    console.log('Daily P&L Results:', dailyResults);
+
+    // Separate winning and losing days
+    const winningDays = dailyResults.filter(day => day.daily_pnl > 0);
+    const losingDays = dailyResults.filter(day => day.daily_pnl <= 0);
+
+    console.log(`Winning Days: ${winningDays.length}, Losing Days: ${losingDays.length}`);
+
+    // Calculate metrics for winning days
+    const winningDaysMetrics = calculateMetrics(winningDays.flatMap(day => day.trades));
+    const losingDaysMetrics = calculateMetrics(losingDays.flatMap(day => day.trades));
+
+    console.log('Winning Days Metrics:', winningDaysMetrics);
+    console.log('Losing Days Metrics:', losingDaysMetrics);
+    console.log('===========================================\n');
+
+    return {
+      winningDays: winningDaysMetrics,
+      losingDays: losingDaysMetrics
+    };
+  }, [trades]);
 
   const formatCurrency = (value: number): string => {
     return new Intl.NumberFormat('en-US', {
@@ -122,18 +292,39 @@ export default function WinVsLossReport() {
     }
 
     const getValueColor = (value: number, isWinColumn: boolean) => {
-      if (label.includes('Loss') || label.includes('Losing')) {
-        return value < 0 ? 'text-theme-red' : 'text-theme-secondary-text';
+      // Zero values always use primary text color
+      if (value === 0) {
+        return 'text-theme-primary-text';
       }
-      if (label.includes('Gain') || label.includes('Winning')) {
-        return value > 0 ? 'text-theme-green' : 'text-theme-secondary-text';
+
+      // Fields that can be green (positive) or red (negative)
+      const greenRedFields = [
+        'Total Gain / Loss',
+        'Average Daily Gain / Loss',
+        'Average Per-Share Gain / Loss',
+        'Average Trade Gain / Loss',
+        'Winning Trades',
+        'Average Winning Trade',
+        'Largest Gain'
+      ];
+
+      // Fields that are typically red when negative
+      const redFields = [
+        'Largest Loss',
+        'Average Losing Trade',
+        'Losing Trades'
+      ];
+
+      if (greenRedFields.includes(label)) {
+        return value > 0 ? 'text-theme-green' : 'text-theme-red';
       }
-      if (label === 'Total Gain / Loss' || label === 'Average Daily Gain / Loss') {
-        return isWinColumn 
-          ? (value > 0 ? 'text-theme-green' : 'text-theme-secondary-text')
-          : (value < 0 ? 'text-theme-red' : 'text-theme-secondary-text');
+
+      if (redFields.includes(label)) {
+        return value < 0 ? 'text-theme-red' : 'text-theme-primary-text';
       }
-      return 'text-foreground';
+
+      // All other fields use primary text color
+      return 'text-theme-primary-text';
     };
 
     return (

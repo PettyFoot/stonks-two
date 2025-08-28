@@ -62,6 +62,16 @@ export async function GET(request: NextRequest) {
       orderBy: { date: 'asc' }
     });
 
+    console.log('\n=== OVERVIEW API DEBUG ===');
+    console.log('User ID:', user.id);
+    console.log('Filter Conditions:', JSON.stringify(whereConditions, null, 2));
+    console.log(`Found ${trades.length} trades for Overview report`);
+    console.log('Trades details:');
+    trades.forEach((trade, index) => {
+      console.log(`  ${index + 1}. ${trade.symbol} | Date: ${trade.date.toISOString().split('T')[0]} | ExitDate: ${trade.exitDate?.toISOString().split('T')[0] || 'N/A'} | PnL: ${trade.pnl} | Quantity: ${trade.quantity}`);
+    });
+    console.log('========================\n');
+
     // Group trades by date for daily P&L calculation
     const dailyPnlMap = new Map<string, {
       pnl: number;

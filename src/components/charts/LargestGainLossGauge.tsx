@@ -22,22 +22,33 @@ export default function LargestGainLossGauge({
   const maxValue = Math.max(Math.abs(largestGain), Math.abs(largestLoss));
   
   // Calculate proportional values for the pie chart
+  // Handle the case where largestLoss might be positive (meaning no actual losses exist)
   const gainValue = largestGain > 0 ? largestGain : 0;
-  const lossValue = Math.abs(largestLoss) > 0 ? Math.abs(largestLoss) : 0;
+  const lossValue = largestLoss < 0 ? Math.abs(largestLoss) : 0;
   
   // Create data for pie chart - each section proportional to its value
+  // Only include segments that have positive values to avoid rendering issues
   const data = [
-    {
+    ...(gainValue > 0 ? [{
       name: 'gain',
       value: gainValue,
       fill: 'var(--theme-green)'
-    },
-    {
+    }] : []),
+    ...(lossValue > 0 ? [{
       name: 'loss',
       value: lossValue,
       fill: 'var(--theme-red)'
-    }
+    }] : [])
   ];
+
+  // If no data, create a small placeholder to show the chart structure
+  if (data.length === 0) {
+    data.push({
+      name: 'placeholder',
+      value: 1,
+      fill: 'var(--theme-muted)'
+    });
+  }
   
   // Custom tooltip content
   const CustomTooltip = ({ active, payload }: any) => {
@@ -53,6 +64,12 @@ export default function LargestGainLossGauge({
         return (
           <div className="text-xs rounded px-2 py-1 shadow-lg" style={{backgroundColor: 'var(--theme-chart-tooltip-bg)', color: 'var(--theme-primary-text)'}}>
             Loss: {formatCurrency(largestLoss)}
+          </div>
+        );
+      } else if (data.payload.name === 'placeholder') {
+        return (
+          <div className="text-xs rounded px-2 py-1 shadow-lg" style={{backgroundColor: 'var(--theme-chart-tooltip-bg)', color: 'var(--theme-primary-text)'}}>
+            No data available
           </div>
         );
       }

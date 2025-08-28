@@ -704,7 +704,7 @@ export default function Reports() {
 
           {/* Win vs Loss Days Tab */}
           <TabsContent value="win-vs-loss" className="space-y-6">
-            <WinVsLossReport />
+            <WinVsLossReport trades={trades} loading={detailedLoading} error={detailedError} />
           </TabsContent>
 
         </Tabs>
