@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, FileText, Calendar, Tag } from 'lucide-react';
 
-export default function DemoJournal() {
-  const mockJournalEntries = [
+export default function DemoRecords() {
+  const mockRecordsEntries = [
     {
       id: 1,
       date: '2025-04-09',
@@ -37,7 +37,7 @@ export default function DemoJournal() {
   return (
     <div className="flex flex-col h-full">
       <TopBar 
-        title="Journal" 
+        title="Records" 
         subtitle="Demo Mode - Sample Data"
         showTimeRangeFilters={false}
       />
@@ -45,16 +45,16 @@ export default function DemoJournal() {
       <div className="flex-1 overflow-auto p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-primary">Trading Journal</h2>
+          <h2 className="text-lg font-semibold text-primary">Trading Records</h2>
           <Button className="bg-[var(--theme-green)] hover:bg-[var(--theme-green)/80] text-white">
             <Plus className="h-4 w-4 mr-2" />
             New Entry
           </Button>
         </div>
 
-        {/* Journal Entries */}
+        {/* Records Entries */}
         <div className="space-y-4">
-          {mockJournalEntries.map((entry) => (
+          {mockRecordsEntries.map((entry) => (
             <Card key={entry.id} className="bg-surface border-default hover:shadow-md transition-shadow cursor-pointer">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">

@@ -1,4 +1,4 @@
-import { Trade, DayData, KPIData, JournalEntry } from '@/types';
+import { Trade, DayData, KPIData, RecordsEntry } from '@/types';
 
 // Generate realistic mock trades
 export const mockTrades: Trade[] = [
@@ -293,8 +293,8 @@ export const mockKPIData: KPIData = {
   losingTradesCount: 9
 };
 
-// Journal entries
-export const mockJournalEntries: JournalEntry[] = [
+// Records entries
+export const mockRecordsEntries: RecordsEntry[] = [
   {
     id: '1',
     date: 'Mon, Apr 7, 2025',

@@ -32,7 +32,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const journalDate = new Date(date);
+    const recordsDate = new Date(date);
     
     // If a specific tradeId is provided, update that trade's notes
     if (tradeId) {
@@ -79,8 +79,8 @@ export async function POST(request: Request) {
       where: {
         userId: user.id,
         date: {
-          gte: new Date(journalDate.setUTCHours(0, 0, 0, 0)),
-          lt: new Date(journalDate.setUTCHours(23, 59, 59, 999))
+          gte: new Date(recordsDate.setUTCHours(0, 0, 0, 0)),
+          lt: new Date(recordsDate.setUTCHours(23, 59, 59, 999))
         },
         status: {
           not: TradeStatus.BLANK // Don't include existing blank trades
@@ -89,13 +89,13 @@ export async function POST(request: Request) {
     });
 
     if (existingTradesForDate.length > 0) {
-      // Check for existing blank trade to hold journal notes
+      // Check for existing blank trade to hold records notes
       let blankTrade = await prisma.trade.findFirst({
         where: {
           userId: user.id,
           date: {
-            gte: new Date(journalDate.setUTCHours(0, 0, 0, 0)),
-            lt: new Date(journalDate.setUTCHours(23, 59, 59, 999))
+            gte: new Date(recordsDate.setUTCHours(0, 0, 0, 0)),
+            lt: new Date(recordsDate.setUTCHours(23, 59, 59, 999))
           },
           status: TradeStatus.BLANK
         }
@@ -116,9 +116,9 @@ export async function POST(request: Request) {
         blankTrade = await prisma.trade.create({
           data: {
             userId: user.id,
-            date: journalDate,
-            entryDate: journalDate,
-            symbol: 'JOURNAL',
+            date: recordsDate,
+            entryDate: recordsDate,
+            symbol: 'RECORDS',
             side: 'LONG',
             quantity: 0,
             executions: 0,
@@ -134,7 +134,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: true,
-        message: saveChanges ? 'Journal notes saved successfully' : 'Journal notes auto-saved to draft',
+        message: saveChanges ? 'Records notes saved successfully' : 'Records notes auto-saved to draft',
         trade: {
           id: blankTrade.id,
           notes: blankTrade.notes,
@@ -154,9 +154,9 @@ export async function POST(request: Request) {
     const blankTrade = await prisma.trade.create({
       data: {
         userId: user.id,
-        date: journalDate,
-        entryDate: journalDate,
-        symbol: 'JOURNAL',
+        date: recordsDate,
+        entryDate: recordsDate,
+        symbol: 'RECORDS',
         side: 'LONG',
         quantity: 0,
         executions: 0,
@@ -171,7 +171,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: saveChanges ? 'Journal notes saved successfully' : 'Journal notes auto-saved to draft',
+      message: saveChanges ? 'Records notes saved successfully' : 'Records notes auto-saved to draft',
       trade: {
         id: blankTrade.id,
         notes: blankTrade.notes,
@@ -183,7 +183,7 @@ export async function POST(request: Request) {
     });
 
   } catch (error) {
-    console.error('Error saving journal notes:', error);
+    console.error('Error saving records notes:', error);
     
     return NextResponse.json(
       { 
@@ -241,9 +241,9 @@ export async function GET(request: Request) {
 
     // If date is provided, get all notes for trades on that date
     if (date) {
-      const journalDate = new Date(date);
-      const startOfDay = new Date(journalDate.setUTCHours(0, 0, 0, 0));
-      const endOfDay = new Date(journalDate.setUTCHours(23, 59, 59, 999));
+      const recordsDate = new Date(date);
+      const startOfDay = new Date(recordsDate.setUTCHours(0, 0, 0, 0));
+      const endOfDay = new Date(recordsDate.setUTCHours(23, 59, 59, 999));
 
       const trades = await prisma.trade.findMany({
         where: {
@@ -286,7 +286,7 @@ export async function GET(request: Request) {
     );
 
   } catch (error) {
-    console.error('Error fetching journal notes:', error);
+    console.error('Error fetching records notes:', error);
     
     return NextResponse.json(
       { 

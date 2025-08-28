@@ -33,7 +33,7 @@ const navigation = [
   { name: 'Calendar', href: '/calendar', icon: Calendar },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
   { name: 'Trades', href: '/trades', icon: TrendingUp },
-  { name: 'Journal', href: '/journal', icon: BookOpen },
+  { name: 'Records', href: '/records', icon: BookOpen },
   { name: 'New Trade', href: '/new-trade', icon: Plus },
   { name: 'Community', href: '/community', icon: Users },
   { name: 'Search', href: '/search', icon: Search },

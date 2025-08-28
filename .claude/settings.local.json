@@ -43,7 +43,8 @@
       "Read(c:\\Users\\lcorr\\OneDrive\\Pictures\\CC/**)",
       "Read(c:\\Users\\lcorr\\OneDrive\\Pictures\\CC/**)",
       "Read(c:\\Users\\lcorr\\OneDrive\\Pictures\\CC/**)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(move \"src\\app\\(with-sidebar)\\journal\" \"src\\app\\(with-sidebar)\\records\")"
     ],
     "deny": [],
     "ask": []

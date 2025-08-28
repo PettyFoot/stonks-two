@@ -141,8 +141,8 @@ export default function CalendarContent() {
   // Handle day click with conditional navigation
   const handleDayClick = (dayStr: string) => {
     if (dayHasTradeData(dayStr)) {
-      // Navigate to journal page with the selected date
-      router.push(`/journal?date=${dayStr}`);
+      // Navigate to records page with the selected date
+      router.push(`/records?date=${dayStr}`);
     } else {
       // Just update the selected day for display purposes
       setSelectedDay(dayStr);

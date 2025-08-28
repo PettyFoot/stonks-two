@@ -1,11 +1,11 @@
 # Trade-Order Relationship Fix Summary
 
 ## Overview
-Fixed the journal API to use the correct Order-Trade relationship and created comprehensive tools to identify and resolve data integrity issues.
+Fixed the records API to use the correct Order-Trade relationship and created comprehensive tools to identify and resolve data integrity issues.
 
 ## Changes Made
 
-### 1. Journal API Route Updates (`/src/app/api/journal/route.ts`)
+### 1. Records API Route Updates (`/src/app/api/records/route.ts`)
 - **BEFORE**: Used dual-relationship approach with fallback logic
 - **AFTER**: Uses ONLY `Order.tradeId` field as the primary relationship (as specified in schema comment line 86)
 - **Enhanced logging**: Added comprehensive data consistency warnings that identify:
@@ -91,11 +91,11 @@ npm run fix-trade-orders
 After running the fixes, you should see:
 - ✅ All trade-order relationships consistent
 - ✅ No more console warnings about data integrity
-- ✅ Journal displays show correct execution counts
+- ✅ Records displays show correct execution counts
 - ✅ GOOG trade displays all orders properly
 
 ## Files Modified
-- `src/app/api/journal/route.ts` - Enhanced logging, removed fallback approach
+- `src/app/api/records/route.ts` - Enhanced logging, removed fallback approach
 - `src/lib/repositories/tradesRepo.ts` - Improved consistency checking
 - `package.json` - Added `fix-trade-orders` script
 - Created 4 new database management files in `prisma/migrations/`
@@ -107,4 +107,4 @@ After running the fixes, you should see:
 - Before/after statistics confirm successful operations
 - Only updates orders that meet safety criteria (executed, not cancelled)
 
-The journal API will now correctly show all orders for trades, and any remaining data integrity issues can be easily identified and resolved using the provided tools.
+The records API will now correctly show all orders for trades, and any remaining data integrity issues can be easily identified and resolved using the provided tools.

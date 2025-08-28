@@ -32,7 +32,7 @@ model User {
   trades        Trade[]
   orders        Order[]
   dayData       DayData[]
-  journalEntries JournalEntry[]
+  recordsEntries RecordsEntry[]
   importBatches ImportBatch[]
   csvUploadLogs CsvUploadLog[]
   
@@ -83,7 +83,7 @@ model Trade {
   quantity              Int?        // Total closed shares
   costBasis             Decimal?    @db.Decimal(10,2) // Sum of (buyQuantity * buyLimitPrice)
   proceeds              Decimal?    @db.Decimal(10,2) // Sum of (sellQuantity * sellLimitPrice)
-  ordersInTrade         String[]    // List of order IDs that make up this trade - for journal queries, use Order.tradeId instead
+  ordersInTrade         String[]    // List of order IDs that make up this trade - for records queries, use Order.tradeId instead
   ordersCount           Int?        // Number of orders in this trade
   isCalculated          Boolean     @default(false) // Flag to indicate if this is a calculated trade
   
@@ -103,8 +103,8 @@ model Trade {
   
   // Relations
   user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  journalEntryId        String?
-  journalEntry          JournalEntry? @relation(fields: [journalEntryId], references: [id])
+  recordsEntryId        String?
+  recordsEntry          RecordsEntry? @relation(fields: [recordsEntryId], references: [id])
   importBatchId         String?
   importBatch           ImportBatch? @relation(fields: [importBatchId], references: [id])
   partialFills          PartialFill[]
@@ -122,7 +122,7 @@ model Trade {
   @@index([userId, fees])
   @@index([userId, entryDate])
   @@index([userId, exitDate])
-  @@index([userId, status, date])  // Optimized for journal queries filtering by status and date
+  @@index([userId, status, date])  // Optimized for records queries filtering by status and date
   @@index([userId, date, status])  // Alternative compound index for date-first queries
   @@map("trades")
 }
@@ -162,7 +162,7 @@ model Order {
   @@index([userId, symbol])
   @@index([userId, orderStatus])
   @@index([tradeId])
-  @@index([userId, tradeId])  // Optimized for journal queries fetching orders by user and trade
+  @@index([userId, tradeId])  // Optimized for records queries fetching orders by user and trade
   @@map("orders")
 }
 
@@ -206,7 +206,7 @@ model DayData {
   @@map("day_data")
 }
 
-model JournalEntry {
+model RecordsEntry {
   id           String    @id @default(cuid())
   userId       String
   date         DateTime
@@ -229,7 +229,7 @@ model JournalEntry {
   trades       Trade[]
   
   @@index([userId, date])
-  @@map("journal_entries")
+  @@map("records_entries")
 }
 
 model ImportBatch {
@@ -323,7 +323,7 @@ enum TradeSide {
 enum TradeStatus {
   OPEN
   CLOSED
-  BLANK    // For empty journal entries with notes only
+  BLANK    // For empty records entries with notes only
   
   @@map("trade_status")
 }

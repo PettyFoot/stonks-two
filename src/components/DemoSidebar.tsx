@@ -24,7 +24,7 @@ const navigation = [
   { name: 'Calendar', href: '/demo/calendar', icon: Calendar },
   { name: 'Reports', href: '/demo/reports', icon: BarChart3 },
   { name: 'Trades', href: '/demo/trades', icon: TrendingUp },
-  { name: 'Journal', href: '/demo/journal', icon: BookOpen },
+  { name: 'Records', href: '/demo/records', icon: BookOpen },
   { name: 'New Trade', href: '/demo/new-trade', icon: Plus },
   { name: 'Community', href: '/demo/community', icon: Users },
   { name: 'Search', href: '/demo/search', icon: Search },

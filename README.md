@@ -72,7 +72,7 @@ AUTH0_CLIENT_SECRET='your-auth0-client-secret'
 - **📈 Performance Dashboard** - Real-time P&L tracking with professional metrics
 - **🎯 Pattern Recognition** - Discover hidden performance blind spots automatically  
 - **📋 Trade Management** - Complete trade history with advanced filtering
-- **📝 Trading Journal** - Daily entries integrated with actual performance data
+- **📝 Trading Records** - Daily entries integrated with actual performance data
 
 ### Data Import
 - **🤖 AI-Powered Import** - Upload any CSV format, get insights immediately

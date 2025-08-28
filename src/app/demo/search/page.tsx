@@ -39,7 +39,7 @@ export default function DemoSearch() {
       <div className="flex-1 overflow-auto p-6">
         {/* Search Header */}
         <div className="mb-6">
-          <h2 className="text-lg font-semibold text-primary mb-4">Search Trades & Journal Entries</h2>
+          <h2 className="text-lg font-semibold text-primary mb-4">Search Trades & Records Entries</h2>
           
           {/* Search Input */}
           <div className="flex gap-3 mb-4">
@@ -91,7 +91,7 @@ export default function DemoSearch() {
                 <SearchIcon className="h-12 w-12 text-muted mx-auto mb-4" />
                 <div className="text-lg font-medium text-primary mb-2">Search Your Trading Data</div>
                 <div className="text-sm text-muted max-w-md mx-auto">
-                  Find trades by symbol, analyze patterns by tags, or search through your journal entries for specific insights.
+                  Find trades by symbol, analyze patterns by tags, or search through your records entries for specific insights.
                 </div>
               </CardContent>
             </Card>

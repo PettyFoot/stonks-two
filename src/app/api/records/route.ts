@@ -13,8 +13,8 @@ export async function GET(request: Request) {
 
     // Demo mode - return mock data
     if (demo) {
-      const { mockJournalEntries } = await import('@/data/mockData');
-      let entries = mockJournalEntries;
+      const { mockRecordsEntries } = await import('@/data/mockData');
+      let entries = mockRecordsEntries;
       
       if (date) {
         entries = entries.filter(entry => 
@@ -44,10 +44,10 @@ export async function GET(request: Request) {
       );
     }
 
-    const journalDate = new Date(date);
+    const recordsDate = new Date(date);
 
     // Get trades for the specified date
-    const trades = await tradesRepo.getTradesForJournalDate(user.id, journalDate);
+    const trades = await tradesRepo.getTradesForRecordsDate(user.id, recordsDate);
 
     // Transform trades and get executions for each
     const tradesWithExecutions = await Promise.all(
@@ -64,7 +64,7 @@ export async function GET(request: Request) {
           const foundOrdersCount = orders.length;
           
           if (ordersInTradeCount !== foundOrdersCount) {
-            console.warn(`[JOURNAL API] Order fetching issue detected for trade ${trade.id}:`, {
+            console.warn(`[RECORDS API] Order fetching issue detected for trade ${trade.id}:`, {
               tradeId: trade.id,
               symbol: trade.symbol,
               date: trade.date.toISOString(),
@@ -81,7 +81,7 @@ export async function GET(request: Request) {
           
           // Log if no orders found for calculated trade
           if (orders.length === 0 && trade.status !== 'BLANK') {
-            console.warn(`[JOURNAL API] No orders found for calculated trade:`, {
+            console.warn(`[RECORDS API] No orders found for calculated trade:`, {
               tradeId: trade.id,
               symbol: trade.symbol,
               status: trade.status,
@@ -147,11 +147,11 @@ export async function GET(request: Request) {
       })
     );
 
-    // Get journal summary for the date
-    const summary = await tradesRepo.getJournalSummary(
+    // Get records summary for the date
+    const summary = await tradesRepo.getRecordsSummary(
       user.id, 
-      new Date(journalDate.setUTCHours(0, 0, 0, 0)),
-      new Date(journalDate.setUTCHours(23, 59, 59, 999))
+      new Date(recordsDate.setUTCHours(0, 0, 0, 0)),
+      new Date(recordsDate.setUTCHours(23, 59, 59, 999))
     );
 
     // Aggregate all executions from all trades into a single array
@@ -162,9 +162,9 @@ export async function GET(request: Request) {
       return acc;
     }, [] as ExecutionOrder[]);
 
-    // Create journal entry format
-    const journalEntry = {
-      id: `journal_${user.id}_${date}`,
+    // Create records entry format
+    const recordsEntry = {
+      id: `records_${user.id}_${date}`,
       date,
       pnl: summary.totalPnl,
       totalTrades: summary.totalTrades,
@@ -172,22 +172,22 @@ export async function GET(request: Request) {
       winRate: summary.winRate,
       notes: tradesWithExecutions.find(t => t.status === 'BLANK')?.notes || '',
       notesChanges: tradesWithExecutions.find(t => t.status === 'BLANK')?.notesChanges || '',
-      trades: tradesWithExecutions.filter(t => t.status !== 'BLANK'), // Separate actual trades from journal notes
-      journalNotes: tradesWithExecutions.filter(t => t.status === 'BLANK'), // Blank entries for notes
+      trades: tradesWithExecutions.filter(t => t.status !== 'BLANK'), // Separate actual trades from records notes
+      recordsNotes: tradesWithExecutions.filter(t => t.status === 'BLANK'), // Blank entries for notes
       executions: allExecutions // Include all executions from all trades
     };
 
     return NextResponse.json({
-      entries: [journalEntry],
+      entries: [recordsEntry],
       count: 1,
       success: true
     });
 
   } catch (error) {
-    console.error('Journal API error:', error);
+    console.error('Records API error:', error);
     return NextResponse.json(
       { 
-        error: error instanceof Error ? error.message : 'Failed to fetch journal data',
+        error: error instanceof Error ? error.message : 'Failed to fetch records data',
         details: 'Please try again or contact support if the problem persists'
       },
       { status: 500 }
@@ -215,20 +215,20 @@ export async function POST(request: Request) {
       );
     }
 
-    const journalDate = new Date(date);
+    const recordsDate = new Date(date);
 
     // Get existing trades for the date to calculate summary
-    const summary = await tradesRepo.getJournalSummary(
+    const summary = await tradesRepo.getRecordsSummary(
       user.id, 
-      new Date(journalDate.setUTCHours(0, 0, 0, 0)),
-      new Date(journalDate.setUTCHours(23, 59, 59, 999))
+      new Date(recordsDate.setUTCHours(0, 0, 0, 0)),
+      new Date(recordsDate.setUTCHours(23, 59, 59, 999))
     );
 
-    // Create or update a journal entry (blank trade) for general notes
+    // Create or update a records entry (blank trade) for general notes
     let blankTrade = null;
     if (notes && notes.trim().length > 0) {
       // Check for existing blank trade for this date
-      const existingBlankTrade = await tradesRepo.getTradesForJournalDate(user.id, journalDate);
+      const existingBlankTrade = await tradesRepo.getTradesForRecordsDate(user.id, recordsDate);
       const blankTradeForDate = existingBlankTrade.find(t => t.status === 'BLANK');
 
       if (blankTradeForDate) {
@@ -242,9 +242,9 @@ export async function POST(request: Request) {
         blankTrade = await prisma.trade.create({
           data: {
             userId: user.id,
-            date: journalDate,
-            entryDate: journalDate,
-            symbol: 'JOURNAL',
+            date: recordsDate,
+            entryDate: recordsDate,
+            symbol: 'RECORDS',
             side: 'LONG',
             quantity: 0,
             executions: 0,
@@ -259,8 +259,8 @@ export async function POST(request: Request) {
       }
     }
 
-    const journalEntry = {
-      id: `journal_${user.id}_${date}`,
+    const recordsEntry = {
+      id: `records_${user.id}_${date}`,
       date,
       pnl: summary.totalPnl,
       totalTrades: summary.totalTrades,
@@ -294,13 +294,13 @@ export async function POST(request: Request) {
       }))
     };
 
-    return NextResponse.json(journalEntry, { status: 201 });
+    return NextResponse.json(recordsEntry, { status: 201 });
 
   } catch (error) {
-    console.error('Create journal entry error:', error);
+    console.error('Create records entry error:', error);
     return NextResponse.json(
       { 
-        error: error instanceof Error ? error.message : 'Failed to create journal entry',
+        error: error instanceof Error ? error.message : 'Failed to create records entry',
         details: 'Please try again or contact support if the problem persists'
       },
       { status: 500 }

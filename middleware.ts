@@ -8,7 +8,7 @@ export const config = {
     '/(with-sidebar)/:path*',
     '/onboarding/:path*',
     '/api/trades/:path*',
-    '/api/journal/:path*',
+    '/api/records/:path*',
     '/api/import/:path*'
   ]
 }

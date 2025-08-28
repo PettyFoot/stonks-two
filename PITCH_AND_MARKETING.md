@@ -251,8 +251,8 @@ Sharpe ratio, Kelly criterion, MFE/MAE analysis, and other institutional-quality
 **🔍 Trade Analysis**
 Complete trade history with advanced filtering, sorting, and performance attribution
 
-**📝 Trading Journal**
-Daily journal entries integrated with your actual performance data
+**📝 Trading Records**
+Daily records entries integrated with your actual performance data
 
 **🤖 AI-Powered Import**
 Handles any CSV format automatically—just upload and get insights
@@ -331,7 +331,7 @@ What patterns are hiding in your data?
 #### TradeZella ($19-49/month)
 **Strengths:**
 - Established player with good UI
-- Journal functionality
+- Records functionality
 - Mobile app available
 
 **Weaknesses:**

@@ -22,7 +22,7 @@ model User {
   trades        Trade[]
   orders        Order[]
   dayData       DayData[]
-  journalEntries JournalEntry[]
+  recordsEntries RecordsEntry[]
   importBatches ImportBatch[]
   csvUploadLogs CsvUploadLog[]
   
@@ -105,8 +105,8 @@ model Trade {
   // Relations
   user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   order                 Order?      @relation(fields: [orderId], references: [id])
-  journalEntryId        String?
-  journalEntry          JournalEntry? @relation(fields: [journalEntryId], references: [id])
+  recordsEntryId        String?
+  recordsEntry          RecordsEntry? @relation(fields: [recordsEntryId], references: [id])
   importBatchId         String?
   importBatch           ImportBatch? @relation(fields: [importBatchId], references: [id])
   partialFills          PartialFill[]
@@ -186,7 +186,7 @@ model DayData {
   @@map("day_data")
 }
 
-model JournalEntry {
+model RecordsEntry {
   id           String    @id @default(cuid())
   userId       String
   date         DateTime
@@ -209,7 +209,7 @@ model JournalEntry {
   trades       Trade[]
   
   @@index([userId, date])
-  @@map("journal_entries")
+  @@map("records_entries")
 }
 
 model ImportBatch {

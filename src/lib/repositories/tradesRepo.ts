@@ -148,10 +148,10 @@ export class TradesRepository {
   }
 
   /**
-   * Get trades for a specific date for journal purposes
-   * Includes both calculated trades and blank journal entries
+   * Get trades for a specific date for records purposes
+   * Includes both calculated trades and blank records entries
    */
-  async getTradesForJournalDate(userId: string, date: Date): Promise<Trade[]> {
+  async getTradesForRecordsDate(userId: string, date: Date): Promise<Trade[]> {
     const startOfDay = new Date(date);
     startOfDay.setUTCHours(0, 0, 0, 0);
     
@@ -174,7 +174,7 @@ export class TradesRepository {
   }
 
   /**
-   * Get trade with associated orders for journal display
+   * Get trade with associated orders for records display
    * Uses Order.tradeId as primary relationship (as per schema comment line 86)
    */
   async getTradeWithOrders(userId: string, tradeId: string) {
@@ -228,9 +228,9 @@ export class TradesRepository {
   }
 
   /**
-   * Get journal summary for a date range
+   * Get records summary for a date range
    */
-  async getJournalSummary(userId: string, startDate: Date, endDate: Date) {
+  async getRecordsSummary(userId: string, startDate: Date, endDate: Date) {
     const trades = await prisma.trade.findMany({
       where: {
         userId,

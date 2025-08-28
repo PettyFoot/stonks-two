@@ -1,4 +1,4 @@
-// Example integration of useAutoSave hook in the Journal page
+// Example integration of useAutoSave hook in the Records page
 // This shows how to replace the existing notes implementation
 
 'use client';
@@ -10,9 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { CheckCircle, AlertCircle, Clock, Save } from 'lucide-react';
 
-// Example API function for saving journal notes
-async function saveJournalNotes(notes: string): Promise<void> {
-  const response = await fetch('/api/journal/notes', {
+// Example API function for saving records notes
+async function saveRecordsNotes(notes: string): Promise<void> {
+  const response = await fetch('/api/records/notes', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -88,8 +88,8 @@ function StatusIndicator({ status, error, hasUnsavedChanges }: StatusIndicatorPr
   );
 }
 
-// Enhanced Journal Notes Component
-export function JournalNotesSection() {
+// Enhanced Records Notes Component
+export function RecordsNotesSection() {
   // Initialize the auto-save hook
   const {
     value: notes,
@@ -102,7 +102,7 @@ export function JournalNotesSection() {
     hasUnsavedChanges
   } = useAutoSave({
     initialValue: '',
-    saveFunction: saveJournalNotes,
+    saveFunction: saveRecordsNotes,
     debounceMs: 3000, // 3 second debounce
     enabled: true
   });
@@ -192,12 +192,12 @@ export function JournalNotesSection() {
 }
 
 // Example of how to use in a more complex scenario with multiple auto-save fields
-export function AdvancedJournalExample() {
+export function AdvancedRecordsExample() {
   // Multiple auto-save hooks for different fields
   const notesAutoSave = useAutoSave({
     initialValue: '',
     saveFunction: async (notes: string) => {
-      await fetch('/api/journal/notes', {
+      await fetch('/api/records/notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notes })
@@ -209,7 +209,7 @@ export function AdvancedJournalExample() {
   const tagsAutoSave = useAutoSave({
     initialValue: [] as string[],
     saveFunction: async (tags: string[]) => {
-      await fetch('/api/journal/tags', {
+      await fetch('/api/records/tags', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tags })
@@ -221,7 +221,7 @@ export function AdvancedJournalExample() {
   const strategiesAutoSave = useAutoSave({
     initialValue: { primary: '', secondary: '' },
     saveFunction: async (strategies: { primary: string; secondary: string }) => {
-      await fetch('/api/journal/strategies', {
+      await fetch('/api/records/strategies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ strategies })
@@ -232,7 +232,7 @@ export function AdvancedJournalExample() {
 
   return (
     <div className="space-y-6">
-      <JournalNotesSection />
+      <RecordsNotesSection />
       
       {/* Additional auto-saved fields would go here */}
       <div className="text-xs text-gray-500 p-2 bg-gray-50 rounded">

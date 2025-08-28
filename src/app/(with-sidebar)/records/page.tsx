@@ -11,38 +11,38 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Lock } from 'lucide-react';
 import { useAutoSave } from '@/hooks/useAutoSave';
-import { useJournalData } from '@/hooks/useJournalData';
+import { useRecordsData } from '@/hooks/useRecordsData';
 import TradeCandlestickChart from '@/components/charts/TradeCandlestickChart';
 
-export default function Journal() {
+export default function Records() {
   const searchParams = useSearchParams();
   const selectedDate = searchParams.get('date');
   const selectedTradeId = searchParams.get('tradeId'); // Get specific trade ID if provided
   
-  // Use real journal data instead of mock data
-  const { data: journalData, loading, error, refetch } = useJournalData(selectedDate);
+  // Use real records data instead of mock data
+  const { data: recordsData, loading, error, refetch } = useRecordsData(selectedDate);
   
   // Calculate execution metrics from real data
   const executionMetrics = {
-    totalExecutions: journalData?.executions.length || 0,
-    totalVolume: journalData?.totalVolume || 0,
-    totalPnl: journalData?.pnl || 0
+    totalExecutions: recordsData?.executions.length || 0,
+    totalVolume: recordsData?.totalVolume || 0,
+    totalPnl: recordsData?.pnl || 0
   };
 
   // Determine which trade we're editing notes for
   // If tradeId is provided in URL, use that specific trade
   // Otherwise, if there's only one trade, use that trade
-  // Otherwise, use journal-level notes (BLANK trade)
+  // Otherwise, use records-level notes (BLANK trade)
   const targetTrade = selectedTradeId 
-    ? journalData?.trades.find(t => t.id === selectedTradeId)
-    : journalData?.trades.length === 1 
-      ? journalData.trades[0] 
+    ? recordsData?.trades.find(t => t.id === selectedTradeId)
+    : recordsData?.trades.length === 1 
+      ? recordsData.trades[0] 
       : null;
 
   // Auto-save notes functionality - saves to notesChanges field
   const autoSaveNotes = async (notes: string) => {
     try {
-      const response = await fetch('/api/journal/notes', {
+      const response = await fetch('/api/records/notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -68,9 +68,9 @@ export default function Journal() {
   // Save changes functionality - copies notesChanges to notes
   const saveChanges = async () => {
     try {
-      const currentNotesChanges = targetTrade ? targetTrade.notesChanges : journalData?.notesChanges;
+      const currentNotesChanges = targetTrade ? targetTrade.notesChanges : recordsData?.notesChanges;
       
-      const response = await fetch('/api/journal/notes', {
+      const response = await fetch('/api/records/notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -85,7 +85,7 @@ export default function Journal() {
         throw new Error('Failed to save changes');
       }
       
-      // Refresh journal data to get the updated notes state
+      // Refresh records data to get the updated notes state
       refetch();
     } catch (error) {
       console.error('Error saving changes:', error);
@@ -93,12 +93,12 @@ export default function Journal() {
     }
   };
 
-  // Get the correct initial notes value from either specific trade or journal level
+  // Get the correct initial notes value from either specific trade or records level
   const getInitialNotes = () => {
     if (targetTrade) {
       return targetTrade.notesChanges || targetTrade.notes || '';
     }
-    return journalData?.notesChanges || journalData?.notes || '';
+    return recordsData?.notesChanges || recordsData?.notes || '';
   };
 
   const {
@@ -111,33 +111,33 @@ export default function Journal() {
     initialValue: getInitialNotes(), // Initialize with the correct notes
     saveFunction: autoSaveNotes, // Use auto-save function that saves to notesChanges
     debounceMs: 3000,
-    enabled: !!journalData // Only enable auto-save when data is loaded
+    enabled: !!recordsData // Only enable auto-save when data is loaded
   });
 
-  // Update notes when journal data first loads (but don't override user input)
+  // Update notes when records data first loads (but don't override user input)
   useEffect(() => {
     const initialValue = targetTrade 
       ? targetTrade.notesChanges || targetTrade.notes || ''
-      : journalData?.notesChanges || journalData?.notes || '';
+      : recordsData?.notesChanges || recordsData?.notes || '';
     
-    if (journalData && notes === '' && initialValue) {
+    if (recordsData && notes === '' && initialValue) {
       setNotes(initialValue);
     }
-  }, [journalData, targetTrade, notes, setNotes]);
+  }, [recordsData, targetTrade, notes, setNotes]);
 
   // Check if there are unsaved changes (notesChanges different from notes)
   const hasUnsavedChanges = () => {
     if (targetTrade) {
       return targetTrade.notesChanges && targetTrade.notesChanges !== targetTrade.notes;
     }
-    return journalData && journalData.notesChanges && journalData.notesChanges !== journalData.notes;
+    return recordsData && recordsData.notesChanges && recordsData.notesChanges !== recordsData.notes;
   };
 
   const shouldShowSaveButton = hasUnsavedChanges();
 
 
-  // All executions for this journal entry
-  const allExecutions = journalData?.executions || [];
+  // All executions for this records entry
+  const allExecutions = recordsData?.executions || [];
 
   // Group executions by symbol and find the most active symbol
   const executionsBySymbol = allExecutions.reduce((acc, execution) => {
@@ -162,7 +162,7 @@ export default function Journal() {
   if (loading) {
     return (
       <div className="flex flex-col h-full">
-        <TopBar title="Journal" showTimeRangeFilters={false} />
+        <TopBar title="Records" showTimeRangeFilters={false} />
         <div className="flex-1 flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--theme-tertiary)]"></div>
         </div>
@@ -174,7 +174,7 @@ export default function Journal() {
   if (error) {
     return (
       <div className="flex flex-col h-full">
-        <TopBar title="Journal" showTimeRangeFilters={false} />
+        <TopBar title="Records" showTimeRangeFilters={false} />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-red-500">Error: {error}</div>
         </div>
@@ -183,12 +183,12 @@ export default function Journal() {
   }
 
   // Handle no data case
-  if (!journalData) {
+  if (!recordsData) {
     return (
       <div className="flex flex-col h-full">
-        <TopBar title="Journal" showTimeRangeFilters={false} />
+        <TopBar title="Records" showTimeRangeFilters={false} />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-muted">No journal data found for {selectedDate}</div>
+          <div className="text-muted">No records data found for {selectedDate}</div>
         </div>
       </div>
     );
@@ -197,7 +197,7 @@ export default function Journal() {
   return (
     <div className="flex flex-col h-full">
       <TopBar 
-        title="Journal" 
+        title="Records" 
         showTimeRangeFilters={false}
       />
       
@@ -206,18 +206,18 @@ export default function Journal() {
       />
 
       <div className="flex-1 overflow-auto p-6">
-        {/* Journal Entry Header */}
+        {/* Records Entry Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-xl font-semibold text-primary">{journalData.date}</h2>
+              <h2 className="text-xl font-semibold text-primary">{recordsData.date}</h2>
               <div className="flex items-center gap-4 mt-2">
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted">P&L:</span>
                   <span className={`text-lg font-semibold ${
-                    journalData.pnl >= 0 ? 'text-positive' : 'text-negative'
+                    recordsData.pnl >= 0 ? 'text-positive' : 'text-negative'
                   }`}>
-                    ${journalData.pnl.toFixed(2)}
+                    ${recordsData.pnl.toFixed(2)}
                   </span>
                   <Lock className="h-3 w-3 text-muted" />
                 </div>
@@ -226,7 +226,7 @@ export default function Journal() {
 
             <div className="text-right">
               <Button className="bg-[var(--theme-green)] hover:bg-[var(--theme-green)]/80 text-white">
-                Create New Journal Entry
+                Create New Records Entry
               </Button>
             </div>
           </div>
@@ -241,7 +241,7 @@ export default function Journal() {
                 <TradeCandlestickChart
                   symbol={mostActiveSymbol}
                   executions={chartExecutions}
-                  tradeDate={journalData.date}
+                  tradeDate={recordsData.date}
                   height={400}
                   onExecutionSelect={(execution) => {
                     console.log('Selected execution from chart:', execution);
@@ -273,10 +273,10 @@ export default function Journal() {
                 <CardContent className="flex flex-col h-full">
                   <StatsGrid
                     totalExecutions={executionMetrics.totalExecutions}
-                    winRate={journalData.winRate}
+                    winRate={recordsData.winRate}
                     totalVolume={executionMetrics.totalVolume}
-                    commissions={journalData.commissions}
-                    netPnl={journalData.netPnl || journalData.pnl}
+                    commissions={recordsData.commissions}
+                    netPnl={recordsData.netPnl || recordsData.pnl}
                     className="flex-1"
                   />
                 </CardContent>
@@ -339,12 +339,12 @@ export default function Journal() {
           <Card className="bg-surface border-default">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-medium text-primary">
-                Orders ({journalData.executions.length} executions)
+                Orders ({recordsData.executions.length} executions)
               </CardTitle>
             </CardHeader>
             <CardContent>
               <ExecutionsTable 
-                executions={journalData.executions}
+                executions={recordsData.executions}
                 loading={false}
                 error={null}
                 showActions={true}

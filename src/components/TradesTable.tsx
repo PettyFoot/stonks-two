@@ -154,9 +154,9 @@ export default function TradesTable({
     );
   };
 
-  // Navigate to journal page with selected trade's date
+  // Navigate to records page with selected trade's date
   const handleTradeClick = (trade: Trade) => {
-    router.push(`/journal?date=${trade.date}`);
+    router.push(`/records?date=${trade.date}`);
   };
 
   const formatPnL = (pnl: number) => {
@@ -378,7 +378,7 @@ export default function TradesTable({
                 onClick={() => {
                   // Call existing onTradeSelect callback if provided
                   onTradeSelect?.(trade);
-                  // Navigate to journal page
+                  // Navigate to records page
                   handleTradeClick(trade);
                 }}
               >

@@ -82,7 +82,7 @@ src/
 │   │   ├── dashboard/      # Main dashboard
 │   │   ├── trades/         # Trade management
 │   │   ├── reports/        # Analytics reports
-│   │   ├── journal/        # Trading journal
+│   │   ├── records/        # Trading records
 │   │   ├── calendar/       # Calendar view
 │   │   ├── search/         # Search functionality
 │   │   ├── import/         # CSV import interface
@@ -150,7 +150,7 @@ model User {
 ```
 
 **Purpose**: Stores user authentication and profile data
-**Relationships**: One-to-many with all user data (trades, orders, journal entries)
+**Relationships**: One-to-many with all user data (trades, orders, records entries)
 
 #### Trade Model (Core Entity)
 ```typescript
@@ -268,7 +268,7 @@ enum ParseMethod { STANDARD, AI_MAPPED, USER_CORRECTED }
 User (1) → (Many) Trades
 User (1) → (Many) Orders  
 User (1) → (Many) ImportBatches
-User (1) → (Many) JournalEntries
+User (1) → (Many) RecordsEntries
 Trade (1) → (Many) PartialFills
 ImportBatch (1) → (Many) Trades
 ImportBatch (1) → (Many) Orders
@@ -412,13 +412,13 @@ Apply user-corrected column mappings
 #### `GET /api/csv/template`
 Download standard CSV template
 
-### Journal Endpoints
+### Records Endpoints
 
-#### `GET /api/journal`
-Fetch journal entries
+#### `GET /api/records`
+Fetch records entries
 
-#### `POST /api/journal`
-Create/update journal entry
+#### `POST /api/records`
+Create/update records entry
 
 ---
 
@@ -792,7 +792,7 @@ export const config = {
     '/dashboard/:path*',
     '/trades/:path*', 
     '/reports/:path*',
-    '/journal/:path*',
+    '/records/:path*',
     '/api/trades/:path*',
     '/api/dashboard/:path*'
   ]

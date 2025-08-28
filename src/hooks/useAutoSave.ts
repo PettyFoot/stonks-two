@@ -60,7 +60,7 @@ export interface UseAutoSaveReturn<T> {
  * @example
  * ```typescript
  * const saveNotes = async (notes: string) => {
- *   await fetch('/api/journal/notes', {
+ *   await fetch('/api/records/notes', {
  *     method: 'POST',
  *     headers: { 'Content-Type': 'application/json' },
  *     body: JSON.stringify({ notes })

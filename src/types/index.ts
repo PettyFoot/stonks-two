@@ -82,7 +82,7 @@ export interface KPIData {
 
 
 
-export interface JournalEntry {
+export interface RecordsEntry {
   id: string;
   date: string;
   pnl: number;
