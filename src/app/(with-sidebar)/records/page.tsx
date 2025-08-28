@@ -13,6 +13,7 @@ import { Lock } from 'lucide-react';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useRecordsData } from '@/hooks/useRecordsData';
 import TradeCandlestickChart from '@/components/charts/TradeCandlestickChart';
+import CalendarYearView from '@/components/CalendarYearView';
 
 export default function Records() {
   const searchParams = useSearchParams();
@@ -182,13 +183,19 @@ export default function Records() {
     );
   }
 
-  // Handle no data case
+  // Handle no data case - show calendar year view for trade selection
   if (!recordsData) {
+    const currentYear = selectedDate ? new Date(selectedDate).getFullYear() : new Date().getFullYear();
+    
     return (
       <div className="flex flex-col h-full">
         <TopBar title="Records" showTimeRangeFilters={false} />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-muted">No records data found for {selectedDate}</div>
+        <div className="flex-1 overflow-auto p-6">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-primary mb-2">Select a Trading Day</h2>
+            <p className="text-muted text-sm">No records found for {selectedDate}. Choose a date from the calendar below to view trading records.</p>
+          </div>
+          <CalendarYearView year={currentYear} />
         </div>
       </div>
     );

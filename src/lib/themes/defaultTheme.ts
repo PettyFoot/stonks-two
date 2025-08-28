@@ -13,7 +13,7 @@ export const defaultTheme: Theme = {
     
     // Text colors
     primaryText: '#000000',
-    secondaryText: '#53565c',
+    secondaryText: '#F5F5F5',
     
     // UI colors (for backgrounds, surfaces, etc.)
     background: '#F6F7FB',

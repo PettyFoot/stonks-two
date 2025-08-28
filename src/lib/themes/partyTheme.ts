@@ -13,7 +13,7 @@ export const partyTheme: Theme = {
     
     // Text colors
     primaryText: '#1F2937',  // dark text for readability
-    secondaryText: '#4B5563', // gray text
+    secondaryText: '#F5F5F5', // gray text
     
     // UI colors (bright/fun theme)
     background: '#FEF3C7',  // light yellow background

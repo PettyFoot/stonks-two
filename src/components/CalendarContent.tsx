@@ -166,6 +166,22 @@ export default function CalendarContent() {
   }, [view]);
 
   // Generate calendar grid
+  // Calculate weekly totals for a week (7 days)
+  const calculateWeeklyTotal = (weekDays: any[]) => {
+    const validDays = weekDays.filter(day => day && day.pnl !== undefined);
+    const weekPnl = validDays.reduce((sum, d) => sum + Number(d.pnl || 0), 0);
+    const weekTrades = validDays.reduce((sum, d) => sum + Number(d.tradeCount || 0), 0);
+    const winDays = validDays.filter(d => Number(d.pnl) > 0).length;
+    const tradingDays = validDays.filter(d => Number(d.tradeCount || 0) > 0).length;
+    
+    return {
+      weekPnl,
+      weekTrades,
+      weekWinRate: tradingDays > 0 ? Math.round((winDays / tradingDays) * 100) : 0,
+      isWeekTotal: true
+    };
+  };
+
   const generateCalendarDays = () => {
     const firstDay = startOfMonth(currentDate);
     const startingDayOfWeek = getDay(firstDay);
@@ -188,7 +204,18 @@ export default function CalendarContent() {
       });
     }
 
-    return calendarDays;
+    // Add weekly totals at the end of each row
+    const calendarWithWeekTotals = [];
+    for (let i = 0; i < calendarDays.length; i += 7) {
+      const weekDays = calendarDays.slice(i, i + 7);
+      calendarWithWeekTotals.push(...weekDays);
+      
+      // Calculate and add weekly total for this row
+      const weekTotal = calculateWeeklyTotal(weekDays);
+      calendarWithWeekTotals.push(weekTotal);
+    }
+
+    return calendarWithWeekTotals;
   };
 
   // Calculate summary stats
@@ -277,57 +304,87 @@ export default function CalendarContent() {
           </CardHeader>
           <CardContent>
             {/* Days of Week Header */}
-            <div className="grid grid-cols-7 gap-1 mb-2">
+            <div className="grid grid-cols-8 gap-1 mb-2">
               {daysOfWeek.map(day => (
                 <div key={day} className="p-2 text-center text-sm font-medium text-theme-secondary-text">
                   {day}
                 </div>
               ))}
+              <div className="p-2 text-center text-sm font-medium text-theme-secondary-text">
+                Week Total
+              </div>
             </div>
 
                 {/* Calendar Days */}
-                <div className="grid grid-cols-7 gap-1">
-                  {generateCalendarDays().map((day, index) => (
-                    <button
-                      key={index}
-                      onClick={() => day && handleDayClick(day.dayStr)}
-                      disabled={!day}
-                      className={`
-                        min-h-[100px] border border-theme-border rounded-lg p-2 text-left transition-colors
-                        ${!day ? 'bg-theme-surface/20 cursor-default' : 
-                          day && dayHasTradeData(day.dayStr) ? 
-                            'bg-white hover:bg-theme-surface/50 cursor-pointer' : 
-                            'bg-white hover:bg-theme-surface/30 cursor-default'
-                        }
-                        ${selectedDay === day?.dayStr ? 'ring-2 ring-theme-primary' : ''}
-                        focus:outline-none focus:ring-2 focus:ring-theme-primary
-                      `}
-                      aria-label={day ? `${day.date} - ${day.tradeCount || 0} trades${dayHasTradeData(day.dayStr) ? ' (clickable)' : ''}` : undefined}
-                    >
-                      {day && (
-                        <>
-                          <div className="text-sm font-medium text-theme-primary-text mb-1">{day.date}</div>
-                          {day.pnl !== undefined && (
-                            <div className="space-y-1">
-                              <div className={`text-xs font-medium ${Number(day.pnl) >= 0 ? 'text-theme-green' : 'text-theme-red'}`}>
-                                ${Number(day.pnl) >= 0 ? '+' : ''}{Number(day.pnl).toFixed(2)}
+                <div className="grid grid-cols-8 gap-1">
+                  {generateCalendarDays().map((day, index) => {
+                    if (day && day.isWeekTotal) {
+                      // Weekly total cell
+                      return (
+                        <div
+                          key={index}
+                          className="min-h-[100px] border border-theme-border rounded-lg p-2 bg-theme-surface/50 text-center flex flex-col justify-center"
+                        >
+                          <div className={`text-sm font-bold mb-1 ${day.weekPnl >= 0 ? 'text-theme-green' : 'text-theme-red'}`}>
+                            ${day.weekPnl >= 0 ? '+' : ''}{day.weekPnl.toFixed(2)}
+                          </div>
+                          {day.weekTrades > 0 && (
+                            <>
+                              <div className="text-xs text-theme-secondary-text">
+                                {day.weekTrades} trade{day.weekTrades !== 1 ? 's' : ''}
                               </div>
-                              {(day.tradeCount || 0) > 0 && (
-                                <>
-                                  <div className="text-xs text-theme-secondary-text">
-                                    {day.tradeCount || 0} trade{(day.tradeCount || 0) !== 1 ? 's' : ''}
-                                  </div>
-                                  <div className="text-xs text-theme-secondary-text">
-                                    {day.winRate}% win
-                                  </div>
-                                </>
-                              )}
-                            </div>
+                              <div className="text-xs text-theme-secondary-text">
+                                {day.weekWinRate}% win
+                              </div>
+                            </>
                           )}
-                        </>
-                      )}
-                    </button>
-                  ))}
+                        </div>
+                      );
+                    } else {
+                      // Regular day cell
+                      return (
+                        <button
+                          key={index}
+                          onClick={() => day && handleDayClick(day.dayStr)}
+                          disabled={!day}
+                          className={`
+                            min-h-[100px] border border-theme-border rounded-lg p-2 text-left transition-colors
+                            ${!day ? 'bg-theme-surface/20 cursor-default' : 
+                              day && dayHasTradeData(day.dayStr) ? 
+                                'bg-white hover:bg-theme-surface/50 cursor-pointer' : 
+                                'bg-white hover:bg-theme-surface/30 cursor-default'
+                            }
+                            ${selectedDay === day?.dayStr ? 'ring-2 ring-theme-primary' : ''}
+                            focus:outline-none focus:ring-2 focus:ring-theme-primary
+                          `}
+                          aria-label={day ? `${day.date} - ${day.tradeCount || 0} trades${dayHasTradeData(day.dayStr) ? ' (clickable)' : ''}` : undefined}
+                        >
+                          {day && (
+                            <>
+                              <div className="text-sm font-medium text-theme-primary-text mb-1">{day.date}</div>
+                              {day.pnl !== undefined && (
+                                <div className="space-y-1">
+                                  <div className={`text-xs font-medium ${Number(day.pnl) >= 0 ? 'text-theme-green' : 'text-theme-red'}`}>
+                                    ${Number(day.pnl) >= 0 ? '+' : ''}{Number(day.pnl).toFixed(2)}
+                                  </div>
+                                  {(day.tradeCount || 0) > 0 && (
+                                    <>
+                                      <div className="text-xs text-theme-secondary-text">
+                                        {day.tradeCount || 0} trade{(day.tradeCount || 0) !== 1 ? 's' : ''}
+                                      </div>
+                                      <div className="text-xs text-theme-secondary-text">
+                                        {day.winRate}% win
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </button>
+                      );
+                    }
+                  })}
             </div>
           </CardContent>
         </Card>

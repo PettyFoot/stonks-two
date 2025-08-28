@@ -60,6 +60,15 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
     router.push(`/calendar?view=month&date=${date.toISOString()}`);
   };
 
+  const handleDayClick = (dateStr: string) => {
+    // Navigate to records page with the selected date
+    router.push(`/records?date=${dateStr}`);
+  };
+
+  const dayHasTradeData = (dayData: any) => {
+    return dayData && dayData.tradeCount > 0;
+  };
+
   const generateMonthCalendar = (monthIndex: number) => {
     const firstDay = startOfMonth(new Date(year, monthIndex));
     const startingDayOfWeek = getDay(firstDay);
@@ -97,15 +106,17 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
 
   const getDayColor = (dayData: DayData | undefined) => {
     if (!dayData || !dayData.tradeCount) return 'text-theme-secondary-text';
-    if (dayData.pnl > 0) return 'text-white font-bold';
-    if (dayData.pnl < 0) return 'text-white font-bold';
+    const pnl = Number(dayData.pnl || 0);
+    if (pnl > 0) return 'text-white font-bold';
+    if (pnl < 0) return 'text-white font-bold';
     return 'text-theme-secondary-text';
   };
 
   const getDayBackground = (dayData: DayData | undefined) => {
     if (!dayData || !dayData.tradeCount) return 'bg-white';
-    if (dayData.pnl > 0) return 'bg-theme-green hover:bg-theme-green/80';
-    if (dayData.pnl < 0) return 'bg-theme-red hover:bg-theme-red/80';
+    const pnl = Number(dayData.pnl || 0);
+    if (pnl > 0) return 'bg-theme-green hover:bg-theme-green/80';
+    if (pnl < 0) return 'bg-theme-red hover:bg-theme-red/80';
     return 'bg-theme-surface';
   };
 
@@ -175,8 +186,18 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
                     key={index}
                     className={`
                       aspect-square flex items-center justify-center text-xs p-1
-                      ${!day ? 'bg-theme-border' : `${getDayBackground(day)} cursor-pointer transition-colors border border-theme-border`}
+                      ${!day ? 'bg-theme-border' : `${getDayBackground(day)} ${dayHasTradeData(day) ? 'cursor-pointer hover:opacity-80' : 'cursor-default'} transition-colors border border-theme-border`}
                     `}
+                    onClick={() => day && dayHasTradeData(day) && handleDayClick(day.dateStr)}
+                    role={dayHasTradeData(day) ? "button" : undefined}
+                    tabIndex={dayHasTradeData(day) ? 0 : undefined}
+                    aria-label={day && dayHasTradeData(day) ? `${day.date} - ${day.tradeCount} trades, $${Number(day.pnl || 0).toFixed(2)} P&L` : undefined}
+                    onKeyDown={(e) => {
+                      if (day && dayHasTradeData(day) && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault();
+                        handleDayClick(day.dateStr);
+                      }
+                    }}
                   >
                     {day && (
                       <span className={`font-medium ${getDayColor(day)}`}>

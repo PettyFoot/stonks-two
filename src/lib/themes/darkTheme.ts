@@ -13,7 +13,7 @@ export const darkTheme: Theme = {
     
     // Text colors (inverted for dark mode)
     primaryText: '#F9FAFB',  // white text
-    secondaryText: '#D1D5DB', // light gray text
+    secondaryText: '#F5F5F5', // light gray text
     
     // UI colors (dark mode backgrounds)
     background: '#0F172A',  // very dark background
