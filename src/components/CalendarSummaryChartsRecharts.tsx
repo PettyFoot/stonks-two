@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -72,23 +72,31 @@ export default function CalendarSummaryChartsRecharts() {
     data, 
     dataKey, 
     xKey,
+    xLabel,
+    yLabel,
     formatter,
-    useConditionalColors = false
+    useConditionalColors = false,
+    xAxisInterval = 0,
+    showZeroLine = false
   }: {
     title: string;
     data: Record<string, unknown>[];
     dataKey: string;
     xKey: string;
+    xLabel: string;
+    yLabel: string;
     formatter: (value: number) => string;
     useConditionalColors?: boolean;
+    xAxisInterval?: number | 'preserveStart' | 'preserveEnd' | 'preserveStartEnd';
+    showZeroLine?: boolean;
   }) => (
     <Card className="bg-surface border-default">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-semibold uppercase text-primary">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={data} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={data} margin={{ top: 10, right: 30, left: 40, bottom: 40 }}>
             <CartesianGrid 
               strokeDasharray="3 3" 
               stroke="var(--theme-chart-grid)" 
@@ -97,17 +105,46 @@ export default function CalendarSummaryChartsRecharts() {
             />
             <XAxis 
               dataKey={xKey}
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 10, fill: 'var(--theme-secondary-text)' }}
-              interval={Math.floor(data.length / 10)}
+              axisLine={true}
+              tickLine={true}
+              tick={{ fontSize: 12, fill: '#53565c' }}
+              interval={xAxisInterval}
+              stroke="#E5E7EB"
+              label={{ 
+                value: xLabel, 
+                position: 'insideBottom', 
+                offset: -5, 
+                style: { 
+                  textAnchor: 'middle', 
+                  fontSize: '12px', 
+                  fill: '#53565c' 
+                } 
+              }}
             />
             <YAxis 
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 10, fill: 'var(--theme-secondary-text)' }}
+              axisLine={true}
+              tickLine={true}
+              tick={{ fontSize: 12, fill: '#53565c' }}
               tickFormatter={formatter}
+              stroke="#E5E7EB"
+              label={{ 
+                value: yLabel, 
+                angle: -90, 
+                position: 'insideLeft', 
+                style: { 
+                  textAnchor: 'middle', 
+                  fontSize: '12px', 
+                  fill: '#53565c' 
+                } 
+              }}
             />
+            {showZeroLine && (
+              <ReferenceLine 
+                y={0} 
+                stroke="#5688C7" 
+                strokeWidth={2}
+              />
+            )}
             <Tooltip 
               formatter={(value: number | string) => formatter(Number(value))}
               contentStyle={{
@@ -174,16 +211,23 @@ export default function CalendarSummaryChartsRecharts() {
             data={dayData}
             dataKey="pnl"
             xKey="day"
+            xLabel="Day of Month"
+            yLabel="P&L ($)"
             formatter={formatCurrency}
             useConditionalColors={true}
+            xAxisInterval={4}
+            showZeroLine={true}
           />
           <SummaryChart
             title="TRADE DISTRIBUTION BY DAY"
             data={dayData}
             dataKey="trades"
             xKey="day"
+            xLabel="Day of Month"
+            yLabel="Trade Count"
             formatter={formatTrades}
             useConditionalColors={false}
+            xAxisInterval={4}
           />
         </div>
 
@@ -194,16 +238,23 @@ export default function CalendarSummaryChartsRecharts() {
             data={monthData}
             dataKey="pnl"
             xKey="month"
+            xLabel="Month"
+            yLabel="P&L ($)"
             formatter={formatCurrency}
             useConditionalColors={true}
+            xAxisInterval={1}
+            showZeroLine={true}
           />
           <SummaryChart
             title="TRADE DISTRIBUTION BY MONTH"
             data={monthData}
             dataKey="trades"
             xKey="month"
+            xLabel="Month"
+            yLabel="Trade Count"
             formatter={formatTrades}
             useConditionalColors={false}
+            xAxisInterval={1}
           />
         </div>
 
@@ -214,16 +265,23 @@ export default function CalendarSummaryChartsRecharts() {
             data={yearData}
             dataKey="pnl"
             xKey="year"
+            xLabel="Year"
+            yLabel="P&L ($)"
             formatter={formatCurrency}
             useConditionalColors={true}
+            xAxisInterval={0}
+            showZeroLine={true}
           />
           <SummaryChart
             title="TRADE DISTRIBUTION BY YEAR"
             data={yearData}
             dataKey="trades"
             xKey="year"
+            xLabel="Year"
+            yLabel="Trade Count"
             formatter={formatTrades}
             useConditionalColors={false}
+            xAxisInterval={0}
           />
         </div>
       </div>
