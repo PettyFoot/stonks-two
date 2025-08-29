@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import TopBar from '@/components/TopBar';
 import FilterPanel from '@/components/FilterPanel';
@@ -15,7 +15,7 @@ import { useRecordsData } from '@/hooks/useRecordsData';
 import TradeCandlestickChart from '@/components/charts/TradeCandlestickChart';
 import CalendarYearView from '@/components/CalendarYearView';
 
-export default function Records() {
+function RecordsContent() {
   const searchParams = useSearchParams();
   const selectedDate = searchParams.get('date');
   const selectedTradeId = searchParams.get('tradeId'); // Get specific trade ID if provided
@@ -369,5 +369,20 @@ export default function Records() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Records() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col h-full">
+        <TopBar title="Records" showTimeRangeFilters={false} />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--theme-tertiary)]"></div>
+        </div>
+      </div>
+    }>
+      <RecordsContent />
+    </Suspense>
   );
 }
