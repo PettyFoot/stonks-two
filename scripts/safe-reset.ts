@@ -26,7 +26,7 @@ interface UserBackup {
   id: string;
   auth0Id: string;
   email: string;
-  name?: string;
+  name: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

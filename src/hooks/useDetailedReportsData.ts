@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
+import { Trade } from '@/types';
 
 interface DetailedReportsData {
   // Statistics
@@ -31,7 +32,7 @@ interface DetailedReportsData {
     totalVolume: number;
   };
   // Raw trades for chart calculations
-  trades: Array<Record<string, unknown>>;
+  trades: Trade[];
   loading: boolean;
   error: string | null;
 }

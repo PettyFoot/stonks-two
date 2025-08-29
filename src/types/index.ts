@@ -9,11 +9,15 @@ export interface Trade {
   pnl: number;
   entryPrice?: number;
   exitPrice?: number;
+  entryDate?: string;
+  exitDate?: string;
+  timeInTrade?: number;
   holdingPeriod?: string;
   status?: 'OPEN' | 'CLOSED';
   volume?: number;
   shared?: boolean;
   notes?: string;
+  notesChanges?: string;
   tags?: string[];
   commission?: number;
   fees?: number;

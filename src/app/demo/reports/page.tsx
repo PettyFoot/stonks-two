@@ -106,8 +106,7 @@ export default function DemoReports() {
             </div>
             
             <div className="ml-auto flex items-center gap-2">
-
-            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
               <label className="text-sm font-medium text-primary">View mode</label>
               <Select defaultValue="$ Value">
                 <SelectTrigger className="w-28 h-8 text-sm">
@@ -172,6 +171,7 @@ export default function DemoReports() {
                   90 Days
                 </Button>
               </div>
+            </div>
             </div>
           </div>
         </div>

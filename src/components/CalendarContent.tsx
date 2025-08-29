@@ -165,6 +165,15 @@ export default function CalendarContent() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [view]);
 
+  // Type guard functions
+  const isWeekTotal = (item: any): item is { weekPnl: number; weekTrades: number; weekWinRate: number; isWeekTotal: boolean; weekNumber: number } => {
+    return item && item.isWeekTotal === true;
+  };
+
+  const isDayData = (item: any): item is { date: number; dayStr: string; isPrevMonth?: boolean; isNextMonth?: boolean; pnl: number; tradeCount: number; winRate: number } => {
+    return item && item.isWeekTotal !== true;
+  };
+
   // Generate calendar grid
   // Calculate weekly totals for a week (7 days)
   const calculateWeeklyTotal = (weekDays: any[]) => {
@@ -178,7 +187,8 @@ export default function CalendarContent() {
       weekPnl,
       weekTrades,
       weekWinRate: tradingDays > 0 ? Math.round((winDays / tradingDays) * 100) : 0,
-      isWeekTotal: true
+      isWeekTotal: true,
+      weekNumber: 0 // Will be set by caller
     };
   };
 
@@ -361,7 +371,7 @@ export default function CalendarContent() {
                 {/* Calendar Days */}
                 <div className="grid grid-cols-8 gap-1">
                   {generateCalendarDays().map((day, index) => {
-                    if (day && day.isWeekTotal) {
+                    if (isWeekTotal(day)) {
                       // Weekly total cell
                       return (
                         <div
@@ -386,7 +396,7 @@ export default function CalendarContent() {
                           )}
                         </div>
                       );
-                    } else {
+                    } else if (isDayData(day)) {
                       // Regular day cell
                       return (
                         <button
@@ -433,6 +443,8 @@ export default function CalendarContent() {
                           )}
                         </button>
                       );
+                    } else {
+                      return null;
                     }
                   })}
             </div>

@@ -25,17 +25,17 @@ export default function CalendarSummaryChartsRecharts() {
         // Log the aggregated data received from API
         console.log('\n=== SUMMARY CHARTS DATA ===');
         console.log('Daily Performance (by day of month):');
-        data.daily.forEach((d) => {
+        data.daily.forEach((d: any) => {
           console.log(`  Day ${d.day}: P&L $${d.pnl}, Trades: ${d.trades}`);
         });
         
         console.log('\nMonthly Performance:');
-        data.monthly.forEach((m) => {
+        data.monthly.forEach((m: any) => {
           console.log(`  ${m.monthName} (${m.month}): P&L $${m.pnl}, Trades: ${m.trades}`);
         });
         
         console.log('\nYearly Performance:');
-        data.yearly.forEach((y) => {
+        data.yearly.forEach((y: any) => {
           console.log(`  ${y.year}: P&L $${y.pnl}, Trades: ${y.trades}`);
         });
         console.log('=== END SUMMARY DATA ===\n');

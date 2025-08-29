@@ -3,6 +3,7 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Trade } from '@/types';
 
 interface DayMetrics {
   totalGainLoss: number;
@@ -30,16 +31,6 @@ interface WinLossDaysData {
   losingDays: DayMetrics;
 }
 
-interface Trade {
-  pnl: number;
-  quantity: number;
-  commission?: number;
-  fees?: number;
-  timeInTrade?: number;
-  exitDate?: Date;
-  entryDate?: Date;
-  date?: Date;
-}
 
 interface WinVsLossReportProps {
   trades: Trade[];

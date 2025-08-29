@@ -39,11 +39,11 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
       const params = new URLSearchParams({
         year: year.toString(),
         // Add filter parameters
-        ...(filters.symbols?.length && { symbols: filters.symbols.join(',') }),
-        ...(filters.sides?.length && { sides: filters.sides.join(',') }),
+        ...(filters.symbol && { symbols: [filters.symbol].join(',') }),
+        ...(filters.side && filters.side !== 'all' && { sides: [filters.side].join(',') }),
         ...(filters.tags?.length && { tags: filters.tags.join(',') }),
-        ...(filters.customDateRange?.from && { dateFrom: filters.customDateRange.from.toISOString() }),
-        ...(filters.customDateRange?.to && { dateTo: filters.customDateRange.to.toISOString() }),
+        ...(filters.customDateRange?.from && { dateFrom: filters.customDateRange.from }),
+        ...(filters.customDateRange?.to && { dateTo: filters.customDateRange.to }),
         ...(filters.timeFrame && filters.timeFrame !== 'all' && { timeFrame: filters.timeFrame }),
       });
       const response = await fetch(`/api/calendar/year-daily?${params}`);

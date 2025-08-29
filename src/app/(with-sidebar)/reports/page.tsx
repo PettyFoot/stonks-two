@@ -4,7 +4,6 @@ import React, { useState, useMemo } from 'react';
 import TopBar from '@/components/TopBar';
 import FilterPanel from '@/components/FilterPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EquityChart from '@/components/charts/EquityChart';

@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: Request,
-  { params }: { params: { tradeId: string } }
+  { params }: { params: Promise<{ tradeId: string }> }
 ) {
   try {
     // Authenticate user
@@ -17,7 +17,7 @@ export async function GET(
       );
     }
 
-    const { tradeId } = params;
+    const { tradeId } = await params;
 
     // Validate tradeId parameter
     if (!tradeId || typeof tradeId !== 'string') {

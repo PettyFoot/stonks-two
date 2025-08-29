@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth0';
 import { prisma } from '@/lib/prisma';
 import { TradeFilterService } from '@/lib/services/tradeFilterService';
+import { Prisma } from '@prisma/client';
 
 // GET endpoint for auto-complete search (better caching, lighter weight)
 export async function GET(request: Request) {
@@ -38,13 +39,13 @@ export async function GET(request: Request) {
         {
           symbol: {
             contains: searchTerm,
-            mode: 'insensitive'
+            mode: Prisma.QueryMode.insensitive
           }
         },
         {
           notes: {
             contains: searchTerm,
-            mode: 'insensitive'
+            mode: Prisma.QueryMode.insensitive
           }
         }
       ]
@@ -55,12 +56,10 @@ export async function GET(request: Request) {
       where: searchWhere,
       orderBy: [
         { date: 'desc' },
-        { time: 'desc' }
       ],
       select: {
         id: true,
         date: true,
-        time: true,
         symbol: true,
         side: true,
         quantity: true,
@@ -132,13 +131,13 @@ export async function POST(request: Request) {
         {
           symbol: {
             contains: searchTerm,
-            mode: 'insensitive'
+            mode: Prisma.QueryMode.insensitive
           }
         },
         {
           notes: {
             contains: searchTerm,
-            mode: 'insensitive'
+            mode: Prisma.QueryMode.insensitive
           }
         },
         {
@@ -154,12 +153,10 @@ export async function POST(request: Request) {
       where: searchWhere,
       orderBy: [
         { date: 'desc' },
-        { time: 'desc' }
       ],
       select: {
         id: true,
         date: true,
-        time: true,
         symbol: true,
         side: true,
         quantity: true,
