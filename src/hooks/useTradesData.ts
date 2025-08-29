@@ -44,6 +44,11 @@ export function useTradesData(
         setError(null);
         
         const filters = toFilterOptions();
+        
+        console.log('=== useTradesData FETCH START ===');
+        console.log('Demo mode:', isDemo);
+        console.log('Filters:', filters);
+        console.log('Should use complex filtering:', shouldUseComplexFiltering);
 
         if (shouldUseComplexFiltering) {
           // Use the new filtered endpoint for complex filtering
@@ -63,6 +68,9 @@ export function useTradesData(
             } : undefined
           };
 
+          console.log('Using FILTERED endpoint with tradeFilters:', tradeFilters);
+          console.log('Request payload:', { filters: tradeFilters, page, limit, demo: isDemo });
+
           const response = await fetch('/api/trades/filtered', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -74,11 +82,14 @@ export function useTradesData(
             })
           });
 
+          console.log('Filtered API response status:', response.status);
+
           if (!response.ok) {
             throw new Error('Failed to fetch filtered trades data');
           }
           
           const result = await response.json();
+          console.log('Filtered API raw result:', result);
           setData({
             trades: result.trades,
             count: result.pagination?.total,
@@ -96,7 +107,53 @@ export function useTradesData(
           if (filters.tags?.length) params.append('tags', filters.tags.join(','));
           if (filters.duration) params.append('duration', filters.duration);
           if (filters.showOpenTrades) params.append('showOpenTrades', 'true');
-          if (isDemo) params.append('demo', 'true');
+          
+          console.log('Using SIMPLE endpoint with params:', params.toString());
+          
+          const response = await fetch(`/api/trades?${params}`);
+          console.log('Simple API response status:', response.status);
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch trades data');
+          }
+          const result = await response.json();
+          console.log('Simple API raw result:', result);
+          setData({
+            trades: result.trades,
+            count: result.count,
+            totalPnl: result.totalPnl,
+            totalVolume: result.totalVolume
+          });
+        }
+      } catch (err) {
+        console.error('=== useTradesData FETCH ERROR ===', err);
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setLoading(false);
+        console.log('=== useTradesData FETCH COMPLETE ===');
+      }
+    }
+
+    fetchData();
+  }, [toFilterOptions, isDemo, shouldUseComplexFiltering, page, limit]);
+
+  // Simple fix for demo mode race condition: refetch when demo mode becomes available
+  useEffect(() => {
+    // If we have no data yet and demo mode just became true, refetch
+    if (isDemo && !data && !loading) {
+      console.log('Demo mode detected without data, refetching...');
+      const fetchData = async () => {
+        try {
+          setLoading(true);
+          setError(null);
+          
+          const filters = toFilterOptions();
+          const params = new URLSearchParams();
+          if (filters.symbol) params.append('symbol', filters.symbol);
+          if (filters.side) params.append('side', filters.side);
+          if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+          if (filters.dateTo) params.append('dateTo', filters.dateTo);
+          if (filters.tags?.length) params.append('tags', filters.tags.join(','));
           
           const response = await fetch(`/api/trades?${params}`);
           if (!response.ok) {
@@ -109,16 +166,16 @@ export function useTradesData(
             totalPnl: result.totalPnl,
             totalVolume: result.totalVolume
           });
+        } catch (err) {
+          console.error('Demo refetch error:', err);
+          setError(err instanceof Error ? err.message : 'An error occurred');
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setLoading(false);
-      }
+      };
+      fetchData();
     }
-
-    fetchData();
-  }, [toFilterOptions, isDemo, shouldUseComplexFiltering, page, limit]);
+  }, [isDemo, data, loading, toFilterOptions]);
 
   const addTrade = async (tradeData: Partial<Trade>) => {
     if (isDemo) {
@@ -167,7 +224,6 @@ export function useTradesData(
     if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
     if (filters.dateTo) params.append('dateTo', filters.dateTo);
     if (filters.tags?.length) params.append('tags', filters.tags.join(','));
-    if (isDemo) params.append('demo', 'true');
     
     fetch(`/api/trades?${params}`)
       .then(res => res.json())

@@ -116,11 +116,7 @@ export default async function middleware(request: NextRequest) {
     
     // Allow demo users to access read-only routes
     if (isDemoAllowedRoute(pathname)) {
-      // Add demo user info to headers for API routes
-      const response = NextResponse.next();
-      response.headers.set('x-demo-user', 'true');
-      response.headers.set('x-demo-user-id', demoSession.demoUser.id);
-      return response;
+      return NextResponse.next();
     } else {
       // Demo users trying to access non-demo routes should be redirected
       console.log(`Demo user blocked from ${pathname}, redirecting to dashboard`);

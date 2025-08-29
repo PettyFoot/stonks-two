@@ -97,7 +97,7 @@ export default function MonthTradeDistributionChart({
       
       return (
         <div className="p-3 border rounded-lg shadow-lg" style={{backgroundColor: 'var(--theme-chart-tooltip-bg)', borderColor: 'var(--theme-chart-grid)'}}>
-          <p className="text-sm font-medium" style={{color: 'var(--theme-secondary-text)'}}>
+          <p className="text-sm font-medium" style={{color: 'var(--theme-chart-tooltip-text)'}}>
             {formatDate(data.date)}
           </p>
           <p className="text-lg font-bold" style={{color: data.pnl >= 0 ? 'var(--theme-green)' : 'var(--theme-red)'}}>

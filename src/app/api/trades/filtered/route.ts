@@ -36,6 +36,12 @@ export async function POST(request: Request) {
     const limit: number = body.limit || 50;
     const demo: boolean = body.demo || false;
 
+    console.log('=== FILTERED TRADES API REQUEST ===');
+    console.log('Request body:', body);
+    console.log('Demo mode:', demo);
+    console.log('Filters:', filters);
+    console.log('Pagination:', { page, limit });
+
     // Validate and normalize side filter
     if (filters.side) {
       const normalizedSide = filters.side.toLowerCase();
@@ -51,6 +57,10 @@ export async function POST(request: Request) {
 
     // Demo mode - filter mock data
     if (demo) {
+      console.log('DEMO MODE: Using mock data');
+      console.log('Initial mockTrades count:', mockTrades.length);
+      console.log('First few mock trades:', mockTrades.slice(0, 3));
+      
       let filteredTrades = mockTrades;
 
       // Apply filters
@@ -140,7 +150,7 @@ export async function POST(request: Request) {
         return trade;
       });
 
-      return NextResponse.json({
+      const responseData = {
         trades: transformedTrades,
         pagination: {
           page,
@@ -150,7 +160,12 @@ export async function POST(request: Request) {
         },
         totalPnl: filteredTrades.reduce((sum, trade) => sum + trade.pnl, 0),
         totalVolume: filteredTrades.reduce((sum, trade) => sum + (trade.quantity || 0), 0)
-      });
+      };
+
+      console.log('DEMO MODE: Final filtered trades count:', transformedTrades.length);
+      console.log('DEMO MODE: Response data:', responseData);
+
+      return NextResponse.json(responseData);
     }
 
     // Authenticated mode - query database

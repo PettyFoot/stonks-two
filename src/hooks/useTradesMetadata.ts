@@ -16,10 +16,7 @@ export function useTradesMetadata() {
         setLoading(true);
         setError(null);
         
-        const params = new URLSearchParams();
-        if (isDemo) params.append('demo', 'true');
-        
-        const response = await fetch(`/api/trades/metadata?${params}`);
+        const response = await fetch(`/api/trades/metadata`);
         if (!response.ok) {
           throw new Error('Failed to fetch trades metadata');
         }
@@ -41,10 +38,7 @@ export function useTradesMetadata() {
     setLoading(true);
     
     try {
-      const params = new URLSearchParams();
-      if (isDemo) params.append('demo', 'true');
-      
-      const response = await fetch(`/api/trades/metadata?${params}`);
+      const response = await fetch(`/api/trades/metadata`);
       if (!response.ok) {
         throw new Error('Failed to fetch trades metadata');
       }

@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import { mockTrades } from '@/data/mockData';
 import { TradeSide, Prisma } from '@prisma/client';
 import { getCurrentUser } from '@/lib/auth0';
-import { getDemoUserId } from '@/lib/demo/demoSession';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(request: Request) {
@@ -15,20 +13,19 @@ export async function GET(request: Request) {
   const tags = searchParams.get('tags')?.split(',');
   const duration = searchParams.get('duration');
   const showOpenTrades = searchParams.get('showOpenTrades') === 'true';
-  const demo = searchParams.get('demo') === 'true';
   
-  let userId: string;
+  console.log('=== TRADES API GET REQUEST ===');
+  console.log('Request URL:', request.url);
+  console.log('Search params:', Object.fromEntries(searchParams));
   
-  if (demo) {
-    userId = getDemoUserId();
-  } else {
-    // Authenticated mode - get user-specific data
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-    userId = user.id;
+  // Get current user (handles both demo and Auth0)
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
+  
+  const userId = user.id;
+  console.log('Using userId:', userId);
 
   // Build where clause for filters
   try {
@@ -74,6 +71,8 @@ export async function GET(request: Request) {
       where.status = 'CLOSED';
     }
 
+    console.log('Database query WHERE clause:', JSON.stringify(where, null, 2));
+    
     // Get only trades from trades table (not individual orders)
     const trades = await prisma.trade.findMany({
       where,
@@ -81,6 +80,9 @@ export async function GET(request: Request) {
         { date: 'desc' }
       ]
     });
+
+    console.log('Database returned trades count:', trades.length);
+    console.log('First few raw trades:', trades.slice(0, 3));
 
     // Transform trades to match frontend interface
     const transformedTrades = trades.map(trade => ({
@@ -112,12 +114,19 @@ export async function GET(request: Request) {
       orderType: trade.orderType || undefined
     }));
 
-    return NextResponse.json({
+    console.log('Transformed trades count:', transformedTrades.length);
+    console.log('First few transformed trades:', transformedTrades.slice(0, 3));
+
+    const responseData = {
       trades: transformedTrades,
       count: transformedTrades.length,
       totalPnl: transformedTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'number' ? trade.pnl : 0), 0),
       totalVolume: transformedTrades.reduce((sum, trade) => sum + (trade.quantity || 0), 0)
-    });
+    };
+
+    console.log('Final API response:', responseData);
+    
+    return NextResponse.json(responseData);
   } catch (error) {
     console.error('Trades API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

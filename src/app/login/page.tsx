@@ -23,6 +23,13 @@ export default function LoginPage() {
       
       if (response.ok) {
         const data = await response.json();
+        
+        // Set demo mode in localStorage immediately
+        if (data.setDemoMode) {
+          localStorage.setItem('demo-mode', 'true');
+          console.log('Set demo mode in localStorage before navigation');
+        }
+        
         router.push(data.redirect || '/dashboard');
       } else {
         console.error('Failed to start demo session');
@@ -65,14 +72,14 @@ export default function LoginPage() {
               <TrendingUp className="h-5 w-5 text-[var(--theme-green)] mt-0.5" />
               <div>
                 <h3 className="font-semibold text-[var(--theme-primary-text)]">Performance Tracking</h3>
-                <p className="text-sm text-[var(--theme-secondary-text)]">Real-time P&L and analytics</p>
+                <p className="text-sm text-[var(--theme-primary-text)]">Real-time P&L and analytics</p>
               </div>
             </div>
             <div className="flex items-start space-x-3 p-4 bg-white rounded-lg border border-[var(--theme-primary)]">
               <Shield className="h-5 w-5 text-[var(--theme-tertiary)] mt-0.5" />
               <div>
                 <h3 className="font-semibold text-[var(--theme-primary-text)]">Secure Data</h3>
-                <p className="text-sm text-[var(--theme-secondary-text)]">Bank-level security</p>
+                <p className="text-sm text-[var(--theme-primary-text)]">Bank-level security</p>
               </div>
             </div>
           </div>
@@ -80,7 +87,7 @@ export default function LoginPage() {
           {/* Demo Mode CTA */}
           <div className="p-6 bg-gradient-to-r from-[var(--theme-primary)]/50 to-[var(--theme-primary)] rounded-xl border">
             <h3 className="font-semibold text-[var(--theme-primary-text)] mb-2">Try Demo Mode</h3>
-            <p className="text-sm text-[var(--theme-secondary-text)] mb-4">
+            <p className="text-sm text-[var(--theme-primary-text)] mb-4">
               Explore all features with sample data before creating your account.
             </p>
             <Button 
@@ -109,7 +116,7 @@ export default function LoginPage() {
           <Card className="w-full max-w-md bg-white border-[var(--theme-primary)]">
             <CardHeader className="space-y-1 text-center">
               <CardTitle className="text-2xl font-bold text-[var(--theme-primary-text)]">Welcome Back</CardTitle>
-              <p className="text-[var(--theme-secondary-text)]">Sign in to your trading account</p>
+              <p className="text-[var(--theme-primary-text)]">Sign in to your trading account</p>
             </CardHeader>
             <CardContent className="space-y-4">
               <Link href="/api/auth/login">
@@ -134,7 +141,7 @@ export default function LoginPage() {
               </Link>
 
               <div className="text-center space-y-2">
-                <p className="text-xs text-[var(--theme-secondary-text)]">
+                <p className="text-xs text-[var(--theme-primary-text)]">
                   By signing in, you agree to our Terms of Service and Privacy Policy
                 </p>
               </div>

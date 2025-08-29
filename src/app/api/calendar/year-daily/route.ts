@@ -40,14 +40,6 @@ export async function GET(req: NextRequest) {
     const dateToParam = url.searchParams.get('dateTo');
     const timeFrame = url.searchParams.get('timeFrame');
 
-    const dbUser = await prisma.user.findUnique({
-      where: { auth0Id: user.auth0Id }
-    });
-
-    if (!dbUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
     // Calculate date range - use filter dates if provided, otherwise use year
     let startDate: Date;
     let endDate: Date;

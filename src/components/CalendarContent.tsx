@@ -315,12 +315,12 @@ export default function CalendarContent() {
 
           {/* Summary View */}
           <TabsContent value="summary">
-            <CalendarSummaryChartsRecharts />
+            <CalendarSummaryChartsRecharts isDemo={isDemo} />
           </TabsContent>
 
           {/* Year View */}
           <TabsContent value="year">
-            <CalendarYearView year={year} />
+            <CalendarYearView year={year} isDemo={isDemo} />
           </TabsContent>
 
           {/* Month View */}

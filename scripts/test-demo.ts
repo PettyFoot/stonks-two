@@ -40,6 +40,38 @@ async function testDemoSetup() {
       console.log('💡 Run: npx dotenv -e .env.local -- npx tsx scripts/seedDemoData.ts');
       return;
     }
+
+    // Get detailed trade breakdown
+    const openTrades = await prisma.trade.count({
+      where: { userId: demoUserId, status: 'OPEN' }
+    });
+    const closedTrades = await prisma.trade.count({
+      where: { userId: demoUserId, status: 'CLOSED' }
+    });
+    
+    console.log(`   - Open trades: ${openTrades}`);
+    console.log(`   - Closed trades: ${closedTrades}`);
+    
+    // Show sample trades
+    const sampleTrades = await prisma.trade.findMany({
+      where: { userId: demoUserId },
+      take: 5,
+      orderBy: { date: 'desc' },
+      select: {
+        id: true,
+        symbol: true,
+        side: true,
+        pnl: true,
+        status: true,
+        date: true,
+        quantity: true
+      }
+    });
+    
+    console.log('   Sample trades:');
+    sampleTrades.forEach((trade, i) => {
+      console.log(`     ${i + 1}. ${trade.symbol} ${trade.side} ${trade.quantity} shares - P&L: $${trade.pnl} (${trade.status}) - Date: ${trade.date.toISOString().split('T')[0]}`);
+    });
     
     // Check demo records
     const recordsCount = await prisma.recordsEntry.count({ 

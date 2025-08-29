@@ -10,7 +10,11 @@ interface ChartData {
   yearly: Array<{ year: number; pnl: number; trades: number; shares: number }>;
 }
 
-export default function CalendarSummaryChartsRecharts() {
+interface CalendarSummaryChartsRechartsProps {
+  isDemo?: boolean;
+}
+
+export default function CalendarSummaryChartsRecharts({ isDemo = false }: CalendarSummaryChartsRechartsProps) {
   const [timeframe] = useState<'month' | 'year' | 'all'>('all');
   const [data, setData] = useState<ChartData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -18,7 +22,13 @@ export default function CalendarSummaryChartsRecharts() {
   const fetchSummaryData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/calendar/summary?timeframe=${timeframe}`);
+      const params = new URLSearchParams({
+        timeframe: timeframe
+      });
+      if (isDemo) {
+        params.append('demo', 'true');
+      }
+      const response = await fetch(`/api/calendar/summary?${params}`);
       if (response.ok) {
         const data = await response.json();
         
@@ -47,7 +57,7 @@ export default function CalendarSummaryChartsRecharts() {
     } finally {
       setIsLoading(false);
     }
-  }, [timeframe]);
+  }, [timeframe, isDemo]);
 
   useEffect(() => {
     fetchSummaryData();
@@ -174,8 +184,8 @@ export default function CalendarSummaryChartsRecharts() {
                 borderRadius: '8px',
                 fontSize: '12px'
               }}
-              labelStyle={{ color: 'var(--theme-secondary-text)' }}
-              itemStyle={{ color: 'var(--theme-green)' }}
+              labelStyle={{ color: 'var(--theme-chart-tooltip-text)' }}
+              itemStyle={{ color: 'var(--theme-chart-tooltip-text)' }}
             />
             <Bar 
               dataKey={dataKey}
@@ -313,7 +323,7 @@ export default function CalendarSummaryChartsRecharts() {
                 borderRadius: '8px',
                 fontSize: '12px'
               }}
-              labelStyle={{ color: 'var(--theme-secondary-text)' }}
+              labelStyle={{ color: 'var(--theme-chart-tooltip-text)' }}
             />
             <Bar 
               yAxisId="left"

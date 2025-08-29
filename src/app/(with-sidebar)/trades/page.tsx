@@ -8,6 +8,7 @@ import ColumnSettingsModal from '@/components/ColumnSettingsModal';
 import { Button } from '@/components/ui/button';
 import { Trade, ViewMode, ColumnConfiguration } from '@/types';
 import { useTradesData } from '@/hooks/useTradesData';
+import { useAuth } from '@/contexts/AuthContext';
 import { RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -16,7 +17,16 @@ export default function Trades() {
   const [calculating, setCalculating] = useState(false);
   const [columnConfig, setColumnConfig] = useState<ColumnConfiguration[]>([]);
   
+  const { isDemo } = useAuth();
   const { data: tradesData, loading, error, refetch } = useTradesData();
+
+  console.log('=== TRADES PAGE RENDER ===');
+  console.log('Demo mode:', isDemo);
+  console.log('Loading:', loading);
+  console.log('Error:', error);
+  console.log('Raw tradesData:', tradesData);
+  console.log('Trades array:', tradesData?.trades);
+  console.log('Trades count:', tradesData?.trades?.length);
 
   const calculateTrades = async () => {
     setCalculating(true);
@@ -63,6 +73,9 @@ export default function Trades() {
   const trades = tradesData?.trades || [];
   const filteredTrades = trades;
 
+  console.log('Final trades for display:', trades);
+  console.log('Final filteredTrades for display:', filteredTrades);
+
   // Show loading state
   if (loading) {
     return (
@@ -90,7 +103,7 @@ export default function Trades() {
       
       <FilterPanel 
         showAdvanced={true}
-        demo={false}
+        demo={isDemo}
       />
 
       <div className="flex-1 overflow-auto p-6">

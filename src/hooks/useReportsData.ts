@@ -60,7 +60,6 @@ export function useReportsData() {
         if (filters.side && filters.side !== 'all') params.append('side', filters.side);
         if (filters.tags?.length) params.append('tags', filters.tags.join(','));
         if (filters.duration && filters.duration !== 'all') params.append('duration', filters.duration);
-        if (isDemo) params.append('demo', 'true');
 
         const response = await fetch(`/api/reports/overview?${params}`);
         

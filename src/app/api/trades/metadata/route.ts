@@ -1,23 +1,15 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth0';
-import { getDemoUserId } from '@/lib/demo/demoSession';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const demo = searchParams.get('demo') === 'true';
-  
-  let userId: string;
-  
-  if (demo) {
-    userId = getDemoUserId();
-  } else {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-    userId = user.id;
+  // Get current user (handles both demo and Auth0)
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
+  
+  const userId = user.id;
 
   // Get real metadata from database for both demo and authenticated users
   try {

@@ -9,6 +9,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Demo session cleared',
+      clearDemoMode: true, // Flag to clear localStorage on frontend
     });
   } catch (error) {
     console.error('Error clearing demo session:', error);

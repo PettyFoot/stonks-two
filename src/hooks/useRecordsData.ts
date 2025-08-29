@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ExecutionOrder } from '@/components/ExecutionsTable';
 import { Trade } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface RecordsData {
   id: string;
@@ -26,12 +27,13 @@ interface UseRecordsDataReturn {
   refetch: () => void;
 }
 
-export function useRecordsData(date: string | null, demo: boolean = false): UseRecordsDataReturn {
+export function useRecordsData(date: string | null): UseRecordsDataReturn {
   const [data, setData] = useState<RecordsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { isDemo } = useAuth();
 
-  const fetchRecordsData = async () => {
+  const fetchRecordsData = useCallback(async () => {
     if (!date) {
       setData(null);
       return;
@@ -44,7 +46,6 @@ export function useRecordsData(date: string | null, demo: boolean = false): UseR
       // Fetch records data for the specified date
       const params = new URLSearchParams();
       params.append('date', date);
-      if (demo) params.append('demo', 'true');
 
       const response = await fetch(`/api/records?${params}`);
       if (!response.ok) {
@@ -98,11 +99,11 @@ export function useRecordsData(date: string | null, demo: boolean = false): UseR
     } finally {
       setLoading(false);
     }
-  };
+  }, [date, isDemo]);
 
   useEffect(() => {
     fetchRecordsData();
-  }, [date, demo]); // fetchRecordsData is recreated on each render, which is intentional for data freshness
+  }, [fetchRecordsData]);
 
   const refetch = () => {
     fetchRecordsData();

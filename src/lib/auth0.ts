@@ -1,8 +1,24 @@
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@auth0/nextjs-auth0';
+import { getDemoSessionFromCookies } from './demo/demoSession';
 
 export async function getCurrentUser() {
   try {
+    // First check for demo session
+    const demoSession = await getDemoSessionFromCookies();
+    if (demoSession) {
+      // Return demo user with consistent structure
+      return {
+        id: demoSession.demoUser.id,
+        auth0Id: null,
+        email: demoSession.demoUser.email,
+        name: demoSession.demoUser.name,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+    }
+
+    // Fall back to Auth0 session
     const session = await getSession();
   
     if (!session?.user?.sub) {

@@ -431,7 +431,7 @@ export default function Reports() {
                                 name
                               ]}
                               contentStyle={{ backgroundColor: 'var(--theme-surface)', border: '1px solid var(--theme-default)' }}
-                              labelStyle={{ color: 'var(--theme-primary-text)' }}
+                              labelStyle={{ color: 'var(--theme-chart-tooltip-text)' }}
                             />
                             <Legend 
                               verticalAlign="bottom" 

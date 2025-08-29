@@ -87,7 +87,6 @@ export function useDetailedReportsData() {
         if (filters.side && filters.side !== 'all') params.append('side', filters.side);
         if (filters.tags?.length) params.append('tags', filters.tags.join(','));
         if (filters.duration && filters.duration !== 'all') params.append('duration', filters.duration);
-        if (isDemo) params.append('demo', 'true');
 
         // Fetch detailed reports data from real API
         const response = await fetch(`/api/reports/detailed?${params}`);

@@ -63,22 +63,43 @@ export async function createDemoSession(): Promise<DemoSession> {
 
 export async function getDemoSessionFromCookies(): Promise<DemoSession | null> {
   try {
+    console.log('=== getDemoSessionFromCookies ===');
+    
+    const cookieStore = await cookies();
+    console.log('Available cookies:', cookieStore.getAll().map(c => `${c.name}=${c.value.substring(0, 20)}...`));
+    
     const session = await getIronSession<{ demo?: DemoSession }>(
-      await cookies(),
+      cookieStore,
       sessionOptions
     );
     
+    console.log('Iron session demo property:', !!session.demo);
+    
     if (!session.demo) {
+      console.log('No demo session in iron session');
       return null;
     }
 
+    console.log('Demo session found in iron session:', {
+      sessionId: session.demo.sessionId,
+      expiresAt: session.demo.expiresAt,
+      userId: session.demo.demoUser?.id
+    });
+
     // Check if session is expired
     const expiresAt = new Date(session.demo.expiresAt);
-    if (expiresAt < new Date()) {
+    const now = new Date();
+    console.log('Session expires at:', expiresAt);
+    console.log('Current time:', now);
+    console.log('Is expired:', expiresAt < now);
+    
+    if (expiresAt < now) {
+      console.log('Demo session expired, clearing');
       await clearDemoSession();
       return null;
     }
 
+    console.log('Returning valid demo session');
     return session.demo;
   } catch (error) {
     console.error('Error getting demo session:', error);

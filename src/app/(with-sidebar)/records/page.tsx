@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Lock } from 'lucide-react';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useRecordsData } from '@/hooks/useRecordsData';
+import { useAuth } from '@/contexts/AuthContext';
 import TradeCandlestickChart from '@/components/charts/TradeCandlestickChart';
 import CalendarYearView from '@/components/CalendarYearView';
 
@@ -19,6 +20,8 @@ function RecordsContent() {
   const searchParams = useSearchParams();
   const selectedDate = searchParams.get('date');
   const selectedTradeId = searchParams.get('tradeId'); // Get specific trade ID if provided
+  
+  const { isDemo } = useAuth();
   
   // Use real records data instead of mock data
   const { data: recordsData, loading, error, refetch } = useRecordsData(selectedDate);
@@ -205,7 +208,7 @@ function RecordsContent() {
             <h2 className="text-xl font-semibold text-primary mb-2">Select a Trading Day</h2>
             <p className="text-muted text-sm">No records found for {selectedDate}. Choose a date from the calendar below to view trading records.</p>
           </div>
-          <CalendarYearView year={currentYear} />
+          <CalendarYearView year={currentYear} isDemo={isDemo} />
         </div>
       </div>
     );

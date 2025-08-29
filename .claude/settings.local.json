@@ -47,7 +47,8 @@
       "Bash(move \"src\\app\\(with-sidebar)\\journal\" \"src\\app\\(with-sidebar)\\records\")",
       "Bash(npx tsx:*)",
       "Bash(npx dotenv -e .env.local -- npx tsx scripts/seedDemoData.ts:*)",
-      "Bash(npx dotenv -e .env.local -- npx tsx scripts/test-demo.ts:*)"
+      "Bash(npx dotenv -e .env.local -- npx tsx scripts/test-demo.ts:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

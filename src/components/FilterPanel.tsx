@@ -21,7 +21,8 @@ interface FilterPanelProps {
 
 export default function FilterPanel({ 
   showAdvanced = false,
-  className = ''
+  className = '',
+  demo = false
 }: FilterPanelProps) {
   const [showAdvancedPanel, setShowAdvancedPanel] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);

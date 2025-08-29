@@ -9,26 +9,8 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
-    const demo = searchParams.get('demo') === 'true';
 
-    // Demo mode - return mock data
-    if (demo) {
-      const { mockRecordsEntries } = await import('@/data/mockData');
-      let entries = mockRecordsEntries;
-      
-      if (date) {
-        entries = entries.filter(entry => 
-          new Date(entry.date).toDateString() === new Date(date).toDateString()
-        );
-      }
-      
-      return NextResponse.json({
-        entries,
-        count: entries.length
-      });
-    }
-
-    // Authenticated mode
+    // Get current user (handles both demo and Auth0)
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json(

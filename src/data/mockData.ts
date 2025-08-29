@@ -4,7 +4,7 @@ import { Trade, DayData, KPIData, RecordsEntry } from '@/types';
 export const mockTrades: Trade[] = [
   {
     id: '1',
-    date: '07 Apr 2025',
+    date: 'Aug 28, 2025',
     time: '12:33:16',
     symbol: 'JNVR',
     side: 'long',
@@ -15,7 +15,7 @@ export const mockTrades: Trade[] = [
   },
   {
     id: '2',
-    date: '07 Apr 2025',
+    date: 'Aug 28, 2025',
     time: '12:22:05',
     symbol: 'JNVR',
     side: 'long',
@@ -26,7 +26,7 @@ export const mockTrades: Trade[] = [
   },
   {
     id: '3',
-    date: '07 Apr 2025',
+    date: 'Aug 28, 2025',
     time: '12:20:58',
     symbol: 'JNVR',
     side: 'short',
@@ -37,7 +37,7 @@ export const mockTrades: Trade[] = [
   },
   {
     id: '4',
-    date: '07 Apr 2025',
+    date: 'Aug 28, 2025',
     time: '12:18:59',
     symbol: 'JNVR',
     side: 'long',
@@ -48,7 +48,7 @@ export const mockTrades: Trade[] = [
   },
   {
     id: '5',
-    date: '07 Apr 2025',
+    date: 'Aug 28, 2025',
     time: '12:18:33',
     symbol: 'JNVR',
     side: 'short',
@@ -59,7 +59,7 @@ export const mockTrades: Trade[] = [
   },
   {
     id: '6',
-    date: '07 Apr 2025',
+    date: 'Aug 28, 2025',
     time: '12:16:44',
     symbol: 'JNVR',
     side: 'short',
@@ -70,7 +70,7 @@ export const mockTrades: Trade[] = [
   },
   {
     id: '7',
-    date: '07 Apr 2025',
+    date: 'Aug 28, 2025',
     time: '08:49:57',
     symbol: 'JNVR',
     side: 'long',
@@ -81,7 +81,7 @@ export const mockTrades: Trade[] = [
   },
   {
     id: '8',
-    date: '07 Apr 2025',
+    date: 'Aug 28, 2025',
     time: '08:49:40',
     symbol: 'JNVR',
     side: 'long',
@@ -92,7 +92,7 @@ export const mockTrades: Trade[] = [
   },
   {
     id: '9',
-    date: '07 Apr 2025',
+    date: 'Aug 28, 2025',
     time: '08:46:00',
     symbol: 'JNVR',
     side: 'long',
@@ -103,7 +103,7 @@ export const mockTrades: Trade[] = [
   },
   {
     id: '10',
-    date: '07 Apr 2025',
+    date: 'Aug 28, 2025',
     time: '08:44:19',
     symbol: 'JNVR',
     side: 'short',
@@ -114,7 +114,7 @@ export const mockTrades: Trade[] = [
   },
   {
     id: '11',
-    date: '07 Apr 2025',
+    date: 'Aug 28, 2025',
     time: '08:43:29',
     symbol: 'JNVR',
     side: 'short',
@@ -125,7 +125,7 @@ export const mockTrades: Trade[] = [
   },
   {
     id: '12',
-    date: '07 Apr 2025',
+    date: 'Aug 28, 2025',
     time: '08:43:03',
     symbol: 'JNVR',
     side: 'short',
@@ -136,7 +136,7 @@ export const mockTrades: Trade[] = [
   },
   {
     id: '13',
-    date: '07 Apr 2025',
+    date: 'Aug 28, 2025',
     time: '08:19:56',
     symbol: 'AREB',
     side: 'short',
@@ -147,7 +147,7 @@ export const mockTrades: Trade[] = [
   },
   {
     id: '14',
-    date: '07 Apr 2025',
+    date: 'Aug 28, 2025',
     time: '08:19:16',
     symbol: 'AREB',
     side: 'short',
@@ -159,7 +159,7 @@ export const mockTrades: Trade[] = [
   // Additional trades for more variety
   {
     id: '15',
-    date: '08 Apr 2025',
+    date: 'Aug 29, 2025',
     time: '10:15:32',
     symbol: 'TSLA',
     side: 'long',
@@ -170,7 +170,7 @@ export const mockTrades: Trade[] = [
   },
   {
     id: '16',
-    date: '08 Apr 2025',
+    date: 'Aug 29, 2025',
     time: '09:45:12',
     symbol: 'NVDA',
     side: 'long',
@@ -181,7 +181,7 @@ export const mockTrades: Trade[] = [
   },
   {
     id: '17',
-    date: '09 Apr 2025',
+    date: 'Aug 30, 2025',
     time: '14:22:18',
     symbol: 'AAPL',
     side: 'short',
@@ -192,7 +192,7 @@ export const mockTrades: Trade[] = [
   },
   {
     id: '18',
-    date: '09 Apr 2025',
+    date: 'Aug 30, 2025',
     time: '11:33:44',
     symbol: 'SPCE',
     side: 'long',
@@ -204,7 +204,7 @@ export const mockTrades: Trade[] = [
   // Continue adding more trades to reach ~50 total
   ...Array.from({ length: 32 }, (_, i) => ({
     id: `${19 + i}`,
-    date: `${10 + Math.floor(i / 5)} Apr 2025`,
+    date: `Aug ${28 + Math.floor(i / 10)}, 2025`,
     time: `${9 + Math.floor(Math.random() * 6)}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`,
     symbol: ['JNVR', 'AREB', 'TSLA', 'NVDA', 'AAPL', 'SPCE', 'AMD', 'MSFT'][Math.floor(Math.random() * 8)],
     side: Math.random() > 0.5 ? 'long' : 'short' as 'long' | 'short',
@@ -218,49 +218,49 @@ export const mockTrades: Trade[] = [
 // Generate daily summaries
 export const mockDayData: DayData[] = [
   {
-    date: '2025-04-05',
+    date: '2025-08-26',
     pnl: 0,
     trades: 0,
     volume: 0,
     winRate: 0
   },
   {
-    date: '2025-04-06',
+    date: '2025-08-27',
     pnl: 0,
     trades: 0,
     volume: 0,
     winRate: 0
   },
   {
-    date: '2025-04-07',
+    date: '2025-08-28',
     pnl: 3.72,
     trades: 14,
     volume: 3344,
     winRate: 42.86
   },
   {
-    date: '2025-04-08',
+    date: '2025-08-29',
     pnl: 244.23,
     trades: 2,
     volume: 350,
     winRate: 100
   },
   {
-    date: '2025-04-09',
+    date: '2025-08-30',
     pnl: 189.33,
     trades: 2,
     volume: 800,
     winRate: 50
   },
   {
-    date: '2025-04-10',
+    date: '2025-08-31',
     pnl: 0,
     trades: 0,
     volume: 0,
     winRate: 0
   },
   {
-    date: '2025-04-11',
+    date: '2025-09-01',
     pnl: 0,
     trades: 0,
     volume: 0,
@@ -299,7 +299,7 @@ export const mockKPIData: KPIData = {
 export const mockRecordsEntries: RecordsEntry[] = [
   {
     id: '1',
-    date: 'Mon, Apr 7, 2025',
+    date: 'Aug 28, 2025',
     pnl: 3.72,
     totalTrades: 14,
     totalVolume: 3344,
@@ -308,16 +308,17 @@ export const mockRecordsEntries: RecordsEntry[] = [
     netPnl: 3.72,
     commissions: 0,
     notes: '',
-    trades: mockTrades.slice(0, 14)
+    trades: mockTrades.slice(0, 14),
+    executions: []
   }
 ];
 
 // Chart data for cumulative P&L
 export const mockCumulativePnl = [
-  { date: '2025-04-06', value: 0 },
-  { date: '2025-04-07', value: 3.72 },
-  { date: '2025-04-08', value: 247.95 },
-  { date: '2025-04-09', value: 437.28 }
+  { date: '2025-08-27', value: 0 },
+  { date: '2025-08-28', value: 3.72 },
+  { date: '2025-08-29', value: 247.95 },
+  { date: '2025-08-30', value: 437.28 }
 ];
 
 // Performance distributions
@@ -351,11 +352,11 @@ export const mockMonthlyPerformance = [
   { range: 'Jan', value: 0, percentage: 0, count: 0 },
   { range: 'Feb', value: 0, percentage: 0, count: 0 },
   { range: 'Mar', value: 0, percentage: 0, count: 0 },
-  { range: 'Apr', value: 437.28, percentage: 100, count: 18 },
+  { range: 'Apr', value: 0, percentage: 0, count: 0 },
   { range: 'May', value: 0, percentage: 0, count: 0 },
   { range: 'Jun', value: 0, percentage: 0, count: 0 },
   { range: 'Jul', value: 0, percentage: 0, count: 0 },
-  { range: 'Aug', value: 0, percentage: 0, count: 0 },
+  { range: 'Aug', value: 437.28, percentage: 100, count: 18 },
   { range: 'Sep', value: 0, percentage: 0, count: 0 },
   { range: 'Oct', value: 0, percentage: 0, count: 0 },
   { range: 'Nov', value: 0, percentage: 0, count: 0 },

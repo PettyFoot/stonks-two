@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth0';
-import { getDemoUserId } from '@/lib/demo/demoSession';
 import { 
   calculateDashboardMetrics,
   calculateKellyCriterion,
@@ -33,19 +32,14 @@ import {
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const demo = searchParams.get('demo') === 'true';
     
-    let userId: string;
-    
-    if (demo) {
-      userId = getDemoUserId();
-    } else {
-      const user = await getCurrentUser();
-      if (!user) {
-        return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-      }
-      userId = user.id;
+    // Get current user (handles both demo and Auth0)
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
+    
+    const userId = user.id;
 
     // Parse query parameters
     const dateFrom = searchParams.get('from') ? new Date(searchParams.get('from')!) : undefined;

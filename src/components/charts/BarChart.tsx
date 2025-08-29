@@ -169,7 +169,8 @@ const CustomBarChart = React.memo(function CustomBarChart({
                   border: '1px solid var(--theme-chart-grid)',
                   borderRadius: '8px',
                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                  fontSize: '12px'
+                  fontSize: '12px',
+                  color: 'var(--theme-chart-tooltip-text)'
                 }}
               />
             )}

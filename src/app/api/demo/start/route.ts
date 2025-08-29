@@ -13,10 +13,11 @@ export async function POST(request: NextRequest) {
     await saveDemoSession(demoSession);
     console.log('Demo session saved to cookies');
     
-    // Return success response with redirect URL
+    // Return success response with redirect URL and flag to set localStorage
     return NextResponse.json({
       success: true,
       redirect: '/dashboard',
+      setDemoMode: true, // Flag to set localStorage on frontend
       session: {
         sessionId: demoSession.sessionId,
         expiresAt: demoSession.expiresAt,

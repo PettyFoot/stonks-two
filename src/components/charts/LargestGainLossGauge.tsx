@@ -54,19 +54,19 @@ export default function LargestGainLossGauge({
       const data = payload[0];
       if (data.payload?.name === 'gain') {
         return (
-          <div className="text-xs rounded px-2 py-1 shadow-lg" style={{backgroundColor: 'var(--theme-chart-tooltip-bg)', color: 'var(--theme-primary-text)'}}>
+          <div className="text-xs rounded px-2 py-1 shadow-lg" style={{backgroundColor: 'var(--theme-chart-tooltip-bg)', color: 'var(--theme-chart-tooltip-text)'}}>
             Gain: {formatCurrency(largestGain)}
           </div>
         );
       } else if (data.payload?.name === 'loss') {
         return (
-          <div className="text-xs rounded px-2 py-1 shadow-lg" style={{backgroundColor: 'var(--theme-chart-tooltip-bg)', color: 'var(--theme-primary-text)'}}>
+          <div className="text-xs rounded px-2 py-1 shadow-lg" style={{backgroundColor: 'var(--theme-chart-tooltip-bg)', color: 'var(--theme-chart-tooltip-text)'}}>
             Loss: {formatCurrency(largestLoss)}
           </div>
         );
       } else if (data.payload?.name === 'placeholder') {
         return (
-          <div className="text-xs rounded px-2 py-1 shadow-lg" style={{backgroundColor: 'var(--theme-chart-tooltip-bg)', color: 'var(--theme-primary-text)'}}>
+          <div className="text-xs rounded px-2 py-1 shadow-lg" style={{backgroundColor: 'var(--theme-chart-tooltip-bg)', color: 'var(--theme-chart-tooltip-text)'}}>
             No data available
           </div>
         );

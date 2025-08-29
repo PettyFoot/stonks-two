@@ -100,7 +100,7 @@ export function UpgradePrompt({
               <Sparkles className="h-8 w-8 text-purple-600" />
             </div>
             <p className="text-gray-600">
-              You've been exploring with sample data. {triggerMessages[trigger as keyof typeof triggerMessages] || triggerMessages.general}.
+              You&apos;ve been exploring with sample data. {triggerMessages[trigger as keyof typeof triggerMessages] || triggerMessages.general}.
             </p>
           </div>
 

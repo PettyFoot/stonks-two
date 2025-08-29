@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth0';
-import { getDemoUserId } from '@/lib/demo/demoSession';
 import { prisma } from '@/lib/prisma';
 import { 
   calculatePerformanceByDayOfWeek,
@@ -21,20 +20,14 @@ export async function GET(request: Request) {
   const tags = searchParams.get('tags')?.split(',').filter(Boolean);
   const duration = searchParams.get('duration') as 'all' | 'intraday' | 'swing' | null;
   const showOpenTrades = searchParams.get('showOpenTrades') === 'true';
-  const demo = searchParams.get('demo') === 'true';
   
-  let userId: string;
-  
-  if (demo) {
-    userId = getDemoUserId();
-  } else {
-    // Authenticated mode - get user-specific data
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-    userId = user.id;
+  // Get current user (handles both demo and Auth0)
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
+  
+  const userId = user.id;
 
   try {
 

@@ -31,6 +31,13 @@ export default function LandingPage() {
       
       if (response.ok) {
         const data = await response.json();
+        
+        // Set demo mode in localStorage immediately
+        if (data.setDemoMode) {
+          localStorage.setItem('demo-mode', 'true');
+          console.log('Set demo mode in localStorage before navigation');
+        }
+        
         router.push(data.redirect || '/dashboard');
       } else {
         console.error('Failed to start demo session');
@@ -47,7 +54,7 @@ export default function LandingPage() {
       <div className="min-h-screen bg-gradient-to-br from-[var(--theme-primary)] via-[var(--theme-surface)] to-[var(--theme-primary)] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[var(--theme-tertiary)] mx-auto mb-4"></div>
-          <p className="text-[var(--theme-secondary-text)]">Loading...</p>
+          <p className="text-[var(--theme-primary-text)]">Loading...</p>
         </div>
       </div>
     );
@@ -106,7 +113,7 @@ export default function LandingPage() {
             Professional Trading<br />
             <span className="text-[var(--theme-tertiary)]">Analytics Platform</span>
           </h1>
-          <p className="text-xl text-[var(--theme-secondary-text)] mb-8 max-w-3xl mx-auto">
+          <p className="text-xl text-[var(--theme-primary-text)] mb-8 max-w-3xl mx-auto">
             Track, analyze, and improve your trading performance with comprehensive analytics, 
             broker integrations, and professional-grade reporting tools.
           </p>
@@ -150,7 +157,7 @@ export default function LandingPage() {
               <CardTitle className="text-[var(--theme-primary-text)]">Performance Analytics</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-[var(--theme-secondary-text)]">
+              <p className="text-[var(--theme-primary-text)]">
                 Real-time P&L tracking, win rates, risk metrics, and comprehensive performance breakdowns.
               </p>
             </CardContent>
@@ -164,7 +171,7 @@ export default function LandingPage() {
               <CardTitle className="text-[var(--theme-primary-text)]">Secure & Private</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-[var(--theme-secondary-text)]">
+              <p className="text-[var(--theme-primary-text)]">
                 Bank-level security with complete user data isolation and privacy protection.
               </p>
             </CardContent>
@@ -178,7 +185,7 @@ export default function LandingPage() {
               <CardTitle className="text-[var(--theme-primary-text)]">Broker Integration</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-[var(--theme-secondary-text)]">
+              <p className="text-[var(--theme-primary-text)]">
                 Import trades from Interactive Brokers, TD Ameritrade, and other major brokers.
               </p>
             </CardContent>
@@ -222,7 +229,7 @@ export default function LandingPage() {
               />
               <span className="font-bold text-[var(--theme-primary-text)]">Trade Voyager</span>
             </div>
-            <p className="text-sm text-[var(--theme-secondary-text)]">
+            <p className="text-sm text-[var(--theme-primary-text)]">
               © 2025 Trade Voyager. Built for professional traders.
             </p>
           </div>

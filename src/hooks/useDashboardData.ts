@@ -46,7 +46,6 @@ export function useDashboardData() {
         if (filterOptions.showOpenTrades !== undefined) {
           params.append('showOpenTrades', filterOptions.showOpenTrades.toString());
         }
-        if (isDemo) params.append('demo', 'true');
         
         const response = await fetch(`/api/dashboard?${params.toString()}`);
         if (!response.ok) {
@@ -82,7 +81,6 @@ export function useDashboardData() {
     if (filterOptions.showOpenTrades !== undefined) {
       params.append('showOpenTrades', filterOptions.showOpenTrades.toString());
     }
-    if (isDemo) params.append('demo', 'true');
     
     fetch(`/api/dashboard?${params.toString()}`)
       .then(res => res.json())

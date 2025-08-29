@@ -59,7 +59,7 @@ export default function GaugeChart({
       // Only show tooltip for the value portion (not the remaining/background)
       if (data.payload?.name === 'value') {
         return (
-          <div className="text-xs rounded px-2 py-1 shadow-lg" style={{backgroundColor: 'var(--theme-chart-tooltip-bg)', color: 'var(--theme-primary-text)'}}>
+          <div className="text-xs rounded px-2 py-1 shadow-lg" style={{backgroundColor: 'var(--theme-chart-tooltip-bg)', color: 'var(--theme-chart-tooltip-text)'}}>
             {suffix === '%' ? value.toFixed(1) : value.toFixed(2)}{suffix}
           </div>
         );

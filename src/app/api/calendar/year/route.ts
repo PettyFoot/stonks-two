@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth0';
 import { getDemoUserId } from '@/lib/demo/demoSession';
-import { mockTrades } from '@/data/mockData';
 
 export async function GET(req: NextRequest) {
   try {
@@ -31,64 +30,31 @@ export async function GET(req: NextRequest) {
       userId = dbUser.id;
     }
 
-    let monthlyData: Array<{ month: number; month_name: string; total_pnl: number | null; trade_count: number; wins: number }>;
+    // Use database for both demo and authenticated users
+    const rows = await prisma.$queryRaw<
+      Array<{ month: number; month_name: string; total_pnl: number | null; trade_count: bigint; wins: bigint }>
+    >`
+      SELECT 
+        EXTRACT(MONTH FROM date)::int as month,
+        TO_CHAR(date, 'Mon') as month_name,
+        SUM(pnl) as total_pnl,
+        COUNT(*) as trade_count,
+        SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) as wins
+      FROM trades
+      WHERE "userId" = ${userId}
+        AND EXTRACT(YEAR FROM date) = ${year}
+        AND status = 'CLOSED'
+      GROUP BY EXTRACT(MONTH FROM date), TO_CHAR(date, 'Mon')
+      ORDER BY month;
+    `;
 
-    if (demo) {
-      // Use mock data for demo mode
-      const yearTrades = mockTrades.filter(trade => {
-        const tradeYear = new Date(trade.date).getFullYear();
-        return tradeYear === year && trade.status === 'CLOSED';
-      });
-
-      // Group by month
-      const monthGroups = new Map<number, Array<typeof mockTrades[0]>>();
-      yearTrades.forEach(trade => {
-        const month = new Date(trade.date).getMonth() + 1; // 1-based month
-        if (!monthGroups.has(month)) {
-          monthGroups.set(month, []);
-        }
-        monthGroups.get(month)!.push(trade);
-      });
-
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      monthlyData = Array.from(monthGroups.entries()).map(([month, trades]) => {
-        const totalPnl = trades.reduce((sum, t) => sum + t.pnl, 0);
-        const wins = trades.filter(t => t.pnl > 0).length;
-        return {
-          month,
-          month_name: months[month - 1],
-          total_pnl: totalPnl,
-          trade_count: trades.length,
-          wins
-        };
-      });
-    } else {
-      // Use database for real users
-      const rows = await prisma.$queryRaw<
-        Array<{ month: number; month_name: string; total_pnl: number | null; trade_count: bigint; wins: bigint }>
-      >`
-        SELECT 
-          EXTRACT(MONTH FROM date)::int as month,
-          TO_CHAR(date, 'Mon') as month_name,
-          SUM(pnl) as total_pnl,
-          COUNT(*) as trade_count,
-          SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) as wins
-        FROM trades
-        WHERE "userId" = ${userId}
-          AND EXTRACT(YEAR FROM date) = ${year}
-          AND status = 'CLOSED'
-        GROUP BY EXTRACT(MONTH FROM date), TO_CHAR(date, 'Mon')
-        ORDER BY month;
-      `;
-
-      monthlyData = rows.map(r => ({
-        month: r.month,
-        month_name: r.month_name,
-        total_pnl: r.total_pnl,
-        trade_count: Number(r.trade_count),
-        wins: Number(r.wins)
-      }));
-    }
+    const monthlyData = rows.map(r => ({
+      month: r.month,
+      month_name: r.month_name,
+      total_pnl: r.total_pnl,
+      trade_count: Number(r.trade_count),
+      wins: Number(r.wins)
+    }));
 
     // Create full year array with all 12 months
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
