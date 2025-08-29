@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Trade, TradeFilters } from '@/types';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TradesData {
   trades: Trade[];
@@ -24,7 +25,6 @@ interface UseTradesDataOptions {
 }
 
 export function useTradesData(
-  demo: boolean = false,
   options: UseTradesDataOptions = {}
 ) {
   const [data, setData] = useState<TradesData | null>(null);
@@ -32,6 +32,7 @@ export function useTradesData(
   const [error, setError] = useState<string | null>(null);
   const { useComplexFiltering = false, page = 1, limit = 50 } = options;
   const { toFilterOptions, hasAdvancedFilters } = useGlobalFilters();
+  const { isDemo } = useAuth();
   
   // Automatically use complex filtering if advanced filters are active
   const shouldUseComplexFiltering = useComplexFiltering || hasAdvancedFilters;
@@ -69,7 +70,7 @@ export function useTradesData(
               filters: tradeFilters,
               page,
               limit,
-              demo
+              demo: isDemo
             })
           });
 
@@ -95,7 +96,7 @@ export function useTradesData(
           if (filters.tags?.length) params.append('tags', filters.tags.join(','));
           if (filters.duration) params.append('duration', filters.duration);
           if (filters.showOpenTrades) params.append('showOpenTrades', 'true');
-          if (demo) params.append('demo', 'true');
+          if (isDemo) params.append('demo', 'true');
           
           const response = await fetch(`/api/trades?${params}`);
           if (!response.ok) {
@@ -117,10 +118,10 @@ export function useTradesData(
     }
 
     fetchData();
-  }, [toFilterOptions, demo, shouldUseComplexFiltering, page, limit]);
+  }, [toFilterOptions, isDemo, shouldUseComplexFiltering, page, limit]);
 
   const addTrade = async (tradeData: Partial<Trade>) => {
-    if (demo) {
+    if (isDemo) {
       throw new Error('Cannot add trades in demo mode');
     }
     
@@ -166,7 +167,7 @@ export function useTradesData(
     if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
     if (filters.dateTo) params.append('dateTo', filters.dateTo);
     if (filters.tags?.length) params.append('tags', filters.tags.join(','));
-    if (demo) params.append('demo', 'true');
+    if (isDemo) params.append('demo', 'true');
     
     fetch(`/api/trades?${params}`)
       .then(res => res.json())

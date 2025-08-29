@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth0';
+import { getDemoUserId } from '@/lib/demo/demoSession';
 import { 
   calculateDashboardMetrics,
   calculateKellyCriterion,
@@ -31,13 +32,22 @@ import {
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    const searchParams = request.nextUrl.searchParams;
+    const demo = searchParams.get('demo') === 'true';
+    
+    let userId: string;
+    
+    if (demo) {
+      userId = getDemoUserId();
+    } else {
+      const user = await getCurrentUser();
+      if (!user) {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      }
+      userId = user.id;
     }
 
     // Parse query parameters
-    const searchParams = request.nextUrl.searchParams;
     const dateFrom = searchParams.get('from') ? new Date(searchParams.get('from')!) : undefined;
     const dateTo = searchParams.get('to') ? new Date(searchParams.get('to')!) : undefined;
     const symbol = searchParams.get('symbol') || undefined;
@@ -65,43 +75,43 @@ export async function GET(request: NextRequest) {
 
     if (isRequested('dashboard')) {
       promiseKeys.push('dashboard');
-      promises.push(calculateDashboardMetrics(user.id, filters));
+      promises.push(calculateDashboardMetrics(userId, filters));
     }
 
     if (isRequested('kelly')) {
       promiseKeys.push('kelly');
-      promises.push(calculateKellyCriterion(user.id, filters));
+      promises.push(calculateKellyCriterion(userId, filters));
     }
 
     if (isRequested('sharpe')) {
       promiseKeys.push('sharpe');
       promises.push(
         Promise.all([
-          calculateSharpeRatio(user.id, 'daily', filters),
-          calculateSharpeRatio(user.id, 'weekly', filters),
-          calculateSharpeRatio(user.id, 'monthly', filters),
+          calculateSharpeRatio(userId, 'daily', filters),
+          calculateSharpeRatio(userId, 'weekly', filters),
+          calculateSharpeRatio(userId, 'monthly', filters),
         ]).then(([daily, weekly, monthly]) => ({ daily, weekly, monthly }))
       );
     }
 
     if (isRequested('drawdown')) {
       promiseKeys.push('drawdown');
-      promises.push(calculateDrawdownMetrics(user.id, filters));
+      promises.push(calculateDrawdownMetrics(userId, filters));
     }
 
     if (isRequested('rMultiples')) {
       promiseKeys.push('rMultiples');
-      promises.push(calculateRMultiples(user.id, 100, filters)); // $100 default risk
+      promises.push(calculateRMultiples(userId, 100, filters)); // $100 default risk
     }
 
     if (isRequested('marketConditions')) {
       promiseKeys.push('marketConditions');
-      promises.push(calculateMarketConditionPerformance(user.id, filters));
+      promises.push(calculateMarketConditionPerformance(userId, filters));
     }
 
     if (isRequested('tradeQuality')) {
       promiseKeys.push('tradeQuality');
-      promises.push(calculateTradeQualityMetrics(user.id, filters));
+      promises.push(calculateTradeQualityMetrics(userId, filters));
     }
 
     // Execute all promises in parallel
@@ -114,7 +124,7 @@ export async function GET(request: NextRequest) {
 
     // Add metadata
     response.metadata = {
-      userId: user.id,
+      userId: userId,
       filters: {
         dateFrom: dateFrom?.toISOString(),
         dateTo: dateTo?.toISOString(),

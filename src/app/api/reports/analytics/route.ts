@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth0';
+import { getDemoUserId } from '@/lib/demo/demoSession';
 import { prisma } from '@/lib/prisma';
 import { AnalyticsService } from '@/lib/services/analyticsService';
 import { CacheService } from '@/lib/services/cacheService';
@@ -87,14 +88,22 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
   
   try {
-    const user = await getCurrentUser();
+    const { searchParams } = new URL(request.url);
+    const demo = searchParams.get('demo') === 'true';
     
-    // Return authentication error if no user found
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Authentication required. Please log in to access analytics data.' },
-        { status: 401 }
-      );
+    let userId: string;
+    
+    if (demo) {
+      userId = getDemoUserId();
+    } else {
+      const user = await getCurrentUser();
+      if (!user) {
+        return NextResponse.json(
+          { error: 'Authentication required. Please log in to access analytics data.' },
+          { status: 401 }
+        );
+      }
+      userId = user.id;
     }
 
     let body: AnalyticsRequest;
@@ -174,11 +183,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Initialize services
-    const analyticsService = new AnalyticsService(user.id);
+    const analyticsService = new AnalyticsService(userId);
     const cacheService = new CacheService();
 
     // Generate cache key based on request parameters
-    const cacheKey = cacheService.generateAnalyticsCacheKey(user.id, body);
+    const cacheKey = cacheService.generateAnalyticsCacheKey(userId, body);
     
     // Try to get from cache first
     let cacheHit = false;
@@ -299,12 +308,20 @@ export async function POST(request: NextRequest) {
 // GET endpoint for simple analytics queries with URL parameters
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
+    const demo = searchParams.get('demo') === 'true';
+    
+    let userId: string;
+    
+    if (demo) {
+      userId = getDemoUserId();
+    } else {
+      const user = await getCurrentUser();
+      if (!user) {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      }
+      userId = user.id;
+    }
     
     // Convert URL params to POST body format
     const body: AnalyticsRequest = {

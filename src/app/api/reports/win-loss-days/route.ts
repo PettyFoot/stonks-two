@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth0';
+import { getDemoUserId } from '@/lib/demo/demoSession';
 import { prisma } from '@/lib/prisma';
 import { TradeFilterService } from '@/lib/services/tradeFilterService';
 
@@ -38,14 +39,23 @@ interface WinLossDaysResponse {
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    const searchParams = request.nextUrl.searchParams;
+    const demo = searchParams.get('demo') === 'true';
+    
+    let userId: string;
+    
+    if (demo) {
+      userId = getDemoUserId();
+    } else {
+      const user = await getCurrentUser();
+      if (!user) {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      }
+      userId = user.id;
     }
 
     // Use centralized filter service to ensure consistency with all other APIs
-    const searchParams = request.nextUrl.searchParams;
-    const filters = TradeFilterService.parseFiltersFromRequest(searchParams, user.id);
+    const filters = TradeFilterService.parseFiltersFromRequest(searchParams, userId);
     
     // Debug logging to verify filters
     TradeFilterService.logFilters('WIN-LOSS-DAYS', filters);
@@ -56,7 +66,7 @@ export async function GET(request: NextRequest) {
     // Debug logging - check raw trades first
     const rawTrades = await prisma.trade.findMany({
       where: {
-        userId: user.id,
+        userId: userId,
         status: 'CLOSED',
         exitDate: { not: null }
       },
@@ -71,7 +81,7 @@ export async function GET(request: NextRequest) {
     });
 
     console.log('\n=== WIN-LOSS-DAYS API DEBUG ===');
-    console.log('User ID:', user.id);
+    console.log('User ID:', userId);
     console.log('Filters:', filters);
     console.log('Raw Recent Trades:', JSON.stringify(rawTrades, null, 2));
     console.log('Winning Days Metrics:', JSON.stringify(dayMetrics.winningDays, null, 2));
@@ -83,7 +93,7 @@ export async function GET(request: NextRequest) {
       winningDays: dayMetrics.winningDays,
       losingDays: dayMetrics.losingDays,
       debug: {
-        userId: user.id,
+        userId: userId,
         rawTradesCount: rawTrades.length,
         rawTrades: rawTrades,
         filters: filters

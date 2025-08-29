@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { TradesMetadata } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 
-export function useTradesMetadata(demo: boolean = false) {
+export function useTradesMetadata() {
   const [metadata, setMetadata] = useState<TradesMetadata | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isDemo } = useAuth();
 
   useEffect(() => {
     async function fetchMetadata() {
@@ -15,7 +17,7 @@ export function useTradesMetadata(demo: boolean = false) {
         setError(null);
         
         const params = new URLSearchParams();
-        if (demo) params.append('demo', 'true');
+        if (isDemo) params.append('demo', 'true');
         
         const response = await fetch(`/api/trades/metadata?${params}`);
         if (!response.ok) {
@@ -32,7 +34,7 @@ export function useTradesMetadata(demo: boolean = false) {
     }
 
     fetchMetadata();
-  }, [demo]);
+  }, [isDemo]);
 
   const refetch = async () => {
     setError(null);
@@ -40,7 +42,7 @@ export function useTradesMetadata(demo: boolean = false) {
     
     try {
       const params = new URLSearchParams();
-      if (demo) params.append('demo', 'true');
+      if (isDemo) params.append('demo', 'true');
       
       const response = await fetch(`/api/trades/metadata?${params}`);
       if (!response.ok) {

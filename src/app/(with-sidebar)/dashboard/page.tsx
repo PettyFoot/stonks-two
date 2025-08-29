@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
-import { useUser } from '@auth0/nextjs-auth0/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import TopBar from '@/components/TopBar';
 import FilterPanel from '@/components/FilterPanel';
@@ -22,9 +22,9 @@ import { CHART_HEIGHTS } from '@/constants/chartHeights';
 
 
 export default function Dashboard() {
-  const { user, isLoading } = useUser();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
-  const { data: analytics, loading, error } = useDashboardData(false);
+  const { data: analytics, loading, error } = useDashboardData();
   const { filters, toFilterOptions } = useGlobalFilters();
 
   // Format the filter date range for display

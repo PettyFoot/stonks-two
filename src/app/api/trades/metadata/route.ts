@@ -1,40 +1,26 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth0';
+import { getDemoUserId } from '@/lib/demo/demoSession';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const demo = searchParams.get('demo') === 'true';
   
-  // Demo mode - return hardcoded metadata
+  let userId: string;
+  
   if (demo) {
-    return NextResponse.json({
-      symbols: ['JNVR', 'AREB', 'TSLA', 'NVDA', 'AAPL', 'MSFT', 'GOOGL', 'AMZN'],
-      tags: [
-        { name: 'momentum', count: 45 },
-        { name: 'breakout', count: 32 },
-        { name: 'scalp', count: 28 },
-        { name: 'reversal', count: 22 },
-        { name: 'morning', count: 18 },
-        { name: 'afternoon', count: 15 },
-        { name: 'swing', count: 12 }
-      ],
-      priceRange: { min: 10.50, max: 245.75 },
-      volumeRange: { min: 100, max: 50000 },
-      executionCountRange: { min: 1, max: 8 },
-      dateRange: {
-        earliest: '2024-01-01',
-        latest: new Date().toISOString().split('T')[0]
-      }
-    });
-  }
-
-  // Authenticated mode - get real metadata from database
-  try {
+    userId = getDemoUserId();
+  } else {
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
+    userId = user.id;
+  }
+
+  // Get real metadata from database for both demo and authenticated users
+  try {
 
     // Get metadata in parallel for performance
     const [
@@ -47,7 +33,7 @@ export async function GET(request: Request) {
     ] = await Promise.all([
       // Distinct symbols
       prisma.trade.findMany({
-        where: { userId: user.id },
+        where: { userId: userId },
         select: { symbol: true },
         distinct: ['symbol'],
         orderBy: { symbol: 'asc' }
@@ -56,7 +42,7 @@ export async function GET(request: Request) {
       // All tags with counts
       prisma.trade.findMany({
         where: { 
-          userId: user.id,
+          userId: userId,
           tags: { isEmpty: false }
         },
         select: { tags: true }
@@ -71,7 +57,7 @@ export async function GET(request: Request) {
       // Volume range
       prisma.trade.aggregate({
         where: { 
-          userId: user.id,
+          userId: userId,
           quantity: { not: null }
         },
         _min: { quantity: true },
@@ -80,14 +66,14 @@ export async function GET(request: Request) {
       
       // Execution count range
       prisma.trade.aggregate({
-        where: { userId: user.id },
+        where: { userId: userId },
         _min: { executions: true },
         _max: { executions: true }
       }),
       
       // Date range
       prisma.trade.aggregate({
-        where: { userId: user.id },
+        where: { userId: userId },
         _min: { date: true, entryDate: true },
         _max: { date: true, entryDate: true }
       })

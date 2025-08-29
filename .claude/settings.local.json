@@ -44,7 +44,10 @@
       "Read(c:\\Users\\lcorr\\OneDrive\\Pictures\\CC/**)",
       "Read(c:\\Users\\lcorr\\OneDrive\\Pictures\\CC/**)",
       "Bash(sed:*)",
-      "Bash(move \"src\\app\\(with-sidebar)\\journal\" \"src\\app\\(with-sidebar)\\records\")"
+      "Bash(move \"src\\app\\(with-sidebar)\\journal\" \"src\\app\\(with-sidebar)\\records\")",
+      "Bash(npx tsx:*)",
+      "Bash(npx dotenv -e .env.local -- npx tsx scripts/seedDemoData.ts:*)",
+      "Bash(npx dotenv -e .env.local -- npx tsx scripts/test-demo.ts:*)"
     ],
     "deny": [],
     "ask": []

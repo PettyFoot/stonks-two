@@ -1,27 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth0';
+import { getDemoUserId } from '@/lib/demo/demoSession';
+import { mockTrades } from '@/data/mockData';
 import { Prisma } from '@prisma/client';
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await getCurrentUser();
-    if (!user?.auth0Id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const url = new URL(req.url);
+    const demo = url.searchParams.get('demo') === 'true';
+    
+    let userId: string;
+    
+    if (demo) {
+      userId = getDemoUserId();
+    } else {
+      const user = await getCurrentUser();
+      if (!user?.auth0Id) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
+      const dbUser = await prisma.user.findUnique({
+        where: { auth0Id: user.auth0Id }
+      });
+
+      if (!dbUser) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
+      
+      userId = dbUser.id;
     }
 
-    const url = new URL(req.url);
     const from = url.searchParams.get('from');
     const to = url.searchParams.get('to');
     const timeframe = url.searchParams.get('timeframe') || 'all'; // month, year, all
-
-    const dbUser = await prisma.user.findUnique({
-      where: { auth0Id: user.auth0Id }
-    });
-
-    if (!dbUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
 
     let startDate: Date | null = null;
     let endDate: Date | null = null;
@@ -40,7 +52,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Build WHERE clause
-    const whereClause = Prisma.sql`WHERE "userId" = ${dbUser.id} AND status = 'CLOSED'`;
+    const whereClause = Prisma.sql`WHERE "userId" = ${userId} AND status = 'CLOSED'`;
     const dateFilter = startDate && endDate 
       ? Prisma.sql` AND date >= ${startDate} AND date < ${endDate}`
       : Prisma.empty;

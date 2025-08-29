@@ -1,17 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth0';
+import { getDemoUserId } from '@/lib/demo/demoSession';
+import { mockTrades } from '@/data/mockData';
 import { Prisma, TradeSide } from '@prisma/client';
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await getCurrentUser();
-    if (!user?.auth0Id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const url = new URL(req.url);
+    const demo = url.searchParams.get('demo') === 'true';
     const year = Number(url.searchParams.get('year')) || new Date().getFullYear();
+    
+    let userId: string;
+    
+    if (demo) {
+      userId = getDemoUserId();
+    } else {
+      const user = await getCurrentUser();
+      if (!user?.auth0Id) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
+      const dbUser = await prisma.user.findUnique({
+        where: { auth0Id: user.auth0Id }
+      });
+
+      if (!dbUser) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
+      
+      userId = dbUser.id;
+    }
     
     // Extract filter parameters
     const symbols = url.searchParams.get('symbols')?.split(',').filter(Boolean) || [];
@@ -63,7 +82,7 @@ export async function GET(req: NextRequest) {
 
     // Use Prisma's findMany with aggregation for better security and filter support
     const whereConditions: Prisma.TradeWhereInput = {
-      userId: dbUser.id,
+      userId: userId,
       date: {
         gte: startDate,
         lt: endDate

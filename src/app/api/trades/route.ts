@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { mockTrades } from '@/data/mockData';
 import { TradeSide, Prisma } from '@prisma/client';
 import { getCurrentUser } from '@/lib/auth0';
+import { getDemoUserId } from '@/lib/demo/demoSession';
 import { prisma } from '@/lib/prisma';
 
 export async function GET(request: Request) {
@@ -16,53 +17,23 @@ export async function GET(request: Request) {
   const showOpenTrades = searchParams.get('showOpenTrades') === 'true';
   const demo = searchParams.get('demo') === 'true';
   
-  // Demo mode - return filtered mock data
+  let userId: string;
+  
   if (demo) {
-    let filteredTrades = mockTrades;
-    
-    // Apply filters
-    if (symbol && symbol !== 'Symbol') {
-      filteredTrades = filteredTrades.filter(trade => trade.symbol === symbol);
-    }
-    
-    if (side && side !== 'all') {
-      filteredTrades = filteredTrades.filter(trade => trade.side === side);
-    }
-    
-    if (dateFrom) {
-      filteredTrades = filteredTrades.filter(trade => new Date(trade.date) >= new Date(dateFrom));
-    }
-    
-    if (dateTo) {
-      filteredTrades = filteredTrades.filter(trade => new Date(trade.date) <= new Date(dateTo));
-    }
-    
-    if (tags && tags.length > 0) {
-      filteredTrades = filteredTrades.filter(trade =>
-        tags.some(tag => trade.tags?.some(tradeTag => 
-          tradeTag.toLowerCase().includes(tag.toLowerCase())
-        ))
-      );
-    }
-    
-    return NextResponse.json({
-      trades: filteredTrades,
-      count: filteredTrades.length,
-      totalPnl: filteredTrades.reduce((sum, trade) => sum + trade.pnl, 0),
-      totalVolume: filteredTrades.reduce((sum, trade) => sum + (trade.quantity || 0), 0)
-    });
-  }
-
-  // Authenticated mode - get user-specific data
-  try {
+    userId = getDemoUserId();
+  } else {
+    // Authenticated mode - get user-specific data
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
+    userId = user.id;
+  }
 
-    // Build where clause for filters
+  // Build where clause for filters
+  try {
     const where: Prisma.TradeWhereInput = {
-      userId: user.id
+      userId: userId
     };
 
     if (symbol && symbol !== 'Symbol') {

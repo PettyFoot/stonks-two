@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -12,12 +12,35 @@ import { useRouter } from 'next/navigation';
 export default function LandingPage() {
   const { user, isLoading } = useUser();
   const router = useRouter();
+  const [isStartingDemo, setIsStartingDemo] = useState(false);
 
   useEffect(() => {
     if (!isLoading && user) {
       router.push('/dashboard');
     }
   }, [user, isLoading, router]);
+
+  const startDemo = async () => {
+    if (isStartingDemo) return;
+    
+    setIsStartingDemo(true);
+    try {
+      const response = await fetch('/api/demo/start', {
+        method: 'POST',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        router.push(data.redirect || '/dashboard');
+      } else {
+        console.error('Failed to start demo session');
+        setIsStartingDemo(false);
+      }
+    } catch (error) {
+      console.error('Error starting demo session:', error);
+      setIsStartingDemo(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -49,12 +72,24 @@ export default function LandingPage() {
             <span className="text-2xl font-bold text-[var(--theme-primary-text)]">Trade Voyager</span>
           </div>
           <div className="flex items-center space-x-4">
-            <Link href="/demo">
-              <Button variant="outline" className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/50">
-                <Play className="h-4 w-4 mr-2" />
-                Try Demo
-              </Button>
-            </Link>
+            <Button 
+              variant="outline" 
+              className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/50"
+              onClick={startDemo}
+              disabled={isStartingDemo}
+            >
+              {isStartingDemo ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                  Starting Demo...
+                </>
+              ) : (
+                <>
+                  <Play className="h-4 w-4 mr-2" />
+                  Try Demo
+                </>
+              )}
+            </Button>
             <Link href="/login">
               <Button className="bg-[var(--theme-tertiary)] hover:bg-[var(--theme-tertiary)]/80 text-white">
                 Sign In
@@ -77,12 +112,25 @@ export default function LandingPage() {
           </p>
           
           <div className="flex items-center justify-center space-x-4">
-            <Link href="/demo">
-              <Button size="lg" variant="outline" className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/50">
-                <Users className="h-5 w-5 mr-2" />
-                Explore Demo
-              </Button>
-            </Link>
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/50"
+              onClick={startDemo}
+              disabled={isStartingDemo}
+            >
+              {isStartingDemo ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current mr-2"></div>
+                  Starting Demo...
+                </>
+              ) : (
+                <>
+                  <Users className="h-5 w-5 mr-2" />
+                  Explore Demo
+                </>
+              )}
+            </Button>
             <Link href="/login">
               <Button size="lg" className="bg-[var(--theme-green)] hover:bg-[var(--theme-green)]/80 text-white">
                 Get Started Free

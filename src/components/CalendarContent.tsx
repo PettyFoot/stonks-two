@@ -12,7 +12,7 @@ import FilterPanel from '@/components/FilterPanel';
 import TradesTable from '@/components/TradesTable';
 import CalendarSummaryChartsRecharts from '@/components/CalendarSummaryChartsRecharts';
 import CalendarYearView from '@/components/CalendarYearView';
-import { useUser } from '@auth0/nextjs-auth0/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Trade } from '@/types';
 
 type ViewType = 'summary' | 'year' | 'month';
@@ -27,7 +27,7 @@ interface DayData {
 const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function CalendarContent() {
-  const { user, isLoading: authLoading } = useUser();
+  const { user, isLoading: authLoading, isDemo } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
   
@@ -66,7 +66,14 @@ export default function CalendarContent() {
     
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/calendar/month?year=${year}&month=${month}`);
+      const params = new URLSearchParams({
+        year: year.toString(),
+        month: month.toString()
+      });
+      if (isDemo) {
+        params.append('demo', 'true');
+      }
+      const response = await fetch(`/api/calendar/month?${params}`);
       if (response.ok) {
         const data = await response.json();
         setMonthData(data);
@@ -76,7 +83,7 @@ export default function CalendarContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, year, month]);
+  }, [user, year, month, isDemo]);
 
   // Fetch trades
   const fetchTrades = useCallback(async () => {
@@ -102,6 +109,9 @@ export default function CalendarContent() {
       dateFrom: dateFrom.toISOString().split('T')[0],
       dateTo: dateTo.toISOString().split('T')[0]
     });
+    if (isDemo) {
+      params.append('demo', 'true');
+    }
 
     try {
       const response = await fetch(`/api/trades?${params}`);
@@ -112,7 +122,7 @@ export default function CalendarContent() {
     } catch (error) {
       console.error('Error fetching trades:', error);
     }
-  }, [user, year, month, selectedDay]);
+  }, [user, year, month, selectedDay, isDemo]);
 
   useEffect(() => {
     if (view === 'month') {

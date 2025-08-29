@@ -21,14 +21,13 @@ interface FilterPanelProps {
 
 export default function FilterPanel({ 
   showAdvanced = false,
-  className = '',
-  demo = false
+  className = ''
 }: FilterPanelProps) {
   const [showAdvancedPanel, setShowAdvancedPanel] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   
-  const { metadata, loading: metadataLoading } = useTradesMetadata(demo);
+  const { metadata, loading: metadataLoading } = useTradesMetadata();
   const { 
     filters, 
     updateFilter, 

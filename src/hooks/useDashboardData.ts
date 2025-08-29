@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { DayData, KPIData, ChartDataPoint } from '@/types';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DashboardData {
   dayData: DayData[];
@@ -19,11 +20,12 @@ interface DashboardData {
   };
 }
 
-export function useDashboardData(demo: boolean = false) {
+export function useDashboardData() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toFilterOptions } = useGlobalFilters();
+  const { isDemo } = useAuth();
 
   useEffect(() => {
     async function fetchData() {
@@ -44,7 +46,7 @@ export function useDashboardData(demo: boolean = false) {
         if (filterOptions.showOpenTrades !== undefined) {
           params.append('showOpenTrades', filterOptions.showOpenTrades.toString());
         }
-        if (demo) params.append('demo', 'true');
+        if (isDemo) params.append('demo', 'true');
         
         const response = await fetch(`/api/dashboard?${params.toString()}`);
         if (!response.ok) {
@@ -60,7 +62,7 @@ export function useDashboardData(demo: boolean = false) {
     }
 
     fetchData();
-  }, [toFilterOptions, demo]);
+  }, [toFilterOptions, isDemo]);
 
   const refetch = () => {
     setError(null);
@@ -80,7 +82,7 @@ export function useDashboardData(demo: boolean = false) {
     if (filterOptions.showOpenTrades !== undefined) {
       params.append('showOpenTrades', filterOptions.showOpenTrades.toString());
     }
-    if (demo) params.append('demo', 'true');
+    if (isDemo) params.append('demo', 'true');
     
     fetch(`/api/dashboard?${params.toString()}`)
       .then(res => res.json())

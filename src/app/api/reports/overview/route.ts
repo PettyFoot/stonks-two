@@ -1,17 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth0';
+import { getDemoUserId } from '@/lib/demo/demoSession';
 import { Decimal } from '@prisma/client/runtime/library';
 import { startOfDay, endOfDay, subDays, format } from 'date-fns';
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
     const searchParams = request.nextUrl.searchParams;
+    const demo = searchParams.get('demo') === 'true';
+    
+    let userId: string;
+    
+    if (demo) {
+      userId = getDemoUserId();
+    } else {
+      const user = await getCurrentUser();
+      if (!user) {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      }
+      userId = user.id;
+    }
     
     // Parse date range
     const fromDate = searchParams.get('from') 
@@ -24,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     // Build filter conditions
     const whereConditions: Record<string, unknown> = {
-      userId: user.id,
+      userId: userId,
       status: 'CLOSED', // Only closed trades for accurate statistics
       date: {
         gte: fromDate,
@@ -63,7 +72,8 @@ export async function GET(request: NextRequest) {
     });
 
     console.log('\n=== OVERVIEW API DEBUG ===');
-    console.log('User ID:', user.id);
+    console.log('User ID:', userId);
+    console.log('Demo mode:', demo);
     console.log('Filter Conditions:', JSON.stringify(whereConditions, null, 2));
     console.log(`Found ${trades.length} trades for Overview report`);
     console.log('Trades details:');

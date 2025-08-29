@@ -34,6 +34,7 @@
     "@radix-ui/react-tabs": "^1.1.12",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@types/papaparse": "^5.3.16",
+    "@types/uuid": "^10.0.0",
     "@upstash/redis": "^1.35.3",
     "apexcharts": "^5.3.4",
     "axios": "^1.11.0",
@@ -41,6 +42,7 @@
     "clsx": "^2.1.1",
     "csv-parse": "^6.1.0",
     "date-fns": "^4.1.0",
+    "iron-session": "^8.0.4",
     "lucide-react": "^0.539.0",
     "next": "15.4.6",
     "papaparse": "^5.5.3",
@@ -53,6 +55,7 @@
     "sonner": "^2.0.7",
     "stream": "^0.0.3",
     "tailwind-merge": "^3.3.1",
+    "uuid": "^11.1.0",
     "yahoo-finance2": "^2.13.3",
     "zod": "^4.0.17"
   },

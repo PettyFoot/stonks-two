@@ -16,7 +16,7 @@ export default function Trades() {
   const [calculating, setCalculating] = useState(false);
   const [columnConfig, setColumnConfig] = useState<ColumnConfiguration[]>([]);
   
-  const { data: tradesData, loading, error, refetch } = useTradesData(false);
+  const { data: tradesData, loading, error, refetch } = useTradesData();
 
   const calculateTrades = async () => {
     setCalculating(true);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { getCurrentUser } from '@/lib/auth0';
+import { getDemoUserId } from '@/lib/demo/demoSession';
 import { prisma } from '@/lib/prisma';
 
 /**
@@ -40,13 +41,22 @@ interface CumulativeDataPoint {
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    const searchParams = request.nextUrl.searchParams;
+    const demo = searchParams.get('demo') === 'true';
+    
+    let userId: string;
+    
+    if (demo) {
+      userId = getDemoUserId();
+    } else {
+      const user = await getCurrentUser();
+      if (!user) {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      }
+      userId = user.id;
     }
 
     // Extract query parameters
-    const searchParams = request.nextUrl.searchParams;
     const dateFrom = searchParams.get('from');
     const dateTo = searchParams.get('to');
     const symbol = searchParams.get('symbol');
@@ -54,7 +64,7 @@ export async function GET(request: NextRequest) {
 
     // Build where clause for Prisma query
     const where: Prisma.TradeWhereInput = {
-      userId: user.id,
+      userId: userId,
       status: 'CLOSED', // Only closed trades have realized P&L
     };
 
@@ -80,19 +90,19 @@ export async function GET(request: NextRequest) {
     }
 
     // 1. Calculate Win/Loss Metrics using optimized aggregation
-    const winLossMetrics = await calculateWinLossMetrics(user.id, where);
+    const winLossMetrics = await calculateWinLossMetrics(userId, where);
 
     // 2. Get cumulative P&L and drawdown data
-    const cumulativeData = await calculateCumulativeMetrics(user.id, where);
+    const cumulativeData = await calculateCumulativeMetrics(userId, where);
 
     // 3. Get trade distribution by P&L ranges for histogram
-    const pnlDistribution = await calculatePnlDistribution(user.id, where);
+    const pnlDistribution = await calculatePnlDistribution(userId, where);
 
     // 4. Get win/loss streaks
-    const streaks = await calculateStreaks(user.id, where);
+    const streaks = await calculateStreaks(userId, where);
 
     // 5. Get performance by trade duration (for win vs loss analysis)
-    const durationAnalysis = await analyzeTradeDuration(user.id, where);
+    const durationAnalysis = await analyzeTradeDuration(userId, where);
 
     return NextResponse.json({
       metrics: winLossMetrics,

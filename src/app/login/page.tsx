@@ -1,13 +1,39 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, Shield, Users } from 'lucide-react';
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [isStartingDemo, setIsStartingDemo] = useState(false);
+
+  const startDemo = async () => {
+    if (isStartingDemo) return;
+    
+    setIsStartingDemo(true);
+    try {
+      const response = await fetch('/api/demo/start', {
+        method: 'POST',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        router.push(data.redirect || '/dashboard');
+      } else {
+        console.error('Failed to start demo session');
+        setIsStartingDemo(false);
+      }
+    } catch (error) {
+      console.error('Error starting demo session:', error);
+      setIsStartingDemo(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[var(--theme-primary)] via-[var(--theme-surface)] to-[var(--theme-primary)] flex items-center justify-center p-4">
       <div className="max-w-6xl w-full grid lg:grid-cols-2 gap-8 items-center">
@@ -57,12 +83,24 @@ export default function LoginPage() {
             <p className="text-sm text-[var(--theme-secondary-text)] mb-4">
               Explore all features with sample data before creating your account.
             </p>
-            <Link href="/demo">
-              <Button variant="outline" className="w-full">
-                <Users className="h-4 w-4 mr-2" />
-                View Demo
-              </Button>
-            </Link>
+            <Button 
+              variant="outline" 
+              className="w-full bg-white text-[var(--theme-primary-text)] border-white hover:bg-gray-50"
+              onClick={startDemo}
+              disabled={isStartingDemo}
+            >
+              {isStartingDemo ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                  Starting Demo...
+                </>
+              ) : (
+                <>
+                  <Users className="h-4 w-4 mr-2" />
+                  View Demo
+                </>
+              )}
+            </Button>
           </div>
         </div>
 

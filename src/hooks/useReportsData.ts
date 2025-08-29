@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DailyPnlData {
   date: string;
@@ -28,6 +29,7 @@ interface ReportsData {
 
 export function useReportsData() {
   const { toFilterOptions } = useGlobalFilters();
+  const { isDemo } = useAuth();
   const [data, setData] = useState<ReportsData>({
     dailyPnl: [],
     averageDailyPnl: 0,
@@ -58,6 +60,7 @@ export function useReportsData() {
         if (filters.side && filters.side !== 'all') params.append('side', filters.side);
         if (filters.tags?.length) params.append('tags', filters.tags.join(','));
         if (filters.duration && filters.duration !== 'all') params.append('duration', filters.duration);
+        if (isDemo) params.append('demo', 'true');
 
         const response = await fetch(`/api/reports/overview?${params}`);
         
@@ -92,7 +95,7 @@ export function useReportsData() {
     }
 
     fetchReportsData();
-  }, [toFilterOptions]);
+  }, [toFilterOptions, isDemo]);
 
   return data;
 }

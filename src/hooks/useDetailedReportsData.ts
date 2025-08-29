@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Trade } from '@/types';
 
 interface DetailedReportsData {
@@ -39,6 +40,7 @@ interface DetailedReportsData {
 
 export function useDetailedReportsData() {
   const { toFilterOptions } = useGlobalFilters();
+  const { isDemo } = useAuth();
   const [data, setData] = useState<DetailedReportsData>({
     stats: {
       totalGainLoss: 0,
@@ -85,6 +87,7 @@ export function useDetailedReportsData() {
         if (filters.side && filters.side !== 'all') params.append('side', filters.side);
         if (filters.tags?.length) params.append('tags', filters.tags.join(','));
         if (filters.duration && filters.duration !== 'all') params.append('duration', filters.duration);
+        if (isDemo) params.append('demo', 'true');
 
         // Fetch detailed reports data from real API
         const response = await fetch(`/api/reports/detailed?${params}`);
@@ -113,7 +116,7 @@ export function useDetailedReportsData() {
     }
 
     fetchDetailedData();
-  }, [toFilterOptions]);
+  }, [toFilterOptions, isDemo]);
 
   return data;
 }

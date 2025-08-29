@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth0';
+import { getDemoUserId } from '@/lib/demo/demoSession';
 import { prisma } from '@/lib/prisma';
 import { 
   calculatePerformanceByDayOfWeek,
@@ -22,56 +23,20 @@ export async function GET(request: Request) {
   const showOpenTrades = searchParams.get('showOpenTrades') === 'true';
   const demo = searchParams.get('demo') === 'true';
   
-  // Demo mode - return mock data
+  let userId: string;
+  
   if (demo) {
-    // For demo mode, we'll return empty/default data
-    const emptyDashboardData = {
-      dayData: [],
-      kpiData: {
-        totalPnl: 0,
-        totalTrades: 0,
-        totalVolume: 0,
-        winRate: 0,
-        avgWinningTrade: 0,
-        avgLosingTrade: 0,
-        maxConsecutiveWins: 0,
-        maxConsecutiveLosses: 0,
-        bestDay: 0,
-        worstDay: 0,
-        avgPositionMae: 0,
-        avgPositionMfe: 0,
-        performanceByDayOfWeek: [],
-        performanceByMonthOfYear: [],
-        avgHoldTimeWinning: 0,
-        avgHoldTimeLosing: 0,
-        largestGain: 0,
-        largestLoss: 0,
-        performanceByDuration: [],
-        winningTradesCount: 0,
-        losingTradesCount: 0,
-        profitFactor: 0,
-        avgDailyVolume: 0
-      },
-      cumulativePnl: [],
-      summary: {
-        totalTrades: 0,
-        totalPnl: 0,
-        winRate: 0,
-        avgWin: 0,
-        avgLoss: 0,
-        bestDay: 0,
-        worstDay: 0
-      }
-    };
-    return NextResponse.json(emptyDashboardData);
-  }
-
-  // Authenticated mode - get user-specific data
-  try {
+    userId = getDemoUserId();
+  } else {
+    // Authenticated mode - get user-specific data
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
+    userId = user.id;
+  }
+
+  try {
 
     // Build filter conditions
     const filters: {
@@ -94,7 +59,7 @@ export async function GET(request: Request) {
     // Build where clause for Prisma queries
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const whereClause: Record<string, any> = {
-      userId: user.id,
+      userId: userId,
     };
     
     if (!showOpenTrades) {
@@ -135,7 +100,7 @@ export async function GET(request: Request) {
 
     // Get day data with filters
     const dayDataWhereClause = {
-      userId: user.id,
+      userId: userId,
       ...(whereClause.date && { date: whereClause.date })
     };
     
@@ -231,11 +196,11 @@ export async function GET(request: Request) {
       largestGainLoss,
       performanceByDuration
     ] = await Promise.all([
-      calculatePerformanceByDayOfWeek(user.id, filters),
-      calculatePerformanceByMonthOfYear(user.id, filters),
-      calculateHoldTimeStatistics(user.id, filters),
-      calculateLargestGainLoss(user.id, filters),
-      calculatePerformanceByDuration(user.id, filters)
+      calculatePerformanceByDayOfWeek(userId, filters),
+      calculatePerformanceByMonthOfYear(userId, filters),
+      calculateHoldTimeStatistics(userId, filters),
+      calculateLargestGainLoss(userId, filters),
+      calculatePerformanceByDuration(userId, filters)
     ]);
 
     const dashboardData = {
