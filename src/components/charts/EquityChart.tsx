@@ -105,7 +105,7 @@ const EquityChart = React.memo(function EquityChart({
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={height}>
-          <LineChart data={data} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+          <LineChart data={data} margin={{ top: 5, right: 30, left: 5, bottom: 5 }}>
             {showGrid && (
               <CartesianGrid 
                 strokeDasharray="3 3" 
@@ -127,6 +127,7 @@ const EquityChart = React.memo(function EquityChart({
               tickLine={false}
               tick={{ fontSize: 12, fill: 'var(--theme-primary-text)' }}
               tickFormatter={(value) => `$${value}`}
+              domain={[0, 'dataMax']}
             />
             {showTooltip && (
               <Tooltip 
@@ -143,7 +144,7 @@ const EquityChart = React.memo(function EquityChart({
             )}
             <ReferenceLine y={0} stroke="#f3f3f3" strokeDasharray="2 2" />
             <Line 
-              type="monotone" 
+              type="linear" 
               dataKey="value" 
               stroke={lineColor}
               strokeWidth={2}

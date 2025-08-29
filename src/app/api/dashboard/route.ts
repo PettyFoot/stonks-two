@@ -191,6 +191,21 @@ export async function GET(request: Request) {
     let runningPnl = 0;
     const tradesByDate = new Map<string, typeof trades>();
     
+    // Add starting point at the beginning of selected time period
+    if (filters.dateFrom) {
+      cumulativePnl.push({
+        date: filters.dateFrom.toISOString().split('T')[0],
+        value: 0
+      });
+    } else if (trades.length > 0) {
+      // If no dateFrom filter, start from the earliest trade date
+      const earliestTradeDate = new Date(Math.min(...trades.map(t => t.date.getTime())));
+      cumulativePnl.push({
+        date: earliestTradeDate.toISOString().split('T')[0],
+        value: 0
+      });
+    }
+    
     trades.forEach(trade => {
       const dateStr = trade.date.toISOString().split('T')[0];
       if (!tradesByDate.has(dateStr)) {

@@ -290,7 +290,9 @@ export async function POST(request: Request) {
       holdingPeriod: trade.holdingPeriod || undefined,
       status: trade.status || undefined,
       commission: trade.commission ? Number(trade.commission) : undefined,
-      fees: trade.fees ? Number(trade.fees) : undefined
+      fees: trade.fees ? Number(trade.fees) : undefined,
+      marketSession: trade.marketSession || undefined,
+      orderType: trade.orderType || undefined
     }));
 
     // Apply time range filter after transformation

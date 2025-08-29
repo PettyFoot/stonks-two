@@ -913,8 +913,9 @@ export async function calculatePerformanceByDuration(
     WITH duration_stats AS (
       SELECT 
         CASE 
-          WHEN "timeInTrade" <= 86400 THEN 'Intraday'  -- Less than 24 hours
-          ELSE 'Multiday'
+          WHEN "holdingPeriod" = 'INTRADAY' THEN 'Intraday'
+          WHEN "holdingPeriod" = 'SWING' THEN 'Swing'
+          ELSE 'Other'
         END as duration_category,
         COUNT(*) as trades,
         SUM("pnl"::NUMERIC) as total_pnl,
@@ -926,12 +927,13 @@ export async function calculatePerformanceByDuration(
       WHERE 
         "userId" = ${userId}
         ${statusFilter}
-        AND "timeInTrade" IS NOT NULL
+        AND "holdingPeriod" IN ('INTRADAY', 'SWING')
         ${filterConditions}
       GROUP BY 
         CASE 
-          WHEN "timeInTrade" <= 86400 THEN 'Intraday'
-          ELSE 'Multiday'
+          WHEN "holdingPeriod" = 'INTRADAY' THEN 'Intraday'
+          WHEN "holdingPeriod" = 'SWING' THEN 'Swing'
+          ELSE 'Other'
         END
     )
     SELECT 

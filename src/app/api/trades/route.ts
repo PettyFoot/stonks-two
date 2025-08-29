@@ -134,7 +134,11 @@ export async function GET(request: Request) {
       status: trade.status || undefined,
       shared: false,
       notes: trade.notes,
-      tags: trade.tags
+      tags: trade.tags,
+      commission: trade.commission ? (typeof trade.commission === 'object' ? trade.commission.toNumber() : trade.commission) : undefined,
+      fees: trade.fees ? (typeof trade.fees === 'object' ? trade.fees.toNumber() : trade.fees) : undefined,
+      marketSession: trade.marketSession || undefined,
+      orderType: trade.orderType || undefined
     }));
 
     return NextResponse.json({

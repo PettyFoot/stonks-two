@@ -44,8 +44,12 @@ export default function HorizontalBarChart({
       <CardContent style={{ height: `calc(100% - 52px)`, padding: '0.75rem 1rem' }}>
         <div className="h-full flex flex-col justify-center gap-3">
           {data.map((item, index) => {
-            // Calculate percentage, ensuring minimum visibility
-            const percentage = Math.max((Math.abs(item.value) / maxValue) * 100, 2);
+            // Calculate relative percentage
+            const rawPercentage = (Math.abs(item.value) / maxValue) * 100;
+            // Ensure minimum width of 25% for smallest bars to fit text, scale others proportionally
+            const minPercentage = 25; // Minimum 25% width
+            const scaledRange = 100 - minPercentage; // Remaining 75% for scaling
+            const percentage = item.value !== 0 ? minPercentage + (rawPercentage / 100) * scaledRange : 3; // Show minimal bar for zero values
             
             return (
               <div key={index} className="flex items-center gap-3">
@@ -56,31 +60,41 @@ export default function HorizontalBarChart({
                 
                 {/* Bar container */}
                 <div className="flex-1">
-                  <div className="w-full h-6 rounded-sm overflow-hidden" style={{backgroundColor: 'var(--theme-chart-grid)'}}>
-                    <div
-                      className="h-full transition-all duration-500 ease-out rounded-sm flex items-center"
-                      style={{
-                        width: `${percentage}%`,
-                        backgroundColor: item.color,
-                        minWidth: item.value !== 0 ? '2px' : '0'
-                      }}
-                    >
-                      {/* Value inside bar if there's space */}
-                      {percentage > 30 && showValues && (
-                        <span className="text-xs text-white font-semibold px-2">
-                          {formatValue(item)}
-                        </span>
-                      )}
-                    </div>
+                  <div className="w-full h-6">
+                    {item.value === 0 ? (
+                      /* Grey background bar for zero values */
+                      <div
+                        className="h-full w-full transition-all duration-500 ease-out rounded-sm flex items-center justify-center"
+                        style={{
+                          backgroundColor: 'var(--theme-chart-grid)'
+                        }}
+                      >
+                        {/* Value inside grey bar */}
+                        {showValues && (
+                          <span className="text-xs font-semibold px-2" style={{ color: 'var(--theme-secondary-text)' }}>
+                            {formatValue(item)}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      /* Colored bar for non-zero values */
+                      <div
+                        className="h-full transition-all duration-500 ease-out rounded-sm flex items-center justify-center"
+                        style={{
+                          width: `${percentage}%`,
+                          backgroundColor: item.color
+                        }}
+                      >
+                        {/* Value inside colored bar */}
+                        {showValues && (
+                          <span className="text-xs text-white font-semibold px-2">
+                            {formatValue(item)}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
-                
-                {/* Value outside if not enough space in bar */}
-                {(percentage <= 30 || !showValues) && showValues && (
-                  <span className="text-xs font-semibold min-w-[60px] text-right" style={{ color: item.color }}>
-                    {formatValue(item)}
-                  </span>
-                )}
               </div>
             );
           })}

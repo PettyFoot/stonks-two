@@ -171,12 +171,23 @@ export default function Dashboard() {
   ];
 
   // Performance by duration data for bar chart
-  const durationData = metrics.performanceByDuration?.map(item => ({
-    label: item.category,
-    value: item.pnl,
-    color: item.pnl >= 0 ? 'var(--theme-green)' : 'var(--theme-red)',
-    displayValue: formatCurrency(item.pnl)
-  })) || [];
+  const intradayData = metrics.performanceByDuration?.find(item => item.category === 'Intraday');
+  const swingData = metrics.performanceByDuration?.find(item => item.category === 'Swing');
+  
+  const durationData = [
+    {
+      label: 'Intraday',
+      value: intradayData?.pnl || 0,
+      color: (intradayData?.pnl || 0) >= 0 ? 'var(--theme-green)' : 'var(--theme-red)',
+      displayValue: formatCurrency(intradayData?.pnl || 0)
+    },
+    {
+      label: 'Swing',
+      value: swingData?.pnl || 0,
+      color: (swingData?.pnl || 0) >= 0 ? 'var(--theme-green)' : 'var(--theme-red)',
+      displayValue: formatCurrency(swingData?.pnl || 0)
+    }
+  ];
 
   return (
     <div className="flex flex-col h-full">

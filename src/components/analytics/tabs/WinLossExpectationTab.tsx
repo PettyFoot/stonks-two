@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnalyticsTabContentProps } from '../AnalyticsTabsSection';
+import TradesTable from '@/components/TradesTable';
 
 // Import the new chart components
 // TODO: Create these chart components
@@ -52,6 +53,26 @@ interface WinLossExpectationData {
     drawdown: number;
     drawdownPercent: number;
     underwater: number;
+  }>;
+  trades: Array<{
+    id: string;
+    date: string;
+    time: string;
+    symbol: string;
+    side: 'long' | 'short';
+    quantity: number;
+    executions: number;
+    pnl: number;
+    entryPrice?: number;
+    exitPrice?: number;
+    holdingPeriod?: string;
+    status?: 'OPEN' | 'CLOSED';
+    notes?: string;
+    tags?: string[];
+    commission?: number;
+    fees?: number;
+    marketSession?: 'PRE_MARKET' | 'REGULAR' | 'AFTER_HOURS' | 'EXTENDED';
+    orderType?: 'MARKET' | 'LIMIT' | 'STOP' | 'STOP_LIMIT' | 'TRAILING_STOP' | 'MARKET_ON_CLOSE' | 'LIMIT_ON_CLOSE' | 'PEGGED_TO_MIDPOINT';
   }>;
   metadata: {
     totalTrades: number;
@@ -152,9 +173,41 @@ export default function WinLossExpectationTab({ data }: AnalyticsTabContentProps
       </div>
 
       {/* Second Row: Trade Expectation (Full Width) */}
-      <div className="bg-theme-surface border border-theme-border rounded-lg p-6 h-[320px] flex items-center justify-center">
-        <span className="text-theme-primary-text">Trade Expectation Chart - Coming Soon</span>
-      </div>
+      <Card className="bg-theme-surface border-theme-border">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-medium text-theme-primary-text">Trade Details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {dashboardData?.trades && dashboardData.trades.length > 0 ? (
+            <TradesTable 
+              trades={dashboardData.trades}
+              showCheckboxes={false}
+              columnConfig={[
+                { id: 'date', label: 'Date', visible: true, sortable: true },
+                { id: 'time', label: 'Time', visible: true, sortable: true },
+                { id: 'symbol', label: 'Symbol', visible: true, sortable: true },
+                { id: 'side', label: 'Side', visible: true, sortable: true },
+                { id: 'holdingPeriod', label: 'Duration', visible: true, sortable: true },
+                { id: 'entryPrice', label: 'Entry Price', visible: true, sortable: true },
+                { id: 'exitPrice', label: 'Exit Price', visible: true, sortable: true },
+                { id: 'volume', label: 'Volume', visible: true, sortable: true },
+                { id: 'executions', label: 'Executions', visible: true, sortable: true },
+                { id: 'pnl', label: 'P&L', visible: true, sortable: true },
+                { id: 'commission', label: 'Commission', visible: true, sortable: true },
+                { id: 'fees', label: 'Fees', visible: true, sortable: true },
+                { id: 'notes', label: 'NOTES', visible: true, sortable: false },
+                { id: 'tags', label: 'TAGS', visible: true, sortable: false },
+                { id: 'marketSession', label: 'Session', visible: true, sortable: true },
+                { id: 'orderType', label: 'Order Type', visible: true, sortable: true }
+              ]}
+            />
+          ) : (
+            <div className="text-center py-8 text-theme-secondary-text">
+              No trade data available for the selected period
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Third Row: Cumulative P&L and Drawdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

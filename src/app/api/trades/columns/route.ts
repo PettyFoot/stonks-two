@@ -14,13 +14,12 @@ export async function GET() {
     { id: 'pnl', label: 'P&L', visible: true, sortable: true },
     { id: 'entryPrice', label: 'Entry Price', visible: true, sortable: true },
     { id: 'exitPrice', label: 'Exit Price', visible: true, sortable: true },
-    { id: 'commission', label: 'Commission', visible: false, sortable: true },
-    { id: 'fees', label: 'Fees', visible: false, sortable: true },
-    { id: 'notes', label: 'Notes', visible: true, sortable: false },
-    { id: 'tags', label: 'Tags', visible: true, sortable: false },
-    { id: 'marketSession', label: 'Session', visible: false, sortable: true },
-    { id: 'orderType', label: 'Order Type', visible: false, sortable: true },
-    { id: 'timeInForce', label: 'Time in Force', visible: false, sortable: true }
+    { id: 'commission', label: 'Commission', visible: true, sortable: true },
+    { id: 'fees', label: 'Fees', visible: true, sortable: true },
+    { id: 'notes', label: 'NOTES', visible: true, sortable: false },
+    { id: 'tags', label: 'TAGS', visible: true, sortable: false },
+    { id: 'marketSession', label: 'Session', visible: true, sortable: true },
+    { id: 'orderType', label: 'Order Type', visible: true, sortable: true }
   ];
 
   return NextResponse.json({

@@ -15,6 +15,10 @@ export interface Trade {
   shared?: boolean;
   notes?: string;
   tags?: string[];
+  commission?: number;
+  fees?: number;
+  marketSession?: 'PRE_MARKET' | 'REGULAR' | 'AFTER_HOURS' | 'EXTENDED';
+  orderType?: 'MARKET' | 'LIMIT' | 'STOP' | 'STOP_LIMIT' | 'TRAILING_STOP' | 'MARKET_ON_CLOSE' | 'LIMIT_ON_CLOSE' | 'PEGGED_TO_MIDPOINT';
 }
 
 export interface DayData {

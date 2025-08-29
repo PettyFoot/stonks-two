@@ -29,6 +29,16 @@ export default function DistributionCharts({
     return `${percentage.toFixed(1)}%`;
   };
 
+  // Calculate maximum value for scaling bar widths
+  const maxValue = Math.max(...data.map(item => Math.abs(item.value ?? item.pnl ?? 0)), 1);
+  
+  // Calculate bar width based on value relative to max
+  const calculateBarWidth = (value: number) => {
+    if (value === 0) return 100; // Full width grey background for zero values
+    const rawPercentage = (Math.abs(value) / maxValue) * 100;
+    return Math.max(rawPercentage, 5); // Minimum 5% width for visibility
+  };
+
   return (
     <Card className="bg-surface border-default overflow-hidden" style={{ height }}>
       <CardHeader className="pb-2">
@@ -45,14 +55,25 @@ export default function DistributionCharts({
               
               {/* Progress Bar */}
               <div className="flex-1 min-w-0">
-                <div className="relative h-4 rounded-sm overflow-hidden w-full" style={{backgroundColor: 'var(--theme-chart-grid)'}}>
-                  <div 
-                    className="absolute left-0 top-0 h-full transition-all duration-300"
-                    style={{ 
-                      width: `${Math.abs(item.percentage)}%`,
-                      backgroundColor: getBarColor(item.value ?? item.pnl ?? 0)
-                    }}
-                  />
+                <div className="relative h-4 w-full">
+                  {(item.value ?? item.pnl ?? 0) === 0 ? (
+                    /* Grey background bar for zero values */
+                    <div 
+                      className="h-full w-full rounded-sm transition-all duration-300"
+                      style={{ 
+                        backgroundColor: 'var(--theme-chart-grid)'
+                      }}
+                    />
+                  ) : (
+                    /* Colored bar for non-zero values */
+                    <div 
+                      className="h-full rounded-sm transition-all duration-300"
+                      style={{ 
+                        width: `${calculateBarWidth(item.value ?? item.pnl ?? 0)}%`,
+                        backgroundColor: getBarColor(item.value ?? item.pnl ?? 0)
+                      }}
+                    />
+                  )}
                 </div>
               </div>
               

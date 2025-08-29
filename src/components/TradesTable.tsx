@@ -18,7 +18,7 @@ interface TradesTableProps {
   columnConfig?: ColumnConfiguration[];
 }
 
-type SortField = 'date' | 'time' | 'symbol' | 'side' | 'holdingPeriod' | 'entryPrice' | 'exitPrice' | 'volume' | 'executions' | 'pnl';
+type SortField = 'date' | 'time' | 'symbol' | 'side' | 'holdingPeriod' | 'entryPrice' | 'exitPrice' | 'volume' | 'executions' | 'pnl' | 'commission' | 'fees' | 'marketSession' | 'orderType';
 type SortDirection = 'asc' | 'desc';
 
 // Define priority columns for different screen sizes
@@ -57,8 +57,12 @@ export default function TradesTable({
     { id: 'volume', label: 'Volume', visible: true, sortable: true },
     { id: 'executions', label: 'Executions', visible: true, sortable: true },
     { id: 'pnl', label: 'P&L', visible: true, sortable: true },
-    { id: 'notes', label: 'Notes', visible: true, sortable: false },
-    { id: 'tags', label: 'Tags', visible: true, sortable: false }
+    { id: 'commission', label: 'Commission', visible: true, sortable: true },
+    { id: 'fees', label: 'Fees', visible: true, sortable: true },
+    { id: 'notes', label: 'NOTES', visible: true, sortable: false },
+    { id: 'tags', label: 'TAGS', visible: true, sortable: false },
+    { id: 'marketSession', label: 'Session', visible: true, sortable: true },
+    { id: 'orderType', label: 'Order Type', visible: true, sortable: true }
   ];
 
   // Use column config from props, localStorage, or default
@@ -71,7 +75,16 @@ export default function TradesTable({
       const savedColumns = localStorage.getItem('trades-column-settings');
       if (savedColumns) {
         try {
-          return JSON.parse(savedColumns) as ColumnConfiguration[];
+          const parsedColumns = JSON.parse(savedColumns) as ColumnConfiguration[];
+          // Migration: Remove timeInForce if it exists
+          const migratedColumns = parsedColumns.filter(col => col.id !== 'timeInForce');
+          
+          // If we removed timeInForce, save the updated settings
+          if (parsedColumns.length !== migratedColumns.length) {
+            localStorage.setItem('trades-column-settings', JSON.stringify(migratedColumns));
+          }
+          
+          return migratedColumns;
         } catch {
           return defaultColumns;
         }
@@ -261,6 +274,46 @@ export default function TradesTable({
             </div>
           </TableCell>
         );
+      case 'commission':
+        return (
+          <TableCell className="text-sm text-primary">
+            {trade.commission != null ? `$${Math.abs(trade.commission).toFixed(2)}` : '-'}
+          </TableCell>
+        );
+      case 'fees':
+        return (
+          <TableCell className="text-sm text-primary">
+            {trade.fees != null ? `$${Math.abs(trade.fees).toFixed(2)}` : '-'}
+          </TableCell>
+        );
+      case 'marketSession':
+        return (
+          <TableCell className="text-sm text-primary">
+            {trade.marketSession ? (
+              trade.marketSession === 'PRE_MARKET' ? 'Pre Market' :
+              trade.marketSession === 'REGULAR' ? 'Regular' :
+              trade.marketSession === 'AFTER_HOURS' ? 'After Hours' :
+              trade.marketSession === 'EXTENDED' ? 'Extended' :
+              trade.marketSession
+            ) : '-'}
+          </TableCell>
+        );
+      case 'orderType':
+        return (
+          <TableCell className="text-sm text-primary">
+            {trade.orderType ? (
+              trade.orderType === 'MARKET' ? 'Market' :
+              trade.orderType === 'LIMIT' ? 'Limit' :
+              trade.orderType === 'STOP' ? 'Stop' :
+              trade.orderType === 'STOP_LIMIT' ? 'Stop Limit' :
+              trade.orderType === 'TRAILING_STOP' ? 'Trailing Stop' :
+              trade.orderType === 'MARKET_ON_CLOSE' ? 'Market on Close' :
+              trade.orderType === 'LIMIT_ON_CLOSE' ? 'Limit on Close' :
+              trade.orderType === 'PEGGED_TO_MIDPOINT' ? 'Pegged to Midpoint' :
+              trade.orderType
+            ) : '-'}
+          </TableCell>
+        );
       default:
         return (
           <TableCell className="text-sm text-muted">
@@ -298,6 +351,26 @@ export default function TradesTable({
                       (trade.quantity || 0).toLocaleString()
                     ) : col.id === 'tags' ? (
                       trade.tags?.join(', ') || '-'
+                    ) : col.id === 'commission' ? (
+                      trade.commission != null ? `$${Math.abs(trade.commission).toFixed(2)}` : '-'
+                    ) : col.id === 'fees' ? (
+                      trade.fees != null ? `$${Math.abs(trade.fees).toFixed(2)}` : '-'
+                    ) : col.id === 'marketSession' ? (
+                      trade.marketSession === 'PRE_MARKET' ? 'Pre Market' :
+                      trade.marketSession === 'REGULAR' ? 'Regular' :
+                      trade.marketSession === 'AFTER_HOURS' ? 'After Hours' :
+                      trade.marketSession === 'EXTENDED' ? 'Extended' :
+                      trade.marketSession || '-'
+                    ) : col.id === 'orderType' ? (
+                      trade.orderType === 'MARKET' ? 'Market' :
+                      trade.orderType === 'LIMIT' ? 'Limit' :
+                      trade.orderType === 'STOP' ? 'Stop' :
+                      trade.orderType === 'STOP_LIMIT' ? 'Stop Limit' :
+                      trade.orderType === 'TRAILING_STOP' ? 'Trailing Stop' :
+                      trade.orderType === 'MARKET_ON_CLOSE' ? 'Market on Close' :
+                      trade.orderType === 'LIMIT_ON_CLOSE' ? 'Limit on Close' :
+                      trade.orderType === 'PEGGED_TO_MIDPOINT' ? 'Pegged to Midpoint' :
+                      trade.orderType || '-'
                     ) : (
                       trade[col.id as keyof Trade] || '-'
                     )}

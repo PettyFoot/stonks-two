@@ -45,11 +45,24 @@ export default function ColumnSettingsModal({
           if (savedColumns) {
             try {
               const userColumns = JSON.parse(savedColumns) as ColumnConfiguration[];
+              
+              // Migration logic: Remove timeInForce if it exists and add new columns
+              const filteredUserColumns = userColumns.filter(col => col.id !== 'timeInForce');
+              
               // Merge with available columns to handle new columns
               const mergedColumns = columns.map(col => {
-                const userCol = userColumns.find(uc => uc.id === col.id);
+                const userCol = filteredUserColumns.find(uc => uc.id === col.id);
                 return userCol ? { ...col, visible: userCol.visible } : col;
               });
+              
+              // If we removed timeInForce or added new columns, save the updated settings
+              const hasTimeInForce = userColumns.some(col => col.id === 'timeInForce');
+              const hasNewColumns = columns.some(col => !userColumns.find(uc => uc.id === col.id));
+              
+              if (hasTimeInForce || hasNewColumns) {
+                localStorage.setItem('trades-column-settings', JSON.stringify(mergedColumns));
+              }
+              
               setAvailableColumns(mergedColumns);
               setSelectedColumns(mergedColumns);
               return;
@@ -76,9 +89,12 @@ export default function ColumnSettingsModal({
           { id: 'volume', label: 'Volume', visible: true, sortable: true },
           { id: 'executions', label: 'Executions', visible: true, sortable: true },
           { id: 'pnl', label: 'P&L', visible: true, sortable: true },
-          { id: 'shared', label: 'Shared', visible: true, sortable: false },
-          { id: 'notes', label: 'Notes', visible: true, sortable: false },
-          { id: 'tags', label: 'Tags', visible: true, sortable: false }
+          { id: 'commission', label: 'Commission', visible: true, sortable: true },
+          { id: 'fees', label: 'Fees', visible: true, sortable: true },
+          { id: 'notes', label: 'NOTES', visible: true, sortable: false },
+          { id: 'tags', label: 'TAGS', visible: true, sortable: false },
+          { id: 'marketSession', label: 'Session', visible: true, sortable: true },
+          { id: 'orderType', label: 'Order Type', visible: true, sortable: true }
         ];
         setAvailableColumns(defaultColumns);
         setSelectedColumns(defaultColumns);
