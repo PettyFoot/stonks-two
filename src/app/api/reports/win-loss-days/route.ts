@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
 import { getCurrentUser } from '@/lib/auth0';
 import { prisma } from '@/lib/prisma';
 import { TradeFilterService } from '@/lib/services/tradeFilterService';
@@ -80,7 +79,7 @@ export async function GET(request: NextRequest) {
     console.log('================================\n');
 
     // Prepare response with debug info
-    const response: WinLossDaysResponse & { debug?: any } = {
+    const response: WinLossDaysResponse & { debug?: Record<string, unknown> } = {
       winningDays: dayMetrics.winningDays,
       losingDays: dayMetrics.losingDays,
       debug: {
@@ -188,14 +187,24 @@ async function calculateDayMetrics(filters: {
   console.log('Winning Dates:', winningDates);
   console.log('Losing Dates:', losingDates);
 
+  // Convert Decimal types to numbers for the metrics calculation
+  const convertedTrades = filteredTrades.map(trade => ({
+    ...trade,
+    pnl: typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl,
+    quantity: trade.quantity || 0,
+    commission: typeof trade.commission === 'object' && trade.commission ? trade.commission.toNumber() : null,
+    fees: typeof trade.fees === 'object' && trade.fees ? trade.fees.toNumber() : null,
+    side: trade.side.toString()
+  }));
+
   // Calculate metrics for winning days using pre-filtered trades
   const winningDaysMetrics = winningDates.length > 0
-    ? await calculateMetricsForDays(filteredTrades, winningDates)
+    ? await calculateMetricsForDays(convertedTrades, winningDates)
     : createEmptyMetrics();
 
   // Calculate metrics for losing days using pre-filtered trades
   const losingDaysMetrics = losingDates.length > 0
-    ? await calculateMetricsForDays(filteredTrades, losingDates)
+    ? await calculateMetricsForDays(convertedTrades, losingDates)
     : createEmptyMetrics();
 
   return {
@@ -210,12 +219,12 @@ async function calculateDayMetrics(filters: {
 async function calculateMetricsForDays(
   preFilteredTrades: Array<{
     exitDate: Date | null;
-    pnl: any;
-    quantity: any;
+    pnl: number;
+    quantity: number;
     symbol: string;
     side: string;
-    commission: any;
-    fees: any;
+    commission: number | null;
+    fees: number | null;
     timeInTrade: number | null;
     entryDate: Date;
   }>,

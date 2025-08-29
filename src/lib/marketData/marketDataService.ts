@@ -1,4 +1,5 @@
-import { MarketDataProvider, MarketDataResponse, TimeWindow, TradeContext, MarketDataConfig } from './types';
+import { MarketDataProvider, MarketDataResponse, TimeWindow, TradeContext, MarketDataConfig, CacheEntry } from './types';
+import { TimeInterval } from '../timeIntervals';
 import { YahooFinanceProvider } from './providers/yahooProvider';
 import { AlphaVantageProvider } from './providers/alphaVantageProvider';
 import { DemoProvider } from './providers/demoProvider';
@@ -10,7 +11,7 @@ import { TimeWindowCalculator } from './timeWindowCalculator';
 export class MarketDataService {
   private providers: MarketDataProvider[] = [];
   private config: MarketDataConfig;
-  private cache = new Map<string, any>();
+  private cache = new Map<string, CacheEntry>();
   
   constructor(config?: Partial<MarketDataConfig>) {
     // Default configuration
@@ -56,7 +57,7 @@ export class MarketDataService {
     try {
       // Calculate optimal time window
       const timeWindow = interval 
-        ? TimeWindowCalculator.calculateWindowForInterval(tradeContext, interval as any)
+        ? TimeWindowCalculator.calculateWindowForInterval(tradeContext, interval as '1m' | '5m' | '15m' | '1h' | '1d')
         : TimeWindowCalculator.calculateOptimalWindow(tradeContext);
       
       // Generate cache key
@@ -95,7 +96,7 @@ export class MarketDataService {
               interval: timeWindow.interval,
               ohlc: ohlcData,
               success: true,
-              source: provider.name.toLowerCase().replace(' ', '_'),
+              source: provider.name.toLowerCase().includes('yahoo') ? 'yahoo' as const : 'mock' as const,
               cached: false
             };
             
@@ -128,7 +129,7 @@ export class MarketDataService {
         ohlc: [],
         success: false,
         error: error instanceof Error ? error.message : 'Market data not available',
-        source: 'error',
+        source: 'mock',
         cached: false
       };
     }
@@ -164,9 +165,12 @@ export class MarketDataService {
    * Save data to cache
    */
   private saveToCache(key: string, data: MarketDataResponse): void {
+    const timestamp = Date.now();
     this.cache.set(key, {
       data,
-      timestamp: Date.now()
+      timestamp,
+      expires: timestamp + (this.config.cacheExpiryHours * 60 * 60 * 1000),
+      source: data.source
     });
   }
   
@@ -226,7 +230,7 @@ export class MarketDataService {
       name: provider.name,
       available: provider.isAvailable(),
       rateLimits: 'getRateLimitInfo' in provider ? 
-        (provider as any).getRateLimitInfo() : null
+        (provider as MarketDataProvider & { getRateLimitInfo?: () => unknown }).getRateLimitInfo?.() || null : null
     }));
   }
 }

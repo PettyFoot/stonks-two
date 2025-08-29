@@ -94,10 +94,10 @@ export class TradeFilterService {
    */
   static buildSqlFilters(filters: TradeFilters): {
     whereClause: string;
-    params: Record<string, any>;
+    params: Record<string, unknown>;
   } {
     const conditions: string[] = [`"userId" = $userId`];
-    const params: Record<string, any> = { userId: filters.userId };
+    const params: Record<string, unknown> = { userId: filters.userId };
 
     if (filters.symbol && filters.symbol !== 'Symbol' && filters.symbol !== 'all') {
       conditions.push(`symbol = $symbol`);

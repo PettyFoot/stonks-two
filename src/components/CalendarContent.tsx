@@ -166,17 +166,17 @@ export default function CalendarContent() {
   }, [view]);
 
   // Type guard functions
-  const isWeekTotal = (item: any): item is { weekPnl: number; weekTrades: number; weekWinRate: number; isWeekTotal: boolean; weekNumber: number } => {
-    return item && item.isWeekTotal === true;
+  const isWeekTotal = (item: unknown): item is { weekPnl: number; weekTrades: number; weekWinRate: number; isWeekTotal: boolean; weekNumber: number } => {
+    return Boolean(item && typeof item === 'object' && item !== null && (item as Record<string, unknown>).isWeekTotal === true);
   };
 
-  const isDayData = (item: any): item is { date: number; dayStr: string; isPrevMonth?: boolean; isNextMonth?: boolean; pnl: number; tradeCount: number; winRate: number } => {
-    return item && item.isWeekTotal !== true;
+  const isDayData = (item: unknown): item is { date: number; dayStr: string; isPrevMonth?: boolean; isNextMonth?: boolean; pnl: number; tradeCount: number; winRate: number } => {
+    return Boolean(item && typeof item === 'object' && item !== null && (item as Record<string, unknown>).isWeekTotal !== true);
   };
 
   // Generate calendar grid
   // Calculate weekly totals for a week (7 days)
-  const calculateWeeklyTotal = (weekDays: any[]) => {
+  const calculateWeeklyTotal = (weekDays: Array<Record<string, unknown>>) => {
     const validDays = weekDays.filter(day => day && day.pnl !== undefined);
     const weekPnl = validDays.reduce((sum, d) => sum + Number(d.pnl || 0), 0);
     const weekTrades = validDays.reduce((sum, d) => sum + Number(d.tradeCount || 0), 0);

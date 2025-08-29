@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth0';
+import { Prisma, TradeSide } from '@prisma/client';
 
 export async function GET(req: NextRequest) {
   try {
@@ -61,7 +62,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Use Prisma's findMany with aggregation for better security and filter support
-    const whereConditions: any = {
+    const whereConditions: Prisma.TradeWhereInput = {
       userId: dbUser.id,
       date: {
         gte: startDate,
@@ -75,7 +76,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (sides.length > 0) {
-      whereConditions.side = { in: sides };
+      whereConditions.side = { in: sides as TradeSide[] };
     }
 
     if (tags.length > 0) {

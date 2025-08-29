@@ -9,7 +9,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { Order } from '@prisma/client';
 
 // Extended interface for execution orders with calculated fields
-export interface ExecutionOrder extends Order {
+export interface ExecutionOrder extends Omit<Order, 'tags'> {
   pnl?: number;           // Calculated P&L for this execution
   shared?: boolean;       // Whether this execution has been shared
   notes?: string;         // Notes for this execution
@@ -243,7 +243,7 @@ export default function ExecutionsTable({
                   <span className="text-theme-secondary-text font-medium">{col.label}:</span>
                   <span className="ml-2 text-theme-primary-text">
                     {col.id === 'orderExecutedTime' ? (
-                      formatTime(execution.orderExecutedTime)
+                      <span>{formatTime(execution.orderExecutedTime)}</span>
                     ) : col.id === 'pnl' ? (
                       <span className={cn(
                         'font-medium',
@@ -260,7 +260,7 @@ export default function ExecutionsTable({
                     ) : col.id === 'executions' ? (
                       '1'
                     ) : (
-                      (execution as any)[col.id] || '-'
+                      String((execution as ExecutionOrder & Record<string, unknown>)[col.id] || '-')
                     )}
                   </span>
                 </div>

@@ -44,7 +44,6 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
         ...(filters.tags?.length && { tags: filters.tags.join(',') }),
         ...(filters.customDateRange?.from && { dateFrom: filters.customDateRange.from }),
         ...(filters.customDateRange?.to && { dateTo: filters.customDateRange.to }),
-        ...(filters.timeFrame && filters.timeFrame !== 'all' && { timeFrame: filters.timeFrame }),
       });
       const response = await fetch(`/api/calendar/year-daily?${params}`);
       if (response.ok) {
@@ -77,8 +76,8 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
     router.push(`/records?date=${dateStr}`);
   };
 
-  const dayHasTradeData = (day: any) => {
-    return day && day.hasData && day.tradeCount > 0;
+  const dayHasTradeData = (day: Record<string, unknown>) => {
+    return day && day.hasData && Number(day.tradeCount || 0) > 0;
   };
 
 
@@ -120,7 +119,7 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
     return calendarDays;
   };
 
-  const getDayColor = (day: any) => {
+  const getDayColor = (day: Record<string, unknown>) => {
     if (!day || !day.hasData || !day.tradeCount) return 'text-theme-primary-text';
     const pnl = Number(day.pnl || 0);
     if (pnl > 0) return 'text-white font-bold';
@@ -128,7 +127,7 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
     return 'text-theme-primary-text';
   };
 
-  const getDayBackground = (day: any) => {
+  const getDayBackground = (day: Record<string, unknown>) => {
     if (!day || !day.hasData || !day.tradeCount) return 'bg-white';
     const pnl = Number(day.pnl || 0);
     if (pnl > 0) return 'bg-theme-green hover:bg-theme-green/80';
@@ -204,12 +203,12 @@ export default function CalendarYearView({ year: initialYear }: CalendarYearView
                       aspect-square flex items-center justify-center text-xs p-1
                       ${!day ? 'invisible' : `${getDayBackground(day)} ${dayHasTradeData(day) ? 'cursor-pointer hover:opacity-80' : 'cursor-default'} transition-colors border border-theme-border`}
                     `}
-                    onClick={() => day && dayHasTradeData(day) && handleDayClick(day.dateStr)}
-                    role={dayHasTradeData(day) ? "button" : undefined}
-                    tabIndex={dayHasTradeData(day) ? 0 : undefined}
-                    aria-label={day && dayHasTradeData(day) ? `${day.date} - ${day.tradeCount} trades, $${Number(day.pnl || 0).toFixed(2)} P&L` : undefined}
+                    onClick={() => day && dayHasTradeData(day as Record<string, unknown>) && handleDayClick(day.dateStr)}
+                    role={day && dayHasTradeData(day as Record<string, unknown>) ? "button" : undefined}
+                    tabIndex={day && dayHasTradeData(day as Record<string, unknown>) ? 0 : undefined}
+                    aria-label={day && dayHasTradeData(day as Record<string, unknown>) ? `${day.date} - ${day.tradeCount} trades, $${Number(day.pnl || 0).toFixed(2)} P&L` : undefined}
                     onKeyDown={(e) => {
-                      if (day && dayHasTradeData(day) && (e.key === 'Enter' || e.key === ' ')) {
+                      if (day && dayHasTradeData(day as Record<string, unknown>) && (e.key === 'Enter' || e.key === ' ')) {
                         e.preventDefault();
                         handleDayClick(day.dateStr);
                       }

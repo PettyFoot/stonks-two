@@ -43,7 +43,6 @@ export default function TradeCandlestickChart({
   const [timeInterval, setTimeInterval] = useState<TimeInterval>('5m');
   const [selectedExecution, setSelectedExecution] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<string>('');
-  const [debugMode, setDebugMode] = useState<boolean>(false);
 
   // Simple trade context with just the basic info needed
   const tradeContext = useMemo(() => {

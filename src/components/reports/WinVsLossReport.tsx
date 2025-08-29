@@ -147,9 +147,12 @@ export default function WinVsLossReport({ trades, loading, error }: WinVsLossRep
     // Count unique days
     const uniqueDates = new Set(trades.map(t => {
       const tradeDate = t.exitDate || t.date;
-      return tradeDate instanceof Date 
-        ? tradeDate.toISOString().split('T')[0]
-        : new Date(tradeDate!).toISOString().split('T')[0];
+      if (!tradeDate) return new Date().toISOString().split('T')[0];
+      try {
+        return new Date(tradeDate as string | Date).toISOString().split('T')[0];
+      } catch {
+        return new Date().toISOString().split('T')[0];
+      }
     }));
     const uniqueDays = uniqueDates.size;
 
@@ -190,9 +193,7 @@ export default function WinVsLossReport({ trades, loading, error }: WinVsLossRep
       const tradeDate = trade.exitDate || trade.date;
       if (!tradeDate) return;
       
-      const dateKey = tradeDate instanceof Date 
-        ? tradeDate.toISOString().split('T')[0]
-        : new Date(tradeDate).toISOString().split('T')[0];
+      const dateKey = new Date(tradeDate as string | Date).toISOString().split('T')[0];
       
       const existing = dailyPnlMap.get(dateKey) || { daily_pnl: 0, daily_volume: 0, trades: [] };
       

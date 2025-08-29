@@ -81,7 +81,6 @@ export default function TradeDistributionChart({
                       <div 
                         className="h-full rounded transition-all duration-300"
                         style={{ backgroundColor: 'var(--theme-green)', width: `${barWidth}%` }}
-                        style={{ width: `${barWidth}%` }}
                       />
                     </div>
                     <div className="absolute inset-0 flex items-center justify-center text-xs font-medium">

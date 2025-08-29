@@ -36,7 +36,7 @@ export class YahooFinanceProvider implements MarketDataProvider {
       const result = await yahooFinance.chart(cleanSymbol, {
         period1: timeWindow.start,
         period2: timeWindow.end,
-        interval: yahooInterval as any,
+        interval: yahooInterval as '1m' | '2m' | '5m' | '15m' | '30m' | '60m' | '90m' | '1h' | '1d' | '5d' | '1wk' | '1mo' | '3mo',
         includePrePost: true // Include pre-market and after-hours data
       });
       
@@ -49,7 +49,7 @@ export class YahooFinanceProvider implements MarketDataProvider {
       const requestedDateStr = requestedDate.toISOString().split('T')[0];
       
       const filteredData = result.quotes
-        .filter((quote: any) => {
+        .filter((quote: Record<string, unknown>) => {
           // Basic data validation
           if (!quote.date || !quote.open || !quote.high || !quote.low || !quote.close) {
             return false;
@@ -57,18 +57,18 @@ export class YahooFinanceProvider implements MarketDataProvider {
           
           // More flexible date filtering - include data within the requested time window
           // instead of strict date matching to avoid timezone issues
-          const quoteTimestamp = quote.date!.getTime();
+          const quoteTimestamp = (quote.date as Date).getTime();
           return quoteTimestamp >= timeWindow.start.getTime() && quoteTimestamp <= timeWindow.end.getTime();
         })
-        .map((quote: any) => ({
-          timestamp: quote.date!.getTime(),
+        .map((quote: Record<string, unknown>) => ({
+          timestamp: (quote.date as Date).getTime(),
           open: Number(quote.open!),
           high: Number(quote.high!),
           low: Number(quote.low!),
           close: Number(quote.close!),
           volume: quote.volume ? Number(quote.volume) : undefined
         }))
-        .sort((a: any, b: any) => a.timestamp - b.timestamp); // Ensure chronological order
+        .sort((a: Record<string, unknown>, b: Record<string, unknown>) => (a.timestamp as number) - (b.timestamp as number)); // Ensure chronological order
         
       // Log data quality information
       if (filteredData.length > 0) {

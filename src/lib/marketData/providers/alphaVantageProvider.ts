@@ -81,7 +81,7 @@ export class AlphaVantageProvider implements MarketDataProvider {
       const ohlcData: OHLCData[] = [];
       
       for (const [timestamp, values] of Object.entries(timeSeries)) {
-        const candle = values as any;
+        const candle = values as Record<string, string>;
         const candleTime = new Date(timestamp).getTime();
         
         // Filter to requested time window

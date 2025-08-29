@@ -290,7 +290,9 @@ export const mockKPIData: KPIData = {
   largestLoss: 0,
   performanceByDuration: [],
   winningTradesCount: 9,
-  losingTradesCount: 9
+  losingTradesCount: 9,
+  profitFactor: 1.35,
+  avgDailyVolume: 249.67
 };
 
 // Records entries

@@ -53,11 +53,11 @@ export default function GaugeChart({
   ];
   
   // Custom tooltip content
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload?: { name?: string }; value?: number }> }) => {
     if (active && payload && payload.length) {
       const data = payload[0];
       // Only show tooltip for the value portion (not the remaining/background)
-      if (data.payload.name === 'value') {
+      if (data.payload?.name === 'value') {
         return (
           <div className="text-xs rounded px-2 py-1 shadow-lg" style={{backgroundColor: 'var(--theme-chart-tooltip-bg)', color: 'var(--theme-primary-text)'}}>
             {suffix === '%' ? value.toFixed(1) : value.toFixed(2)}{suffix}
