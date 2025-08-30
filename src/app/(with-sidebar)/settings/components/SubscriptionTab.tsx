@@ -110,7 +110,6 @@ function SubscriptionTabInternal() {
               <div className="mt-6">
                 <UpgradePrompt
                   feature="unlimited trades and advanced analytics"
-                  context="settings"
                   className="border-2 border-primary/20"
                 />
               </div>
@@ -146,10 +145,7 @@ function SubscriptionTabInternal() {
           </p>
         </CardHeader>
         <CardContent>
-          <PricingCards 
-            currentTier={currentTier}
-            showComparison={true}
-          />
+          <PricingCards />
         </CardContent>
       </Card>
 

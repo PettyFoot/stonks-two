@@ -266,6 +266,16 @@ export async function GET(request: Request) {
         avgLoss: avgLosingTrade,
         bestDay: dayData.length > 0 ? Math.max(...dayData.map(d => d.pnl)) : 0,
         worstDay: dayData.length > 0 ? Math.min(...dayData.map(d => d.pnl)) : 0
+      },
+      metadata: {
+        dateRange: {
+          start: new Date().toISOString().split('T')[0],
+          end: new Date().toISOString().split('T')[0]
+        },
+        totalTrades,
+        cacheHit: false,
+        computeTime: Date.now() - startTime,
+        lastUpdated: new Date().toISOString()
       }
     };
 

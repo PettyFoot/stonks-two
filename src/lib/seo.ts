@@ -146,7 +146,7 @@ export function generateMetadata(pageKey: keyof typeof PAGE_SEO, customOptions?:
 }
 
 // Generate structured data for different page types
-export function generateStructuredData(type: 'organization' | 'softwareApplication' | 'breadcrumb', data?: any) {
+export function generateStructuredData(type: 'organization' | 'softwareApplication' | 'breadcrumb', data?: Record<string, unknown>) {
   const baseUrl = SEO_CONFIG.siteUrl;
   
   switch (type) {
@@ -196,7 +196,7 @@ export function generateStructuredData(type: 'organization' | 'softwareApplicati
       return {
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
-        itemListElement: data?.items?.map((item: any, index: number) => ({
+        itemListElement: data?.items?.map((item: Record<string, unknown>, index: number) => ({
           '@type': 'ListItem',
           position: index + 1,
           name: item.name,

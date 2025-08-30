@@ -232,7 +232,7 @@ export async function withValidation<T>(
           {
             error: 'Invalid request data',
             code: 'VALIDATION_ERROR',
-            details: validationResult.error.issues.map((issue: any) => ({
+            details: validationResult.error.issues.map((issue: Record<string, unknown>) => ({
               field: issue.path.join('.'),
               message: issue.message,
               code: issue.code,
@@ -267,13 +267,13 @@ export async function withValidation<T>(
  * Combined middleware wrapper for API routes
  */
 export function withMiddleware(config: MiddlewareConfig = {}) {
-  return function middleware<T = any>(
-    handler: (request: AuthenticatedRequest, context?: any) => Promise<NextResponse>,
-    validationSchema?: any
+  return function middleware<T = unknown>(
+    handler: (request: AuthenticatedRequest, context?: unknown) => Promise<NextResponse>,
+    validationSchema?: unknown
   ) {
     return async function wrappedHandler(
       request: NextRequest,
-      context?: any
+      context?: unknown
     ): Promise<NextResponse> {
       const startTime = Date.now();
 
@@ -317,7 +317,7 @@ export function withMiddleware(config: MiddlewareConfig = {}) {
 
         // Add validated data to request if available
         if (validatedData) {
-          (enhancedRequest as any).validatedData = validatedData;
+          (enhancedRequest as Record<string, unknown>).validatedData = validatedData;
         }
 
         // Log request processing time in development
@@ -375,7 +375,7 @@ function getClientIP(request: NextRequest): string | null {
  * Error handler utility
  */
 export function createErrorResponse(
-  error: any,
+  error: unknown,
   defaultMessage: string = 'Internal server error',
   statusCode: number = 500
 ): NextResponse {

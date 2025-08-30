@@ -61,7 +61,7 @@ export function validateCSRFToken(
     
     // Decode payload
     const payload = Buffer.from(payloadBase64, 'base64').toString();
-    let tokenData: any;
+    let tokenData: Record<string, unknown>;
     
     try {
       tokenData = JSON.parse(payload);
