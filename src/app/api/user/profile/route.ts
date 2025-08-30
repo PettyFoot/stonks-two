@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
     // Get subscription display information if subscription exists
     let subscriptionInfo = null;
     if (currentSubscription) {
-      const subscriptionManager = createSubscriptionManager(user.auth0Id || user.id);
+      const subscriptionManager = createSubscriptionManager(user.id);
       const displayInfo = await subscriptionManager.getSubscriptionDisplayInfo();
       
       const isActive = currentSubscription.status === SubscriptionStatus.ACTIVE;

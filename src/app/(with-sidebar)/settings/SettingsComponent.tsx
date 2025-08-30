@@ -14,7 +14,6 @@ import {
   User,
   CreditCard,
   Shield,
-  BarChart3,
   Settings as SettingsIcon,
   Loader2
 } from 'lucide-react';
@@ -23,7 +22,6 @@ import {
 import ProfileTab from './components/ProfileTab';
 import SubscriptionTab from './components/SubscriptionTab';
 import BillingTab from './components/BillingTab';
-import UsageTab from './components/UsageTab';
 import SecurityTab from './components/SecurityTab';
 
 export default function SettingsComponent() {
@@ -84,12 +82,6 @@ export default function SettingsComponent() {
       description: 'Payment methods and history'
     },
     {
-      id: 'usage',
-      label: 'Usage',
-      icon: BarChart3,
-      description: 'View usage metrics and limits'
-    },
-    {
       id: 'security',
       label: 'Security',
       icon: Shield,
@@ -128,7 +120,7 @@ export default function SettingsComponent() {
           {/* Tabs Navigation */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <div className="overflow-x-auto">
-              <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
+              <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
                 {tabs.map((tab) => (
                   <TabsTrigger 
                     key={tab.id} 
@@ -170,10 +162,6 @@ export default function SettingsComponent() {
 
               <TabsContent value="billing" className="space-y-6">
                 <BillingTab />
-              </TabsContent>
-
-              <TabsContent value="usage" className="space-y-6">
-                <UsageTab />
               </TabsContent>
 
               <TabsContent value="security" className="space-y-6">

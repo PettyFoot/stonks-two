@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession } from '@auth0/nextjs-auth0';
+import { getCurrentUser } from '@/lib/auth0';
 import { createSubscriptionManager } from '@/lib/stripe/utils';
 
 /**
@@ -9,18 +9,18 @@ import { createSubscriptionManager } from '@/lib/stripe/utils';
  */
 export async function GET(request: NextRequest) {
   try {
-    // Get authenticated user
-    const session = await getSession();
+    // Get authenticated user from database
+    const user = await getCurrentUser();
     
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    // Create subscription manager for user
-    const subscriptionManager = createSubscriptionManager(session.user.sub);
+    // Create subscription manager for user using database ID
+    const subscriptionManager = createSubscriptionManager(user.id);
 
     // Get subscription display information
     const displayInfo = await subscriptionManager.getSubscriptionDisplayInfo();
@@ -39,10 +39,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Get authenticated user
-    const session = await getSession();
+    // Get authenticated user from database
+    const user = await getCurrentUser();
     
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -52,8 +52,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action } = body;
 
-    // Create subscription manager for user
-    const subscriptionManager = createSubscriptionManager(session.user.sub);
+    // Create subscription manager for user using database ID
+    const subscriptionManager = createSubscriptionManager(user.id);
 
     let result;
 
