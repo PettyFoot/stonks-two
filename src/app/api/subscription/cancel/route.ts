@@ -99,24 +99,22 @@ export async function POST(request: NextRequest) {
     // Create subscription manager
     const subscriptionManager = createSubscriptionManager(user.auth0Id || user.id);
 
-    // Perform cancellation
-    const cancelResult = await subscriptionManager.cancelSubscription(
-      !immediately, // cancelAtPeriodEnd
-      {
-        reason,
-        feedback,
-        userId: user.id,
-        canceledBy: 'user',
-        canceledAt: new Date().toISOString(),
-        ...metadata
-      }
-    );
+    // Perform cancellation based on immediately flag
+    let cancelResult;
+    if (immediately) {
+      // Import the subscription service for immediate cancellation
+      const { subscriptionService } = await import('@/lib/stripe');
+      cancelResult = await subscriptionService.cancelSubscriptionImmediately(currentSubscription.stripeSubscriptionId);
+    } else {
+      // Use subscription manager for period-end cancellation
+      cancelResult = await subscriptionManager.cancelSubscription();
+    }
 
     if (!cancelResult.success) {
       return NextResponse.json(
         {
           error: cancelResult.error || 'Failed to cancel subscription',
-          code: cancelResult.code || 'CANCELLATION_FAILED'
+          code: 'CANCELLATION_FAILED'
         },
         { status: 400 }
       );
@@ -306,7 +304,6 @@ export async function GET(request: NextRequest) {
           recommended: false,
         },
       },
-      billing: displayInfo.billing,
       whatYouWillLose: [
         'Unlimited trades tracking',
         'Advanced analytics and reports',
