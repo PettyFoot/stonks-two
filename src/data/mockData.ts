@@ -308,8 +308,7 @@ export const mockRecordsEntries: RecordsEntry[] = [
     netPnl: 3.72,
     commissions: 0,
     notes: '',
-    trades: mockTrades.slice(0, 14),
-    executions: []
+    trades: mockTrades.slice(0, 14)
   }
 ];
 

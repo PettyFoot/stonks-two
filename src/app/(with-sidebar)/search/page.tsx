@@ -14,7 +14,7 @@ export default function Search() {
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Use the same data hook as the Trades page
-  const { data: tradesData, loading, error } = useTradesData(false);
+  const { data: tradesData, loading, error } = useTradesData({ useComplexFiltering: false });
 
   // Debounce search query
   useEffect(() => {

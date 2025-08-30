@@ -1,7 +1,7 @@
 import { TradeBuilder, processUserOrders } from '@/lib/tradeBuilder';
 import { ordersRepo } from '@/lib/repositories/ordersRepo';
 import { tradesRepo } from '@/lib/repositories/tradesRepo';
-import { Order, OrderSide, OrderStatus, TradeStatus, TradeSide } from '@prisma/client';
+import { Order, OrderSide, OrderStatus, TradeStatus, TradeSide, BrokerType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
 // Mock the repositories
@@ -60,7 +60,9 @@ describe('TradeBuilder', () => {
         accountId: null,
         orderAccount: null,
         orderRoute: null,
+        brokerType: BrokerType.GENERIC_CSV,
         tags: [],
+        importBatchId: null,
         usedInTrade: false,
       };
 
@@ -102,7 +104,9 @@ describe('TradeBuilder', () => {
         accountId: null,
         orderAccount: null,
         orderRoute: null,
+        brokerType: BrokerType.GENERIC_CSV,
         tags: [],
+        importBatchId: null,
         usedInTrade: false,
       };
 
@@ -155,7 +159,9 @@ describe('TradeBuilder', () => {
         accountId: null,
         orderAccount: null,
         orderRoute: null,
+        brokerType: BrokerType.GENERIC_CSV,
         tags: [],
+        importBatchId: null,
         usedInTrade: false,
       };
 
@@ -207,7 +213,9 @@ describe('TradeBuilder', () => {
         accountId: null,
         orderAccount: null,
         orderRoute: null,
+        brokerType: BrokerType.GENERIC_CSV,
         tags: [],
+        importBatchId: null,
         usedInTrade: false,
       };
 
@@ -270,7 +278,9 @@ describe('TradeBuilder', () => {
         accountId: null,
         orderAccount: null,
         orderRoute: null,
+        brokerType: BrokerType.GENERIC_CSV,
         tags: [],
+        importBatchId: null,
         usedInTrade: false,
       };
 
@@ -320,7 +330,9 @@ describe('TradeBuilder', () => {
         accountId: null,
         orderAccount: null,
         orderRoute: null,
+        brokerType: BrokerType.GENERIC_CSV,
         tags: [],
+        importBatchId: null,
         usedInTrade: false,
       };
 
@@ -365,7 +377,9 @@ describe('TradeBuilder', () => {
         accountId: null,
         orderAccount: null,
         orderRoute: null,
+        brokerType: BrokerType.GENERIC_CSV,
         tags: [],
+        importBatchId: null,
         usedInTrade: false,
       };
 

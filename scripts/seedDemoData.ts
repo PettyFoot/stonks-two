@@ -69,7 +69,7 @@ function generateTradeScenarios() {
     
     scenarios.push({
       symbol,
-      side: Math.random() > 0.8 ? 'SHORT' : 'LONG',
+      side: (Math.random() > 0.8 ? 'SHORT' : 'LONG') as const,
       status: 'CLOSED' as const,
       entryDate,
       exitDate,
@@ -93,7 +93,7 @@ function generateTradeScenarios() {
     
     scenarios.push({
       symbol,
-      side: Math.random() > 0.9 ? 'SHORT' : 'LONG',
+      side: (Math.random() > 0.9 ? 'SHORT' : 'LONG') as const,
       status: 'OPEN' as const,
       entryDate,
       exitDate: null,

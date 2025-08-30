@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import type { NextRequest, NextFetchEvent } from 'next/server';
 import { withMiddlewareAuthRequired } from '@auth0/nextjs-auth0/edge';
 import { getIronSession } from 'iron-session';
 import type { DemoSession } from './src/lib/demo/demoSession';
@@ -93,7 +93,7 @@ function isWriteOperation(pathname: string): boolean {
   return writeOperations.some(path => pathname.startsWith(path));
 }
 
-export default async function middleware(request: NextRequest) {
+export default async function middleware(request: NextRequest, event?: NextFetchEvent) {
   const { pathname } = request.nextUrl;
   
   // Allow public routes
@@ -126,7 +126,7 @@ export default async function middleware(request: NextRequest) {
   
   // Apply Auth0 protection for non-demo routes
   try {
-    return await withMiddlewareAuthRequired()(request);
+    return await withMiddlewareAuthRequired()(request, event);
   } catch (error) {
     // If Auth0 middleware fails, redirect to login
     console.log(`Auth0 middleware failed for ${pathname}, redirecting to login`);
