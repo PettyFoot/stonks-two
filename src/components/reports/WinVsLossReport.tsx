@@ -29,6 +29,8 @@ interface DayMetrics {
 interface WinLossDaysData {
   winningDays: DayMetrics;
   losingDays: DayMetrics;
+  winningDaysCount: number;
+  losingDaysCount: number;
 }
 
 
@@ -229,7 +231,9 @@ export default function WinVsLossReport({ trades, loading, error }: WinVsLossRep
 
     return {
       winningDays: winningDaysMetrics,
-      losingDays: losingDaysMetrics
+      losingDays: losingDaysMetrics,
+      winningDaysCount: winningDays.length,
+      losingDaysCount: losingDays.length
     };
   }, [trades]);
 
@@ -372,7 +376,7 @@ export default function WinVsLossReport({ trades, loading, error }: WinVsLossRep
               className="font-semibold text-lg text-theme-primary-text"
               aria-label="Winning Days Column"
             >
-              Winning Days
+              Winning Days {data ? `(${data.winningDaysCount})` : ''}
             </span>
           </div>
           <div className="text-center">
@@ -380,7 +384,7 @@ export default function WinVsLossReport({ trades, loading, error }: WinVsLossRep
               className="font-semibold text-lg text-theme-primary-text"
               aria-label="Losing Days Column"
             >
-              Losing Days
+              Losing Days {data ? `(${data.losingDaysCount})` : ''}
             </span>
           </div>
         </div>

@@ -67,7 +67,6 @@ export async function GET(request: NextRequest) {
 
     console.log('\n=== OVERVIEW API DEBUG ===');
     console.log('User ID:', userId);
-    console.log('Demo mode:', demo);
     console.log('Filter Conditions:', JSON.stringify(whereConditions, null, 2));
     console.log(`Found ${trades.length} trades for Overview report`);
     console.log('Trades details:');

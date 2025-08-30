@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { TradeFilters } from '@/types';
 import { Prisma, TradeSide } from '@prisma/client';
-import { mockTrades } from '@/data/mockData';
 import { getCurrentUser } from '@/lib/auth0';
 import { prisma } from '@/lib/prisma';
 
@@ -34,13 +33,19 @@ export async function POST(request: Request) {
     const filters: TradeFilters = body.filters || {};
     const page: number = body.page || 1;
     const limit: number = body.limit || 50;
-    const demo: boolean = body.demo || false;
 
     console.log('=== FILTERED TRADES API REQUEST ===');
     console.log('Request body:', body);
-    console.log('Demo mode:', demo);
     console.log('Filters:', filters);
     console.log('Pagination:', { page, limit });
+
+    // Get current user (handles both demo and Auth0)
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    
+    const userId = user.id;
 
     // Validate and normalize side filter
     if (filters.side) {
@@ -55,129 +60,59 @@ export async function POST(request: Request) {
       filters.side = normalizedSide as 'all' | 'long' | 'short';
     }
 
-    // Demo mode - filter mock data
-    if (demo) {
-      console.log('DEMO MODE: Using mock data');
-      console.log('Initial mockTrades count:', mockTrades.length);
-      console.log('First few mock trades:', mockTrades.slice(0, 3));
-      
-      let filteredTrades = mockTrades;
-
-      // Apply filters
-      if (filters.symbols && filters.symbols.length > 0) {
-        filteredTrades = filteredTrades.filter(trade => 
-          filters.symbols!.includes(trade.symbol)
-        );
-      }
-
-      if (filters.tags && filters.tags.length > 0) {
-        filteredTrades = filteredTrades.filter(trade =>
-          filters.tags!.some(tag => 
-            trade.tags?.some(tradeTag => 
-              tradeTag.toLowerCase().includes(tag.toLowerCase())
-            )
-          )
-        );
-      }
-
-      if (filters.side && filters.side !== 'all') {
-        filteredTrades = filteredTrades.filter(trade => 
-          trade.side.toLowerCase() === filters.side
-        );
-      }
-
-      if (filters.priceRange) {
-        filteredTrades = filteredTrades.filter(trade => {
-          // For demo, use PnL as proxy for price since mock data doesn't have entry/exit prices
-          const price = Math.abs(trade.pnl / (trade.quantity || 1));
-          return price >= filters.priceRange!.min && price <= filters.priceRange!.max;
-        });
-      }
-
-      if (filters.volumeRange) {
-        filteredTrades = filteredTrades.filter(trade =>
-          trade.quantity >= filters.volumeRange!.min && 
-          trade.quantity <= filters.volumeRange!.max
-        );
-      }
-
-      if (filters.executionCountRange) {
-        filteredTrades = filteredTrades.filter(trade =>
-          trade.executions >= filters.executionCountRange!.min && 
-          trade.executions <= filters.executionCountRange!.max
-        );
-      }
-
-      if (filters.dateRange) {
-        filteredTrades = filteredTrades.filter(trade => {
-          const tradeDate = new Date(trade.date);
-          return tradeDate >= filters.dateRange!.start && tradeDate <= filters.dateRange!.end;
-        });
-      }
-
-      // Time range filter (time of day) for demo mode
-      if (filters.timeRange) {
-        filteredTrades = filteredTrades.filter(trade => {
-          if (!trade.time) return false;
-          
-          // Convert time string (e.g., "09:31 AM") to 24-hour format for comparison
-          const tradeTime = convertTo24Hour(trade.time);
-          const startTime = filters.timeRange!.start;
-          const endTime = filters.timeRange!.end;
-          
-          return tradeTime >= startTime && tradeTime <= endTime;
-        });
-      }
-
-      // Apply pagination
-      const totalCount = filteredTrades.length;
-      const startIndex = (page - 1) * limit;
-      const paginatedTrades = filteredTrades.slice(startIndex, startIndex + limit);
-
-      // Convert times to 12-hour format for consistency with database mode
-      const transformedTrades = paginatedTrades.map(trade => {
-        if (trade.time && trade.time.includes(':') && !trade.time.includes('AM') && !trade.time.includes('PM')) {
-          // Convert 24-hour format to 12-hour format
-          const [hours, minutes] = trade.time.split(':');
-          const hour24 = parseInt(hours, 10);
-          const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
-          const ampm = hour24 >= 12 ? 'PM' : 'AM';
-          return {
-            ...trade,
-            time: `${hour12.toString().padStart(2, '0')}:${minutes} ${ampm}`
-          };
-        }
-        return trade;
-      });
-
-      const responseData = {
-        trades: transformedTrades,
-        pagination: {
-          page,
-          limit,
-          total: totalCount,
-          totalPages: Math.ceil(totalCount / limit)
-        },
-        totalPnl: filteredTrades.reduce((sum, trade) => sum + trade.pnl, 0),
-        totalVolume: filteredTrades.reduce((sum, trade) => sum + (trade.quantity || 0), 0)
-      };
-
-      console.log('DEMO MODE: Final filtered trades count:', transformedTrades.length);
-      console.log('DEMO MODE: Response data:', responseData);
-
-      return NextResponse.json(responseData);
-    }
-
-    // Authenticated mode - query database
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
     // Build complex where clause
     const where: Prisma.TradeWhereInput = {
-      userId: user.id
+      userId: userId
     };
+
+    // Symbol filter
+    if (filters.symbols && filters.symbols.length > 0) {
+      where.symbol = { in: filters.symbols };
+    }
+
+    // Tags filter
+    if (filters.tags && filters.tags.length > 0) {
+      where.tags = { hasSome: filters.tags };
+    }
+
+    // Side filter
+    if (filters.side && filters.side !== 'all') {
+      where.side = filters.side.toUpperCase() as TradeSide;
+    }
+
+    // Price range filter (using entryPrice and exitPrice)
+    if (filters.priceRange) {
+      where.OR = [
+        {
+          entryPrice: {
+            gte: filters.priceRange.min,
+            lte: filters.priceRange.max
+          }
+        },
+        {
+          exitPrice: {
+            gte: filters.priceRange.min,
+            lte: filters.priceRange.max
+          }
+        }
+      ];
+    }
+
+    // Volume range filter
+    if (filters.volumeRange) {
+      where.quantity = {
+        gte: filters.volumeRange.min,
+        lte: filters.volumeRange.max
+      };
+    }
+
+    // Execution count range filter
+    if (filters.executionCountRange) {
+      where.executions = {
+        gte: filters.executionCountRange.min,
+        lte: filters.executionCountRange.max
+      };
+    }
 
     // Symbol filter
     if (filters.symbols && filters.symbols.length > 0) {
