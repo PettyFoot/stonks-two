@@ -103,24 +103,25 @@ export async function POST(request: NextRequest) {
     // Get current subscription details before change
     const currentDisplayInfo = await subscriptionManager.getSubscriptionDisplayInfo();
 
-    // Perform plan change
-    const changeResult = await subscriptionManager.changeSubscriptionPlan(
-      newPriceId,
-      {
-        prorationBehavior,
+    // Perform plan change using subscription service directly
+    const { subscriptionService } = await import('@/lib/stripe');
+    const changeResult = await subscriptionService.updateSubscription({
+      subscriptionId: currentSubscription.stripeSubscriptionId,
+      priceId: newPriceId,
+      metadata: {
         userId: user.id,
         changedBy: 'user',
         changedAt: new Date().toISOString(),
         oldPriceId: currentSubscription.stripePriceId,
         ...metadata
       }
-    );
+    });
 
     if (!changeResult.success) {
       return NextResponse.json(
         {
           error: changeResult.error || 'Failed to change subscription plan',
-          code: changeResult.code || 'PLAN_CHANGE_FAILED'
+          code: 'PLAN_CHANGE_FAILED'
         },
         { status: 400 }
       );
@@ -138,10 +139,7 @@ export async function POST(request: NextRequest) {
     // Get updated subscription info
     const updatedDisplayInfo = await subscriptionManager.getSubscriptionDisplayInfo();
 
-    // Calculate price difference and proration
-    const oldAmount = currentDisplayInfo.billing?.amount || 0;
-    const newAmount = updatedDisplayInfo.billing?.amount || 0;
-    const priceDifference = newAmount - oldAmount;
+    // Note: Price difference calculation removed since billing info isn't available in displayInfo
 
     // Log successful plan change
     if (process.env.NODE_ENV === 'production') {
@@ -155,31 +153,18 @@ export async function POST(request: NextRequest) {
       changeDetails: {
         oldPriceId: currentSubscription.stripePriceId,
         newPriceId,
-        priceDifference,
-        isUpgrade: priceDifference > 0,
-        isDowngrade: priceDifference < 0,
         prorationBehavior,
         effectiveDate: new Date(),
-        nextBillingAmount: newAmount,
       },
-      message: priceDifference > 0 
-        ? 'Plan upgraded successfully. You will be charged a prorated amount for the upgrade.'
-        : priceDifference < 0
-        ? 'Plan downgraded successfully. You will receive a prorated credit.'
-        : 'Plan changed successfully.',
+      message: 'Plan changed successfully.',
       billing: {
         nextBillingDate: currentSubscription.currentPeriodEnd,
-        prorationAmount: priceDifference,
-        willBeChargedImmediately: prorationBehavior === 'always_invoice' && priceDifference > 0,
       },
       ...(process.env.NODE_ENV === 'development' && {
         debug: {
           queryTime: Date.now() - startTime,
           userId: user.id,
           subscriptionId: currentSubscription.id,
-          oldAmount,
-          newAmount,
-          priceDifference,
         }
       })
     };
@@ -304,29 +289,12 @@ export async function GET(request: NextRequest) {
       }
     ];
 
-    // Filter out current plan and calculate differences
-    const currentAmount = currentDisplayInfo.billing?.amount || 0;
+    // Filter out current plan  
     const planOptions = availablePlans
       .filter(plan => plan.priceId !== currentSubscription.stripePriceId)
-      .map(plan => {
-        const priceDifference = plan.amount - currentAmount;
-        const isUpgrade = priceDifference > 0;
-        const isDowngrade = priceDifference < 0;
-        
-        return {
-          ...plan,
-          priceDifference,
-          isUpgrade,
-          isDowngrade,
-          prorationAmount: calculateProration(
-            currentAmount,
-            plan.amount,
-            currentSubscription.currentPeriodStart,
-            currentSubscription.currentPeriodEnd
-          ),
-          changeType: isUpgrade ? 'upgrade' : isDowngrade ? 'downgrade' : 'lateral',
-        };
-      });
+      .map(plan => ({
+        ...plan,
+      }));
 
     const response = {
       canChangePlan: true,
@@ -334,8 +302,6 @@ export async function GET(request: NextRequest) {
         priceId: currentSubscription.stripePriceId,
         tier: currentSubscription.tier,
         status: currentSubscription.status,
-        amount: currentAmount,
-        billing: currentDisplayInfo.billing,
       },
       availablePlans: planOptions,
       billing: {

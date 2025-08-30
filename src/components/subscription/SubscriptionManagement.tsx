@@ -49,13 +49,13 @@ export function SubscriptionManagement({ className }: SubscriptionManagementProp
       const result = await actionFn();
       
       if (action === 'upgrade' || action === 'billing') {
-        if (result.url) {
-          window.location.href = result.url;
-        } else if (result.error) {
-          console.error(`${action} error:`, result.error);
+        if ((result as any).url) {
+          window.location.href = (result as any).url;
+        } else if ((result as any).error) {
+          console.error(`${action} error:`, (result as any).error);
         }
-      } else if (!result.success && result.error) {
-        console.error(`${action} error:`, result.error);
+      } else if (!(result as any).success && (result as any).error) {
+        console.error(`${action} error:`, (result as any).error);
       }
     } catch (error) {
       console.error(`${action} error:`, error);

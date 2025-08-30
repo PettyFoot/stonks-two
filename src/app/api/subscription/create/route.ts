@@ -119,17 +119,23 @@ export async function POST(request: NextRequest) {
     // Create subscription manager
     const subscriptionManager = createSubscriptionManager(user.auth0Id || user.id);
 
-    // Get or create Stripe customer
-    const customerResult = await subscriptionManager.getOrCreateCustomer({
-      email: user.email,
-      name: user.name,
-      userId: user.id,
-      metadata: {
+    // Get or create Stripe customer using customer service directly
+    const { customerService } = await import('@/lib/stripe');
+    let customerResult = await customerService.getCustomerByUserId(user.id);
+    
+    if (!customerResult.success || !customerResult.data) {
+      // Create new customer if one doesn't exist
+      customerResult = await customerService.createCustomer({
         userId: user.id,
-        auth0Id: user.auth0Id || '',
-        ...metadata
-      }
-    });
+        email: user.email,
+        name: user.name || undefined,
+        metadata: {
+          userId: user.id,
+          auth0Id: user.auth0Id || '',
+          ...metadata
+        }
+      });
+    }
 
     if (!customerResult.success || !customerResult.data) {
       return NextResponse.json(
@@ -141,26 +147,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create checkout session with enhanced parameters
+    // Create checkout session  
     const checkoutResult = await subscriptionManager.createPremiumCheckoutSession(
       successUrl,
       cancelUrl,
-      user.email,
-      {
-        customerId: customerResult.data.stripeCustomerId,
-        priceId,
-        trialPeriodDays,
-        coupon,
-        metadata: {
-          userId: user.id,
-          tier: 'PREMIUM',
-          createdBy: 'api',
-          ...metadata
-        },
-        allowPromotionCodes: true,
-        billingAddressCollection: 'required',
-        automaticTax: { enabled: true },
-      }
+      user.email
     );
 
     if (!checkoutResult.success || !checkoutResult.data) {
@@ -189,7 +180,6 @@ export async function POST(request: NextRequest) {
     const response = {
       success: true,
       checkoutUrl: checkoutResult.data.url,
-      sessionId: checkoutResult.data.id,
       customerId: customerResult.data.stripeCustomerId,
       priceId,
       metadata: {

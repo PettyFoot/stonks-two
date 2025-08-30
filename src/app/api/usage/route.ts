@@ -173,7 +173,7 @@ export async function GET(request: NextRequest) {
       volume: {
         total: tradeStats._sum.quantity || 0,
         totalPnL: tradeStats._sum.pnl ? Number(tradeStats._sum.pnl) : 0,
-        totalFees: (tradeStats._sum.commission || 0) + (tradeStats._sum.fees || 0),
+        totalFees: Number(tradeStats._sum.commission || 0) + Number(tradeStats._sum.fees || 0),
       },
       symbols: {
         unique: uniqueSymbols.length,
@@ -215,8 +215,8 @@ export async function GET(request: NextRequest) {
       },
       usage,
       limits,
-      warnings: [], // Will be populated based on usage
-      recommendations: [], // Premium upgrade recommendations
+      warnings: [] as Array<{ type: string; message: string; severity: string; }>, // Will be populated based on usage
+      recommendations: [] as Array<{ type: string; message: string; action: string; benefits: string[]; }>, // Premium upgrade recommendations
       ...(process.env.NODE_ENV === 'development' && {
         debug: {
           queryTime: Date.now() - startTime,

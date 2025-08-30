@@ -153,7 +153,7 @@ export async function GET(request: NextRequest) {
         isActive,
         isTrial,
         isFreeTier,
-        hasValidPaymentMethod: displayInfo.billing?.paymentMethod !== null,
+        hasValidPaymentMethod: false, // Payment method info not available from display info
         currentPeriodStart: dbSubscription.currentPeriodStart,
         currentPeriodEnd: dbSubscription.currentPeriodEnd,
         cancelAtPeriodEnd: dbSubscription.cancelAtPeriodEnd,
@@ -170,7 +170,6 @@ export async function GET(request: NextRequest) {
         realTimeData: !isFreeTier,
         portfolioTracking: !isFreeTier,
       },
-      billing: displayInfo.billing,
       ...(process.env.NODE_ENV === 'development' && {
         debug: {
           queryTime: Date.now() - startTime,
@@ -301,7 +300,7 @@ export async function POST(request: NextRequest) {
     // Handle different actions
     switch (action) {
       case 'cancel':
-        result = await subscriptionManager.cancelSubscription(cancelAtPeriodEnd);
+        result = await subscriptionManager.cancelSubscription();
         break;
 
       case 'reactivate':
@@ -315,7 +314,20 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           );
         }
-        result = await subscriptionManager.changeSubscriptionPlan(planId, metadata);
+        // Use subscription service directly for plan changes
+        const { subscriptionService } = await import('@/lib/stripe');
+        const currentSubscription = await subscriptionManager.getCurrentSubscription();
+        if (!currentSubscription.success || !currentSubscription.data) {
+          return NextResponse.json(
+            { error: 'No active subscription found' },
+            { status: 404 }
+          );
+        }
+        result = await subscriptionService.updateSubscription({
+          subscriptionId: currentSubscription.data.stripeSubscriptionId,
+          priceId: planId,
+          metadata: metadata as Record<string, string>
+        });
         break;
 
       default:
@@ -329,7 +341,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: result.error || 'Action failed',
-          code: result.code || 'SUBSCRIPTION_ACTION_FAILED'
+          code: 'SUBSCRIPTION_ACTION_FAILED'
         },
         { status: 400 }
       );

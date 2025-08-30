@@ -318,7 +318,7 @@ function UsageMetricCard({
           <div className="flex items-center gap-2">
             {!isUnlimited && (
               <Badge 
-                variant={getUsageColor(metric.percentage)}
+                variant={getUsageColor(metric.percentage) as "default" | "destructive" | "outline" | "secondary"}
                 className="text-xs"
               >
                 {formatPercentage(metric.percentage)}

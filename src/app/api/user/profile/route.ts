@@ -126,7 +126,6 @@ export async function GET(request: NextRequest) {
         currentPeriodStart: currentSubscription.currentPeriodStart,
         currentPeriodEnd: currentSubscription.currentPeriodEnd,
         cancelAtPeriodEnd: currentSubscription.cancelAtPeriodEnd,
-        billing: displayInfo.billing,
         features: {
           maxTrades: currentSubscription.tier === SubscriptionTier.FREE ? 100 : -1,
           advancedAnalytics: currentSubscription.tier !== SubscriptionTier.FREE,
@@ -340,12 +339,12 @@ export async function PUT(request: NextRequest) {
     });
 
     // If we have a Stripe customer and email changed, update Stripe
-    if (email && email !== user.email && user.stripeCustomerId) {
+    if (email && email !== user.email && 'stripeCustomerId' in user && user.stripeCustomerId) {
       try {
-        const subscriptionManager = createSubscriptionManager(user.auth0Id || user.id);
-        await subscriptionManager.updateCustomer({
+        const { customerService } = await import('@/lib/stripe');
+        await customerService.updateCustomer(user.stripeCustomerId, {
           email: email,
-          name: name || user.name,
+          name: name || user.name || undefined,
           metadata: {
             userId: user.id,
             lastUpdated: new Date().toISOString(),

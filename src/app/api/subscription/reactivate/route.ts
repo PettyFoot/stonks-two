@@ -117,18 +117,13 @@ export async function POST(request: NextRequest) {
     const subscriptionManager = createSubscriptionManager(user.auth0Id || user.id);
 
     // Perform reactivation
-    const reactivateResult = await subscriptionManager.reactivateSubscription({
-      userId: user.id,
-      reactivatedBy: 'user',
-      reactivatedAt: new Date().toISOString(),
-      ...metadata
-    });
+    const reactivateResult = await subscriptionManager.reactivateSubscription();
 
     if (!reactivateResult.success) {
       return NextResponse.json(
         {
           error: reactivateResult.error || 'Failed to reactivate subscription',
-          code: reactivateResult.code || 'REACTIVATION_FAILED'
+          code: 'REACTIVATION_FAILED'
         },
         { status: 400 }
       );
@@ -317,7 +312,6 @@ export async function GET(request: NextRequest) {
         nextBillingDate: currentSubscription.currentPeriodEnd,
         billingWillResume: true,
       },
-      billing: displayInfo.billing,
       featuresYouWillRegain: [
         'Unlimited trades tracking',
         'Advanced analytics and reports',

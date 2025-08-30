@@ -83,8 +83,8 @@ export async function withAuth(
     }
 
     // Get user's subscription information
-    let subscriptionTier = SubscriptionTier.FREE;
-    let subscriptionStatus = SubscriptionStatus.INACTIVE;
+    let subscriptionTier: SubscriptionTier = SubscriptionTier.FREE;
+    let subscriptionStatus: SubscriptionStatus = SubscriptionStatus.INACTIVE;
 
     if (user.auth0Id) { // Only for real users, not demo
       const dbUser = await prisma.user.findUnique({
@@ -224,7 +224,7 @@ export async function withValidation<T>(
     }
 
     // Validate using provided schema
-    const validationResult = schema.safeParse(body);
+    const validationResult = (schema as any).safeParse(body);
     
     if (!validationResult.success) {
       return {
@@ -233,7 +233,7 @@ export async function withValidation<T>(
             error: 'Invalid request data',
             code: 'VALIDATION_ERROR',
             details: validationResult.error.issues.map((issue: Record<string, unknown>) => ({
-              field: issue.path.join('.'),
+              field: (issue.path as any).join('.'),
               message: issue.message,
               code: issue.code,
             }))
@@ -313,11 +313,11 @@ export function withMiddleware(config: MiddlewareConfig = {}) {
 
         // Create enhanced request object
         const enhancedRequest = request as AuthenticatedRequest;
-        enhancedRequest.user = authResult.user;
+        enhancedRequest.user = authResult.user as any;
 
         // Add validated data to request if available
         if (validatedData) {
-          (enhancedRequest as Record<string, unknown>).validatedData = validatedData;
+          (enhancedRequest as unknown as Record<string, unknown>).validatedData = validatedData;
         }
 
         // Log request processing time in development
@@ -368,7 +368,7 @@ function getClientIP(request: NextRequest): string | null {
   }
 
   // Fallback to connection remote address
-  return request.ip || null;
+  return (request as any).ip || null;
 }
 
 /**

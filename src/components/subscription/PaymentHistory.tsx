@@ -293,7 +293,7 @@ function PaymentTableRow({
       </TableCell>
       
       <TableCell>
-        <Badge variant={getStatusColor(payment.status)}>
+        <Badge variant={getStatusColor(payment.status) as "default" | "destructive" | "outline" | "secondary"}>
           {getStatusText(payment.status)}
         </Badge>
       </TableCell>
@@ -350,7 +350,7 @@ function PaymentCompactRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <p className="font-medium truncate">{payment.description}</p>
-          <Badge variant={getStatusColor(payment.status)} className="shrink-0">
+          <Badge variant={getStatusColor(payment.status) as "default" | "destructive" | "outline" | "secondary"} className="shrink-0">
             {getStatusText(payment.status)}
           </Badge>
         </div>

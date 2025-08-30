@@ -229,7 +229,7 @@ export function UpgradePrompt({
             onClick={handleUpgrade}
             disabled={isLoading || actionLoading}
             className="w-full"
-            size={size}
+            size={size === "md" ? "default" : size}
           >
             {actionLoading ? (
               <>

@@ -107,7 +107,6 @@ export function generateMetadata(pageKey: keyof typeof PAGE_SEO, customOptions?:
     creator: SEO_CONFIG.siteName,
     publisher: SEO_CONFIG.siteName,
     robots: customOptions?.noIndex ? 'noindex,nofollow' : 'index,follow',
-    canonical,
     alternates: {
       canonical
     },
@@ -196,7 +195,7 @@ export function generateStructuredData(type: 'organization' | 'softwareApplicati
       return {
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
-        itemListElement: data?.items?.map((item: Record<string, unknown>, index: number) => ({
+        itemListElement: (data?.items as any)?.map((item: Record<string, unknown>, index: number) => ({
           '@type': 'ListItem',
           position: index + 1,
           name: item.name,
