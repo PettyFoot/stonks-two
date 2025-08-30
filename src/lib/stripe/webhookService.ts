@@ -206,8 +206,12 @@ export class WebhookService {
           stripePriceId: priceId,
           tier,
           status: STRIPE_TO_DB_STATUS[subscription.status] || SubscriptionStatus.INACTIVE,
-          currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
-          currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
+          currentPeriodStart: (subscription as any).current_period_start 
+            ? new Date((subscription as any).current_period_start * 1000) 
+            : new Date(),
+          currentPeriodEnd: (subscription as any).current_period_end 
+            ? new Date((subscription as any).current_period_end * 1000) 
+            : new Date(),
           cancelAtPeriodEnd: (subscription as any).cancel_at_period_end,
           canceledAt: (subscription as any).canceled_at 
             ? new Date((subscription as any).canceled_at * 1000) 
@@ -255,8 +259,12 @@ export class WebhookService {
           stripePriceId: priceId,
           tier,
           status: STRIPE_TO_DB_STATUS[subscription.status] || SubscriptionStatus.INACTIVE,
-          currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
-          currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
+          currentPeriodStart: (subscription as any).current_period_start 
+            ? new Date((subscription as any).current_period_start * 1000) 
+            : new Date(),
+          currentPeriodEnd: (subscription as any).current_period_end 
+            ? new Date((subscription as any).current_period_end * 1000) 
+            : new Date(),
           cancelAtPeriodEnd: (subscription as any).cancel_at_period_end,
           canceledAt: (subscription as any).canceled_at 
             ? new Date((subscription as any).canceled_at * 1000) 
@@ -553,8 +561,12 @@ export class WebhookService {
           stripePriceId: priceId,
           tier,
           status: STRIPE_TO_DB_STATUS[subscription.status] || SubscriptionStatus.INACTIVE,
-          currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
-          currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
+          currentPeriodStart: (subscription as any).current_period_start 
+            ? new Date((subscription as any).current_period_start * 1000) 
+            : new Date(),
+          currentPeriodEnd: (subscription as any).current_period_end 
+            ? new Date((subscription as any).current_period_end * 1000) 
+            : new Date(),
           cancelAtPeriodEnd: (subscription as any).cancel_at_period_end,
           trialStart: subscription.trial_start 
             ? new Date(subscription.trial_start * 1000) 
