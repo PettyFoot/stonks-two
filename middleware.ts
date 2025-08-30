@@ -93,7 +93,7 @@ function isWriteOperation(pathname: string): boolean {
   return writeOperations.some(path => pathname.startsWith(path));
 }
 
-export default async function middleware(request: NextRequest, event?: NextFetchEvent) {
+export default async function middleware(request: NextRequest, event: NextFetchEvent) {
   const { pathname } = request.nextUrl;
   
   // Allow public routes

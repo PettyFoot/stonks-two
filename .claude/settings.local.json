@@ -48,7 +48,8 @@
       "Bash(npx tsx:*)",
       "Bash(npx dotenv -e .env.local -- npx tsx scripts/seedDemoData.ts:*)",
       "Bash(npx dotenv -e .env.local -- npx tsx scripts/test-demo.ts:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []

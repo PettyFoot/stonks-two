@@ -67,9 +67,10 @@ function generateTradeScenarios() {
     const entryDate = randomDate(120);
     const exitDate = new Date(entryDate.getTime() + (Math.random() * 14 + 1) * 24 * 60 * 60 * 1000); // 1-14 days
     
+    const side = Math.random() > 0.8 ? 'SHORT' : 'LONG';
     scenarios.push({
       symbol,
-      side: (Math.random() > 0.8 ? 'SHORT' : 'LONG') as const,
+      side: side as 'SHORT' | 'LONG',
       status: 'CLOSED' as const,
       entryDate,
       exitDate,
@@ -91,9 +92,10 @@ function generateTradeScenarios() {
     const quantity = randomQuantity(25, 300);
     const entryDate = randomDate(60);
     
+    const sideOpen = Math.random() > 0.9 ? 'SHORT' : 'LONG';
     scenarios.push({
       symbol,
-      side: (Math.random() > 0.9 ? 'SHORT' : 'LONG') as const,
+      side: sideOpen as 'SHORT' | 'LONG',
       status: 'OPEN' as const,
       entryDate,
       exitDate: null,
