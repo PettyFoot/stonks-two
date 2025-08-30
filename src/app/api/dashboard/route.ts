@@ -42,6 +42,7 @@ export async function GET(request: Request) {
   }
 
   try {
+    const startTime = Date.now();
 
     // Build filter conditions
     const filters: {
