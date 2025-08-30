@@ -19,7 +19,7 @@ interface FilterOptions {
   dateFrom?: Date;
   dateTo?: Date;
   symbol?: string;
-  side?: 'LONG' | 'SHORT';
+  side?: 'LONG' | 'SHORT' | 'all';
   tags?: string[];
   duration?: 'intraday' | 'swing';
   showOpenTrades?: boolean;

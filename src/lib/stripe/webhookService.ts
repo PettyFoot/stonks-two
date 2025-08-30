@@ -35,7 +35,7 @@ export class WebhookService {
       const event = stripe.webhooks.constructEvent(
         body,
         signature,
-        STRIPE_CONFIG.WEBHOOK_SECRET
+        STRIPE_CONFIG.WEBHOOK_SECRET as string
       );
 
       // Check if event was already processed (optimized with select)
@@ -206,11 +206,11 @@ export class WebhookService {
           stripePriceId: priceId,
           tier,
           status: STRIPE_TO_DB_STATUS[subscription.status] || SubscriptionStatus.INACTIVE,
-          currentPeriodStart: new Date(subscription.current_period_start * 1000),
-          currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-          cancelAtPeriodEnd: subscription.cancel_at_period_end,
-          canceledAt: subscription.canceled_at 
-            ? new Date(subscription.canceled_at * 1000) 
+          currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
+          currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
+          cancelAtPeriodEnd: (subscription as any).cancel_at_period_end,
+          canceledAt: (subscription as any).canceled_at 
+            ? new Date((subscription as any).canceled_at * 1000) 
             : null,
           trialStart: subscription.trial_start 
             ? new Date(subscription.trial_start * 1000) 
@@ -255,11 +255,11 @@ export class WebhookService {
           stripePriceId: priceId,
           tier,
           status: STRIPE_TO_DB_STATUS[subscription.status] || SubscriptionStatus.INACTIVE,
-          currentPeriodStart: new Date(subscription.current_period_start * 1000),
-          currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-          cancelAtPeriodEnd: subscription.cancel_at_period_end,
-          canceledAt: subscription.canceled_at 
-            ? new Date(subscription.canceled_at * 1000) 
+          currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
+          currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
+          cancelAtPeriodEnd: (subscription as any).cancel_at_period_end,
+          canceledAt: (subscription as any).canceled_at 
+            ? new Date((subscription as any).canceled_at * 1000) 
             : null,
           trialStart: subscription.trial_start 
             ? new Date(subscription.trial_start * 1000) 
@@ -309,11 +309,11 @@ export class WebhookService {
    */
   private async handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<void> {
     try {
-      if (invoice.subscription && invoice.payment_intent) {
+      if ((invoice as any).subscription && (invoice as any).payment_intent) {
         // Get payment intent details for payment history
         const stripe = getStripe();
         const paymentIntent = await stripe.paymentIntents.retrieve(
-          invoice.payment_intent as string
+          (invoice as any).payment_intent as string
         );
 
         // Process the payment
@@ -332,16 +332,16 @@ export class WebhookService {
    */
   private async handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
     try {
-      if (invoice.subscription) {
+      if ((invoice as any).subscription) {
         // Update subscription status to past due
         await prisma.subscription.updateMany({
-          where: { stripeSubscriptionId: invoice.subscription as string },
+          where: { stripeSubscriptionId: (invoice as any).subscription as string },
           data: { status: SubscriptionStatus.PAST_DUE },
         });
 
         // Get user ID and update status
         const subscription = await prisma.subscription.findUnique({
-          where: { stripeSubscriptionId: invoice.subscription as string },
+          where: { stripeSubscriptionId: (invoice as any).subscription as string },
         });
 
         if (subscription) {
@@ -553,9 +553,9 @@ export class WebhookService {
           stripePriceId: priceId,
           tier,
           status: STRIPE_TO_DB_STATUS[subscription.status] || SubscriptionStatus.INACTIVE,
-          currentPeriodStart: new Date(subscription.current_period_start * 1000),
-          currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-          cancelAtPeriodEnd: subscription.cancel_at_period_end,
+          currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
+          currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
+          cancelAtPeriodEnd: (subscription as any).cancel_at_period_end,
           trialStart: subscription.trial_start 
             ? new Date(subscription.trial_start * 1000) 
             : null,
@@ -580,18 +580,23 @@ export class WebhookService {
    */
   private async saveWebhookEvent(event: Stripe.Event): Promise<WebhookEventData> {
     try {
-      return await prisma.webhookEvent.upsert({
+      const webhookEvent = await prisma.webhookEvent.upsert({
         where: { stripeEventId: event.id },
         update: {
           eventType: event.type,
-          data: event.data,
+          data: event.data as any,
         },
         create: {
           stripeEventId: event.id,
           eventType: event.type,
-          data: event.data,
+          data: event.data as any,
         },
       });
+      
+      return {
+        ...webhookEvent,
+        processedAt: webhookEvent.processedAt ?? undefined
+      };
     } catch (error) {
       console.error('Error saving webhook event:', error);
       throw error;
@@ -644,7 +649,10 @@ export class WebhookService {
 
       return {
         success: true,
-        data: event,
+        data: {
+          ...event,
+          processedAt: event.processedAt ?? undefined
+        },
       };
     } catch (error) {
       console.error('Error getting webhook event status:', error);

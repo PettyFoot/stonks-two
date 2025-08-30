@@ -96,17 +96,17 @@ export class SubscriptionService {
           stripePriceId: params.priceId,
           tier,
           status: STRIPE_TO_DB_STATUS[stripeSubscription.status] || SubscriptionStatus.INACTIVE,
-          currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
-          currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
-          cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-          canceledAt: stripeSubscription.canceled_at 
-            ? new Date(stripeSubscription.canceled_at * 1000) 
+          currentPeriodStart: new Date((stripeSubscription as any).current_period_start * 1000),
+          currentPeriodEnd: new Date((stripeSubscription as any).current_period_end * 1000),
+          cancelAtPeriodEnd: (stripeSubscription as any).cancel_at_period_end,
+          canceledAt: (stripeSubscription as any).canceled_at 
+            ? new Date((stripeSubscription as any).canceled_at * 1000) 
             : null,
-          trialStart: stripeSubscription.trial_start 
-            ? new Date(stripeSubscription.trial_start * 1000) 
+          trialStart: (stripeSubscription as any).trial_start 
+            ? new Date((stripeSubscription as any).trial_start * 1000) 
             : null,
-          trialEnd: stripeSubscription.trial_end 
-            ? new Date(stripeSubscription.trial_end * 1000) 
+          trialEnd: (stripeSubscription as any).trial_end 
+            ? new Date((stripeSubscription as any).trial_end * 1000) 
             : null,
         },
       });
@@ -116,7 +116,12 @@ export class SubscriptionService {
 
       return {
         success: true,
-        data: subscription,
+        data: {
+          ...subscription,
+          canceledAt: subscription.canceledAt ?? undefined,
+          trialStart: subscription.trialStart ?? undefined,
+          trialEnd: subscription.trialEnd ?? undefined
+        },
       };
     } catch (error) {
       console.error('Error creating subscription:', error);
@@ -208,7 +213,12 @@ export class SubscriptionService {
 
       return {
         success: true,
-        data: subscription,
+        data: {
+          ...subscription,
+          canceledAt: subscription.canceledAt ?? undefined,
+          trialStart: subscription.trialStart ?? undefined,
+          trialEnd: subscription.trialEnd ?? undefined
+        },
       };
     } catch (error) {
       console.error('Error getting subscription:', error);
@@ -243,7 +253,12 @@ export class SubscriptionService {
 
       return {
         success: true,
-        data: subscription,
+        data: {
+          ...subscription,
+          canceledAt: subscription.canceledAt ?? undefined,
+          trialStart: subscription.trialStart ?? undefined,
+          trialEnd: subscription.trialEnd ?? undefined
+        },
       };
     } catch (error) {
       console.error('Error getting subscription by user ID:', error);
@@ -286,11 +301,11 @@ export class SubscriptionService {
         data: {
           stripePriceId: params.priceId || undefined,
           status: STRIPE_TO_DB_STATUS[stripeSubscription.status] || SubscriptionStatus.INACTIVE,
-          currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
-          currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
-          cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-          canceledAt: stripeSubscription.canceled_at 
-            ? new Date(stripeSubscription.canceled_at * 1000) 
+          currentPeriodStart: new Date((stripeSubscription as any).current_period_start * 1000),
+          currentPeriodEnd: new Date((stripeSubscription as any).current_period_end * 1000),
+          cancelAtPeriodEnd: (stripeSubscription as any).cancel_at_period_end,
+          canceledAt: (stripeSubscription as any).canceled_at 
+            ? new Date((stripeSubscription as any).canceled_at * 1000) 
             : null,
         },
       });
@@ -300,7 +315,12 @@ export class SubscriptionService {
 
       return {
         success: true,
-        data: updatedSubscription,
+        data: {
+          ...updatedSubscription,
+          canceledAt: updatedSubscription.canceledAt ?? undefined,
+          trialStart: updatedSubscription.trialStart ?? undefined,
+          trialEnd: updatedSubscription.trialEnd ?? undefined
+        },
       };
     } catch (error) {
       console.error('Error updating subscription:', error);
@@ -325,15 +345,20 @@ export class SubscriptionService {
         where: { stripeSubscriptionId: subscriptionId },
         data: {
           cancelAtPeriodEnd: true,
-          canceledAt: stripeSubscription.canceled_at 
-            ? new Date(stripeSubscription.canceled_at * 1000) 
+          canceledAt: (stripeSubscription as any).canceled_at 
+            ? new Date((stripeSubscription as any).canceled_at * 1000) 
             : null,
         },
       });
 
       return {
         success: true,
-        data: updatedSubscription,
+        data: {
+          ...updatedSubscription,
+          canceledAt: updatedSubscription.canceledAt ?? undefined,
+          trialStart: updatedSubscription.trialStart ?? undefined,
+          trialEnd: updatedSubscription.trialEnd ?? undefined
+        },
       };
     } catch (error) {
       console.error('Error canceling subscription:', error);
@@ -368,7 +393,12 @@ export class SubscriptionService {
 
       return {
         success: true,
-        data: updatedSubscription,
+        data: {
+          ...updatedSubscription,
+          canceledAt: updatedSubscription.canceledAt ?? undefined,
+          trialStart: updatedSubscription.trialStart ?? undefined,
+          trialEnd: updatedSubscription.trialEnd ?? undefined
+        },
       };
     } catch (error) {
       console.error('Error reactivating subscription:', error);
@@ -422,17 +452,17 @@ export class SubscriptionService {
         where: { stripeSubscriptionId },
         data: {
           status: STRIPE_TO_DB_STATUS[stripeSubscription.status] || SubscriptionStatus.INACTIVE,
-          currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
-          currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
-          cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-          canceledAt: stripeSubscription.canceled_at 
-            ? new Date(stripeSubscription.canceled_at * 1000) 
+          currentPeriodStart: new Date((stripeSubscription as any).current_period_start * 1000),
+          currentPeriodEnd: new Date((stripeSubscription as any).current_period_end * 1000),
+          cancelAtPeriodEnd: (stripeSubscription as any).cancel_at_period_end,
+          canceledAt: (stripeSubscription as any).canceled_at 
+            ? new Date((stripeSubscription as any).canceled_at * 1000) 
             : null,
-          trialStart: stripeSubscription.trial_start 
-            ? new Date(stripeSubscription.trial_start * 1000) 
+          trialStart: (stripeSubscription as any).trial_start 
+            ? new Date((stripeSubscription as any).trial_start * 1000) 
             : null,
-          trialEnd: stripeSubscription.trial_end 
-            ? new Date(stripeSubscription.trial_end * 1000) 
+          trialEnd: (stripeSubscription as any).trial_end 
+            ? new Date((stripeSubscription as any).trial_end * 1000) 
             : null,
         },
       });
@@ -442,7 +472,12 @@ export class SubscriptionService {
 
       return {
         success: true,
-        data: subscription,
+        data: {
+          ...subscription,
+          canceledAt: subscription.canceledAt ?? undefined,
+          trialStart: subscription.trialStart ?? undefined,
+          trialEnd: subscription.trialEnd ?? undefined
+        },
       };
     } catch (error) {
       console.error('Error syncing subscription from Stripe:', error);
@@ -495,7 +530,12 @@ export class SubscriptionService {
 
       return {
         success: true,
-        data: subscriptions,
+        data: subscriptions.map(subscription => ({
+          ...subscription,
+          canceledAt: subscription.canceledAt ?? undefined,
+          trialStart: subscription.trialStart ?? undefined,
+          trialEnd: subscription.trialEnd ?? undefined
+        })),
       };
     } catch (error) {
       console.error('Error getting user subscriptions:', error);

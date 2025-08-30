@@ -10,7 +10,7 @@ export function getStripe(): Stripe {
     }
 
     _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2024-12-18.acacia',
+      apiVersion: '2025-08-27.basil',
       appInfo: {
         name: 'StonksTwo Trading Platform',
         version: '1.0.0',
@@ -31,7 +31,7 @@ export function isStripeConfigured(): boolean {
 export const stripe = getStripe;
 
 // Stripe configuration constants - lazy loaded
-let _stripeConfig: Record<string, string> | null = null;
+let _stripeConfig: Record<string, string | number> | null = null;
 
 export function getStripeConfig() {
   if (!_stripeConfig) {
@@ -54,7 +54,10 @@ export function getStripeConfig() {
 // Legacy export for backward compatibility
 export const STRIPE_CONFIG = new Proxy({} as Record<string, unknown>, {
   get(target, prop) {
-    return getStripeConfig()[prop];
+    if (typeof prop === 'string') {
+      return getStripeConfig()[prop];
+    }
+    return undefined;
   }
 });
 

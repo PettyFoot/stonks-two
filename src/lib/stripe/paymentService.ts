@@ -134,7 +134,12 @@ export class PaymentService {
 
       return {
         success: true,
-        data: payments,
+        data: payments.map(payment => ({
+          ...payment,
+          stripeSubscriptionId: payment.stripeSubscriptionId ?? undefined,
+          description: payment.description ?? undefined,
+          receiptUrl: payment.receiptUrl ?? undefined
+        })),
       };
     } catch (error) {
       console.error('Error getting payment history:', error);
@@ -163,7 +168,12 @@ export class PaymentService {
 
       return {
         success: true,
-        data: payment,
+        data: {
+          ...payment,
+          stripeSubscriptionId: payment?.stripeSubscriptionId ?? undefined,
+          description: payment?.description ?? undefined,
+          receiptUrl: payment?.receiptUrl ?? undefined
+        },
       };
     } catch (error) {
       console.error('Error getting payment by intent ID:', error);
@@ -262,7 +272,7 @@ export class PaymentService {
         stripeSubscriptionId: paymentIntent.metadata?.subscriptionId || null,
         amount: paymentIntent.amount,
         currency: paymentIntent.currency,
-        status: STRIPE_TO_DB_PAYMENT_STATUS[paymentIntent.status] || PaymentStatus.PENDING,
+        status: STRIPE_TO_DB_PAYMENT_STATUS[paymentIntent.status as keyof typeof STRIPE_TO_DB_PAYMENT_STATUS] || PaymentStatus.PENDING,
         description: paymentIntent.description || null,
         receiptUrl: paymentIntent.charges?.data?.[0]?.receipt_url || null,
       };
@@ -284,7 +294,12 @@ export class PaymentService {
         return payment;
       });
 
-      return payment;
+      return {
+        ...payment,
+        stripeSubscriptionId: payment.stripeSubscriptionId ?? undefined,
+        description: payment.description ?? undefined,
+        receiptUrl: payment.receiptUrl ?? undefined
+      };
     } catch (error) {
       console.error('Error saving payment from intent:', error);
       throw new StripeServiceError(

@@ -139,9 +139,8 @@ export const STRIPE_TO_DB_STATUS: Record<Stripe.Subscription.Status, Subscriptio
 };
 
 // Payment status mapping  
-export const STRIPE_TO_DB_PAYMENT_STATUS: Record<Stripe.PaymentIntent.Status, PaymentStatus> = {
+export const STRIPE_TO_DB_PAYMENT_STATUS: Record<string, PaymentStatus> = {
   'succeeded': PaymentStatus.SUCCEEDED,
-  'pending': PaymentStatus.PENDING,
   'requires_payment_method': PaymentStatus.FAILED,
   'requires_confirmation': PaymentStatus.PENDING,
   'requires_action': PaymentStatus.PENDING,
@@ -155,7 +154,7 @@ export class StripeServiceError extends Error {
   constructor(
     message: string,
     public readonly code?: string,
-    public readonly stripeError?: Stripe.StripeError
+    public readonly stripeError?: any
   ) {
     super(message);
     this.name = 'StripeServiceError';

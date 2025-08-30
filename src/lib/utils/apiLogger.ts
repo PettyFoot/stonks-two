@@ -89,7 +89,7 @@ export class APILogger {
       return cfConnectingIP;
     }
 
-    return request.ip || undefined;
+    return (request as any).ip || undefined;
   }
 
   /**

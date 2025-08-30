@@ -83,7 +83,7 @@ export function validateCSRFToken(
     
     // Check expiration
     const now = Date.now();
-    const tokenAge = now - tokenData.timestamp;
+    const tokenAge = now - (tokenData.timestamp as number);
     
     if (tokenAge > TOKEN_LIFETIME_MS) {
       return { valid: false, expired: true, reason: 'Token expired' };

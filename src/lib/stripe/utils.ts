@@ -193,10 +193,10 @@ export function createSubscriptionManager(userId: string) {
 
       const stripeConfig = getStripeConfig();
       const params: CreateCheckoutSessionParams = {
-        priceId: stripeConfig.PREMIUM_PRICE_ID,
+        priceId: stripeConfig.PREMIUM_PRICE_ID as string,
         successUrl,
         cancelUrl,
-        trialPeriodDays: stripeConfig.TRIAL_PERIOD_DAYS,
+        trialPeriodDays: stripeConfig.TRIAL_PERIOD_DAYS as number,
         metadata: {
           userId,
           tier: 'premium',
@@ -367,7 +367,7 @@ export async function isValidWebhookSignature(
 ): Promise<boolean> {
   try {
     const { stripe } = await import('./config');
-    stripe.webhooks.constructEvent(body, signature, secret);
+    stripe().webhooks.constructEvent(body, signature, secret);
     return true;
   } catch (error) {
     return false;
