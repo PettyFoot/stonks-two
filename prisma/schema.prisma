@@ -28,6 +28,11 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   
+  // Subscription fields
+  stripeCustomerId     String?  @unique
+  subscriptionTier     SubscriptionTier @default(FREE)
+  subscriptionStatus   SubscriptionStatus @default(INACTIVE)
+  
   // Relations
   trades        Trade[]
   orders        Order[]
@@ -35,6 +40,8 @@ model User {
   recordsEntries RecordsEntry[]
   importBatches ImportBatch[]
   csvUploadLogs CsvUploadLog[]
+  subscriptions Subscription[]
+  paymentHistory PaymentHistory[]
   
   @@map("users")
 }
@@ -298,7 +305,105 @@ model CsvUploadLog {
   @@map("csv_upload_logs")
 }
 
+// Subscription Management Models
+model Subscription {
+  id                String             @id @default(cuid())
+  userId            String
+  stripeSubscriptionId String          @unique
+  stripeCustomerId  String
+  stripePriceId     String
+  tier              SubscriptionTier
+  status            SubscriptionStatus
+  currentPeriodStart DateTime
+  currentPeriodEnd  DateTime
+  cancelAtPeriodEnd Boolean           @default(false)
+  canceledAt        DateTime?
+  trialStart        DateTime?
+  trialEnd          DateTime?
+  
+  // Metadata
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  // Relations
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([stripeSubscriptionId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+model PaymentHistory {
+  id                    String        @id @default(cuid())
+  userId                String
+  stripePaymentIntentId String        @unique
+  stripeSubscriptionId  String?
+  amount                Int           // Amount in cents
+  currency              String        @default("usd")
+  status                PaymentStatus
+  description           String?
+  receiptUrl            String?
+  
+  // Metadata
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  
+  // Relations
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([stripePaymentIntentId])
+  @@index([status])
+  @@map("payment_history")
+}
+
+model WebhookEvent {
+  id              String    @id @default(cuid())
+  stripeEventId   String    @unique
+  eventType       String
+  processed       Boolean   @default(false)
+  processedAt     DateTime?
+  data            Json
+  
+  // Metadata
+  createdAt       DateTime  @default(now())
+  
+  @@index([stripeEventId])
+  @@index([eventType])
+  @@index([processed])
+  @@map("webhook_events")
+}
+
 // Enums
+enum SubscriptionTier {
+  FREE
+  PREMIUM
+  
+  @@map("subscription_tier")
+}
+
+enum SubscriptionStatus {
+  INACTIVE
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  TRIALING
+  
+  @@map("subscription_status")
+}
+
+enum PaymentStatus {
+  SUCCEEDED
+  PENDING
+  FAILED
+  CANCELED
+  REFUNDED
+  
+  @@map("payment_status")
+}
+
 enum AssetClass {
   EQUITY
   FUTURES

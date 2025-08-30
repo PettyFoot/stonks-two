@@ -567,7 +567,7 @@ export function calculateTradeExpectation(trades: TradeData[]) {
 }
 
 // Calculate cumulative P&L over time
-export function calculateCumulativePnl(trades: TradeData[]) {
+export function calculateCumulativePnl(trades: TradeData[], startDate?: string) {
   // API already filters for closed trades
   const sortedTrades = trades
     .sort((a, b) => {
@@ -578,7 +578,15 @@ export function calculateCumulativePnl(trades: TradeData[]) {
     });
 
   let cumulative = 0;
-  const cumulativeData: Array<{ date: string; value: number; trades: number }> = [];
+  const cumulativeData: Array<{ date: string; value: number; trades?: number }> = [];
+
+  // Add starting point at the beginning of selected time period if provided
+  if (startDate) {
+    cumulativeData.push({
+      date: startDate,
+      value: 0
+    });
+  }
 
   // Group trades by date
   const tradesByDate = sortedTrades.reduce((acc: Record<string, TradeData[]>, trade) => {
@@ -610,8 +618,8 @@ export function calculateCumulativePnl(trades: TradeData[]) {
 }
 
 // Calculate cumulative drawdown
-export function calculateCumulativeDrawdown(trades: TradeData[]) {
-  const cumulativePnl = calculateCumulativePnl(trades);
+export function calculateCumulativeDrawdown(trades: TradeData[], startDate?: string) {
+  const cumulativePnl = calculateCumulativePnl(trades, startDate);
   
   let peak = 0;
   const drawdownData: Array<{ date: string; drawdown: number; drawdownPercent: number; underwater: number }> = [];
@@ -630,4 +638,55 @@ export function calculateCumulativeDrawdown(trades: TradeData[]) {
   });
 
   return drawdownData;
+}
+
+// Reusable function to aggregate win rates by time intervals
+export function aggregateWinRatesByInterval(
+  dailyData: Array<{ date: string; winRate: number; wins: number; losses: number; trades: number }>,
+  intervalType: 'daily' | 'weekly' | 'monthly' | 'yearly'
+): Array<{ date: string; value: number }> {
+  if (intervalType === 'daily') {
+    // Return daily data as-is
+    return dailyData.map(day => ({
+      date: day.date,
+      value: day.winRate
+    }));
+  }
+
+  // Aggregate by the specified interval
+  const aggregated = new Map<string, { wins: number; losses: number; trades: number }>();
+
+  dailyData.forEach(day => {
+    const date = new Date(day.date);
+    let periodKey: string;
+
+    switch (intervalType) {
+      case 'weekly':
+        // Get the Monday of the week for consistent grouping
+        const monday = new Date(date);
+        monday.setDate(date.getDate() - date.getDay() + 1);
+        periodKey = monday.toISOString().split('T')[0];
+        break;
+      case 'monthly':
+        periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        break;
+      case 'yearly':
+        periodKey = date.getFullYear().toString();
+        break;
+      default:
+        periodKey = day.date;
+    }
+
+    const existing = aggregated.get(periodKey) || { wins: 0, losses: 0, trades: 0 };
+    existing.wins += day.wins;
+    existing.losses += day.losses;
+    existing.trades += day.trades;
+    aggregated.set(periodKey, existing);
+  });
+
+  // Convert to array and calculate win rates
+  return Array.from(aggregated.entries()).map(([date, data]) => ({
+    date,
+    value: data.trades > 0 ? parseFloat(((data.wins / data.trades) * 100).toFixed(2)) : 0
+  })).sort((a, b) => a.date.localeCompare(b.date));
 }

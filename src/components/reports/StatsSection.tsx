@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 interface TradingStatistic {
   label: string;
   value: string | number;
-  formatter: 'currency' | 'number' | 'percentage' | 'time';
+  formatter: 'currency' | 'number' | 'percentage' | 'time' | 'volume';
   colorCode?: 'positive' | 'negative' | 'neutral';
 }
 
@@ -73,6 +73,12 @@ export default function StatsSection({ stats }: StatsSectionProps) {
         }
         return value.toString();
       
+      case 'volume':
+        if (typeof value === 'number') {
+          return Math.round(value).toString();
+        }
+        return value.toString();
+      
       case 'time':
         return value.toString();
       
@@ -101,7 +107,7 @@ export default function StatsSection({ stats }: StatsSectionProps) {
     
     // Average Metrics
     { label: 'Average Daily Gain/Loss', value: currentStats.avgDailyGainLoss, formatter: 'currency', colorCode: 'positive' },
-    { label: 'Average Daily Volume', value: currentStats.avgDailyVolume, formatter: 'number' },
+    { label: 'Average Daily Volume', value: currentStats.avgDailyVolume, formatter: 'volume' },
     { label: 'Average Trade Gain/Loss', value: currentStats.avgTradeGainLoss, formatter: 'currency', colorCode: 'positive' },
     { label: 'Average Per-share Gain/Loss', value: currentStats.avgPerShareGainLoss, formatter: 'currency', colorCode: 'positive' },
     { label: 'Average Winning Trade', value: currentStats.avgWinningTrade, formatter: 'currency', colorCode: 'positive' },
@@ -123,7 +129,7 @@ export default function StatsSection({ stats }: StatsSectionProps) {
     { label: 'Max Consecutive Losses', value: currentStats.maxConsecutiveLosses, formatter: 'number' },
     
     // Volume & Cost Metrics
-    { label: 'Avg Daily Volume', value: currentStats.avgDailyVolume, formatter: 'number' },
+    { label: 'Avg Daily Volume', value: currentStats.avgDailyVolume, formatter: 'volume' },
     { label: 'Trade P&L Standard Deviation', value: currentStats.tradePnlStdDev, formatter: 'currency', colorCode: 'positive' },
     { label: 'Profit Factor', value: currentStats.profitFactor, formatter: 'number' },
     { label: 'Total Commissions', value: currentStats.totalCommissions, formatter: 'currency', colorCode: 'positive' },

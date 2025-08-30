@@ -1,0 +1,48 @@
+# Trade Voyager - Professional Trading Analytics Platform
+# Robots.txt Configuration
+
+User-agent: *
+Allow: /
+Allow: /demo
+Allow: /login
+
+# Disallow sensitive areas
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /trades
+Disallow: /reports
+Disallow: /calendar
+Disallow: /records
+Disallow: /import
+Disallow: /new-trade
+Disallow: /search
+Disallow: /_next/
+Disallow: /admin/
+Disallow: /private/
+
+# Allow specific API endpoints that provide public information
+Allow: /api/vitals
+
+# Crawl-delay for polite crawling
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: https://tradevoyager.com/sitemap.xml
+
+# Google-specific rules
+User-agent: Googlebot
+Allow: /
+Disallow: /api/
+Disallow: /dashboard
+Crawl-delay: 1
+
+# Bing-specific rules
+User-agent: Bingbot
+Allow: /
+Disallow: /api/
+Disallow: /dashboard
+Crawl-delay: 1
+
+# Block specific bots if needed
+# User-agent: BadBot
+# Disallow: /

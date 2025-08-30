@@ -14,6 +14,7 @@ interface DailyPnlData {
 
 interface ReportsData {
   dailyPnl: DailyPnlData[];
+  aggregatedWinRates: { date: string; value: number }[];
   averageDailyPnl: number;
   averageDailyPnlOnTradingDays: number;
   averageDailyVolume: number;
@@ -32,6 +33,7 @@ export function useReportsData() {
   const { isDemo, isLoading: authLoading } = useAuth();
   const [data, setData] = useState<ReportsData>({
     dailyPnl: [],
+    aggregatedWinRates: [],
     averageDailyPnl: 0,
     averageDailyPnlOnTradingDays: 0,
     averageDailyVolume: 0,
@@ -76,6 +78,7 @@ export function useReportsData() {
         
         setData({
           dailyPnl: result.dailyPnl || [],
+          aggregatedWinRates: result.aggregatedWinRates || [],
           averageDailyPnl: result.averageDailyPnl || 0,
           averageDailyPnlOnTradingDays: result.averageDailyPnlOnTradingDays || 0,
           averageDailyVolume: result.averageDailyVolume || 0,

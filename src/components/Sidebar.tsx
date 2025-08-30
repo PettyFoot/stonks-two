@@ -23,6 +23,7 @@ import {
   BookOpen, 
   Plus, 
   Search,
+  Settings,
   User,
   LogOut,
   ChevronLeft,
@@ -37,6 +38,7 @@ const navigation = [
   { name: 'Records', href: '/records', icon: BookOpen },
   { name: 'New Trade', href: '/new-trade', icon: Plus },
   { name: 'Search', href: '/search', icon: Search },
+  { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
 export default function Sidebar() {

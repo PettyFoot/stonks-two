@@ -1,0 +1,251 @@
+// Premium Membership Schema Extensions for StonksTwo Trading Application
+// Add these models and enums to your existing schema.prisma file
+
+// =====================================================
+// SUBSCRIPTION MANAGEMENT MODELS
+// =====================================================
+
+// Subscription Plans - Defines available membership tiers
+model SubscriptionPlan {
+  id                String          @id @default(cuid())
+  name              String          @unique              // e.g., "Premium", "Pro", "Enterprise"
+  displayName       String                               // e.g., "Premium Trading Plan"
+  description       String?                              // Plan description
+  
+  // Pricing
+  price             Decimal         @db.Decimal(10,2)    // Price in cents (e.g., 999 for $9.99)
+  currency          String          @default("USD")      // Currency code
+  billingInterval   BillingInterval @default(MONTHLY)    // MONTHLY, YEARLY, etc.
+  
+  // Plan Features & Limits
+  features          Json                                 // Store features as JSON array
+  maxTrades         Int?                                 // Max trades per month (null = unlimited)
+  maxAccounts       Int?                                 // Max connected accounts
+  maxStorageGB      Int?                                 // Max data storage
+  analyticsEnabled  Boolean         @default(true)
+  apiAccessEnabled  Boolean         @default(false)
+  prioritySupport   Boolean         @default(false)
+  
+  // Stripe Integration
+  stripeProductId   String          @unique              // Stripe Product ID
+  stripePriceId     String          @unique              // Stripe Price ID
+  
+  // Plan Management
+  isActive          Boolean         @default(true)       // Can new users subscribe?
+  isVisible         Boolean         @default(true)       // Show on pricing page?
+  sortOrder         Int             @default(0)          // Display order
+  
+  // Metadata
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  // Relations
+  subscriptions     Subscription[]
+  
+  @@index([isActive, isVisible])
+  @@index([sortOrder])
+  @@map("subscription_plans")
+}
+
+// User Subscriptions - Core subscription records
+model Subscription {
+  id                  String              @id @default(cuid())
+  userId              String
+  subscriptionPlanId  String
+  
+  // Stripe Integration
+  stripeSubscriptionId String            @unique              // Stripe subscription ID
+  stripeCustomerId    String                                  // Stripe customer ID (can be duplicate across subscriptions)
+  
+  // Subscription Status
+  status              SubscriptionStatus  @default(PENDING)   // PENDING, ACTIVE, CANCELED, EXPIRED, etc.
+  
+  // Billing Periods
+  currentPeriodStart  DateTime                                // Current billing period start
+  currentPeriodEnd    DateTime                                // Current billing period end
+  trialStart          DateTime?                               // Trial period start (if applicable)
+  trialEnd            DateTime?                               // Trial period end (if applicable)
+  
+  // Cancellation Handling
+  cancelAtPeriodEnd   Boolean             @default(false)     // Cancel at end of current period?
+  canceledAt          DateTime?                               // When was cancellation requested?
+  cancelReason        String?                                 // User-provided cancellation reason
+  
+  // Usage Tracking
+  usageResetDate      DateTime            @default(now())     // When usage counters last reset
+  tradesUsed          Int                 @default(0)         // Trades used in current period
+  storageUsedGB       Decimal             @default(0) @db.Decimal(8,2) // Storage used in GB
+  
+  // Metadata
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  
+  // Relations
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionPlan    SubscriptionPlan    @relation(fields: [subscriptionPlanId], references: [id], onDelete: Restrict)
+  payments            PaymentHistory[]
+  usageRecords        UsageRecord[]
+  subscriptionEvents  SubscriptionEvent[]
+  
+  @@unique([userId, status])  // One active subscription per user
+  @@index([userId, status])
+  @@index([stripeCustomerId])
+  @@index([status, currentPeriodEnd]) // For expiration queries
+  @@index([usageResetDate]) // For usage reset queries
+  @@map("subscriptions")
+}
+
+// Payment History - Complete payment audit trail
+model PaymentHistory {
+  id                    String        @id @default(cuid())
+  subscriptionId        String
+  
+  // Stripe Integration
+  stripePaymentIntentId String        @unique           // Stripe PaymentIntent ID
+  stripeInvoiceId       String?                         // Stripe Invoice ID (for subscription payments)
+  
+  // Payment Details
+  amount                Decimal       @db.Decimal(10,2) // Amount in cents
+  currency              String        @default("USD")
+  status                PaymentStatus @default(PENDING) // PENDING, SUCCEEDED, FAILED, etc.
+  
+  // Payment Method
+  paymentMethod         String?                         // e.g., "card", "bank_transfer"
+  lastFourDigits        String?                         // Last 4 digits of card
+  cardBrand             String?                         // e.g., "visa", "mastercard"
+  
+  // Timing
+  paymentDate           DateTime?                       // When payment was processed
+  failureDate           DateTime?                       // When payment failed (if applicable)
+  
+  // Error Handling
+  failureReason         String?                         // Stripe failure reason
+  failureCode           String?                         // Stripe failure code
+  retryCount            Int           @default(0)       // Number of retry attempts
+  
+  // Metadata
+  metadata              Json?                           // Additional Stripe metadata
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  
+  // Relations
+  subscription          Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  
+  @@index([subscriptionId, paymentDate])
+  @@index([status, paymentDate])
+  @@index([stripeInvoiceId])
+  @@map("payment_history")
+}
+
+// Usage Records - Track feature usage for billing and analytics
+model UsageRecord {
+  id               String     @id @default(cuid())
+  subscriptionId   String
+  
+  // Usage Details
+  usageType        UsageType                           // TRADE, STORAGE, API_CALL, etc.
+  quantity         Int        @default(1)              // Quantity used
+  metadata         Json?                               // Additional usage data
+  
+  // Timing
+  usageDate        DateTime   @default(now())          // When usage occurred
+  billingPeriod    String                              // e.g., "2024-01" for Jan 2024
+  
+  // Relations
+  subscription     Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  
+  @@index([subscriptionId, usageType, billingPeriod])
+  @@index([usageDate])
+  @@map("usage_records")
+}
+
+// Subscription Events - Complete audit trail of subscription changes
+model SubscriptionEvent {
+  id               String          @id @default(cuid())
+  subscriptionId   String
+  
+  // Event Details
+  eventType        SubscriptionEventType              // CREATED, ACTIVATED, CANCELED, etc.
+  eventData        Json                               // Event payload from Stripe
+  
+  // Source Information
+  source           String?                            // "stripe_webhook", "admin_panel", "user_action"
+  userId           String?                            // User who triggered event (if applicable)
+  adminUserId      String?                            // Admin who performed action (if applicable)
+  
+  // Timing
+  eventDate        DateTime        @default(now())
+  processedAt      DateTime?                          // When event was processed
+  
+  // Relations
+  subscription     Subscription    @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  
+  @@index([subscriptionId, eventType])
+  @@index([eventDate])
+  @@map("subscription_events")
+}
+
+// =====================================================
+// ENUMS
+// =====================================================
+
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+  QUARTERLY
+  
+  @@map("billing_interval")
+}
+
+enum SubscriptionStatus {
+  PENDING         // Subscription created but not yet active
+  ACTIVE          // Active subscription
+  TRIALING        // In trial period
+  PAST_DUE        // Payment failed, but subscription still active
+  CANCELED        // Canceled but still active until period end
+  EXPIRED         // Subscription has ended
+  INCOMPLETE      // Stripe requires additional action
+  INCOMPLETE_EXPIRED // Incomplete subscription that has expired
+  UNPAID          // Invoice payment failed
+  PAUSED          // Temporarily paused (future feature)
+  
+  @@map("subscription_status")
+}
+
+enum PaymentStatus {
+  PENDING         // Payment is being processed
+  SUCCEEDED       // Payment completed successfully
+  FAILED          // Payment failed
+  CANCELED        // Payment was canceled
+  REFUNDED        // Payment was refunded
+  PARTIALLY_REFUNDED // Payment was partially refunded
+  
+  @@map("payment_status")
+}
+
+enum UsageType {
+  TRADE           // Trade execution
+  STORAGE         // Data storage
+  API_CALL        // API request
+  REPORT_EXPORT   // Report export
+  CUSTOM_ANALYSIS // Custom analysis feature
+  
+  @@map("usage_type")
+}
+
+enum SubscriptionEventType {
+  CREATED         // Subscription was created
+  ACTIVATED       // Subscription became active
+  UPDATED         // Subscription was modified
+  CANCELED        // Subscription was canceled
+  EXPIRED         // Subscription expired
+  RENEWED         // Subscription was renewed
+  PAYMENT_SUCCEEDED // Payment was successful
+  PAYMENT_FAILED  // Payment failed
+  TRIAL_STARTED   // Trial period started
+  TRIAL_ENDED     // Trial period ended
+  PLAN_CHANGED    // Subscription plan was changed
+  REACTIVATED     // Canceled subscription was reactivated
+  
+  @@map("subscription_event_type")
+}

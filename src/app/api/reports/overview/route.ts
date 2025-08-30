@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth0';
 import { Decimal } from '@prisma/client/runtime/library';
 import { startOfDay, endOfDay, subDays, format } from 'date-fns';
+import { determineOptimalInterval } from '@/lib/timeIntervals';
+import { aggregateWinRatesByInterval } from '@/lib/reportCalculations';
 
 export async function GET(request: NextRequest) {
   try {
@@ -85,7 +87,9 @@ export async function GET(request: NextRequest) {
     }>();
 
     trades.forEach(trade => {
-      const dateKey = format(trade.date, 'yyyy-MM-dd');
+      // Use exitDate for grouping when available, fallback to entry date for open trades
+      const groupingDate = trade.exitDate || trade.date;
+      const dateKey = format(groupingDate, 'yyyy-MM-dd');
       const existing = dailyPnlMap.get(dateKey) || {
         pnl: 0,
         trades: 0,
@@ -116,8 +120,16 @@ export async function GET(request: NextRequest) {
       pnl: parseFloat(data.pnl.toFixed(2)),
       trades: data.trades,
       volume: data.volume,
-      winRate: data.trades > 0 ? parseFloat(((data.wins / data.trades) * 100).toFixed(2)) : 0
+      winRate: data.trades > 0 ? parseFloat(((data.wins / data.trades) * 100).toFixed(2)) : 0,
+      wins: data.wins,
+      losses: data.losses
     }));
+
+    // Determine optimal interval based on date range
+    const optimalInterval = determineOptimalInterval({ start: fromDate, end: toDate });
+    
+    // Aggregate win rates by interval for proper chart display
+    const aggregatedWinRates = aggregateWinRatesByInterval(dailyPnl, optimalInterval.type);
 
     // Calculate the number of days in the selected period
     const daysDiff = Math.max(1, Math.ceil((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24)));
@@ -130,13 +142,21 @@ export async function GET(request: NextRequest) {
     const averageDailyPnl = totalPnl / daysDiff;
 
     // Calculate cumulative P&L
+    const cumulativePnl = [];
+    
+    // Add starting point at the beginning of selected time period
+    cumulativePnl.push({
+      date: format(fromDate, 'yyyy-MM-dd'),
+      value: 0
+    });
+    
     let cumulativeSum = 0;
-    const cumulativePnl = dailyPnl.map(day => {
+    dailyPnl.forEach(day => {
       cumulativeSum += day.pnl;
-      return {
+      cumulativePnl.push({
         date: day.date,
         value: parseFloat(cumulativeSum.toFixed(2))
-      };
+      });
     });
 
     // Calculate overall win percentage
@@ -159,6 +179,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       dailyPnl,
+      aggregatedWinRates,
       averageDailyPnl: parseFloat(averageDailyPnl.toFixed(2)),
       averageDailyPnlOnTradingDays: parseFloat(averageDailyPnlOnTradingDays.toFixed(2)),
       averageDailyVolume: parseFloat(averageDailyVolume.toFixed(2)),

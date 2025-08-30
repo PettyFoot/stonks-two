@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useUser as useAuth0User } from '@auth0/nextjs-auth0/client';
 import type { UserProfile } from '@auth0/nextjs-auth0/client';
 
@@ -46,39 +46,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [demoSession, setDemoSession] = useState<DemoUser | null>(null);
   const [isCheckingDemo, setIsCheckingDemo] = useState(true);
   const [sessionError, setSessionError] = useState<Error | undefined>(undefined);
-  
-  // Ref to track if demo mode has been detected to prevent flip-flopping
-  const demoModeDetectedRef = useRef<boolean>(false);
-  const stableDemoStateRef = useRef<boolean>(false);
-  
-  // Initialize demo state from localStorage immediately
-  React.useLayoutEffect(() => {
-    if (typeof window !== 'undefined') {
-      const isDemoFromStorage = localStorage.getItem('demo-mode') === 'true';
-      if (isDemoFromStorage) {
-        demoModeDetectedRef.current = true;
-        stableDemoStateRef.current = true;
-        console.log('🔒 Demo mode pre-locked from localStorage on initialization');
-      }
-    }
-  }, []);
 
   // Check for demo session on mount and when Auth0 user changes
   useEffect(() => {
     async function checkDemoSession() {
       try {
-        console.log('=== AUTH CONTEXT: Checking demo session ===');
         setIsCheckingDemo(true);
         const response = await fetch('/api/demo/session');
         
-        console.log('Demo session API response status:', response.status);
-        
         if (response.ok) {
           const session = await response.json();
-          console.log('Demo session API response data:', session);
           
           if (session.isDemo) {
-            console.log('✅ Demo session detected, setting demo user');
             setDemoSession({
               isDemo: true,
               id: session.user.id,
@@ -89,11 +68,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               expiresAt: session.expiresAt,
             });
           } else {
-            console.log('❌ No demo session found in response');
             setDemoSession(null);
           }
         } else {
-          console.log('❌ Demo session API request failed');
           setDemoSession(null);
         }
       } catch (error) {
@@ -107,19 +84,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Only check for demo session if there's no Auth0 user
     if (!auth0User && !auth0Loading) {
-      console.log('No Auth0 user, checking for demo session');
       checkDemoSession();
     } else {
-      console.log('Auth0 user present or loading, skipping demo check');
       setIsCheckingDemo(false);
       
-      // Only clear demo session if demo mode hasn't been locked in
-      if (!demoModeDetectedRef.current) {
-        console.log('Clearing demo session (demo mode not locked)');
-        setDemoSession(null);
-      } else {
-        console.log('NOT clearing demo session (demo mode is locked)');
-      }
+      setDemoSession(null);
     }
   }, [auth0User, auth0Loading]);
 
@@ -128,55 +97,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ? { isDemo: false, ...auth0User }
     : demoSession;
 
-  // STABLE DEMO MODE DETECTION: Check multiple sources for demo mode
-  const isDemoFromSession = user?.isDemo === true;
-  const isDemoFromUrl = typeof window !== 'undefined' && (
-    window.location.pathname.startsWith('/demo') || 
-    window.location.search.includes('demo=true') ||
-    window.location.hostname.includes('demo')
-  );
-  
-  // Auto-set localStorage flag if we detect demo mode from URL
-  if (typeof window !== 'undefined' && isDemoFromUrl && !localStorage.getItem('demo-mode')) {
-    localStorage.setItem('demo-mode', 'true');
-    console.log('Auto-set demo mode in localStorage due to URL detection');
-  }
-  const isDemoFromStorage = typeof window !== 'undefined' && 
-    localStorage.getItem('demo-mode') === 'true';
-  
-  // Calculate if demo mode is detected from any source
-  const isDemoDetectedNow = isDemoFromSession || isDemoFromUrl || isDemoFromStorage;
-  
-  // Once demo mode is detected, lock it in to prevent flip-flopping
-  if (isDemoDetectedNow && !demoModeDetectedRef.current) {
-    demoModeDetectedRef.current = true;
-    stableDemoStateRef.current = true;
-    console.log('🔒 Demo mode locked in as TRUE - will not flip back to false');
-  }
-  
-  // Use stable demo state that doesn't flip-flop
-  const isDemo = stableDemoStateRef.current;
-  
-  console.log('=== DEMO MODE DETECTION ===');
-  console.log('From session:', isDemoFromSession);
-  console.log('From URL:', isDemoFromUrl);
-  console.log('From storage:', isDemoFromStorage);
-  console.log('Detected now:', isDemoDetectedNow);
-  console.log('Demo mode locked:', demoModeDetectedRef.current);
-  console.log('Stable demo state:', stableDemoStateRef.current);
-  console.log('Final isDemo:', isDemo);
+  // Simply check if user is the demo user account
+  const isDemo = user?.id === 'demo-user-001';
   
   const isLoading = auth0Loading || isCheckingDemo;
   const error = auth0Error || sessionError;
-
-  console.log('=== AUTH CONTEXT STATE ===');
-  console.log('auth0User:', !!auth0User);
-  console.log('auth0Loading:', auth0Loading);
-  console.log('demoSession:', !!demoSession);
-  console.log('isCheckingDemo:', isCheckingDemo);
-  console.log('Final user:', user);
-  console.log('Final isDemo:', isDemo);
-  console.log('Final isLoading:', isLoading);
 
   const logout = async () => {
     if (isDemo) {
@@ -184,27 +109,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const response = await fetch('/api/demo/logout', { method: 'POST' });
         const data = await response.json();
         
-        // Clear localStorage if API indicates to do so
-        if (data.clearDemoMode && typeof window !== 'undefined') {
-          localStorage.removeItem('demo-mode');
-          console.log('Cleared demo mode from localStorage');
-        }
-        
-        // Reset demo mode detection refs on explicit logout
-        demoModeDetectedRef.current = false;
-        stableDemoStateRef.current = false;
-        console.log('🔓 Demo mode unlocked due to explicit logout');
+        // Clear any demo-related localStorage on logout
+        localStorage.removeItem('demo-mode');
         
         setDemoSession(null);
         window.location.href = '/';
       } catch (error) {
         console.error('Error logging out of demo:', error);
-        // Clear localStorage and reset refs on error as well
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('demo-mode');
-        }
-        demoModeDetectedRef.current = false;
-        stableDemoStateRef.current = false;
+        // Clear localStorage on error
+        localStorage.removeItem('demo-mode');
         window.location.href = '/';
       }
     } else {

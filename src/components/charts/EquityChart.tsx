@@ -4,7 +4,7 @@ import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { ChartDataPoint } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { formatTimeAxis } from '@/lib/chartFormatters';
+import { formatTimeAxis, CHART_FORMATTERS } from '@/lib/chartFormatters';
 import { determineOptimalInterval, formatDateForInterval, parsePeriodToDate, calculateTickInterval } from '@/lib/timeIntervals';
 
 interface EquityChartProps {
@@ -73,14 +73,39 @@ const EquityChart = React.memo(function EquityChart({
     return calculateTickInterval(data.length, timeInterval?.tickCount || 8);
   }, [data.length, timeInterval]);
 
-  // Determine line color based on last value when using conditional colors
+  // Calculate dynamic left margin based on max value to prevent label cutoff
+  const leftMargin = React.useMemo(() => {
+    const maxValue = Math.max(...data.map(d => Math.abs(d.value || 0)), 0);
+    if (maxValue >= 1000000) return 45; // For values like $1.5M
+    if (maxValue >= 10000) return 40;   // For values like $78.5K
+    return 5; // For smaller values
+  }, [data]);
+
+  // Calculate gradient offset for positive/negative value coloring
+  const gradientOffset = React.useMemo(() => {
+    if (!useConditionalColors || data.length === 0) return null;
+    
+    const values = data.map(d => d.value || 0);
+    const dataMax = Math.max(...values);
+    const dataMin = Math.min(...values);
+    
+    if (dataMax <= 0) {
+      // All values are negative or zero
+      return 0;
+    } else if (dataMin >= 0) {
+      // All values are positive or zero
+      return 1;
+    } else {
+      // Mixed values - calculate where zero line falls
+      return dataMax / (dataMax - dataMin);
+    }
+  }, [data, useConditionalColors]);
+
+  // Determine line color - use gradient ID when conditional colors are enabled
   const lineColor = React.useMemo(() => {
     if (!useConditionalColors) return color;
-    
-    // Get the last non-null value
-    const lastValue = data.length > 0 ? data[data.length - 1]?.value ?? 0 : 0;
-    return lastValue >= 0 ? positiveColor : negativeColor;
-  }, [data, useConditionalColors, color, positiveColor, negativeColor]);
+    return gradientOffset !== null ? 'url(#splitColor)' : color;
+  }, [useConditionalColors, color, gradientOffset]);
 
   // Handle empty data case
   if (!data || data.length === 0) {
@@ -105,7 +130,15 @@ const EquityChart = React.memo(function EquityChart({
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={height}>
-          <LineChart data={data} margin={{ top: 5, right: 30, left: 5, bottom: 5 }}>
+          <LineChart data={data} margin={{ top: 5, right: 30, left: leftMargin, bottom: 5 }}>
+            {useConditionalColors && gradientOffset !== null && (
+              <defs>
+                <linearGradient id="splitColor" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset={gradientOffset} stopColor={positiveColor} stopOpacity={1}/>
+                  <stop offset={gradientOffset} stopColor={negativeColor} stopOpacity={1}/>
+                </linearGradient>
+              </defs>
+            )}
             {showGrid && (
               <CartesianGrid 
                 strokeDasharray="3 3" 
@@ -126,8 +159,8 @@ const EquityChart = React.memo(function EquityChart({
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 12, fill: 'var(--theme-primary-text)' }}
-              tickFormatter={(value) => `$${value}`}
-              domain={[0, 'dataMax']}
+              tickFormatter={CHART_FORMATTERS.currency.formatAxisValue}
+              domain={['dataMin', 'dataMax']}
             />
             {showTooltip && (
               <Tooltip 

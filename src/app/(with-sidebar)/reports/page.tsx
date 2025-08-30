@@ -73,7 +73,7 @@ export default function Reports() {
   };
   
   // Original data hook for existing charts
-  const { dailyPnl, averageDailyPnl, averageDailyPnlOnTradingDays, averageDailyVolume, averageDailyVolumeOnTradingDays, cumulativePnl, loading, error } = useReportsData();
+  const { dailyPnl, aggregatedWinRates, averageDailyPnl, averageDailyPnlOnTradingDays, averageDailyVolume, averageDailyVolumeOnTradingDays, cumulativePnl, loading, error } = useReportsData();
   
   // New enhanced data hook for statistics and new charts
   const { stats, trades, loading: detailedLoading, error: detailedError } = useDetailedReportsData();
@@ -108,13 +108,10 @@ export default function Reports() {
     ];
   }, [averageDailyVolume, averageDailyVolumeOnTradingDays]);
 
-  // Transform win rate data for chart
+  // Use aggregated win rates for chart (properly aggregated by time interval)
   const winPercentageData = useMemo(() => {
-    return dailyPnl.map(day => ({
-      date: day.date,
-      value: day.winRate
-    }));
-  }, [dailyPnl]);
+    return aggregatedWinRates;
+  }, [aggregatedWinRates]);
 
   // Calculate aggregated data for new enhanced charts
   const dayOfWeekData = useMemo(() => aggregateByDayOfWeek(trades), [trades]);
@@ -129,8 +126,14 @@ export default function Reports() {
   const winLossRatio = useMemo(() => calculateWinLossRatio(trades), [trades]);
   const winLossPnlComparison = useMemo(() => calculateWinLossPnlComparison(trades), [trades]);
   const tradeExpectation = useMemo(() => calculateTradeExpectation(trades), [trades]);
-  const cumulativePnlData = useMemo(() => calculateCumulativePnl(trades), [trades]);
-  const cumulativeDrawdownData = useMemo(() => calculateCumulativeDrawdown(trades), [trades]);
+  const cumulativePnlData = useMemo(() => {
+    const range = getEffectiveDateRange();
+    return calculateCumulativePnl(trades, range.from);
+  }, [trades, getEffectiveDateRange]);
+  const cumulativeDrawdownData = useMemo(() => {
+    const range = getEffectiveDateRange();
+    return calculateCumulativeDrawdown(trades, range.from);
+  }, [trades, getEffectiveDateRange]);
 
   // Calculate dynamic scale for Trade Expectation chart
   const expectationScale = useMemo(() => {

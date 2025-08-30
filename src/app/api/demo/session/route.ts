@@ -3,16 +3,9 @@ import { getDemoSessionFromCookies, extendDemoSession } from '@/lib/demo/demoSes
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('=== DEMO SESSION API GET REQUEST ===');
-    console.log('Request URL:', request.url);
-    console.log('Request headers cookies:', request.headers.get('cookie'));
-    
     const demoSession = await getDemoSessionFromCookies();
     
-    console.log('Demo session from cookies:', demoSession);
-    
     if (!demoSession) {
-      console.log('No demo session found, returning isDemo: false');
       return NextResponse.json({ isDemo: false }, { status: 200 });
     }
 
@@ -24,8 +17,6 @@ export async function GET(request: NextRequest) {
       features: demoSession.features,
     };
 
-    console.log('Demo session found, returning:', responseData);
-    
     // Return the demo session data
     return NextResponse.json(responseData);
   } catch (error) {

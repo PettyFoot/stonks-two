@@ -2,10 +2,17 @@ import { NextResponse } from 'next/server';
 import { TradeSide, Prisma } from '@prisma/client';
 import { getCurrentUser } from '@/lib/auth0';
 import { prisma } from '@/lib/prisma';
+import { 
+  normalizePaginationParams, 
+  buildOffsetPaginationOptions, 
+  createPaginatedResponse,
+  generateCursor 
+} from '@/lib/utils/pagination';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   
+  // Extract filter parameters
   const symbol = searchParams.get('symbol');
   const side = searchParams.get('side');
   const dateFrom = searchParams.get('dateFrom');
@@ -14,9 +21,19 @@ export async function GET(request: Request) {
   const duration = searchParams.get('duration');
   const showOpenTrades = searchParams.get('showOpenTrades') === 'true';
   
-  console.log('=== TRADES API GET REQUEST ===');
-  console.log('Request URL:', request.url);
-  console.log('Search params:', Object.fromEntries(searchParams));
+  // Extract pagination parameters
+  const page = parseInt(searchParams.get('page') || '1', 10);
+  const limit = parseInt(searchParams.get('limit') || '50', 10);
+  const sortBy = searchParams.get('sortBy') || 'date';
+  const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
+  
+  // Performance logging in development
+  const startTime = process.env.NODE_ENV === 'development' ? Date.now() : 0;
+  if (process.env.NODE_ENV === 'development') {
+    console.log('=== OPTIMIZED TRADES API GET REQUEST ===');
+    console.log('Request URL:', request.url);
+    console.log('Pagination:', { page, limit, sortBy, sortOrder });
+  }
   
   // Get current user (handles both demo and Auth0)
   const user = await getCurrentUser();
@@ -71,18 +88,63 @@ export async function GET(request: Request) {
       where.status = 'CLOSED';
     }
 
-    console.log('Database query WHERE clause:', JSON.stringify(where, null, 2));
-    
-    // Get only trades from trades table (not individual orders)
-    const trades = await prisma.trade.findMany({
-      where,
-      orderBy: [
-        { date: 'desc' }
-      ]
+    // Normalize pagination parameters
+    const paginationParams = normalizePaginationParams({ 
+      page, 
+      limit, 
+      sortBy, 
+      sortOrder 
     });
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Database query WHERE clause:', JSON.stringify(where, null, 2));
+      console.log('Pagination params:', paginationParams);
+    }
+    
+    // Build pagination options
+    const paginationOptions = buildOffsetPaginationOptions(paginationParams);
+    
+    // Get total count for pagination metadata (using a more efficient count query)
+    const [trades, totalCount] = await Promise.all([
+      // Get paginated trades with optimized field selection
+      prisma.trade.findMany({
+        where,
+        select: {
+          id: true,
+          date: true,
+          openTime: true,
+          symbol: true,
+          side: true,
+          quantity: true,
+          executions: true,
+          pnl: true,
+          entryPrice: true,
+          exitPrice: true,
+          holdingPeriod: true,
+          status: true,
+          notes: true,
+          tags: true,
+          commission: true,
+          fees: true,
+          marketSession: true,
+          orderType: true
+        },
+        orderBy: {
+          [paginationParams.sortBy]: paginationParams.sortOrder
+        },
+        skip: paginationOptions.skip,
+        take: paginationOptions.take
+      }),
+      // Efficient count query
+      prisma.trade.count({ where })
+    ]);
 
-    console.log('Database returned trades count:', trades.length);
-    console.log('First few raw trades:', trades.slice(0, 3));
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Database returned ${trades.length} trades (page ${paginationParams.page} of ${Math.ceil(totalCount / paginationParams.limit)})`);
+      console.log(`Total trades matching filters: ${totalCount}`);
+      const endTime = Date.now();
+      console.log(`Query execution time: ${endTime - startTime}ms`);
+    }
 
     // Transform trades to match frontend interface
     const transformedTrades = trades.map(trade => ({
@@ -114,22 +176,57 @@ export async function GET(request: Request) {
       orderType: trade.orderType || undefined
     }));
 
-    console.log('Transformed trades count:', transformedTrades.length);
-    console.log('First few transformed trades:', transformedTrades.slice(0, 3));
+    // Calculate aggregates only for current page data (for performance)
+    const pagePnl = transformedTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'number' ? trade.pnl : 0), 0);
+    const pageVolume = transformedTrades.reduce((sum, trade) => sum + (trade.quantity || 0), 0);
+    
+    // Create paginated response
+    const paginatedResponse = createPaginatedResponse(
+      transformedTrades,
+      paginationParams,
+      totalCount,
+      (trade) => generateCursor(new Date(trade.date), trade.id)
+    );
 
     const responseData = {
-      trades: transformedTrades,
-      count: transformedTrades.length,
-      totalPnl: transformedTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'number' ? trade.pnl : 0), 0),
-      totalVolume: transformedTrades.reduce((sum, trade) => sum + (trade.quantity || 0), 0)
+      ...paginatedResponse,
+      // Legacy compatibility fields
+      trades: paginatedResponse.data,
+      count: paginatedResponse.data.length,
+      totalCount,
+      // Page-level aggregates (more efficient than calculating for all data)
+      pagePnl,
+      pageVolume,
+      // Performance metrics
+      ...(process.env.NODE_ENV === 'development' && {
+        performance: {
+          queryTime: Date.now() - startTime,
+          itemsPerPage: paginationParams.limit,
+          currentPage: paginationParams.page,
+          totalPages: Math.ceil(totalCount / paginationParams.limit)
+        }
+      })
     };
-
-    console.log('Final API response:', responseData);
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Returning page ${paginationParams.page} with ${transformedTrades.length} items`);
+    }
     
     return NextResponse.json(responseData);
   } catch (error) {
-    console.error('Trades API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Optimized Trades API error:', error);
+    
+    // Log performance metrics even on error
+    if (process.env.NODE_ENV === 'development' && startTime) {
+      console.error(`Request failed after ${Date.now() - startTime}ms`);
+    }
+    
+    return NextResponse.json({ 
+      error: 'Failed to fetch trades',
+      ...(process.env.NODE_ENV === 'development' && {
+        details: error instanceof Error ? error.message : 'Unknown error'
+      })
+    }, { status: 500 });
   }
 }
 

@@ -8,6 +8,7 @@ import {
   calculateLargestGainLoss,
   calculatePerformanceByDuration
 } from '@/lib/tradeAggregations';
+import { cacheService } from '@/lib/services/cacheService';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -28,6 +29,17 @@ export async function GET(request: Request) {
   }
   
   const userId = user.id;
+
+  // Generate cache key based on filters
+  const cacheKey = `dashboard:${userId}:${JSON.stringify({
+    dateFrom, dateTo, symbol, side, tags, duration, showOpenTrades
+  })}`;
+
+  // Try to get cached data first
+  const cached = await cacheService.getAnalytics(cacheKey);
+  if (cached) {
+    return NextResponse.json(cached);
+  }
 
   try {
 
@@ -85,22 +97,37 @@ export async function GET(request: Request) {
       whereClause.timeInTrade = { gt: 86400 };
     }
 
-    // Get user's trades with filters
-    const trades = await prisma.trade.findMany({
-      where: whereClause,
-      orderBy: { date: 'asc' }
-    });
-
-    // Get day data with filters
-    const dayDataWhereClause = {
-      userId: userId,
-      ...(whereClause.date && { date: whereClause.date })
-    };
-    
-    const dayData = await prisma.dayData.findMany({
-      where: dayDataWhereClause,
-      orderBy: { date: 'asc' }
-    });
+    // Optimize database queries with parallel execution and selective fields
+    const [trades, dayData] = await Promise.all([
+      prisma.trade.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          date: true,
+          pnl: true,
+          quantity: true,
+          timeInTrade: true,
+          symbol: true,
+          side: true
+        },
+        orderBy: { date: 'asc' }
+      }),
+      prisma.dayData.findMany({
+        where: {
+          userId: userId,
+          ...(whereClause.date && { date: whereClause.date })
+        },
+        select: {
+          date: true,
+          pnl: true,
+          trades: true,
+          volume: true,
+          winRate: true,
+          commissions: true
+        },
+        orderBy: { date: 'asc' }
+      })
+    ]);
 
     // Calculate basic KPIs from filtered trades
     const totalPnl = trades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : Number(trade.pnl)), 0);
@@ -181,7 +208,7 @@ export async function GET(request: Request) {
       });
     });
 
-    // Fetch advanced metrics using aggregation functions
+    // Execute all advanced metrics calculations in parallel for optimal performance
     const [
       performanceByDayOfWeek,
       performanceByMonthOfYear,
@@ -242,17 +269,23 @@ export async function GET(request: Request) {
       }
     };
 
+    // Cache the result for 5 minutes (300 seconds)
+    await cacheService.setAnalytics(cacheKey, dashboardData, 300);
+    
     return NextResponse.json(dashboardData);
   } catch (error) {
     console.error('Dashboard API error:', error);
+    
+    // Log performance metrics for monitoring
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(`Dashboard API performance: Failed for user ${userId}`);
+    }
+    
     // Return more detailed error in development mode
     const errorMessage = process.env.NODE_ENV === 'development' && error instanceof Error 
       ? error.message 
       : 'Internal server error';
-    console.error('Dashboard API full error details:', {
-      error: error instanceof Error ? error.message : error,
-      stack: error instanceof Error ? error.stack : undefined
-    });
+    
     return NextResponse.json({ 
       error: errorMessage,
       details: process.env.NODE_ENV === 'development' ? String(error) : undefined 

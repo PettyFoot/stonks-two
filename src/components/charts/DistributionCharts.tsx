@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DistributionData } from '@/types';
 import { CHART_HEIGHTS } from '@/constants/chartHeights';
@@ -103,13 +103,16 @@ interface GaugeChartProps {
   color?: string;
 }
 
-export function GaugeChart({ 
+export const GaugeChart = memo(function GaugeChart({ 
   value, 
   max, 
   title
 }: GaugeChartProps) {
-  const percentage = (Math.abs(value) / max) * 100;
-  const isPositive = value >= 0;
+  // Memoize gauge calculations
+  const gaugeData = useMemo(() => ({
+    percentage: (Math.abs(value) / max) * 100,
+    isPositive: value >= 0
+  }), [value, max]);
   
   return (
     <Card className="bg-surface border-default">
@@ -130,16 +133,16 @@ export function GaugeChart({
             />
             {/* Progress arc */}
             <path
-              d={`M 10 50 A 40 40 0 0 1 ${Math.round((10 + (percentage / 100) * 100) * 1000) / 1000} ${Math.round((50 - Math.sin((percentage / 100) * Math.PI) * 40) * 1000) / 1000}`}
+              d={`M 10 50 A 40 40 0 0 1 ${Math.round((10 + (gaugeData.percentage / 100) * 100) * 1000) / 1000} ${Math.round((50 - Math.sin((gaugeData.percentage / 100) * Math.PI) * 40) * 1000) / 1000}`}
               fill="none"
-              stroke={isPositive ? 'var(--theme-green)' : 'var(--theme-red)'}
+              stroke={gaugeData.isPositive ? 'var(--theme-green)' : 'var(--theme-red)'}
               strokeWidth="8"
               strokeLinecap="round"
             />
           </svg>
           {/* Center value */}
           <div className="absolute inset-0 flex items-end justify-center pb-2">
-            <div className={`text-lg font-bold ${isPositive ? 'text-positive' : 'text-negative'}`}>
+            <div className={`text-lg font-bold ${gaugeData.isPositive ? 'text-positive' : 'text-negative'}`}>
               ${Math.abs(value).toFixed(2)}
             </div>
           </div>
@@ -147,4 +150,4 @@ export function GaugeChart({
       </CardContent>
     </Card>
   );
-}
+});
