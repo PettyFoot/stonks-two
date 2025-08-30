@@ -31,11 +31,16 @@ export function useRecordsData(date: string | null): UseRecordsDataReturn {
   const [data, setData] = useState<RecordsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { isDemo } = useAuth();
+  const { isDemo, isLoading: authLoading } = useAuth();
 
   const fetchRecordsData = useCallback(async () => {
     if (!date) {
       setData(null);
+      return;
+    }
+
+    // Don't fetch data until auth state is resolved
+    if (authLoading) {
       return;
     }
 
@@ -99,7 +104,7 @@ export function useRecordsData(date: string | null): UseRecordsDataReturn {
     } finally {
       setLoading(false);
     }
-  }, [date, isDemo]);
+  }, [date, isDemo, authLoading]);
 
   useEffect(() => {
     fetchRecordsData();

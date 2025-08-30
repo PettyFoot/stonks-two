@@ -32,12 +32,17 @@ export function useTradesData(
   const [error, setError] = useState<string | null>(null);
   const { useComplexFiltering = false, page = 1, limit = 50 } = options;
   const { toFilterOptions, hasAdvancedFilters } = useGlobalFilters();
-  const { isDemo } = useAuth();
+  const { isDemo, isLoading: authLoading } = useAuth();
   
   // Automatically use complex filtering if advanced filters are active
   const shouldUseComplexFiltering = useComplexFiltering || hasAdvancedFilters;
 
   useEffect(() => {
+    // Don't fetch data until auth state is resolved
+    if (authLoading) {
+      return;
+    }
+
     async function fetchData() {
       try {
         setLoading(true);
@@ -135,7 +140,7 @@ export function useTradesData(
     }
 
     fetchData();
-  }, [toFilterOptions, isDemo, shouldUseComplexFiltering, page, limit]);
+  }, [toFilterOptions, isDemo, shouldUseComplexFiltering, page, limit, authLoading]);
 
   // Simple fix for demo mode race condition: refetch when demo mode becomes available
   useEffect(() => {

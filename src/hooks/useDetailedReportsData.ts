@@ -40,7 +40,7 @@ interface DetailedReportsData {
 
 export function useDetailedReportsData() {
   const { toFilterOptions } = useGlobalFilters();
-  const { isDemo } = useAuth();
+  const { isDemo, isLoading: authLoading } = useAuth();
   const [data, setData] = useState<DetailedReportsData>({
     stats: {
       totalGainLoss: 0,
@@ -73,6 +73,11 @@ export function useDetailedReportsData() {
   });
 
   useEffect(() => {
+    // Don't fetch data until auth state is resolved
+    if (authLoading) {
+      return;
+    }
+
     async function fetchDetailedData() {
       try {
         setData(prev => ({ ...prev, loading: true, error: null }));
@@ -115,7 +120,7 @@ export function useDetailedReportsData() {
     }
 
     fetchDetailedData();
-  }, [toFilterOptions, isDemo]);
+  }, [toFilterOptions, isDemo, authLoading]);
 
   return data;
 }

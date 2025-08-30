@@ -8,9 +8,14 @@ export function useTradesMetadata() {
   const [metadata, setMetadata] = useState<TradesMetadata | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { isDemo } = useAuth();
+  const { isDemo, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
+    // Don't fetch data until auth state is resolved
+    if (authLoading) {
+      return;
+    }
+
     async function fetchMetadata() {
       try {
         setLoading(true);
@@ -31,7 +36,7 @@ export function useTradesMetadata() {
     }
 
     fetchMetadata();
-  }, [isDemo]);
+  }, [isDemo, authLoading]);
 
   const refetch = async () => {
     setError(null);

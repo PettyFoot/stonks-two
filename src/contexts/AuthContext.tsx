@@ -50,6 +50,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Ref to track if demo mode has been detected to prevent flip-flopping
   const demoModeDetectedRef = useRef<boolean>(false);
   const stableDemoStateRef = useRef<boolean>(false);
+  
+  // Initialize demo state from localStorage immediately
+  React.useLayoutEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isDemoFromStorage = localStorage.getItem('demo-mode') === 'true';
+      if (isDemoFromStorage) {
+        demoModeDetectedRef.current = true;
+        stableDemoStateRef.current = true;
+        console.log('🔒 Demo mode pre-locked from localStorage on initialization');
+      }
+    }
+  }, []);
 
   // Check for demo session on mount and when Auth0 user changes
   useEffect(() => {

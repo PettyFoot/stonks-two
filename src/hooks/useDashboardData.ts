@@ -25,9 +25,14 @@ export function useDashboardData() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toFilterOptions } = useGlobalFilters();
-  const { isDemo } = useAuth();
+  const { isDemo, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
+    // Don't fetch data until auth state is resolved
+    if (authLoading) {
+      return;
+    }
+
     async function fetchData() {
       try {
         setLoading(true);
@@ -61,7 +66,7 @@ export function useDashboardData() {
     }
 
     fetchData();
-  }, [toFilterOptions, isDemo]);
+  }, [toFilterOptions, isDemo, authLoading]);
 
   const refetch = () => {
     setError(null);

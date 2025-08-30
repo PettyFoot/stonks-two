@@ -38,7 +38,9 @@ export default function LandingPage() {
           console.log('Set demo mode in localStorage before navigation');
         }
         
-        router.push(data.redirect || '/dashboard');
+        // Add a small delay to ensure cookies are set, then use hard navigation
+        await new Promise(resolve => setTimeout(resolve, 100));
+        window.location.href = data.redirect || '/dashboard';
       } else {
         console.error('Failed to start demo session');
         setIsStartingDemo(false);

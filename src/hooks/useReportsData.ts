@@ -29,7 +29,7 @@ interface ReportsData {
 
 export function useReportsData() {
   const { toFilterOptions } = useGlobalFilters();
-  const { isDemo } = useAuth();
+  const { isDemo, isLoading: authLoading } = useAuth();
   const [data, setData] = useState<ReportsData>({
     dailyPnl: [],
     averageDailyPnl: 0,
@@ -46,6 +46,11 @@ export function useReportsData() {
   });
 
   useEffect(() => {
+    // Don't fetch data until auth state is resolved
+    if (authLoading) {
+      return;
+    }
+
     async function fetchReportsData() {
       try {
         setData(prev => ({ ...prev, loading: true, error: null }));
@@ -94,7 +99,7 @@ export function useReportsData() {
     }
 
     fetchReportsData();
-  }, [toFilterOptions, isDemo]);
+  }, [toFilterOptions, isDemo, authLoading]);
 
   return data;
 }
