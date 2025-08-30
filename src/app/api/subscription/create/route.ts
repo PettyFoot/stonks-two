@@ -13,7 +13,7 @@ const createSubscriptionSchema = z.object({
   successUrl: z.string().url('Valid success URL is required'),
   cancelUrl: z.string().url('Valid cancel URL is required'),
   coupon: z.string().optional(),
-  metadata: z.record(z.string()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**

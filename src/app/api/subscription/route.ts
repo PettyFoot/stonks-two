@@ -11,7 +11,7 @@ const subscriptionActionSchema = z.object({
   action: z.enum(['cancel', 'reactivate', 'change-plan']),
   planId: z.string().optional(),
   cancelAtPeriodEnd: z.boolean().optional(),
-  metadata: z.record(z.string()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**

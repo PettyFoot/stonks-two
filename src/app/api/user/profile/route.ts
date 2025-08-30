@@ -20,7 +20,7 @@ const updateProfileSchema = z.object({
       marketing: z.boolean().optional(),
     }).optional(),
   }).optional(),
-  metadata: z.record(z.string()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**

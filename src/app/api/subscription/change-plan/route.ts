@@ -9,7 +9,7 @@ import { z } from 'zod';
 const changePlanSchema = z.object({
   newPriceId: z.string().min(1, 'New price ID is required'),
   prorationBehavior: z.enum(['create_prorations', 'none', 'always_invoice']).optional().default('create_prorations'),
-  metadata: z.record(z.string()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**

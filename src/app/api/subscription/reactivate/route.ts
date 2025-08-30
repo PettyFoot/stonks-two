@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 // Request validation schema
 const reactivateSubscriptionSchema = z.object({
-  metadata: z.record(z.string()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**

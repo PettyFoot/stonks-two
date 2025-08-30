@@ -16,7 +16,7 @@ const trackUsageSchema = z.object({
     'custom_report'
   ]),
   quantity: z.number().int().positive().default(1),
-  metadata: z.record(z.string()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**

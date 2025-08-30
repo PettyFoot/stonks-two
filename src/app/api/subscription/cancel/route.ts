@@ -10,7 +10,7 @@ const cancelSubscriptionSchema = z.object({
   immediately: z.boolean().optional().default(false),
   reason: z.string().optional(),
   feedback: z.string().max(500).optional(),
-  metadata: z.record(z.string()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**

@@ -66,10 +66,10 @@ export async function GET(request: NextRequest) {
     if (dateFrom || dateTo) {
       whereClause.createdAt = {};
       if (dateFrom) {
-        whereClause.createdAt.gte = new Date(dateFrom);
+        (whereClause.createdAt as Record<string, unknown>).gte = new Date(dateFrom);
       }
       if (dateTo) {
-        whereClause.createdAt.lte = new Date(dateTo);
+        (whereClause.createdAt as Record<string, unknown>).lte = new Date(dateTo);
       }
     }
 
