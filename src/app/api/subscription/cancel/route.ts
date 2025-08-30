@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update local database
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
     };
 

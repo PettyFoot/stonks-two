@@ -86,7 +86,7 @@ export function usePaymentHistory(): UsePaymentHistoryReturn {
 
       const data = await response.json();
       
-      const newPayments: PaymentRecord[] = data.payments.map((payment: any) => ({
+      const newPayments: PaymentRecord[] = data.payments.map((payment: Record<string, unknown>) => ({
         id: payment.id,
         date: payment.createdAt,
         amount: payment.amount,

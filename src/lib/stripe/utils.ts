@@ -360,13 +360,13 @@ export function dollarsToCents(dollars: number): number {
 /**
  * Validate Stripe webhook signature
  */
-export function isValidWebhookSignature(
+export async function isValidWebhookSignature(
   body: string | Buffer,
   signature: string,
   secret: string
-): boolean {
+): Promise<boolean> {
   try {
-    const stripe = require('./config').stripe;
+    const { stripe } = await import('./config');
     stripe.webhooks.constructEvent(body, signature, secret);
     return true;
   } catch (error) {

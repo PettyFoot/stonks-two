@@ -213,7 +213,7 @@ export function UpgradePrompt({
 
       <CardContent className="relative z-10 space-y-6">
         <div className="space-y-3">
-          <h4 className="font-medium text-sm">What you'll get:</h4>
+          <h4 className="font-medium text-sm">What you&apos;ll get:</h4>
           <ul className="space-y-2">
             {benefits.map((benefit, index) => (
               <li key={index} className="flex items-center gap-2 text-sm">

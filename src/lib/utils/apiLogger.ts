@@ -20,7 +20,7 @@ export interface LogEntry {
   duration?: number;
   userAgent?: string;
   ip?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   error?: {
     message: string;
     stack?: string;

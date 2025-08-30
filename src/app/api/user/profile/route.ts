@@ -300,7 +300,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Build update data
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
     };
 

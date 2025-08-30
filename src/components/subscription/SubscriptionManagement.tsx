@@ -43,7 +43,7 @@ export function SubscriptionManagement({ className }: SubscriptionManagementProp
 
   const [actionLoading, setActionLoading] = React.useState<string | null>(null);
 
-  const handleAction = async (action: string, actionFn: () => Promise<any>) => {
+  const handleAction = async (action: string, actionFn: () => Promise<unknown>) => {
     setActionLoading(action);
     try {
       const result = await actionFn();
@@ -343,7 +343,7 @@ export function SubscriptionManagement({ className }: SubscriptionManagementProp
                             <h3 className="font-medium">Cancel Subscription</h3>
                           </div>
                           <p className="text-sm text-muted-foreground mb-3">
-                            Cancel your subscription. You'll retain access until the end of your billing period.
+                            Cancel your subscription. You&apos;ll retain access until the end of your billing period.
                           </p>
                           <Button 
                             onClick={handleCancel}

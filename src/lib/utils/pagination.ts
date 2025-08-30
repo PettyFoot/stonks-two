@@ -122,7 +122,7 @@ export function buildOffsetPaginationOptions(params: PaginationParams) {
  */
 export function buildCursorPaginationOptions(params: PaginationParams) {
   const normalized = normalizePaginationParams(params);
-  const options: any = {
+  const options: Record<string, unknown> = {
     take: normalized.limit,
     orderBy: {
       [normalized.sortBy]: normalized.sortOrder,

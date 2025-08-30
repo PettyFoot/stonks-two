@@ -2,7 +2,7 @@ import { generateStructuredData } from '@/lib/seo';
 
 interface StructuredDataProps {
   type: 'organization' | 'softwareApplication' | 'breadcrumb';
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 export function StructuredData({ type, data }: StructuredDataProps) {

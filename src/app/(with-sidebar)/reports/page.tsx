@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import TopBar from '@/components/TopBar';
 import FilterPanel from '@/components/FilterPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -37,7 +37,7 @@ export default function Reports() {
   const { filters } = useGlobalFilters();
 
   // Calculate effective date range for display
-  const getEffectiveDateRange = () => {
+  const getEffectiveDateRange = useCallback(() => {
     // If custom dates are set, use those
     if (filters.customDateRange?.from && filters.customDateRange?.to) {
       return {
@@ -55,7 +55,7 @@ export default function Reports() {
       from: thirtyDaysAgo.toISOString().split('T')[0],
       to: today.toISOString().split('T')[0]
     };
-  };
+  }, [filters.customDateRange]);
 
   // Format date range for display
   const formatDateRange = () => {

@@ -31,7 +31,7 @@ export function isStripeConfigured(): boolean {
 export const stripe = getStripe;
 
 // Stripe configuration constants - lazy loaded
-let _stripeConfig: any = null;
+let _stripeConfig: Record<string, string> | null = null;
 
 export function getStripeConfig() {
   if (!_stripeConfig) {
@@ -52,7 +52,7 @@ export function getStripeConfig() {
 }
 
 // Legacy export for backward compatibility
-export const STRIPE_CONFIG = new Proxy({} as any, {
+export const STRIPE_CONFIG = new Proxy({} as Record<string, unknown>, {
   get(target, prop) {
     return getStripeConfig()[prop];
   }

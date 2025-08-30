@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Build where clause for filters
-    const whereClause: any = {
+    const whereClause: Record<string, unknown> = {
       userId: user.id,
     };
 

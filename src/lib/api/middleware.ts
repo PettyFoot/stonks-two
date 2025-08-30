@@ -35,7 +35,7 @@ export interface MiddlewareConfig {
 export async function withAuth(
   request: NextRequest,
   config: MiddlewareConfig = {}
-): Promise<{ user: any; error?: NextResponse }> {
+): Promise<{ user: unknown; error?: NextResponse }> {
   const {
     requireAuth = true,
     requirePremium = false,
@@ -200,7 +200,7 @@ export async function withRateLimit(
  */
 export async function withValidation<T>(
   request: NextRequest,
-  schema: any, // Zod schema
+  schema: unknown, // Zod schema
 ): Promise<{ data?: T; error?: NextResponse }> {
   try {
     let body;

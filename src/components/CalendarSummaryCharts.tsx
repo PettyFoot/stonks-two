@@ -41,10 +41,6 @@ const CalendarSummaryCharts = memo(function CalendarSummaryCharts() {
     fetchSummaryData();
   }, [fetchSummaryData]);
 
-  if (isLoading || !data || !chartData) {
-    return <div className="flex items-center justify-center h-64">Loading charts...</div>;
-  }
-
   // Memoize chart configuration factory to prevent recreation
   const getChartOptions = useMemo(() => {
     return (title: string, categories: (string | number)[]): ApexOptions => ({
@@ -143,6 +139,10 @@ const CalendarSummaryCharts = memo(function CalendarSummaryCharts() {
       yearTradeData
     };
   }, [data]);
+
+  if (isLoading || !data || !chartData) {
+    return <div className="flex items-center justify-center h-64">Loading charts...</div>;
+  }
 
   return (
     <div className="space-y-6">

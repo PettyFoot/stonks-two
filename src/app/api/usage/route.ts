@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
 
     // Define date range based on period
     let startDate: Date;
-    let endDate: Date = new Date();
+    const endDate: Date = new Date();
 
     switch (period) {
       case 'current_month':
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build where clause for trades
-    const whereClause: any = {
+    const whereClause: Record<string, unknown> = {
       userId: user.id,
       date: {
         gte: startDate,

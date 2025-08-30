@@ -144,7 +144,7 @@ export function UsageMetrics({
               <div className="flex-1">
                 <h3 className="font-medium mb-1">Approaching Usage Limit</h3>
                 <p className="text-sm text-muted-foreground mb-3">
-                  You're near your {highestUsage?.name.toLowerCase()} limit. 
+                  You&apos;re near your {highestUsage?.name.toLowerCase()} limit. 
                   Upgrade to Premium for unlimited access.
                 </p>
                 <Button 

@@ -80,7 +80,7 @@ export interface WebhookEventData {
   eventType: string;
   processed: boolean;
   processedAt?: Date;
-  data: any;
+  data: unknown;
   createdAt: Date;
 }
 
