@@ -10,6 +10,7 @@ import { useUser } from '@auth0/nextjs-auth0/client';
 import { useRouter } from 'next/navigation';
 import { SoftwareApplicationStructuredData } from '@/components/SEO';
 import { TradingFAQStructuredData } from '@/components/SEO/FAQStructuredData';
+import Footer from '@/components/Footer';
 
 export default function LandingPageComponent() {
   const { user, isLoading } = useUser();
@@ -236,28 +237,7 @@ export default function LandingPageComponent() {
           </section>
         </section>
 
-        {/* Footer */}
-        <footer className="border-t border-[var(--theme-primary)] bg-white" role="contentinfo">
-          <div className="max-w-7xl mx-auto px-6 py-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Image 
-                  src="/trade-voyager-logo.png" 
-                  alt="Trade Voyager - Trading Analytics Platform Footer Logo" 
-                  width={64} 
-                  height={64} 
-                  className="rounded-lg"
-                  loading="lazy"
-                  sizes="64px"
-                />
-                <span className="font-bold text-[var(--theme-primary-text)]">Trade Voyager</span>
-              </div>
-              <p className="text-sm text-[var(--theme-primary-text)]">
-                © 2025 Trade Voyager. Built for professional traders.
-              </p>
-            </div>
-          </div>
-        </footer>
+        <Footer />
       </div>
     </>
   );

@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, Shield, Users } from 'lucide-react';
+import Footer from '@/components/Footer';
 
 export default function LoginPageComponent() {
   const router = useRouter();
@@ -44,8 +45,9 @@ export default function LoginPageComponent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--theme-primary)] via-[var(--theme-surface)] to-[var(--theme-primary)] flex items-center justify-center p-4">
-      <div className="max-w-7xl w-full flex flex-col items-center">
+    <div className="min-h-screen bg-gradient-to-br from-[var(--theme-primary)] via-[var(--theme-surface)] to-[var(--theme-primary)]">
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="max-w-7xl w-full flex flex-col items-center">
         {/* Triangle Apex - Header/Logo Section */}
         <header className="text-center space-y-4 mb-16 max-w-2xl">
           <div className="flex items-center justify-center space-x-3 mb-6">
@@ -160,6 +162,8 @@ export default function LoginPageComponent() {
           </section>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }

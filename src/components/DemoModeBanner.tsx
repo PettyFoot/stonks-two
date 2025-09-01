@@ -53,7 +53,7 @@ export function DemoModeBanner() {
   };
 
   // Don't show banner on public pages
-  const isPublicPage = pathname === '/' || pathname === '/login' || pathname === '/signup' || pathname?.startsWith('/api/');
+  const isPublicPage = pathname === '/' || pathname === '/login' || pathname === '/signup' || pathname === '/about' || pathname === '/contact' || pathname === '/privacy' || pathname === '/terms' || pathname?.startsWith('/api/');
   
   if (!isDemo || isPublicPage) return null;
 
