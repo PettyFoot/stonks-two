@@ -203,7 +203,7 @@ export default function Reports() {
           <TabsList className="flex flex-wrap w-full max-w-2xl justify-center">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="detailed">Detailed</TabsTrigger>
-            <TabsTrigger value="win-vs-loss">Win vs Loss Days</TabsTrigger>
+            <TabsTrigger value="win-vs-loss">Win/Loss</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab - Original 4 Charts */}

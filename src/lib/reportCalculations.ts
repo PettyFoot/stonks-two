@@ -9,6 +9,7 @@ interface TradeData {
   avgEntryPrice?: string | number | null;
   entryPrice?: string | number | null;
   quantity?: string | number | null;
+  holdingPeriod?: string | null;
 }
 
 // Time bucket definitions
@@ -192,14 +193,26 @@ export function aggregateByMonthOfYear(trades: TradeData[]) {
   };
 }
 
-// Aggregate trades by simple duration (Intraday vs Multiday)
+// Aggregate trades by simple duration (Intraday vs Swing) using holdingPeriod field
 export function aggregateBySimpleDuration(trades: TradeData[]) {
-  const distribution = { Intraday: 0, Multiday: 0 };
-  const performance = { Intraday: 0, Multiday: 0 };
+  const distribution = { Intraday: 0, Swing: 0 };
+  const performance = { Intraday: 0, Swing: 0 };
   
   trades.forEach(trade => {
-    const seconds = trade.timeInTrade || 0;
-    const category = seconds < 86400 ? 'Intraday' : 'Multiday'; // 86400 seconds = 24 hours
+    const holdingPeriod = trade.holdingPeriod;
+    let category: 'Intraday' | 'Swing';
+    
+    // Group by holdingPeriod: SCALP and INTRADAY → Intraday, SWING/POSITION/LONG_TERM → Swing  
+    if (holdingPeriod === 'SCALP' || holdingPeriod === 'INTRADAY') {
+      category = 'Intraday';
+    } else if (holdingPeriod === 'SWING' || holdingPeriod === 'POSITION' || holdingPeriod === 'LONG_TERM') {
+      category = 'Swing';
+    } else {
+      // Fallback to timeInTrade calculation for trades without holdingPeriod
+      const seconds = trade.timeInTrade || 0;
+      category = seconds < 86400 ? 'Intraday' : 'Swing'; // 86400 seconds = 24 hours
+    }
+    
     distribution[category] += Number(trade.quantity || 0);
     performance[category] += Number(trade.pnl || 0);
   });
@@ -207,11 +220,11 @@ export function aggregateBySimpleDuration(trades: TradeData[]) {
   return {
     distribution: [
       { date: 'Intraday', value: distribution.Intraday },
-      { date: 'Multiday', value: distribution.Multiday }
+      { date: 'Swing', value: distribution.Swing }
     ],
     performance: [
       { date: 'Intraday', value: performance.Intraday },
-      { date: 'Multiday', value: performance.Multiday }
+      { date: 'Swing', value: performance.Swing }
     ]
   };
 }

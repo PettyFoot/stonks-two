@@ -46,7 +46,7 @@ export default function OnboardingPage() {
   const steps: OnboardingStep[] = [
     {
       id: 'welcome',
-      title: 'Welcome to Trade Voyager',
+      title: 'Welcome to Trade Voyager Analytics',
       description: 'Let&apos;s get you set up with your trading analytics platform',
       icon: <TrendingUp className="h-6 w-6" />,
       completed: currentStep > 0
@@ -109,12 +109,12 @@ export default function OnboardingPage() {
             <div className="flex items-center justify-center space-x-3 mb-6">
               <Image 
                 src="/trade-voyager-logo.png" 
-                alt="Trade Voyager Logo" 
+                alt="Trade Voyager Analytics Logo" 
                 width={48} 
                 height={48} 
                 className="rounded-lg"
               />
-              <h1 className="text-3xl font-bold text-[var(--theme-primary-text)]">Trade Voyager</h1>
+              <h1 className="text-3xl font-bold text-[var(--theme-primary-text)]">Trade Voyager Analytics</h1>
             </div>
             <h2 className="text-2xl font-bold text-[var(--theme-primary-text)]">Welcome, {user.name}!</h2>
             <p className="text-lg text-[var(--theme-secondary-text)] max-w-md mx-auto">
@@ -273,7 +273,7 @@ export default function OnboardingPage() {
             <CheckCircle className="h-16 w-16 text-[var(--theme-green)] mx-auto" />
             <h2 className="text-2xl font-bold text-[var(--theme-primary-text)]">You&apos;re All Set!</h2>
             <p className="text-lg text-[var(--theme-secondary-text)] max-w-md mx-auto">
-              Your Trade Voyager dashboard is ready. Start by importing your first trades 
+              Your Trade Voyager Analytics dashboard is ready. Start by importing your first trades 
               or exploring the demo data to see how everything works.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 max-w-lg mx-auto">

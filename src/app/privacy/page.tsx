@@ -5,8 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy - Trade Voyager',
-  description: 'Trade Voyager privacy policy covering data collection, usage, and protection for our trading analytics platform.',
+  title: 'Privacy Policy - Trade Voyager Analytics',
+  description: 'Trade Voyager Analytics privacy policy covering data collection, usage, and protection for our trading analytics platform.',
   robots: {
     index: true,
     follow: true,
@@ -20,7 +20,7 @@ export default function PrivacyPolicy() {
       <nav className="p-6">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-3">
-            <span className="text-2xl font-bold text-[var(--theme-primary-text)]">Trade Voyager</span>
+            <span className="text-2xl font-bold text-[var(--theme-primary-text)]">Trade Voyager Analytics</span>
           </Link>
           <Link href="/">
             <Button variant="outline" className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/50">
@@ -41,7 +41,7 @@ export default function PrivacyPolicy() {
               <section>
                 <h2 className="text-2xl font-semibold text-[var(--theme-primary-text)] mb-4">1. Introduction</h2>
                 <p className="text-gray-700 leading-relaxed">
-                  Trade Voyager ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our professional trading analytics platform. We understand that your trading data is sensitive and valuable, and we take its protection seriously.
+                  Trade Voyager Analytics ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our professional trading analytics platform. We understand that your trading data is sensitive and valuable, and we take its protection seriously.
                 </p>
               </section>
 
@@ -136,7 +136,7 @@ export default function PrivacyPolicy() {
               <section>
                 <h2 className="text-2xl font-semibold text-[var(--theme-primary-text)] mb-4">9. Updates to This Policy</h2>
                 <p className="text-gray-700 leading-relaxed">
-                  We may update this Privacy Policy periodically. We will notify you of any material changes by posting the new policy on our website and updating the "Last updated" date. Your continued use of Trade Voyager after changes are posted constitutes acceptance of the updated policy.
+                  We may update this Privacy Policy periodically. We will notify you of any material changes by posting the new policy on our website and updating the "Last updated" date. Your continued use of Trade Voyager Analytics after changes are posted constitutes acceptance of the updated policy.
                 </p>
               </section>
 

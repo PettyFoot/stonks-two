@@ -2,11 +2,12 @@ import { Metadata } from 'next';
 
 // SEO Configuration Constants
 export const SEO_CONFIG = {
-  siteName: 'Trade Voyager',
+  siteName: 'Trade Voyager Analytics',
   siteDescription: 'Professional trading analytics and performance tracking for serious traders. Track P&L, analyze performance, and improve your trading with comprehensive analytics.',
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://tradevoyager.com',
+  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tradevoyageranalytics.com',
   twitterHandle: '@tradevoyager',
-  defaultImage: '/trade-voyager-logo.png',
+  defaultImage: '/og-image.png',
+  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'support@tradevoyageranalytics.com',
   keywords: {
     primary: ['trading analytics', 'trade tracking', 'P&L analysis', 'trading performance'],
     secondary: ['stock trading', 'forex trading', 'options trading', 'trading dashboard', 'broker integration', 'trading reports'],
@@ -17,70 +18,106 @@ export const SEO_CONFIG = {
 // Page-specific SEO configurations
 export const PAGE_SEO = {
   home: {
-    title: 'Trade Voyager - Professional Trading Analytics Platform',
-    description: 'Professional trading analytics and performance tracking for serious traders. Track P&L, analyze performance, and improve your trading with comprehensive analytics.',
+    title: 'Trade Voyager Analytics | Professional Trading Platform',
+    description: 'Track your trading performance like a pro. Real-time P&L analysis, win rates, broker integration with Interactive Brokers & TD Ameritrade. Start free demo →',
     keywords: ['trading analytics platform', 'professional trading tools', 'trading performance tracker', 'broker integration', 'P&L tracking'],
     path: '/'
   },
   login: {
-    title: 'Sign In - Trade Voyager | Professional Trading Analytics',
-    description: 'Sign in to your Trade Voyager account and access professional trading analytics, performance tracking, and comprehensive reports.',
+    title: 'Sign In | Trade Voyager Analytics Dashboard Access',
+    description: 'Access your trading analytics dashboard. View real-time P&L, analyze performance, and improve your trading results. Secure login for professional traders.',
     keywords: ['trading login', 'trading account', 'secure trading platform', 'trading dashboard access'],
     path: '/login'
   },
   dashboard: {
-    title: 'Trading Dashboard - Real-Time Performance Analytics | Trade Voyager',
-    description: 'View your trading performance with real-time P&L tracking, win rates, risk metrics, and comprehensive analytics in your personalized trading dashboard.',
+    title: 'Trading Dashboard | Real-Time Performance Analytics',
+    description: 'Your complete trading performance overview. Real-time P&L, win rates, risk metrics, and detailed analytics. See exactly how profitable your trading is.',
     keywords: ['trading dashboard', 'real-time P&L', 'trading performance', 'win rate analysis', 'trading metrics'],
     path: '/dashboard'
   },
   trades: {
-    title: 'Trade History & Analysis - Track All Your Trades | Trade Voyager',
-    description: 'View, analyze, and manage your complete trade history with detailed performance metrics, filtering options, and comprehensive trade analytics.',
+    title: 'Trade History & Analysis | Complete Trading Records',
+    description: 'Analyze every trade you\'ve made. Advanced filtering, performance metrics, and insights to identify winning patterns and improve your trading strategy.',
     keywords: ['trade history', 'trade analysis', 'trading records', 'trade performance', 'trade management'],
     path: '/trades'
   },
   reports: {
-    title: 'Trading Reports & Analytics - Detailed Performance Analysis | Trade Voyager',
-    description: 'Generate comprehensive trading reports with detailed analytics, performance breakdowns, win/loss analysis, and actionable insights.',
+    title: 'Trading Reports | Professional Performance Analytics',
+    description: 'Generate professional trading reports with detailed analytics. Performance breakdowns, win/loss analysis, and actionable insights to boost profitability.',
     keywords: ['trading reports', 'performance analytics', 'trading statistics', 'win loss analysis', 'trading insights'],
     path: '/reports'
   },
   calendar: {
-    title: 'Trading Calendar - Daily Performance Overview | Trade Voyager',
-    description: 'View your trading performance organized by calendar view with daily P&L, trade counts, and performance patterns over time.',
+    title: 'Trading Calendar | Daily Performance & Patterns',
+    description: 'Visualize your trading performance by date. Daily P&L tracking, trade patterns, and performance trends to optimize your trading schedule and timing.',
     keywords: ['trading calendar', 'daily trading performance', 'trading patterns', 'calendar view', 'daily P&L'],
     path: '/calendar'
   },
   records: {
-    title: 'Trading Records Management - Organize Your Trades | Trade Voyager',
-    description: 'Manage and organize your trading records with advanced filtering, categorization, and detailed trade information management.',
+    title: 'Trading Records | Organize & Manage Your Trades',
+    description: 'Keep your trades organized with advanced filtering and categorization. Professional record keeping to track every detail and improve your strategy.',
     keywords: ['trading records', 'trade organization', 'trade management', 'record keeping', 'trade categorization'],
     path: '/records'
   },
   import: {
-    title: 'Import Trades - Connect Your Broker | Trade Voyager',
-    description: 'Import your trades from major brokers including Interactive Brokers, TD Ameritrade, and others. Easy CSV import and broker integration.',
+    title: 'Import Trades | Connect Interactive Brokers & More',
+    description: 'Connect your broker in minutes. Import trades from Interactive Brokers, TD Ameritrade, Charles Schwab, and 20+ brokers. Easy CSV import included.',
     keywords: ['import trades', 'broker integration', 'CSV import', 'Interactive Brokers', 'TD Ameritrade', 'trade import'],
     path: '/import'
   },
   'new-trade': {
-    title: 'Add New Trade - Manual Trade Entry | Trade Voyager',
-    description: 'Manually add new trades to your portfolio with detailed information including entry/exit prices, quantities, and trade notes.',
+    title: 'Add New Trade | Manual Trade Entry & Logging',
+    description: 'Log trades manually with complete details. Entry/exit prices, quantities, notes, and custom tags. Perfect for any broker or manual tracking.',
     keywords: ['add trade', 'manual trade entry', 'new trade', 'trade input', 'trade logging'],
     path: '/new-trade'
   },
   search: {
-    title: 'Search Trades - Find Specific Trades & Patterns | Trade Voyager',
-    description: 'Search and filter through your trades to find specific patterns, symbols, dates, or performance criteria with advanced search tools.',
+    title: 'Search Trades | Find Patterns & Analyze Performance',
+    description: 'Powerful trade search with advanced filters. Find winning patterns, analyze by symbol, date, or strategy. Discover what makes you profitable.',
     keywords: ['search trades', 'trade search', 'find trades', 'trade patterns', 'trade filtering'],
     path: '/search'
   },
   demo: {
-    title: 'Demo Mode - Try Trade Voyager Risk-Free | Trading Analytics Demo',
-    description: 'Explore Trade Voyager\'s full feature set with sample trading data. No signup required - see exactly how our platform can improve your trading.',
+    title: 'Free Demo | Try Trade Voyager Analytics Risk-Free',
+    description: 'Explore all features with sample trading data. No signup required. See real analytics, reports, and insights. Try it free before you commit →',
     keywords: ['trading demo', 'demo mode', 'free trial', 'trading platform demo', 'sample trading data'],
     path: '/demo'
+  },
+  contact: {
+    title: 'Contact Support | Get Trading Analytics Help Fast',
+    description: 'Need help with trading analytics or broker integration? Our expert team responds within 24 hours. Get support for imports, reports, and more.',
+    keywords: ['contact support', 'trading analytics help', 'customer service', 'trading platform support', 'broker integration help', 'trading analytics contact'],
+    path: '/contact'
+  },
+  features: {
+    title: 'Features | Professional Trading Analytics Platform',
+    description: 'Discover powerful trading analytics features: real-time P&L tracking, broker integration, advanced reports, risk analysis, and enterprise security.',
+    keywords: ['trading platform features', 'trading analytics features', 'broker integration features', 'trading reports', 'risk analysis tools', 'trading security'],
+    path: '/features'
+  },
+  pricing: {
+    title: 'Pricing | Professional Trading Analytics Plans',
+    description: 'Flexible trading analytics pricing. Free demo, professional plans from $19/month, and enterprise solutions. Start your free trial today →',
+    keywords: ['trading analytics pricing', 'trading platform cost', 'professional trading tools price', 'trading subscription', 'trading analytics plans'],
+    path: '/pricing'
+  },
+  about: {
+    title: 'About Us | Trade Voyager Analytics Mission & Team',
+    description: 'Learn about Trade Voyager Analytics: our mission to help traders succeed, our team of trading and technology experts, and our commitment to your success.',
+    keywords: ['about trade voyager', 'trading analytics company', 'trading platform team', 'trading analytics mission', 'professional trading tools'],
+    path: '/about'
+  },
+  privacy: {
+    title: 'Privacy Policy | How We Protect Your Trading Data',
+    description: 'Your trading data privacy is our priority. Learn how Trade Voyager Analytics protects, encrypts, and secures your sensitive trading information.',
+    keywords: ['trading data privacy', 'data security', 'privacy policy', 'trading data protection', 'secure trading platform'],
+    path: '/privacy'
+  },
+  terms: {
+    title: 'Terms of Service | Trade Voyager Analytics Agreement',
+    description: 'Read our terms of service for Trade Voyager Analytics. Clear, fair terms for using our professional trading analytics and performance tracking platform.',
+    keywords: ['terms of service', 'trading platform terms', 'service agreement', 'trading analytics terms', 'user agreement'],
+    path: '/terms'
   }
 };
 
@@ -181,13 +218,6 @@ export function generateStructuredData(type: 'organization' | 'softwareApplicati
           price: '0',
           priceCurrency: 'USD',
           availability: 'https://schema.org/InStock'
-        },
-        aggregateRating: {
-          '@type': 'AggregateRating',
-          ratingValue: '4.8',
-          ratingCount: '150',
-          bestRating: '5',
-          worstRating: '1'
         }
       };
 

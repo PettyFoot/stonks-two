@@ -10,12 +10,17 @@ import { useUser } from '@auth0/nextjs-auth0/client';
 import { useRouter } from 'next/navigation';
 import { SoftwareApplicationStructuredData } from '@/components/SEO';
 import { TradingFAQStructuredData } from '@/components/SEO/FAQStructuredData';
+import { OptimizedLogo } from '@/components/OptimizedImage';
 import Footer from '@/components/Footer';
+import { LoadingFallback, usePerformanceMonitor } from '@/components/Performance/LoadingOptimizer';
 
 export default function LandingPageComponent() {
   const { user, isLoading } = useUser();
   const router = useRouter();
   const [isStartingDemo, setIsStartingDemo] = useState(false);
+  
+  // Monitor Core Web Vitals
+  usePerformanceMonitor();
 
   useEffect(() => {
     if (!isLoading && user) {
@@ -81,18 +86,8 @@ export default function LandingPageComponent() {
         <nav className="p-6" role="navigation" aria-label="Main navigation">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <Image 
-                src="/trade-voyager-logo.png" 
-                alt="Trade Voyager - Professional Trading Analytics Platform Logo" 
-                width={80} 
-                height={80} 
-                className="rounded-lg"
-                priority
-                placeholder="blur"
-                blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R99V6op5+z5L7/AAJA="
-                sizes="80px"
-              />
-              <span className="text-2xl font-bold text-[var(--theme-primary-text)]">Trade Voyager</span>
+              <OptimizedLogo size="large" priority={true} />
+              <span className="text-2xl font-bold text-[var(--theme-primary-text)]">Trade Voyager Analytics</span>
             </div>
             <div className="flex items-center space-x-4">
               <Button 
@@ -100,7 +95,7 @@ export default function LandingPageComponent() {
                 className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/50"
                 onClick={startDemo}
                 disabled={isStartingDemo}
-                aria-label="Try Trade Voyager demo with sample trading data"
+                aria-label="Try Trade Voyager Analytics demo with sample trading data"
               >
                 {isStartingDemo ? (
                   <>
@@ -131,7 +126,7 @@ export default function LandingPageComponent() {
               <span className="text-[var(--theme-tertiary)]">Analytics Platform</span>
             </h1>
             <p className="text-xl text-[var(--theme-primary-text)] mb-8 max-w-3xl mx-auto">
-              Track, analyze, and improve your trading performance with comprehensive analytics, 
+              Track, analyze, and improve your trading performance with <Link href="/features" className="text-[var(--theme-tertiary)] hover:underline">comprehensive analytics</Link>, 
               broker integrations, and professional-grade reporting tools.
             </p>
             
@@ -142,7 +137,7 @@ export default function LandingPageComponent() {
                 className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/50"
                 onClick={startDemo}
                 disabled={isStartingDemo}
-                aria-label="Explore Trade Voyager demo with sample trading data"
+                aria-label="Explore Trade Voyager Analytics demo with sample trading data"
               >
                 {isStartingDemo ? (
                   <>
@@ -167,7 +162,7 @@ export default function LandingPageComponent() {
 
           {/* Feature Cards */}
           <section className="grid md:grid-cols-3 gap-8 mb-20" aria-labelledby="features-heading">
-            <h2 id="features-heading" className="sr-only">Key Features of Trade Voyager</h2>
+            <h2 id="features-heading" className="sr-only">Key Features of Trade Voyager Analytics</h2>
             
             <Card className="bg-white border-[var(--theme-primary)] hover:shadow-lg transition-shadow">
               <CardHeader>
@@ -178,7 +173,7 @@ export default function LandingPageComponent() {
               </CardHeader>
               <CardContent>
                 <p className="text-[var(--theme-primary-text)]">
-                  Real-time P&L tracking, win rates, risk metrics, and comprehensive performance breakdowns.
+                  Real-time P&L tracking, win rates, risk metrics, and comprehensive performance breakdowns. <Link href="/features" className="text-[var(--theme-tertiary)] hover:underline text-sm">Learn more →</Link>
                 </p>
               </CardContent>
             </Card>
@@ -221,7 +216,8 @@ export default function LandingPageComponent() {
                 </h2>
                 <p className="text-lg text-[var(--theme-tertiary)] mb-8 max-w-2xl mx-auto">
                   Explore all features with sample trading data. No signup required - 
-                  see exactly how Trade Voyager can improve your trading performance.
+                  see exactly how Trade Voyager Analytics can improve your trading performance. 
+                  Ready to upgrade? Check our <Link href="/pricing" className="underline hover:no-underline">flexible pricing plans</Link>.
                 </p>
                 <div className="flex items-center justify-center space-x-4">
                   <Link href="/demo">

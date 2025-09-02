@@ -89,6 +89,7 @@ export async function GET(request: NextRequest) {
         entryDate: true,
         exitDate: true,
         timeInTrade: true,
+        holdingPeriod: true,
         pnl: true,
         quantity: true,
         avgEntryPrice: true,

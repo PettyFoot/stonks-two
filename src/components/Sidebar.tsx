@@ -79,13 +79,13 @@ export default function Sidebar() {
             )}>
               <Image 
                 src="/trade-voyager-logo.png" 
-                alt="Trade Voyager Logo" 
+                alt="Trade Voyager Analytics Logo" 
                 width={32} 
                 height={32} 
                 className="rounded-lg"
               />
               {!isCollapsed && (
-                <span className="text-lg font-semibold">Trade Voyager</span>
+                <span className="text-lg font-semibold">Trade Voyager Analytics</span>
               )}
             </div>
           </div>

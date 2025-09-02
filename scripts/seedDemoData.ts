@@ -184,7 +184,7 @@ async function createDemoUser() {
   const demoUser = await prisma.user.create({
     data: {
       id: demoUserId,
-      email: 'demo@tradevoyager.com',
+      email: 'demo@tradevoyageranalytics.com',
       auth0Id: 'demo|readonly-001',
       name: 'Demo Trader',
     }

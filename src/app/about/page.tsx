@@ -7,8 +7,8 @@ import { BarChart3, TrendingUp, Shield, Users, Target, Zap, Lock, PieChart } fro
 import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
-  title: 'About Us - Trade Voyager',
-  description: 'Learn about Trade Voyager, the professional trading analytics platform built for serious traders. Discover our mission, features, and commitment to trader success.',
+  title: 'About Us - Trade Voyager Analytics',
+  description: 'Learn about Trade Voyager Analytics, the professional trading analytics platform built for serious traders. Discover our mission, features, and commitment to trader success.',
   robots: {
     index: true,
     follow: true,
@@ -24,12 +24,12 @@ export default function AboutUs() {
           <Link href="/" className="flex items-center space-x-3">
             <Image 
               src="/trade-voyager-logo.png" 
-              alt="Trade Voyager Logo" 
+              alt="Trade Voyager Analytics Logo" 
               width={48} 
               height={48} 
               className="rounded-lg"
             />
-            <span className="text-2xl font-bold text-[var(--theme-primary-text)]">Trade Voyager</span>
+            <span className="text-2xl font-bold text-[var(--theme-primary-text)]">Trade Voyager Analytics</span>
           </Link>
           <Link href="/">
             <Button variant="outline" className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/50">
@@ -43,7 +43,7 @@ export default function AboutUs() {
       <main className="max-w-6xl mx-auto px-6 py-12">
         {/* Hero Section */}
         <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold text-[var(--theme-primary-text)] mb-6">About Trade Voyager</h1>
+          <h1 className="text-5xl font-bold text-[var(--theme-primary-text)] mb-6">About Trade Voyager Analytics</h1>
           <p className="text-xl text-[var(--theme-primary-text)] mb-8 max-w-3xl mx-auto">
             Empowering traders with professional-grade analytics and performance tracking tools 
             to make informed decisions and improve trading outcomes.

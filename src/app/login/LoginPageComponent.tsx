@@ -53,13 +53,13 @@ export default function LoginPageComponent() {
             <div className="flex items-center justify-center space-x-3 mb-6">
               <Image 
                 src="/trade-voyager-logo.png" 
-                alt="Trade Voyager - Professional Trading Analytics Platform Logo" 
+                alt="Trade Voyager Analytics - Professional Trading Analytics Platform Logo" 
                 width={50} 
                 height={50} 
                 className="rounded-lg"
                 priority
               />
-              <span className="text-3xl font-bold text-[var(--theme-primary-text)]">Trade Voyager</span>
+              <span className="text-3xl font-bold text-[var(--theme-primary-text)]">Trade Voyager Analytics</span>
             </div>
             <h1 className="text-5xl font-bold text-[var(--theme-primary-text)] leading-tight">
               Professional Trading<br />
@@ -75,7 +75,7 @@ export default function LoginPageComponent() {
             
             {/* Left Base - Demo Mode Section */}
             <section className="flex-1 max-w-md lg:max-w-lg space-y-6" aria-labelledby="demo-features">
-              <h2 id="demo-features" className="sr-only">Trade Voyager Features</h2>
+              <h2 id="demo-features" className="sr-only">Trade Voyager Analytics Features</h2>
               
               {/* Feature Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
@@ -106,7 +106,7 @@ export default function LoginPageComponent() {
                   className="w-full bg-white text-[var(--theme-primary-text)] border-white hover:bg-gray-50"
                   onClick={startDemo}
                   disabled={isStartingDemo}
-                  aria-label="Try Trade Voyager demo with sample trading data"
+                  aria-label="Try Trade Voyager Analytics demo with sample trading data"
                 >
                   {isStartingDemo ? (
                     <>
@@ -131,7 +131,7 @@ export default function LoginPageComponent() {
                   <p className="text-[var(--theme-primary-text)]">Sign in to your trading account</p>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Link href="/api/auth/login" aria-label="Sign in to your Trade Voyager account">
+                  <Link href="/api/auth/login" aria-label="Sign in to your Trade Voyager Analytics account">
                     <Button className="w-full bg-[var(--theme-tertiary)] hover:bg-[var(--theme-tertiary)]/80 text-white">
                       Sign In
                     </Button>
@@ -146,7 +146,7 @@ export default function LoginPageComponent() {
                     </div>
                   </div>
 
-                  <Link href="/api/auth/signup" aria-label="Create a new Trade Voyager account">
+                  <Link href="/api/auth/signup" aria-label="Create a new Trade Voyager Analytics account">
                     <Button variant="outline" className="w-full border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/30">
                       Create New Account
                     </Button>

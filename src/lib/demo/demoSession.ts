@@ -47,7 +47,7 @@ export async function createDemoSession(): Promise<DemoSession> {
     demoUser: {
       id: 'demo-user-001',
       name: 'Demo Trader',
-      email: 'demo@tradevoyager.com',
+      email: 'demo@tradevoyageranalytics.com',
       picture: '/demo-avatar.png',
     },
     features: {

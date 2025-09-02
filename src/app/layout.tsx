@@ -16,8 +16,8 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(SEO_CONFIG.siteUrl),
   title: {
-    default: "Trade Voyager - Professional Trading Analytics Platform",
-    template: "%s | Trade Voyager"
+    default: "Trade Voyager Analytics - Professional Trading Analytics Platform",
+    template: "%s | Trade Voyager Analytics"
   },
   description: SEO_CONFIG.siteDescription,
   keywords: [
@@ -42,15 +42,16 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     siteName: SEO_CONFIG.siteName,
-    title: 'Trade Voyager - Professional Trading Analytics Platform',
+    title: 'Trade Voyager Analytics - Professional Trading Analytics Platform',
     description: SEO_CONFIG.siteDescription,
     url: SEO_CONFIG.siteUrl,
     images: [
       {
-        url: 'https://www.tradevoyageranalytics.com/trade-voyager-logo.png',
+        url: `${SEO_CONFIG.siteUrl}${SEO_CONFIG.defaultImage}`,
         width: 1200,
         height: 630,
-        alt: 'Trade Voyager - Professional Trading Analytics Platform',
+        alt: 'Trade Voyager Analytics - Professional Trading Analytics Platform',
+        type: 'image/png',
       },
     ],
     locale: 'en_US',
@@ -59,9 +60,9 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     site: SEO_CONFIG.twitterHandle,
     creator: SEO_CONFIG.twitterHandle,
-    title: 'Trade Voyager - Professional Trading Analytics Platform',
+    title: 'Trade Voyager Analytics - Professional Trading Analytics Platform',
     description: SEO_CONFIG.siteDescription,
-    images: ['https://www.tradevoyageranalytics.com/trade-voyager-logo.png'],
+    images: [`${SEO_CONFIG.siteUrl}${SEO_CONFIG.defaultImage}`],
   },
   alternates: {
     canonical: SEO_CONFIG.siteUrl,

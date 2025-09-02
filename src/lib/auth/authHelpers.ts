@@ -27,7 +27,7 @@ export async function getCurrentUserWithDemo(request: NextRequest): Promise<User
   if (isDemoUser && demoUserId) {
     return {
       id: demoUserId,
-      email: 'demo@tradevoyager.com',
+      email: 'demo@tradevoyageranalytics.com',
       name: 'Demo Trader',
       isDemo: true,
     };

@@ -12,14 +12,14 @@ export default function Footer() {
             <div className="flex items-center space-x-3 mb-4">
               <Image 
                 src="/trade-voyager-logo.png" 
-                alt="Trade Voyager - Trading Analytics Platform Footer Logo" 
+                alt="Trade Voyager Analytics - Trading Analytics Platform Footer Logo" 
                 width={64} 
                 height={64} 
                 className="rounded-lg"
                 loading="lazy"
                 sizes="64px"
               />
-              <span className="text-xl font-bold text-[var(--theme-primary-text)]">Trade Voyager</span>
+              <span className="text-xl font-bold text-[var(--theme-primary-text)]">Trade Voyager Analytics</span>
             </div>
             <p className="text-gray-600 mb-4 max-w-md">
               Professional trading analytics and performance tracking for serious traders. 
@@ -75,7 +75,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-gray-200 flex flex-col md:flex-row items-center justify-between">
           <p className="text-sm text-gray-600 mb-4 md:mb-0">
-            © 2025 Trade Voyager. Built for professional traders.
+            © 2025 Trade Voyager Analytics. Built for professional traders.
           </p>
           <p className="text-xs text-gray-500">
             Professional trading analytics platform with bank-level security

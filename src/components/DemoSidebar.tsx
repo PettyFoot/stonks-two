@@ -39,13 +39,13 @@ export default function DemoSidebar() {
       <div className="flex items-center gap-3 px-6 py-6">
         <Image 
           src="/trade-voyager-logo.png" 
-          alt="Trade Voyager Logo" 
+          alt="Trade Voyager Analytics Logo" 
           width={32} 
           height={32} 
           className="rounded-lg"
         />
         <div className="flex items-center gap-2">
-          <span className="text-lg font-semibold">Trade Voyager</span>
+          <span className="text-lg font-semibold">Trade Voyager Analytics</span>
         </div>
         <Badge variant="secondary" className="ml-2 text-xs bg-blue-600 text-white">
           Demo

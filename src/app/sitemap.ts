@@ -82,6 +82,46 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.5,
     },
     
+    // Feature/Marketing pages - High priority
+    {
+      url: `${baseUrl}/features`,
+      lastModified: currentDate,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/pricing`,
+      lastModified: currentDate,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    
+    // Static/Legal pages - Medium priority
+    {
+      url: `${baseUrl}/about`,
+      lastModified: currentDate,
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/contact`,
+      lastModified: currentDate,
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/privacy`,
+      lastModified: currentDate,
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+    {
+      url: `${baseUrl}/terms`,
+      lastModified: currentDate,
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+    
     // Note: Private authenticated pages are intentionally excluded:
     // - /dashboard
     // - /trades
@@ -92,15 +132,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // - /new-trade
     // - /search
     // These should not be indexed as they require authentication
-    
-    // Future public pages can be added here:
-    // - /about
-    // - /pricing
-    // - /features
-    // - /contact
-    // - /help
-    // - /privacy
-    // - /terms
-    // - /blog
   ];
 }

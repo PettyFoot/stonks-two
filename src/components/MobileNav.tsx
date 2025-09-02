@@ -65,12 +65,12 @@ export default function MobileNav() {
             <div className="flex items-center gap-3 px-6 py-6 border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer">
               <Image 
                 src="/trade-voyager-logo.png" 
-                alt="Trade Voyager Logo" 
+                alt="Trade Voyager Analytics Logo" 
                 width={32} 
                 height={32} 
                 className="rounded-lg"
               />
-              <span className="text-lg font-semibold text-white">Trade Voyager</span>
+              <span className="text-lg font-semibold text-white">Trade Voyager Analytics</span>
             </div>
           </Link>
 

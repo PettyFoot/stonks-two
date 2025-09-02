@@ -36,7 +36,7 @@ async function checkDemoSession(request: NextRequest): Promise<DemoSession | nul
       demoUser: {
         id: 'demo-user-001',
         name: 'Demo Trader',
-        email: 'demo@tradevoyager.com'
+        email: 'demo@tradevoyageranalytics.com'
       },
       features: {
         canUpload: false,

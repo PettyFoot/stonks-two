@@ -1,4 +1,4 @@
-# Trade Voyager - Professional Trading Analytics Platform
+# Trade Voyager Analytics - Professional Trading Analytics Platform
 # Robots.txt Configuration
 
 User-agent: *
@@ -27,7 +27,7 @@ Allow: /api/vitals
 Crawl-delay: 1
 
 # Sitemap location
-Sitemap: https://tradevoyager.com/sitemap.xml
+Sitemap: https://www.tradevoyageranalytics.com/sitemap.xml
 
 # Google-specific rules
 User-agent: Googlebot
