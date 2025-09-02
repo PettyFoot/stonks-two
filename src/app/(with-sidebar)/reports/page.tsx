@@ -200,7 +200,7 @@ export default function Reports() {
 
         {/* FIRST TAB SYSTEM: Main Tabs */}
         <Tabs defaultValue="overview" className="space-y-6 mb-8">
-          <TabsList className="grid grid-cols-3 w-full max-w-2xl">
+          <TabsList className="flex flex-wrap w-full max-w-2xl justify-center">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="detailed">Detailed</TabsTrigger>
             <TabsTrigger value="win-vs-loss">Win vs Loss Days</TabsTrigger>
@@ -224,7 +224,7 @@ export default function Reports() {
             
             {/* Four chart grid - Original Overview Charts */}
             {!loading && !error && (
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Daily P&L Average Chart */}
                 <CustomBarChart 
                   data={dailyPnlData}
@@ -276,7 +276,7 @@ export default function Reports() {
             {/* SECOND TAB SYSTEM: New Enhanced Analysis Tabs (Days/Times, Price/Volume, etc.) */}
             <Tabs defaultValue="days-times" className="space-y-4">
               <div className="flex justify-center">
-                <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+                <TabsList className="flex flex-wrap w-full max-w-2xl justify-center">
                   <TabsTrigger value="days-times">Days/Times</TabsTrigger>
                   <TabsTrigger value="price-volume">Price/Volume</TabsTrigger>
                   <TabsTrigger value="instrument">Instrument</TabsTrigger>

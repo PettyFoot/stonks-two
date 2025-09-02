@@ -56,7 +56,7 @@ export default function MobileNav() {
           <span className="sr-only">Toggle navigation menu</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[280px] p-0 bg-theme-secondary">
+      <SheetContent side="left" className="w-[280px] p-0 bg-secondary">
         <div className="flex h-full flex-col">
           {/* Logo and Brand - Now Clickable */}
           <Link href="/dashboard" onClick={() => setOpen(false)}>

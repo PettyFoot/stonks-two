@@ -112,7 +112,7 @@ const EquityChart = React.memo(function EquityChart({
     return (
       <Card className="bg-surface border-default">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-medium text-primary">{title}</CardTitle>
+          <CardTitle className="text-sm sm:text-base font-medium text-primary">{title}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center text-muted" style={{ height: `${height}px` }}>
@@ -126,7 +126,7 @@ const EquityChart = React.memo(function EquityChart({
   return (
     <Card className="bg-surface border-default">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-medium text-primary">{title}</CardTitle>
+        <CardTitle className="text-sm sm:text-base font-medium text-primary">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={height}>

@@ -367,26 +367,26 @@ export default function CalendarContent() {
           </CardHeader>
           <CardContent>
             {/* Days of Week Header */}
-            <div className="grid grid-cols-8 gap-1 mb-2">
+            <div className="grid grid-cols-7 lg:grid-cols-8 gap-1 mb-2">
               {daysOfWeek.map(day => (
                 <div key={day} className="p-2 text-center text-sm font-medium text-theme-secondary-text">
                   {day}
                 </div>
               ))}
-              <div className="p-2 text-center text-sm font-medium text-theme-secondary-text">
+              <div className="hidden lg:block p-2 text-center text-sm font-medium text-theme-secondary-text">
                 Total
               </div>
             </div>
 
                 {/* Calendar Days */}
-                <div className="grid grid-cols-8 gap-1">
+                <div className="grid grid-cols-7 lg:grid-cols-8 gap-1">
                   {generateCalendarDays().map((day, index) => {
                     if (isWeekTotal(day)) {
-                      // Weekly total cell
+                      // Weekly total cell - hidden on mobile
                       return (
                         <div
                           key={index}
-                          className="min-h-[100px] border border-theme-border rounded-lg p-2 bg-theme-surface/50 text-center flex flex-col justify-center"
+                          className="hidden lg:flex min-h-[100px] border border-theme-border rounded-lg p-2 bg-theme-surface/50 text-center flex-col justify-center"
                         >
                           <div className="text-sm font-bold mb-2 text-theme-primary-text">
                             Week {day.weekNumber}
@@ -414,11 +414,13 @@ export default function CalendarContent() {
                           onClick={() => day && !day.isPrevMonth && !day.isNextMonth && handleDayClick(day.dayStr)}
                           disabled={!day || day.isPrevMonth || day.isNextMonth}
                           className={`
-                            min-h-[100px] border border-theme-border rounded-lg p-2 text-left transition-colors
+                            min-h-[80px] lg:min-h-[100px] border border-theme-border rounded-lg p-1 lg:p-2 text-left transition-colors
                             ${!day ? 'bg-theme-surface/20 cursor-default' : 
                               day.isPrevMonth || day.isNextMonth ? 
                                 'bg-theme-surface/10 cursor-default opacity-50' :
                               day && dayHasTradeData(day.dayStr) ? 
+                                Number(day.pnl || 0) > 0 ? 'bg-theme-green hover:bg-theme-green/80 cursor-pointer text-white' :
+                                Number(day.pnl || 0) < 0 ? 'bg-theme-red hover:bg-theme-red/80 cursor-pointer text-white' :
                                 'bg-white hover:bg-theme-surface/50 cursor-pointer' : 
                                 'bg-white hover:bg-theme-surface/30 cursor-default'
                             }
@@ -428,28 +430,11 @@ export default function CalendarContent() {
                           aria-label={day ? `${day.date} - ${day.tradeCount || 0} trades${dayHasTradeData(day.dayStr) && !day.isPrevMonth && !day.isNextMonth ? ' (clickable)' : ''}` : undefined}
                         >
                           {day && (
-                            <>
-                              <div className={`text-sm font-medium mb-1 ${day.isPrevMonth || day.isNextMonth ? 'text-theme-secondary-text opacity-75' : 'text-theme-primary-text'}`}>
+                            <div className="flex items-center justify-center h-full">
+                              <div className={`text-lg font-medium ${day.isPrevMonth || day.isNextMonth ? 'text-theme-secondary-text opacity-75' : dayHasTradeData(day.dayStr) ? 'text-white' : 'text-theme-primary-text'}`}>
                                 {day.date}
                               </div>
-                              {day.pnl !== undefined && !(day.isPrevMonth || day.isNextMonth) && (
-                                <div className="space-y-1">
-                                  <div className={`text-xs font-medium ${Number(day.pnl) >= 0 ? 'text-theme-green' : 'text-theme-red'}`}>
-                                    ${Number(day.pnl) >= 0 ? '+' : ''}{Number(day.pnl).toFixed(2)}
-                                  </div>
-                                  {(day.tradeCount || 0) > 0 && (
-                                    <>
-                                      <div className="text-xs text-theme-secondary-text">
-                                        {day.tradeCount || 0} trade{(day.tradeCount || 0) !== 1 ? 's' : ''}
-                                      </div>
-                                      <div className="text-xs text-theme-secondary-text">
-                                        {day.winRate}% win
-                                      </div>
-                                    </>
-                                  )}
-                                </div>
-                              )}
-                            </>
+                            </div>
                           )}
                         </button>
                       );

@@ -106,14 +106,14 @@ export default function Trades() {
         demo={isDemo}
       />
 
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-3 sm:p-6">
         {/* Trades Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-primary">Trades</h2>
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3 sm:gap-4">
+            <h2 className="text-base sm:text-lg font-semibold text-primary">Trades</h2>
             
             {/* Action Buttons */}
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
               <Button
                 onClick={calculateTrades}
                 disabled={calculating}
@@ -185,29 +185,29 @@ export default function Trades() {
         )}
 
         {/* Summary Stats */}
-        <div className="mt-6 grid grid-cols-4 gap-4">
-          <div className="bg-surface border border-default rounded-lg p-4">
-            <div className="text-sm text-muted mb-1">Total Trades</div>
-            <div className="text-2xl font-bold text-primary">{tradesData?.count || 0}</div>
+        <div className="mt-4 sm:mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-surface border border-default rounded-lg p-3 sm:p-4">
+            <div className="text-xs sm:text-sm text-muted mb-1">Total Trades</div>
+            <div className="text-xl sm:text-2xl font-bold text-primary">{tradesData?.count || 0}</div>
           </div>
-          <div className="bg-surface border border-default rounded-lg p-4">
-            <div className="text-sm text-muted mb-1">Win Rate</div>
-            <div className="text-2xl font-bold text-[var(--theme-green)]">
+          <div className="bg-surface border border-default rounded-lg p-3 sm:p-4">
+            <div className="text-xs sm:text-sm text-muted mb-1">Win Rate</div>
+            <div className="text-xl sm:text-2xl font-bold text-[var(--theme-green)]">
               {filteredTrades.length > 0 
                 ? ((filteredTrades.filter(t => t.pnl > 0).length / filteredTrades.length) * 100).toFixed(1)
                 : '0'
               }%
             </div>
           </div>
-          <div className="bg-surface border border-default rounded-lg p-4">
-            <div className="text-sm text-muted mb-1">Total Volume</div>
-            <div className="text-2xl font-bold text-primary">
+          <div className="bg-surface border border-default rounded-lg p-3 sm:p-4">
+            <div className="text-xs sm:text-sm text-muted mb-1">Total Volume</div>
+            <div className="text-xl sm:text-2xl font-bold text-primary">
               {(tradesData?.totalVolume || 0).toLocaleString()}
             </div>
           </div>
-          <div className="bg-surface border border-default rounded-lg p-4">
-            <div className="text-sm text-muted mb-1">Total P&L</div>
-            <div className={`text-2xl font-bold ${
+          <div className="bg-surface border border-default rounded-lg p-3 sm:p-4">
+            <div className="text-xs sm:text-sm text-muted mb-1">Total P&L</div>
+            <div className={`text-xl sm:text-2xl font-bold ${
               (tradesData?.totalPnl || 0) >= 0 ? 'text-[var(--theme-green)]' : 'text-[var(--theme-red)]'
             }`}>
               ${(tradesData?.totalPnl || 0).toFixed(2)}

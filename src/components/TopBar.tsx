@@ -36,7 +36,7 @@ export default function TopBar({
   notification 
 }: TopBarProps) {
   return (
-    <div className="bg-surface border-b border-default px-6 py-4">
+    <div className="bg-surface border-b border-default px-3 sm:px-6 py-3 sm:py-4">
       {/* Notification Bar */}
       {notification && (
         <div className="mb-4 rounded-lg bg-positive text-white px-4 py-2 text-sm flex items-center justify-between">
@@ -51,9 +51,9 @@ export default function TopBar({
 
       <div className="relative flex items-center justify-center">
         {/* Title Section - Centered */}
-        <div className="flex items-center gap-2 md:gap-4">
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-            <h1 className="text-lg sm:text-xl font-semibold text-primary">{title}</h1>
+            <h1 className="text-base sm:text-lg lg:text-xl font-semibold text-primary">{title}</h1>
             {showEditLayout && (
               <Button variant="ghost" size="sm" className="hidden sm:flex h-7 px-2 text-muted hover:text-primary">
                 <Edit className="h-3 w-3 mr-1" />
@@ -61,7 +61,7 @@ export default function TopBar({
               </Button>
             )}
             {subtitle && (
-              <Badge variant="secondary" className="self-start sm:self-auto sm:ml-2 bg-positive text-white hover:bg-positive">
+              <Badge variant="secondary" className="self-start sm:self-auto sm:ml-2 bg-positive text-white hover:bg-positive text-xs sm:text-sm">
                 {subtitle}
               </Badge>
             )}

@@ -207,20 +207,20 @@ export default function DashboardComponent() {
       
       <FilterPanel />
       
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-3 sm:p-6">
         {/* Daily Calendar Cards */}
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold text-primary mb-4">
+        <div className="mb-4 sm:mb-6">
+          <h2 className="text-base sm:text-lg font-semibold text-primary mb-3 sm:mb-4">
             {getDateRangeDisplay}
           </h2>
           <KPICards days={analytics.dayData || []} />
         </div>
 
         {/* Charts Grid */}
-        <div className="grid grid-cols-6 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-6 gap-3 sm:gap-4 lg:gap-6">
           {/* Row 1: Main P&L Chart and Key Metrics */}
           {/* Cumulative P&L - Reduced Width */}
-          <div className="col-span-4 row-span-2">
+          <div className="col-span-1 lg:col-span-4 lg:row-span-2">
             <EquityChart 
               data={performanceData}
               title="Cumulative P&L"
@@ -229,7 +229,7 @@ export default function DashboardComponent() {
           </div>
 
           {/* Winning vs Losing Trades - Pie Chart */}
-          <div className="col-span-1 flex flex-col justify-center">
+          <div className="col-span-1 lg:col-span-1 flex flex-col justify-center">
             <CustomPieChart 
               data={winLossData}
               title="Winning vs Losing Trades"
@@ -238,7 +238,7 @@ export default function DashboardComponent() {
           </div>
 
           {/* Largest Gain vs Largest Loss Gauge */}
-          <div className="col-span-1 flex flex-col justify-center">
+          <div className="col-span-1 lg:col-span-1 flex flex-col justify-center">
             <LargestGainLossGauge
               title="Largest Gain vs Largest Loss"
               largestGain={metrics.largestGain}
@@ -249,7 +249,7 @@ export default function DashboardComponent() {
 
           {/* Second Row - Fill gap under Cumulative P&L */}
           {/* Max Consecutive Wins */}
-          <div className="col-span-1 flex flex-col justify-center">
+          <div className="col-span-1 lg:col-span-1 flex flex-col justify-center">
             <Card className="bg-surface border-default overflow-hidden" style={{ height: CHART_HEIGHTS.SM }}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-primary">Max Consecutive Wins</CardTitle>
@@ -266,7 +266,7 @@ export default function DashboardComponent() {
           </div>
 
           {/* Max Consecutive Losses */}
-          <div className="col-span-1 flex flex-col justify-center">
+          <div className="col-span-1 lg:col-span-1 flex flex-col justify-center">
             <Card className="bg-surface border-default overflow-hidden" style={{ height: CHART_HEIGHTS.SM }}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-primary">Max Consecutive Losses</CardTitle>
@@ -284,7 +284,7 @@ export default function DashboardComponent() {
 
           {/* Row 2: Horizontal Bar Charts and Metrics */}
           {/* Hold Time Winning Trades vs Losing Trades */}
-          <div className="col-span-2">
+          <div className="col-span-1 lg:col-span-2">
             <HorizontalBarChart
               title="Hold Time Winning vs Losing Trades"
               data={holdTimeData}
@@ -293,7 +293,7 @@ export default function DashboardComponent() {
           </div>
 
           {/* Average Winning Trade vs Losing Trade */}
-          <div className="col-span-2">
+          <div className="col-span-1 lg:col-span-2">
             <HorizontalBarChart
               title="Average Winning vs Losing Trade"
               data={avgWinLossData}
@@ -302,7 +302,7 @@ export default function DashboardComponent() {
           </div>
 
           {/* Largest Gain vs Largest Loss */}
-          <div className="col-span-2">
+          <div className="col-span-1 lg:col-span-2">
             <Card className="bg-surface border-default overflow-hidden" style={{ height: CHART_HEIGHTS.SM }}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-medium text-primary">Largest Gain vs Largest Loss</CardTitle>
@@ -327,7 +327,7 @@ export default function DashboardComponent() {
           </div>
 
           {/* Performance By Duration */}
-          <div className="col-span-2">
+          <div className="col-span-1 lg:col-span-2">
             <HorizontalBarChart
               title="Performance By Duration"
               data={durationData}
@@ -336,7 +336,7 @@ export default function DashboardComponent() {
           </div>
 
           {/* Profit Factor Gauge */}
-          <div className="col-span-2">
+          <div className="col-span-1 lg:col-span-2">
             <GaugeChart
               title="Profit Factor"
               value={metrics.profitFactor}
@@ -347,7 +347,7 @@ export default function DashboardComponent() {
           </div>
 
           {/* Average Daily Volume */}
-          <div className="col-span-2">
+          <div className="col-span-1 lg:col-span-2">
             <Card className="bg-surface border-default overflow-hidden" style={{ height: CHART_HEIGHTS.SM }}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-medium text-primary">Average Daily Volume</CardTitle>
@@ -365,7 +365,7 @@ export default function DashboardComponent() {
 
           {/* Row 3: Performance Distribution Charts - Larger Size */}
           {/* Performance By Day Of Week */}
-          <div className="col-span-3">
+          <div className="col-span-1 lg:col-span-3">
             <DistributionCharts 
               data={dayOfWeekData}
               title="Performance By Day Of Week"
@@ -374,7 +374,7 @@ export default function DashboardComponent() {
           </div>
 
           {/* Performance By Month Of Year */}
-          <div className="col-span-3">
+          <div className="col-span-1 lg:col-span-3">
             <DistributionCharts 
               data={monthOfYearData}
               title="Performance By Month Of Year"
@@ -383,7 +383,7 @@ export default function DashboardComponent() {
           </div>
 
           {/* Empty space filler or additional metrics can go here */}
-          <div className="col-span-6">
+          <div className="col-span-1 lg:col-span-6 hidden lg:block">
             {/* This space can be used for additional metrics or left empty for balance */}
             <div className="h-full flex items-center justify-center text-muted-foreground">
               {/* Future metrics or charts can go here */}

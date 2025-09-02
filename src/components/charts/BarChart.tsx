@@ -106,10 +106,10 @@ const CustomBarChart = React.memo(function CustomBarChart({
     return (
       <Card className="bg-surface border-default">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-medium text-primary">{title}</CardTitle>
+          <CardTitle className="text-sm sm:text-base font-medium text-primary">{title}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center text-muted" style={{ height: `${height}px` }}>
+          <div className="flex items-center justify-center text-muted text-xs sm:text-sm" style={{ height: `${height}px` }}>
             No data available for the selected period
           </div>
         </CardContent>
@@ -120,11 +120,11 @@ const CustomBarChart = React.memo(function CustomBarChart({
   return (
     <Card className="bg-surface border-default">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-medium text-primary">{title}</CardTitle>
+        <CardTitle className="text-sm sm:text-base font-medium text-primary">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={height}>
-          <BarChart data={data} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+          <BarChart data={data} margin={{ top: 5, right: 2, left: 2, bottom: 5 }}>
             {showGrid && (
               <CartesianGrid 
                 strokeDasharray="3 3" 

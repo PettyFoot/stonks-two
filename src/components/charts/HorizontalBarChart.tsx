@@ -39,7 +39,7 @@ export default function HorizontalBarChart({
   return (
     <Card className="bg-surface border-default overflow-hidden" style={{ height }}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-medium text-primary">{title}</CardTitle>
+        <CardTitle className="text-sm sm:text-base font-medium text-primary">{title}</CardTitle>
       </CardHeader>
       <CardContent style={{ height: `calc(100% - 52px)`, padding: '0.75rem 1rem' }}>
         <div className="h-full flex flex-col justify-center gap-3">

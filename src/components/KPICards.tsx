@@ -12,7 +12,7 @@ interface KPICardsProps {
 
 export default function KPICards({ days, className }: KPICardsProps) {
   return (
-    <div className={cn('grid grid-cols-7 gap-4', className)}>
+    <div className={cn('grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-2 sm:gap-3 lg:gap-4', className)}>
       {days.map((day) => {
         const date = new Date(day.date);
         const dayNumber = date.getDate();
@@ -24,15 +24,15 @@ export default function KPICards({ days, className }: KPICardsProps) {
           <Card 
             key={day.date} 
             className={cn(
-              'min-h-[120px] cursor-pointer transition-all hover:shadow-md',
+              'min-h-[100px] sm:min-h-[120px] cursor-pointer transition-all hover:shadow-md',
               hasData ? 'bg-surface border-default' : 'bg-primary border-primary',
               isToday && 'ring-2 ring-tertiary'
             )}
           >
-            <CardContent className="p-3">
+            <CardContent className="p-2 sm:p-3">
               {/* Header */}
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-lg font-semibold text-primary">
+              <div className="flex items-center justify-between mb-1 sm:mb-2">
+                <div className="text-base sm:text-lg font-semibold text-primary">
                   {dayNumber}
                 </div>
                 <div className="text-xs text-muted uppercase">
@@ -41,9 +41,9 @@ export default function KPICards({ days, className }: KPICardsProps) {
               </div>
 
               {/* P&L */}
-              <div className="mb-2">
+              <div className="mb-1 sm:mb-2">
                 <div className={cn(
-                  'text-lg font-semibold',
+                  'text-sm sm:text-lg font-semibold',
                   hasData 
                     ? day.pnl >= 0 
                       ? 'text-positive' 
@@ -55,7 +55,7 @@ export default function KPICards({ days, className }: KPICardsProps) {
               </div>
 
               {/* Stats */}
-              <div className="space-y-1 text-xs text-muted">
+              <div className="space-y-0.5 sm:space-y-1 text-xs text-muted">
                 <div>{hasData ? day.trades : 0} trades</div>
                 {hasData && day.winRate !== undefined && (
                   <div className="text-xs">

@@ -45,8 +45,8 @@ export default function LoginPageComponent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--theme-primary)] via-[var(--theme-surface)] to-[var(--theme-primary)]">
-      <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[var(--theme-primary)] via-[var(--theme-surface)] to-[var(--theme-primary)] flex flex-col">
+      <div className="flex-grow flex items-center justify-center p-4">
         <div className="max-w-7xl w-full flex flex-col items-center">
           {/* Triangle Apex - Header/Logo Section */}
           <header className="text-center space-y-4 mb-16 max-w-2xl">
@@ -162,9 +162,9 @@ export default function LoginPageComponent() {
             </section>
           </div>
         </div>
-
-        <Footer />
       </div>
+
+      <Footer />
     </div>
   );
 }

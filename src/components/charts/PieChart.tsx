@@ -45,7 +45,7 @@ export default function CustomPieChart({
   return (
     <Card className="bg-surface border-default" style={{ height }}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-medium text-primary">{title}</CardTitle>
+        <CardTitle className="text-sm sm:text-base font-medium text-primary">{title}</CardTitle>
       </CardHeader>
       <CardContent className="flex items-center justify-center" style={{ height: `calc(100% - 50px)`, padding: '0.5rem' }}>
         <ResponsiveContainer width="100%" height="100%">

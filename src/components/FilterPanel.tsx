@@ -137,9 +137,9 @@ export default function FilterPanel({
         "overflow-hidden transition-all duration-300",
         !isExpanded && isMobile ? "max-h-0" : "max-h-[1000px]"
       )}>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 gap-4">
         {/* Left Group - Basic Filters */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         {/* Dynamic Symbol Filter */}
         <DynamicFilterDropdown
           label="Symbol"
@@ -211,7 +211,7 @@ export default function FilterPanel({
         </div>
 
         {/* Right Group - Date Controls and Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
 
         {/* Time Frame Preset Dropdown */}
         <div className="flex items-center gap-2">
@@ -239,22 +239,26 @@ export default function FilterPanel({
         </div>
 
         {/* From - To Date Range Section */}
-        <div className="flex items-center gap-2 px-3 py-1 bg-muted/5 rounded-md border">
-          <span className="text-sm font-medium text-primary">From</span>
-          <Input 
-            type="date" 
-            value={filters.customDateRange?.from || ''} 
-            onChange={(e) => setCustomDateRange(e.target.value, filters.customDateRange?.to)}
-            className="w-36 h-8 text-sm border-none bg-transparent"
-          />
-          <span className="text-muted">-</span>
-          <span className="text-sm font-medium text-primary">To</span>
-          <Input 
-            type="date" 
-            value={filters.customDateRange?.to || ''} 
-            onChange={(e) => setCustomDateRange(filters.customDateRange?.from, e.target.value)}
-            className="w-36 h-8 text-sm border-none bg-transparent"
-          />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 px-3 py-2 bg-muted/5 rounded-md border">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-primary">From</span>
+            <Input 
+              type="date" 
+              value={filters.customDateRange?.from || ''} 
+              onChange={(e) => setCustomDateRange(e.target.value, filters.customDateRange?.to)}
+              className="w-32 sm:w-36 h-8 text-sm border-none bg-transparent"
+            />
+          </div>
+          <span className="text-muted hidden sm:inline">-</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-primary">To</span>
+            <Input 
+              type="date" 
+              value={filters.customDateRange?.to || ''} 
+              onChange={(e) => setCustomDateRange(filters.customDateRange?.from, e.target.value)}
+              className="w-32 sm:w-36 h-8 text-sm border-none bg-transparent"
+            />
+          </div>
         </div>
 
         {/* Action Buttons */}

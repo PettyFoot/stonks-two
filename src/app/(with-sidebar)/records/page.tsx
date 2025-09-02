@@ -244,11 +244,6 @@ function RecordsContent() {
               </div>
             </div>
 
-            <div className="text-right">
-              <Button className="bg-[var(--theme-green)] hover:bg-[var(--theme-green)]/80 text-white">
-                Create New Records Entry
-              </Button>
-            </div>
           </div>
         </div>
 
