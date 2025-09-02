@@ -48,6 +48,8 @@ export class YahooFinanceProvider implements MarketDataProvider {
       const requestedDate = timeWindow.start;
       const requestedDateStr = requestedDate.toISOString().split('T')[0];
       
+      console.log(`📊 Yahoo Finance returned ${result.quotes.length} raw quotes for ${symbol}`);
+      
       const filteredData = result.quotes
         .filter((quote: Record<string, unknown>) => {
           // Basic data validation
@@ -55,10 +57,20 @@ export class YahooFinanceProvider implements MarketDataProvider {
             return false;
           }
           
-          // More flexible date filtering - include data within the requested time window
-          // instead of strict date matching to avoid timezone issues
+          // More flexible date filtering - use a broader time window to account for timezone issues
+          const quoteDate = new Date(quote.date as Date);
+          const requestedDateOnly = new Date(requestedDate.getFullYear(), requestedDate.getMonth(), requestedDate.getDate());
+          const quoteDateOnly = new Date(quoteDate.getFullYear(), quoteDate.getMonth(), quoteDate.getDate());
+          
+          // Allow data from the requested date or one day on either side to handle timezone issues
+          const dayDiff = Math.abs(quoteDateOnly.getTime() - requestedDateOnly.getTime()) / (1000 * 60 * 60 * 24);
+          const isWithinDateRange = dayDiff <= 1;
+          
+          // Also check if within the original time window (for more precise filtering)
           const quoteTimestamp = (quote.date as Date).getTime();
-          return quoteTimestamp >= timeWindow.start.getTime() && quoteTimestamp <= timeWindow.end.getTime();
+          const withinTimeWindow = quoteTimestamp >= timeWindow.start.getTime() && quoteTimestamp <= timeWindow.end.getTime();
+          
+          return isWithinDateRange || withinTimeWindow;
         })
         .map((quote: Record<string, unknown>) => ({
           timestamp: (quote.date as Date).getTime(),
@@ -70,6 +82,8 @@ export class YahooFinanceProvider implements MarketDataProvider {
         }))
         .sort((a: Record<string, unknown>, b: Record<string, unknown>) => (a.timestamp as number) - (b.timestamp as number)); // Ensure chronological order
         
+      console.log(`✅ After filtering: ${filteredData.length} candles for ${symbol}`);
+      
       // Log data quality information
       if (filteredData.length > 0) {
         const firstCandle = new Date(filteredData[0].timestamp);

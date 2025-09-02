@@ -32,10 +32,22 @@ export function useTradesData(
   const [error, setError] = useState<string | null>(null);
   const { useComplexFiltering = false, page = 1, limit = 50 } = options;
   const { toFilterOptions, hasAdvancedFilters } = useGlobalFilters();
-  const { isDemo, isLoading: authLoading } = useAuth();
+  const { isDemo, isLoading: authLoading, user } = useAuth();
+  const [previousDemo, setPreviousDemo] = useState<boolean | null>(null);
   
   // Automatically use complex filtering if advanced filters are active
   const shouldUseComplexFiltering = useComplexFiltering || hasAdvancedFilters;
+  
+  // Clear data when transitioning from demo to authenticated user
+  useEffect(() => {
+    if (previousDemo === true && isDemo === false && user && !authLoading) {
+      console.log('useTradesData: Detected demo to auth transition, clearing data');
+      setData(null);
+      setError(null);
+      // Force a fresh fetch by not setting loading to false here
+    }
+    setPreviousDemo(isDemo);
+  }, [isDemo, user, authLoading, previousDemo]);
 
   useEffect(() => {
     // Don't fetch data until auth state is resolved

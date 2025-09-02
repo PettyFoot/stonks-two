@@ -8,10 +8,30 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, Shield, Users } from 'lucide-react';
 import Footer from '@/components/Footer';
+import { MarketDataCache } from '@/lib/marketData/cache';
 
 export default function LoginPageComponent() {
   const router = useRouter();
   const [isStartingDemo, setIsStartingDemo] = useState(false);
+  
+  const clearDemoData = () => {
+    try {
+      localStorage.removeItem('demo-mode');
+      MarketDataCache.clear();
+      
+      // Clear any other demo-related keys
+      const keys = Object.keys(localStorage);
+      keys.forEach(key => {
+        if (key.includes('demo') || key.includes('stonks_demo')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      console.log('Demo data cleared before login');
+    } catch (error) {
+      console.warn('Error clearing demo data before login:', error);
+    }
+  };
 
   const startDemo = async () => {
     if (isStartingDemo) return;
@@ -132,7 +152,10 @@ export default function LoginPageComponent() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <Link href="/api/auth/login" aria-label="Sign in to your Trade Voyager Analytics account">
-                    <Button className="w-full bg-[var(--theme-tertiary)] hover:bg-[var(--theme-tertiary)]/80 text-white">
+                    <Button 
+                      className="w-full bg-[var(--theme-tertiary)] hover:bg-[var(--theme-tertiary)]/80 text-white"
+                      onClick={clearDemoData}
+                    >
                       Sign In
                     </Button>
                   </Link>
@@ -147,7 +170,11 @@ export default function LoginPageComponent() {
                   </div>
 
                   <Link href="/api/auth/signup" aria-label="Create a new Trade Voyager Analytics account">
-                    <Button variant="outline" className="w-full border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/30">
+                    <Button 
+                      variant="outline" 
+                      className="w-full border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/30"
+                      onClick={clearDemoData}
+                    >
                       Create New Account
                     </Button>
                   </Link>

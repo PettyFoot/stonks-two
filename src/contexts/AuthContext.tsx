@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useUser as useAuth0User } from '@auth0/nextjs-auth0/client';
 import type { UserProfile } from '@auth0/nextjs-auth0/client';
+import { MarketDataCache } from '@/lib/marketData/cache';
 
 interface DemoUser {
   isDemo: true;
@@ -46,6 +47,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [demoSession, setDemoSession] = useState<DemoUser | null>(null);
   const [isCheckingDemo, setIsCheckingDemo] = useState(true);
   const [sessionError, setSessionError] = useState<Error | undefined>(undefined);
+  const [previousAuthState, setPreviousAuthState] = useState<{ wasDemo: boolean; userId: string | null }>({ 
+    wasDemo: false, 
+    userId: null 
+  });
 
   // Check for demo session on mount and when Auth0 user changes
   useEffect(() => {
@@ -99,6 +104,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Simply check if user is the demo user account
   const isDemo = user?.id === 'demo-user-001';
+  
+  // Clear demo data when transitioning from demo to authenticated user
+  useEffect(() => {
+    const currentUserId = user?.id || null;
+    const currentIsDemo = isDemo;
+    
+    // If we transitioned from demo to authenticated user, clear demo data
+    if (previousAuthState.wasDemo && !currentIsDemo && currentUserId && currentUserId !== 'demo-user-001') {
+      console.log('Detected transition from demo to authenticated user - clearing demo data');
+      
+      // Clear all demo-related localStorage
+      try {
+        localStorage.removeItem('demo-mode');
+        MarketDataCache.clear();
+        
+        // Clear any other demo-related keys
+        const keys = Object.keys(localStorage);
+        keys.forEach(key => {
+          if (key.includes('demo') || key.includes('stonks_demo')) {
+            localStorage.removeItem(key);
+          }
+        });
+        
+        console.log('Demo data cleared successfully');
+      } catch (error) {
+        console.warn('Error clearing demo data:', error);
+      }
+    }
+    
+    // Update previous auth state
+    setPreviousAuthState({ 
+      wasDemo: currentIsDemo, 
+      userId: typeof currentUserId === 'string' ? currentUserId : null 
+    });
+  }, [user?.id, isDemo, previousAuthState.wasDemo]);
   
   const isLoading = auth0Loading || isCheckingDemo;
   const error = auth0Error || sessionError;

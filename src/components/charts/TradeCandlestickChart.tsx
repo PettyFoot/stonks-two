@@ -53,10 +53,83 @@ export default function TradeCandlestickChart({
     };
   }, [symbol, tradeDate, tradeTime]);
 
+  // Validate inputs
+  const validateInputs = (symbol: string, tradeDate: string) => {
+    const errors = [];
+    
+    // Validate symbol
+    if (!symbol || symbol.length === 0) {
+      errors.push('Symbol is required');
+    } else if (symbol.length > 10) {
+      errors.push('Symbol is too long (max 10 characters)');
+    } else if (!/^[A-Z0-9.\-_]+$/i.test(symbol)) {
+      errors.push('Symbol contains invalid characters');
+    }
+    
+    // Validate date
+    const date = new Date(tradeDate);
+    if (isNaN(date.getTime())) {
+      errors.push('Invalid trade date format');
+    } else {
+      const now = new Date();
+      const daysDiff = (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24);
+      
+      if (daysDiff > 365) {
+        errors.push('Trade date is more than 1 year old - market data may not be available');
+      } else if (daysDiff > 60 && timeInterval !== '1d') {
+        errors.push(`Intraday data (${timeInterval}) is only available for the last 60 days`);
+      }
+      
+      if (date.getTime() > now.getTime()) {
+        errors.push('Trade date cannot be in the future');
+      }
+    }
+    
+    return errors;
+  };
+
   // Fetch trade-aware market data with caching
   useEffect(() => {
     const fetchMarketData = async () => {
-      if (!symbol) return;
+      if (!symbol) {
+        console.warn('❌ No symbol provided for market data fetch');
+        return;
+      }
+      
+      // Validate inputs
+      const validationErrors = validateInputs(symbol, tradeDate);
+      if (validationErrors.length > 0) {
+        console.warn('❌ Input validation failed:', validationErrors);
+        setError(`Validation error: ${validationErrors[0]}`);
+        setMarketData({
+          symbol,
+          date: tradeDate,
+          interval: timeInterval,
+          ohlc: [],
+          success: false,
+          error: validationErrors.join('; '),
+          source: 'yahoo' as const,
+          cached: false
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Log execution data for debugging
+      console.log('📊 Chart initialization:', {
+        symbol,
+        tradeDate,
+        timeInterval,
+        executionsCount: executions.length,
+        executions: executions.map(e => ({
+          id: e.id,
+          symbol: e.symbol,
+          side: e.side,
+          quantity: e.orderQuantity,
+          price: e.limitPrice,
+          time: e.orderExecutedTime
+        }))
+      });
       
       setIsLoading(true);
       setError(null);
@@ -113,8 +186,11 @@ export default function TradeCandlestickChart({
         
         const response = await fetch(`/api/market-data?${params.toString()}`);
         
+        console.log(`📡 API request sent: /api/market-data?${params.toString()}`);
+        console.log(`🔗 Response status: ${response.status} ${response.statusText}`);
+        
         if (!response.ok) {
-          throw new Error('Failed to fetch market data');
+          throw new Error(`Failed to fetch market data: ${response.status} ${response.statusText}`);
         }
         
         const data: MarketDataResponse = await response.json();
@@ -124,7 +200,8 @@ export default function TradeCandlestickChart({
           source: data.source,
           cached: data.cached,
           candleCount: data.ohlc?.length || 0,
-          error: data.error || null
+          error: data.error || null,
+          rawData: data
         });
         
         if (data.success) {
@@ -182,7 +259,7 @@ export default function TradeCandlestickChart({
     };
 
     fetchMarketData();
-  }, [symbol, tradeDate, tradeTime, timeInterval, tradeContext]);
+  }, [symbol, tradeDate, tradeTime, timeInterval, executions]);
 
   // Process executions for annotations
   const executionAnnotations = useMemo(() => {
@@ -473,6 +550,16 @@ export default function TradeCandlestickChart({
           <div className="text-center py-8">
             <p className="text-muted-foreground text-lg">Chart data not available</p>
             <p className="text-sm text-muted mt-2">Unable to fetch market data for {symbol} on {tradeDate}</p>
+            <p className="text-xs text-red-500 mt-1">{error}</p>
+            {marketData.error && (
+              <p className="text-xs text-orange-500 mt-1">API Error: {marketData.error}</p>
+            )}
+            <div className="mt-4 text-xs text-muted space-y-1">
+              <p>Troubleshooting tips:</p>
+              <p>• Check if the symbol '{symbol}' is valid</p>
+              <p>• Ensure the date {tradeDate} is within the last 60 days for intraday data</p>
+              <p>• Try refreshing the page or clearing the cache</p>
+            </div>
           </div>
         )}
         
@@ -519,7 +606,26 @@ export default function TradeCandlestickChart({
         ) : (
           <div className="text-center py-8">
             <p className="text-muted-foreground text-lg">Chart data not available</p>
-            <p className="text-sm text-muted">Unable to fetch market data for {symbol} on {tradeDate}</p>
+            <p className="text-sm text-muted mt-2">Unable to fetch market data for {symbol} on {tradeDate}</p>
+            <div className="mt-4 text-xs text-muted space-y-1">
+              <p>This could be due to:</p>
+              <p>• Market data for {symbol} is not available</p>
+              <p>• Date {tradeDate} is outside the available data range</p>
+              <p>• Symbol '{symbol}' may not be recognized by market data providers</p>
+            </div>
+            {executions.length > 0 && (
+              <div className="mt-4 p-3 bg-blue-50 rounded text-left">
+                <p className="text-xs font-medium text-blue-900 mb-2">Execution Summary:</p>
+                {executions.slice(0, 3).map(exec => (
+                  <p key={exec.id} className="text-xs text-blue-800">
+                    {exec.side} {exec.orderQuantity} shares @ ${((Number(exec.limitPrice) / 100) || 0).toFixed(2)}
+                  </p>
+                ))}
+                {executions.length > 3 && (
+                  <p className="text-xs text-blue-600 mt-1">... and {executions.length - 3} more</p>
+                )}
+              </div>
+            )}
           </div>
         )}
       </CardContent>

@@ -71,6 +71,12 @@ export async function GET(request: Request) {
       console.log(`Successfully fetched ${response.ohlc.length} candles from ${response.source}`);
     } else {
       console.error(`Market data fetch failed: ${response.error}`);
+      
+      // If all providers failed, generate demo data as fallback
+      console.log(`Generating demo data as fallback for ${symbol} on ${date}`);
+      const demoResponse = generateDemoData(symbol, date, interval);
+      demoResponse.error = `Real data unavailable: ${response.error}. Showing demo data.`;
+      return NextResponse.json(demoResponse);
     }
     
     return NextResponse.json(response);
