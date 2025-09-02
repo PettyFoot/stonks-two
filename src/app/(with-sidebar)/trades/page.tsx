@@ -11,6 +11,7 @@ import { useTradesData } from '@/hooks/useTradesData';
 import { useAuth } from '@/contexts/AuthContext';
 import { RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import AdSense from '@/components/AdSense';
 
 export default function Trades() {
   const [viewMode, setViewMode] = useState<ViewMode>('table');
@@ -213,6 +214,16 @@ export default function Trades() {
               ${(tradesData?.totalPnl || 0).toFixed(2)}
             </div>
           </div>
+        </div>
+
+        {/* AdSense Ad Unit */}
+        <div className="mt-6">
+          <AdSense 
+            className="flex items-center justify-center min-h-[120px] my-4"
+            slot="7836991491773203"
+            format="auto"
+            responsive={true}
+          />
         </div>
       </div>
     </div>

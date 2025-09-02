@@ -15,6 +15,7 @@ import { useRecordsData } from '@/hooks/useRecordsData';
 import { useAuth } from '@/contexts/AuthContext';
 import TradeCandlestickChart from '@/components/charts/TradeCandlestickChart';
 import CalendarYearView from '@/components/CalendarYearView';
+import AdSense from '@/components/AdSense';
 
 function RecordsContent() {
   const searchParams = useSearchParams();
@@ -364,6 +365,16 @@ function RecordsContent() {
               />
             </CardContent>
           </Card>
+
+          {/* AdSense Ad Unit */}
+          <div className="mt-6">
+            <AdSense 
+              className="flex items-center justify-center min-h-[120px] my-4"
+              slot="7836991491773203"
+              format="auto"
+              responsive={true}
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import AdSense from '@/components/AdSense';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 import { CHART_HEIGHTS } from '@/constants/chartHeights';
@@ -382,12 +383,14 @@ export default function DashboardComponent() {
             />
           </div>
 
-          {/* Empty space filler or additional metrics can go here */}
+          {/* AdSense Ad Unit */}
           <div className="col-span-1 lg:col-span-6 hidden lg:block">
-            {/* This space can be used for additional metrics or left empty for balance */}
-            <div className="h-full flex items-center justify-center text-muted-foreground">
-              {/* Future metrics or charts can go here */}
-            </div>
+            <AdSense 
+              className="flex items-center justify-center min-h-[120px] my-4"
+              slot="7836991491773203"
+              format="auto"
+              responsive={true}
+            />
           </div>
         </div>
       </div>
