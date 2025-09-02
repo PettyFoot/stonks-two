@@ -103,6 +103,13 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link rel="preconnect" href="https://vitals.vercel-insights.com" />
         
+        {/* Google AdSense script for site verification */}
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7836991491773203"
+          crossOrigin="anonymous"
+        />
+        
         {/* Structured Data for Organization */}
         <OrganizationStructuredData />
         

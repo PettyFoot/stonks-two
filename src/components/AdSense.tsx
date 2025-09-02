@@ -22,16 +22,7 @@ export default function AdSense({
   responsive = true 
 }: AdSenseProps) {
   useEffect(() => {
-    // Load AdSense script if not already loaded
-    if (!document.querySelector('script[src*="adsbygoogle.js"]')) {
-      const script = document.createElement('script');
-      script.async = true;
-      script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7836991491773203';
-      script.crossOrigin = 'anonymous';
-      document.head.appendChild(script);
-    }
-
-    // Initialize ad when script is loaded
+    // Initialize ad when component mounts (script is loaded globally)
     try {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (err) {
