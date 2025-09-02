@@ -202,7 +202,7 @@ export default function DashboardComponent() {
       <TopBar 
         title="Dashboard" 
         subtitle={getDateRangeDisplay}
-        showEditLayout={true}
+        showEditLayout={false}
         showTimeRangeFilters={false}
       />
       
