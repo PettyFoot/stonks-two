@@ -1,7 +1,7 @@
 import { TradeBuilder, processUserOrders } from '@/lib/tradeBuilder';
 import { ordersRepo } from '@/lib/repositories/ordersRepo';
 import { tradesRepo } from '@/lib/repositories/tradesRepo';
-import { Order, OrderSide, OrderStatus, TradeStatus, TradeSide, BrokerType } from '@prisma/client';
+import { Order, OrderSide, OrderStatus, TradeStatus, TradeSide, BrokerType, OrderType, TimeInForce } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
 // Mock the repositories
@@ -417,8 +417,8 @@ describe('processUserOrders integration', () => {
       tradeId: null,
       orderCancelledTime: null,
       parentOrderId: null,
-      orderType: 'MARKET',
-      timeInForce: 'DAY',
+      orderType: OrderType.MARKET,
+      timeInForce: TimeInForce.DAY,
       stopPrice: null,
       orderPlacedTime: new Date('2023-01-01T09:00:00Z'),
       orderUpdatedTime: null,
@@ -427,6 +427,8 @@ describe('processUserOrders integration', () => {
       orderRoute: null,
       tags: [],
       usedInTrade: false,
+      brokerType: BrokerType.GENERIC_CSV,
+      importBatchId: null,
     };
 
     mockOrdersRepo.getUnprocessedOrders.mockResolvedValue([mockOrder]);

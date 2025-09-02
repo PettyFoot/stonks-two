@@ -146,9 +146,9 @@ export default function TradeDistributionChart({
               tick={{ 
                 fontSize: 12, 
                 fill: 'var(--theme-primary-text)',
-                angle: isSmallScreen ? -45 : 0,
                 textAnchor: isSmallScreen ? 'end' : 'middle'
               }}
+              angle={isSmallScreen ? -45 : 0}
               tickFormatter={formatAxisLabel}
               interval="preserveStartEnd"
             />

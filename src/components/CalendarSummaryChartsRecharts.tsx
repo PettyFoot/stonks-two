@@ -164,9 +164,9 @@ export default function CalendarSummaryChartsRecharts({ isDemo = false }: Calend
               tick={{ 
                 fontSize: 12, 
                 fill: '#53565c',
-                angle: isSmallScreen ? -45 : 0,
                 textAnchor: isSmallScreen ? 'end' : 'middle'
               }}
+              angle={isSmallScreen ? -45 : 0}
               interval={xAxisInterval}
               stroke="#E5E7EB"
               label={{ 
@@ -296,9 +296,9 @@ export default function CalendarSummaryChartsRecharts({ isDemo = false }: Calend
               tick={{ 
                 fontSize: 12, 
                 fill: '#53565c',
-                angle: isSmallScreen ? -45 : 0,
                 textAnchor: isSmallScreen ? 'end' : 'middle'
               }}
+              angle={isSmallScreen ? -45 : 0}
               interval={xAxisInterval}
               stroke="#E5E7EB"
               label={{ 

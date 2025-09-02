@@ -167,9 +167,9 @@ const ConditionalBarChart = React.memo(function ConditionalBarChart({
               tick={{ 
                 fontSize: 12, 
                 fill: 'var(--theme-primary-text)',
-                angle: isSmallScreen ? -45 : 0,
                 textAnchor: isSmallScreen ? 'end' : 'middle'
               }}
+              angle={isSmallScreen ? -45 : 0}
               tickFormatter={(value, index) => {
                 // For the first and middle ticks, show the overall range
                 if (index === 0 && data.length > 1) {
