@@ -22,7 +22,6 @@ import {
 import ProfileTab from './components/ProfileTab';
 import SubscriptionTab from './components/SubscriptionTab';
 import BillingTab from './components/BillingTab';
-import SecurityTab from './components/SecurityTab';
 
 export default function SettingsComponent() {
   const { user, isLoading } = useAuth();
@@ -80,12 +79,6 @@ export default function SettingsComponent() {
       label: 'Billing',
       icon: CreditCard,
       description: 'Payment methods and history'
-    },
-    {
-      id: 'security',
-      label: 'Security',
-      icon: Shield,
-      description: 'Account security and privacy'
     }
   ];
 
@@ -120,7 +113,7 @@ export default function SettingsComponent() {
           {/* Tabs Navigation */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <div className="overflow-x-auto">
-              <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
+              <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-flex">
                 {tabs.map((tab) => (
                   <TabsTrigger 
                     key={tab.id} 
@@ -164,9 +157,6 @@ export default function SettingsComponent() {
                 <BillingTab />
               </TabsContent>
 
-              <TabsContent value="security" className="space-y-6">
-                <SecurityTab />
-              </TabsContent>
             </div>
           </Tabs>
         </div>

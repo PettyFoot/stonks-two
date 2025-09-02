@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     url: SEO_CONFIG.siteUrl,
     images: [
       {
-        url: '/trade-voyager-logo.png',
+        url: 'https://www.tradevoyageranalytics.com/trade-voyager-logo.png',
         width: 1200,
         height: 630,
         alt: 'Trade Voyager - Professional Trading Analytics Platform',
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     creator: SEO_CONFIG.twitterHandle,
     title: 'Trade Voyager - Professional Trading Analytics Platform',
     description: SEO_CONFIG.siteDescription,
-    images: ['/trade-voyager-logo.png'],
+    images: ['https://www.tradevoyageranalytics.com/trade-voyager-logo.png'],
   },
   alternates: {
     canonical: SEO_CONFIG.siteUrl,
