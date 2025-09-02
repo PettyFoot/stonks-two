@@ -1,11 +1,28 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { ChartDataPoint } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartType, CHART_FORMATTERS, formatTimeAxis } from '@/lib/chartFormatters';
 import { determineOptimalInterval, formatDateForInterval, parsePeriodToDate, calculateTickInterval } from '@/lib/timeIntervals';
+
+// Custom hook to detect screen size
+const useScreenSize = () => {
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsSmallScreen(window.innerWidth < 768); // md breakpoint is 768px
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
+  return { isSmallScreen };
+};
 
 interface BarChartProps {
   data: ChartDataPoint[];
@@ -31,6 +48,7 @@ const CustomBarChart = React.memo(function CustomBarChart({
   useConditionalColors = false
 }: BarChartProps) {
   const formatter = CHART_FORMATTERS[chartType];
+  const { isSmallScreen } = useScreenSize();
 
   // Determine optimal interval based on data range
   const timeInterval = React.useMemo(() => {
@@ -124,7 +142,12 @@ const CustomBarChart = React.memo(function CustomBarChart({
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={height}>
-          <BarChart data={data} margin={{ top: 5, right: 2, left: 2, bottom: 5 }}>
+          <BarChart data={data} margin={{ 
+            top: 5, 
+            right: 5, 
+            left: 0, 
+            bottom: isSmallScreen ? 40 : 20 
+          }}>
             {showGrid && (
               <CartesianGrid 
                 strokeDasharray="3 3" 
@@ -137,7 +160,12 @@ const CustomBarChart = React.memo(function CustomBarChart({
               dataKey="date"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: 'var(--theme-primary-text)' }}
+              tick={{ 
+                fontSize: 12, 
+                fill: 'var(--theme-primary-text)',
+                angle: isSmallScreen ? -45 : 0,
+                textAnchor: isSmallScreen ? 'end' : 'middle'
+              }}
               tickFormatter={formatXAxisTick}
               interval={tickInterval}
             />
@@ -146,6 +174,7 @@ const CustomBarChart = React.memo(function CustomBarChart({
               tickLine={false}
               tick={{ fontSize: 12, fill: 'var(--theme-primary-text)' }}
               tickFormatter={(value) => formatter.formatAxisValue(value)}
+              width={50}
             />
             {showTooltip && (
               <Tooltip 

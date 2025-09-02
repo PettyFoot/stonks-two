@@ -4,6 +4,23 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+// Custom hook to detect screen size
+const useScreenSize = () => {
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsSmallScreen(window.innerWidth < 768); // md breakpoint is 768px
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
+  return { isSmallScreen };
+};
+
 interface ChartData {
   daily: Array<{ day: number; pnl: number; trades: number; shares: number }>;
   monthly: Array<{ month: number; monthName: string; pnl: number; trades: number; shares: number }>;
@@ -18,6 +35,7 @@ export default function CalendarSummaryChartsRecharts({ isDemo = false }: Calend
   const [timeframe] = useState<'month' | 'year' | 'all'>('all');
   const [data, setData] = useState<ChartData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { isSmallScreen } = useScreenSize();
 
   const fetchSummaryData = useCallback(async () => {
     setIsLoading(true);
@@ -127,7 +145,12 @@ export default function CalendarSummaryChartsRecharts({ isDemo = false }: Calend
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data} margin={{ top: 10, right: 30, left: 40, bottom: 40 }}>
+          <BarChart data={data} margin={{ 
+            top: 10, 
+            right: 20, 
+            left: 20, 
+            bottom: isSmallScreen ? 60 : 40 
+          }}>
             <CartesianGrid 
               strokeDasharray="3 3" 
               stroke="var(--theme-chart-grid)" 
@@ -138,7 +161,12 @@ export default function CalendarSummaryChartsRecharts({ isDemo = false }: Calend
               dataKey={xKey}
               axisLine={!showZeroLine}
               tickLine={true}
-              tick={{ fontSize: 12, fill: '#53565c' }}
+              tick={{ 
+                fontSize: 12, 
+                fill: '#53565c',
+                angle: isSmallScreen ? -45 : 0,
+                textAnchor: isSmallScreen ? 'end' : 'middle'
+              }}
               interval={xAxisInterval}
               stroke="#E5E7EB"
               label={{ 
@@ -161,7 +189,8 @@ export default function CalendarSummaryChartsRecharts({ isDemo = false }: Calend
               label={{ 
                 value: yLabel, 
                 angle: -90, 
-                position: 'insideLeft', 
+                position: 'insideLeft',
+                offset: -5,
                 style: { 
                   textAnchor: 'middle', 
                   fontSize: '12px', 
@@ -248,7 +277,12 @@ export default function CalendarSummaryChartsRecharts({ isDemo = false }: Calend
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data} margin={{ top: 10, right: 30, left: 40, bottom: 40 }}>
+          <BarChart data={data} margin={{ 
+            top: 10, 
+            right: 20, 
+            left: 5, 
+            bottom: isSmallScreen ? 60 : 40 
+          }}>
             <CartesianGrid 
               strokeDasharray="3 3" 
               stroke="var(--theme-chart-grid)" 
@@ -259,7 +293,12 @@ export default function CalendarSummaryChartsRecharts({ isDemo = false }: Calend
               dataKey={xKey}
               axisLine={true}
               tickLine={true}
-              tick={{ fontSize: 12, fill: '#53565c' }}
+              tick={{ 
+                fontSize: 12, 
+                fill: '#53565c',
+                angle: isSmallScreen ? -45 : 0,
+                textAnchor: isSmallScreen ? 'end' : 'middle'
+              }}
               interval={xAxisInterval}
               stroke="#E5E7EB"
               label={{ 
@@ -284,7 +323,8 @@ export default function CalendarSummaryChartsRecharts({ isDemo = false }: Calend
               label={{ 
                 value: 'Trade Count', 
                 angle: -90, 
-                position: 'insideLeft', 
+                position: 'insideLeft',
+                offset: 0,
                 style: { 
                   textAnchor: 'middle', 
                   fontSize: '12px', 
@@ -303,7 +343,8 @@ export default function CalendarSummaryChartsRecharts({ isDemo = false }: Calend
               label={{ 
                 value: 'Share Volume', 
                 angle: 90, 
-                position: 'insideRight', 
+                position: 'insideRight',
+                offset: -15,
                 style: { 
                   textAnchor: 'middle', 
                   fontSize: '12px', 

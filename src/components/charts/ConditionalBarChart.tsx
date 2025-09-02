@@ -1,11 +1,28 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { ChartDataPoint } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatTimeAxis } from '@/lib/chartFormatters';
 import { determineOptimalInterval, formatDateForInterval, formatDateRangeForInterval, parsePeriodToDate } from '@/lib/timeIntervals';
+
+// Custom hook to detect screen size
+const useScreenSize = () => {
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsSmallScreen(window.innerWidth < 768); // md breakpoint is 768px
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
+  return { isSmallScreen };
+};
 
 interface ConditionalBarChartProps {
   data: ChartDataPoint[];
@@ -27,6 +44,7 @@ const ConditionalBarChart = React.memo(function ConditionalBarChart({
   valueFormatter = (value: number) => `$${value.toFixed(2)}`
 }: ConditionalBarChartProps) {
   const getBarColor = React.useCallback((value: number) => value >= 0 ? positiveColor : negativeColor, [positiveColor, negativeColor]);
+  const { isSmallScreen } = useScreenSize();
 
   // Determine optimal interval based on data range
   const timeInterval = React.useMemo(() => {
@@ -129,7 +147,12 @@ const ConditionalBarChart = React.memo(function ConditionalBarChart({
         <ResponsiveContainer width="100%" height={height}>
           <BarChart 
             data={data} 
-            margin={{ top: showValues ? 20 : 5, right: 5, left: 5, bottom: 5 }}
+            margin={{ 
+              top: showValues ? 20 : 5, 
+              right: 5, 
+              left: 0, 
+              bottom: isSmallScreen ? 40 : 20 
+            }}
           >
             <CartesianGrid 
               strokeDasharray="3 3" 
@@ -141,7 +164,12 @@ const ConditionalBarChart = React.memo(function ConditionalBarChart({
               dataKey="date"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: 'var(--theme-primary-text)' }}
+              tick={{ 
+                fontSize: 12, 
+                fill: 'var(--theme-primary-text)',
+                angle: isSmallScreen ? -45 : 0,
+                textAnchor: isSmallScreen ? 'end' : 'middle'
+              }}
               tickFormatter={(value, index) => {
                 // For the first and middle ticks, show the overall range
                 if (index === 0 && data.length > 1) {
@@ -163,6 +191,7 @@ const ConditionalBarChart = React.memo(function ConditionalBarChart({
                 }
                 return `$${value}`;
               }}
+              width={50}
             />
             <Tooltip 
               formatter={formatTooltipValue}

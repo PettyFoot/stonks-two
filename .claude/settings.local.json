@@ -49,7 +49,9 @@
       "Bash(npx dotenv -e .env.local -- npx tsx scripts/seedDemoData.ts:*)",
       "Bash(npx dotenv -e .env.local -- npx tsx scripts/test-demo.ts:*)",
       "Bash(find:*)",
-      "WebSearch"
+      "WebSearch",
+      "Read(c:\\Users\\lcorr\\OneDrive\\Pictures\\CC/**)",
+      "Read(c:\\Users\\lcorr\\OneDrive\\Pictures\\CC/**)"
     ],
     "deny": [],
     "ask": []

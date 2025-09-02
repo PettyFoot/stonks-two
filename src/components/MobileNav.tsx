@@ -12,6 +12,7 @@ import {
   Sheet,
   SheetContent,
   SheetTrigger,
+  SheetTitle,
 } from '@/components/ui/sheet';
 import ThemeSelector from '@/components/ThemeSelector';
 import { 
@@ -57,6 +58,7 @@ export default function MobileNav() {
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="w-[280px] p-0 bg-secondary">
+        <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
         <div className="flex h-full flex-col">
           {/* Logo and Brand - Now Clickable */}
           <Link href="/dashboard" onClick={() => setOpen(false)}>

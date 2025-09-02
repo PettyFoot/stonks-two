@@ -71,7 +71,7 @@ export default function LoginPageComponent() {
           </header>
 
           {/* Triangle Base - Demo and Sign-in */}
-          <div className="w-full flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 lg:gap-16 max-w-6xl">
+          <div className="w-full flex flex-col lg:flex-row justify-center lg:justify-between items-center gap-8 lg:gap-16 max-w-6xl">
             
             {/* Left Base - Demo Mode Section */}
             <section className="flex-1 max-w-md lg:max-w-lg space-y-6" aria-labelledby="demo-features">
@@ -124,7 +124,7 @@ export default function LoginPageComponent() {
             </section>
 
             {/* Right Base - Sign-in Form */}
-            <section className="flex-1 max-w-md lg:max-w-lg flex justify-center lg:justify-end" aria-labelledby="signin-heading">
+            <section className="flex-1 max-w-md lg:max-w-lg flex justify-center" aria-labelledby="signin-heading">
               <Card className="w-full max-w-md bg-white border-[var(--theme-primary)]">
                 <CardHeader className="space-y-1 text-center">
                   <CardTitle id="signin-heading" className="text-2xl font-bold text-[var(--theme-primary-text)]">Welcome Back</CardTitle>

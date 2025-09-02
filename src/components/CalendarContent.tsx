@@ -352,7 +352,7 @@ export default function CalendarContent() {
               </div>
               <div className="text-lg font-semibold text-theme-secondary-text">
                 Monthly P&L: <span className={`${summaryStats.monthlyPnl >= 0 ? 'text-theme-green' : 'text-theme-red'}`}>
-                  ${summaryStats.monthlyPnl >= 0 ? '+' : ''}{summaryStats.monthlyPnl.toFixed(2)}
+                  ${summaryStats.monthlyPnl.toFixed(2)}
                 </span>
               </div>
             </div>
@@ -392,7 +392,7 @@ export default function CalendarContent() {
                             Week {day.weekNumber}
                           </div>
                           <div className={`text-sm font-bold mb-1 ${day.weekPnl >= 0 ? 'text-theme-green' : 'text-theme-red'}`}>
-                            ${day.weekPnl >= 0 ? '+' : ''}{day.weekPnl.toFixed(2)}
+                            ${day.weekPnl.toFixed(2)}
                           </div>
                           {day.weekTrades > 0 && (
                             <>
@@ -452,7 +452,7 @@ export default function CalendarContent() {
                 <CardContent className="p-4">
                   <div className="text-sm text-theme-secondary-text">Monthly P&L</div>
                   <div className={`text-xl font-bold ${summaryStats.monthlyPnl >= 0 ? 'text-theme-green' : 'text-theme-red'}`}>
-                    ${summaryStats.monthlyPnl >= 0 ? '+' : ''}{summaryStats.monthlyPnl.toFixed(2)}
+                    ${summaryStats.monthlyPnl.toFixed(2)}
                   </div>
                 </CardContent>
               </Card>

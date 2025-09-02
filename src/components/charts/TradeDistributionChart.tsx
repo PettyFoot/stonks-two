@@ -1,9 +1,26 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { DistributionData } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+// Custom hook to detect screen size
+const useScreenSize = () => {
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsSmallScreen(window.innerWidth < 768); // md breakpoint is 768px
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
+  return { isSmallScreen };
+};
 
 interface TradeDistributionChartProps {
   data: DistributionData[];
@@ -20,6 +37,7 @@ export default function TradeDistributionChart({
   showPercentages = false,
   orientation = 'vertical'
 }: TradeDistributionChartProps) {
+  const { isSmallScreen } = useScreenSize();
   
   const formatTooltip = (value: number, name: string, props: { payload?: { percentage?: number; count?: number } }) => {
     const { payload } = props;
@@ -108,7 +126,12 @@ export default function TradeDistributionChart({
         <ResponsiveContainer width="100%" height={height}>
           <BarChart 
             data={chartData} 
-            margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+            margin={{ 
+              top: 5, 
+              right: 5, 
+              left: 0, 
+              bottom: isSmallScreen ? 40 : 20 
+            }}
           >
             <CartesianGrid 
               strokeDasharray="3 3" 
@@ -120,7 +143,12 @@ export default function TradeDistributionChart({
               dataKey="category"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 12, fill: 'var(--theme-primary-text)' }}
+              tick={{ 
+                fontSize: 12, 
+                fill: 'var(--theme-primary-text)',
+                angle: isSmallScreen ? -45 : 0,
+                textAnchor: isSmallScreen ? 'end' : 'middle'
+              }}
               tickFormatter={formatAxisLabel}
               interval="preserveStartEnd"
             />
@@ -134,6 +162,7 @@ export default function TradeDistributionChart({
                 }
                 return value.toString();
               }}
+              width={50}
             />
             <Tooltip 
               formatter={formatTooltip}
