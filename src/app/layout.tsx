@@ -105,6 +105,9 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link rel="preconnect" href="https://vitals.vercel-insights.com" />
         
+        {/* Google AdSense verification meta tag */}
+        <meta name="google-adsense-account" content="ca-pub-7836991491773203" />
+        
         {/* Google AdSense script for site verification */}
         <script
           async

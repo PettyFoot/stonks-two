@@ -1,0 +1,19 @@
+OG-IMAGE CREATION INSTRUCTIONS
+=================================
+
+Create a 1200x630px image named "og-image.png" with:
+
+1. Background: Professional gradient (dark blue to navy)
+2. Main Text: "Trade Voyager Analytics" (large, white, bold font)
+3. Subtitle: "Professional Trade Analytics Platform" (medium, light gray)
+4. Logo: Place your logo/icon on the left side
+5. Accent: Add subtle chart/graph elements in the background
+6. Footer: "Real-Time Trading Performance Analysis" (small text)
+
+Colors to use:
+- Background: #1a1a2e to #16213e gradient
+- Main text: #ffffff
+- Subtitle: #a0aec0
+- Accent: #3b82f6
+
+Save as og-image.png in this public folder and delete this placeholder file.

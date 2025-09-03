@@ -122,12 +122,13 @@ export default function LandingPageComponent() {
         <section className="max-w-7xl mx-auto px-6 py-20" aria-labelledby="hero-heading">
           <div className="text-center mb-16">
             <h1 id="hero-heading" className="text-5xl font-bold text-[var(--theme-primary-text)] mb-6 leading-tight">
-              Professional Trading<br />
-              <span className="text-[var(--theme-tertiary)]">Analytics Platform</span>
+              Professional Trade Analytics<br />
+              <span className="text-[var(--theme-tertiary)]">Platform</span>
             </h1>
             <p className="text-xl text-[var(--theme-primary-text)] mb-8 max-w-3xl mx-auto">
-              Track, analyze, and improve your trading performance with <Link href="/features" className="text-[var(--theme-tertiary)] hover:underline">comprehensive analytics</Link>, 
-              broker integrations, and professional-grade reporting tools.
+              Master your trading performance with advanced trade analytics, 
+              real-time performance tracking, and <Link href="/features" className="text-[var(--theme-tertiary)] hover:underline">comprehensive trading insights</Link>. 
+              Connect with your broker for automatic trade analytics generation.
             </p>
             
             <div className="flex items-center justify-center space-x-4">
@@ -169,11 +170,11 @@ export default function LandingPageComponent() {
                 <div className="w-12 h-12 bg-gradient-to-br from-[var(--theme-green)] to-[var(--theme-green)]/80 rounded-lg flex items-center justify-center mb-4">
                   <TrendingUp className="h-6 w-6 text-white" aria-hidden="true" />
                 </div>
-                <CardTitle className="text-[var(--theme-primary-text)]">Performance Analytics</CardTitle>
+                <CardTitle className="text-[var(--theme-primary-text)]">Advanced Trade Analytics</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-[var(--theme-primary-text)]">
-                  Real-time P&L tracking, win rates, risk metrics, and comprehensive performance breakdowns. <Link href="/features" className="text-[var(--theme-tertiary)] hover:underline text-sm">Learn more →</Link>
+                  Comprehensive trade analytics including real-time P&L tracking, win rates, risk metrics, and detailed performance breakdowns for every trade. <Link href="/features" className="text-[var(--theme-tertiary)] hover:underline text-sm">Learn more →</Link>
                 </p>
               </CardContent>
             </Card>

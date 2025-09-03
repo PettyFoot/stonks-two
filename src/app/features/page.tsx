@@ -38,9 +38,9 @@ export default function Features() {
   const coreFeatures = [
     {
       icon: <BarChart3 className="h-8 w-8" />,
-      title: "Advanced Analytics",
-      description: "Comprehensive trading analytics with real-time P&L tracking, win rates, and performance metrics.",
-      features: ["Real-time P&L calculation", "Win/loss ratio analysis", "Risk-adjusted returns", "Performance attribution"]
+      title: "Advanced Trade Analytics",
+      description: "Comprehensive trade analytics with real-time P&L tracking, win rates, and detailed performance metrics for every trade.",
+      features: ["Real-time P&L calculation", "Win/loss ratio analysis", "Risk-adjusted returns", "Trade performance attribution"]
     },
     {
       icon: <TrendingUp className="h-8 w-8" />,
@@ -139,11 +139,11 @@ export default function Features() {
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-6 py-16 text-center">
         <h1 className="text-6xl font-bold text-[var(--theme-primary-text)] mb-6">
-          Powerful Trading Analytics Features
+          Powerful Trade Analytics Features
         </h1>
         <p className="text-xl text-[var(--theme-primary-text)] mb-8 max-w-3xl mx-auto">
-          Everything you need to analyze, track, and improve your trading performance with 
-          professional-grade tools and enterprise security. See our <Link href="/pricing" className="text-[var(--theme-tertiary)] hover:underline">simple pricing plans</Link> to get started.
+          Everything you need for comprehensive trade analytics and performance optimization with 
+          professional-grade tools and enterprise security. Advanced trade analytics made simple. See our <Link href="/pricing" className="text-[var(--theme-tertiary)] hover:underline">simple pricing plans</Link> to get started.
         </p>
         <div className="flex justify-center space-x-4">
           <Link href="/demo">

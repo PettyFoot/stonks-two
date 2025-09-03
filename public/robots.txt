@@ -31,7 +31,7 @@ Allow: /api/vitals
 Crawl-delay: 1
 
 # Sitemap location
-Sitemap: https://localhost:3000/sitemap.xml
+Sitemap: https://tradevoyageranalytics.com/sitemap.xml
 
 # Google-specific rules
 User-agent: Googlebot

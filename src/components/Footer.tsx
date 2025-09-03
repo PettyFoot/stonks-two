@@ -22,8 +22,8 @@ export default function Footer() {
               <span className="text-xl font-bold text-[var(--theme-primary-text)]">Trade Voyager Analytics</span>
             </div>
             <p className="text-gray-600 mb-4 max-w-md">
-              Professional trading analytics and performance tracking for serious traders. 
-              Track P&L, analyze performance, and improve your trading with comprehensive analytics.
+              Professional trade analytics platform for serious traders. 
+              Advanced trade analytics, real-time performance tracking, and comprehensive trading insights.
             </p>
             <div className="flex space-x-4">
               <Link href="/demo">

@@ -2,25 +2,25 @@ import { Metadata } from 'next';
 
 // SEO Configuration Constants
 export const SEO_CONFIG = {
-  siteName: 'Trading Analytics Platform',
-  siteDescription: 'Professional trading analytics and performance tracking for serious traders. Track P&L, analyze trade metrics, and improve your trading performance with comprehensive analytics.',
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://localhost:3000',
+  siteName: 'Trade Analytics Platform',
+  siteDescription: 'Professional trade analytics platform for serious traders. Advanced trade analysis, real-time performance tracking, and comprehensive trade metrics to optimize your trading strategy.',
+  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://tradevoyageranalytics.com',
   twitterHandle: '@tradinganalytics',
   defaultImage: '/og-image.png',
-  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'support@tradinganalytics.com',
+  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'support@tradevoyageranalytics.com',
   keywords: {
-    primary: ['trading analytics', 'trade metrics', 'trading performance', 'trader tools'],
-    secondary: ['stock trading', 'forex trading', 'options trading', 'trading dashboard', 'portfolio tracker', 'investment analytics'],
-    technical: ['Interactive Brokers', 'TD Ameritrade', 'trading platform', 'portfolio analysis', 'trade tracking']
+    primary: ['trade analytics', 'trading analytics', 'trade analysis', 'trade metrics', 'trading performance', 'trader tools'],
+    secondary: ['stock trade analytics', 'forex trade analytics', 'options trade analytics', 'trade dashboard', 'trade tracking', 'investment analytics'],
+    technical: ['Interactive Brokers', 'TD Ameritrade', 'trading platform', 'portfolio analysis', 'real-time trade data']
   }
 };
 
 // Page-specific SEO configurations
 export const PAGE_SEO = {
   home: {
-    title: 'Trading Analytics Platform | Trade Metrics & Performance Tracking',
-    description: 'Track your trading performance like a pro. Real-time trade metrics, P&L analysis, win rates, and comprehensive analytics for serious traders. Start free demo →',
-    keywords: ['trading analytics platform', 'trade metrics', 'trading performance tracker', 'trader tools', 'P&L tracking'],
+    title: 'Trade Analytics Platform | Professional Trading Performance Analysis',
+    description: 'Advanced trade analytics platform for professional traders. Real-time trade metrics, comprehensive trade analysis, and performance optimization tools. Start free demo →',
+    keywords: ['trade analytics platform', 'trade analytics', 'trade metrics', 'trading performance', 'trade analysis', 'trader tools'],
     path: '/'
   },
   login: {
