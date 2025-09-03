@@ -144,7 +144,7 @@ export default function ExecutionsTable({
     // Get columns in the user's preferred order
     const orderedColumns = columnOrder
       .map(id => DEFAULT_COLUMNS.find(col => col.id === id))
-      .filter(col => col && visibleColumns[col.id]);
+      .filter((col): col is NonNullable<typeof col> => col !== undefined && Boolean(visibleColumns[col.id]));
     
     if (isMobile) {
       return orderedColumns.filter(col => PRIORITY_COLUMNS.mobile.includes(col.id));
@@ -271,9 +271,11 @@ export default function ExecutionsTable({
     return pnl >= 0 ? formatted : `-${formatted}`;
   };
 
-  const formatPrice = (price: number | string | null | undefined) => {
+  const formatPrice = (price: number | string | null | undefined | { toString(): string }) => {
     if (!price || price === 0) return '-';
-    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+    const numPrice = typeof price === 'string' ? parseFloat(price) : 
+                     typeof price === 'number' ? price : 
+                     parseFloat(price.toString());
     return `$${numPrice.toFixed(2)}`;
   };
 
@@ -566,7 +568,7 @@ export default function ExecutionsTable({
   // Render expanded row details for mobile
   const renderExpandedDetails = (execution: ExecutionOrder) => {
     const hiddenColumns = DEFAULT_COLUMNS.filter(col => 
-      col.visible && !visibleColumnsData.find(vc => vc.id === col.id)
+      col.visible && !visibleColumnsData.find(vc => vc?.id === col.id)
     );
     
     if (hiddenColumns.length === 0) return null;
@@ -600,7 +602,7 @@ export default function ExecutionsTable({
                     ) : col.id === 'orderQuantity' ? (
                       execution.orderQuantity.toLocaleString()
                     ) : col.id === 'limitPrice' || col.id === 'stopPrice' ? (
-                      formatPrice((execution as ExecutionOrder & Record<string, unknown>)[col.id] as number)
+                      formatPrice((execution as ExecutionOrder & Record<string, unknown>)[col.id])
                     ) : col.id === 'orderPlacedTime' || col.id === 'orderExecutedTime' || col.id === 'orderCancelledTime' ? (
                       formatTime((execution as ExecutionOrder & Record<string, unknown>)[col.id] as Date)
                     ) : col.id === 'tags' ? (
@@ -650,11 +652,11 @@ export default function ExecutionsTable({
             <TableHeader>
               <TableRow className="hover:bg-transparent border-b border-theme-border">
                 {isMobile && <TableHead className="w-8"></TableHead>}
-                {visibleColumnsData.map((column) => (
+                {visibleColumnsData.map((column) => column && (
                   <TableHead key={column.id} className="text-xs font-medium text-theme-secondary-text uppercase">
                     {column.label}
                   </TableHead>
-                ))}
+                )).filter(Boolean)}
                 {showActions && !isMobile && <TableHead className="w-12"></TableHead>}
               </TableRow>
             </TableHeader>
@@ -662,7 +664,7 @@ export default function ExecutionsTable({
               {[...Array(5)].map((_, i) => (
                 <TableRow key={i}>
                   {isMobile && <TableCell className="w-8"></TableCell>}
-                  {visibleColumnsData.map((column) => (
+                  {visibleColumnsData.map((column) => column && (
                     <TableCell key={column.id}>
                       <div className="h-4 bg-theme-surface200 rounded animate-pulse"></div>
                     </TableCell>
@@ -766,7 +768,7 @@ export default function ExecutionsTable({
               {isMobile && (
                 <TableHead className="w-8"></TableHead>
               )}
-              {visibleColumnsData.map((column) => (
+              {visibleColumnsData.map((column) => column && (
                 <TableHead 
                   key={column.id} 
                   className="text-xs font-medium text-theme-secondary-text uppercase relative border-r border-theme-border/50"
@@ -828,9 +830,10 @@ export default function ExecutionsTable({
                     </TableCell>
                   )}
                   {visibleColumnsData.map((column) => {
+                    if (!column) return null;
                     const cellContent = renderCellContent(execution, column.id);
                     return <React.Fragment key={column.id}>{cellContent}</React.Fragment>;
-                  })}
+                  }).filter(Boolean)}
                   {showActions && !isMobile && (
                     <TableCell>
                       <DropdownMenu>
@@ -917,6 +920,8 @@ export default function ExecutionsTable({
             {!isMobile && (
               <TableRow className="bg-theme-surface50 border-t-2 border-theme-border font-medium hover:bg-theme-surface50">
                 {visibleColumnsData.map((column, index) => {
+                  if (!column) return null;
+                  
                   // For the first column, show "TOTAL:"
                   if (index === 0) {
                     return (
@@ -958,7 +963,7 @@ export default function ExecutionsTable({
                     default:
                       return <TableCell key={column.id}></TableCell>;
                   }
-                })}
+                }).filter(Boolean)}
                 {showActions && <TableCell></TableCell>}
               </TableRow>
             )}

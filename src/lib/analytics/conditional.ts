@@ -33,12 +33,12 @@ export function initConditionalWebVitals() {
   }
 
   if (typeof window !== 'undefined') {
-    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
-      getCLS(sendConditionalAnalytics);
-      getFID(sendConditionalAnalytics);
-      getFCP(sendConditionalAnalytics);
-      getLCP(sendConditionalAnalytics);
-      getTTFB(sendConditionalAnalytics);
+    import('web-vitals').then(({ onCLS, onINP, onFCP, onLCP, onTTFB }) => {
+      onCLS(sendConditionalAnalytics);
+      onINP(sendConditionalAnalytics);
+      onFCP(sendConditionalAnalytics);
+      onLCP(sendConditionalAnalytics);
+      onTTFB(sendConditionalAnalytics);
     }).catch(error => {
       console.error('Failed to load web-vitals:', error);
     });
