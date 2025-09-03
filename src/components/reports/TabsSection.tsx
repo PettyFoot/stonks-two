@@ -57,7 +57,7 @@ export default function TabsSection({ trades = [] }: TabsSectionProps) {
 
   return (
     <Tabs defaultValue="days-times" className="space-y-4">
-      <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+      <TabsList className="grid grid-cols-4 max-w-2xl">
         <TabsTrigger value="days-times">Days/Times</TabsTrigger>
         <TabsTrigger value="price-volume">Price/Volume</TabsTrigger>
         <TabsTrigger value="instrument">Instrument</TabsTrigger>

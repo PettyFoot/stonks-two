@@ -200,7 +200,7 @@ export default function Reports() {
 
         {/* FIRST TAB SYSTEM: Main Tabs */}
         <Tabs defaultValue="overview" className="space-y-6 mb-8">
-          <TabsList className="flex flex-wrap w-full max-w-2xl justify-center">
+          <TabsList className="flex flex-wrap max-w-2xl justify-center">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="detailed">Detailed</TabsTrigger>
             <TabsTrigger value="win-vs-loss">Win/Loss</TabsTrigger>

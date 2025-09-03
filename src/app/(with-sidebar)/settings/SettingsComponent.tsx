@@ -23,6 +23,7 @@ import {
 import ProfileTab from './components/ProfileTab';
 import SubscriptionTab from './components/SubscriptionTab';
 import BillingTab from './components/BillingTab';
+import SecurityTab from './components/SecurityTab';
 import CookieSettingsTab from './components/CookieSettingsTab';
 
 export default function SettingsComponent() {
@@ -83,6 +84,12 @@ export default function SettingsComponent() {
       description: 'Payment methods and history'
     },
     {
+      id: 'security',
+      label: 'Security',
+      icon: Shield,
+      description: 'Account security and deletion settings'
+    },
+    {
       id: 'cookies',
       label: 'Privacy',
       icon: Cookie,
@@ -121,7 +128,7 @@ export default function SettingsComponent() {
           {/* Tabs Navigation */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <div className="overflow-x-auto">
-              <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
+              <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
                 {tabs.map((tab) => (
                   <TabsTrigger 
                     key={tab.id} 
@@ -163,6 +170,10 @@ export default function SettingsComponent() {
 
               <TabsContent value="billing" className="space-y-6">
                 <BillingTab />
+              </TabsContent>
+
+              <TabsContent value="security" className="space-y-6">
+                <SecurityTab />
               </TabsContent>
 
               <TabsContent value="cookies" className="space-y-6">

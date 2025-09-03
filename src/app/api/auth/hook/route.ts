@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { accountDeletionService } from '@/lib/services/accountDeletion';
 
 const prisma = new PrismaClient();
 
@@ -46,6 +47,21 @@ export async function POST(request: NextRequest) {
       });
       
       console.log('Updated existing user:', existingUser.id);
+
+      // Check if account was marked for deletion and reactivate if possible
+      try {
+        const wasReactivated = await accountDeletionService.reactivateOnLogin(
+          existingUser.id,
+          user.email
+        );
+        
+        if (wasReactivated) {
+          console.log('Account reactivated on login:', existingUser.id);
+        }
+      } catch (reactivationError) {
+        console.error('Failed to reactivate account on login:', reactivationError);
+        // Don't fail the login process for reactivation errors
+      }
     }
 
     return NextResponse.json({ success: true });

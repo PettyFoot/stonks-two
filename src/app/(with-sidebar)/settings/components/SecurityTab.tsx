@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 // Using custom checkbox instead of switch
 import { Label } from '@/components/ui/label';
+import DeleteAccountDialog from '@/components/DeleteAccountDialog';
+import { toast } from 'sonner';
 import {
   Shield,
   Key,
@@ -59,10 +61,65 @@ const recentActivity = [
   }
 ];
 
+interface DeletionStatus {
+  isDeletionRequested: boolean;
+  canReactivate: boolean;
+  deletionRequestedAt?: string;
+  finalDeletionAt?: string;
+  daysUntilFinalDeletion: number;
+  reason?: string;
+}
+
 export default function SecurityTab() {
   const { user } = useUser();
   const [settings, setSettings] = useState(securitySettings);
   const [showSessions, setShowSessions] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deletionStatus, setDeletionStatus] = useState<DeletionStatus | null>(null);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(false);
+  const [isDownloadingData, setIsDownloadingData] = useState(false);
+
+  // Load deletion status function
+  const loadDeletionStatus = async () => {
+    if (!user?.sub) return;
+
+    setIsLoadingStatus(true);
+    try {
+      const response = await fetch('/api/account/delete', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDeletionStatus({
+          isDeletionRequested: data.status.isDeletionRequested,
+          canReactivate: data.status.canReactivate,
+          deletionRequestedAt: data.status.deletionRequestedAt,
+          finalDeletionAt: data.status.finalDeletionAt,
+          daysUntilFinalDeletion: data.status.daysUntilFinalDeletion,
+          reason: data.status.reason
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load deletion status:', error);
+    } finally {
+      setIsLoadingStatus(false);
+    }
+  };
+
+  // Load deletion status on component mount and refresh periodically
+  useEffect(() => {
+    loadDeletionStatus();
+    
+    // Set up periodic refresh to catch reactivations
+    const interval = setInterval(loadDeletionStatus, 10000); // Refresh every 10 seconds
+    
+    return () => clearInterval(interval);
+  }, [user?.sub]);
 
   const handleSettingChange = (key: keyof typeof securitySettings, value: boolean | number) => {
     setSettings(prev => ({ ...prev, [key]: value }));
@@ -80,14 +137,141 @@ export default function SecurityTab() {
     console.log('Enable 2FA');
   };
 
-  const handleDownloadData = () => {
-    // TODO: Implement data download
-    console.log('Download user data');
+  const handleDownloadData = async () => {
+    setIsDownloadingData(true);
+    try {
+      const response = await fetch('/api/user/data-export', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download data');
+      }
+
+      // Get the CSV content
+      const csvContent = await response.text();
+      
+      // Get filename from response headers or use default
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'stonks_data_export.csv';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Data export completed', {
+        description: `Your trading data has been downloaded as ${filename}`
+      });
+
+    } catch (error) {
+      console.error('Data download error:', error);
+      toast.error('Failed to download data', {
+        description: 'Please try again or contact support if the problem persists'
+      });
+    } finally {
+      setIsDownloadingData(false);
+    }
   };
 
   const handleDeleteAccount = () => {
-    // TODO: Implement account deletion flow
-    console.log('Delete account');
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDeleteAccount = async (data: { reason: string; confirmation: boolean }) => {
+    setIsDeletingAccount(true);
+    try {
+      const response = await fetch('/api/account/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success('Account deletion requested successfully', {
+          description: 'You have 30 days to reactivate your account by logging in.'
+        });
+        
+        // Update deletion status
+        setDeletionStatus({
+          isDeletionRequested: true,
+          canReactivate: true,
+          deletionRequestedAt: result.deletion.requestedAt,
+          finalDeletionAt: result.deletion.finalDeletionAt,
+          daysUntilFinalDeletion: 90
+        });
+
+        setShowDeleteDialog(false);
+        
+        // Optionally redirect to logout after a delay
+        setTimeout(() => {
+          window.location.href = '/api/auth/logout';
+        }, 3000);
+      } else {
+        toast.error('Failed to delete account', {
+          description: result.error || 'An unexpected error occurred'
+        });
+      }
+    } catch (error) {
+      console.error('Account deletion error:', error);
+      toast.error('Failed to delete account', {
+        description: 'Please try again or contact support'
+      });
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
+
+  const handleReactivateAccount = async () => {
+    try {
+      const response = await fetch('/api/account/delete', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success('Account reactivated successfully', {
+          description: 'Your account deletion request has been cancelled.'
+        });
+        
+        // Clear deletion status
+        setDeletionStatus(null);
+      } else {
+        toast.error('Failed to reactivate account', {
+          description: result.error || 'An unexpected error occurred'
+        });
+      }
+    } catch (error) {
+      console.error('Account reactivation error:', error);
+      toast.error('Failed to reactivate account', {
+        description: 'Please try again or contact support'
+      });
+    }
   };
 
   const handleRevokeSession = (sessionId: string) => {
@@ -97,266 +281,6 @@ export default function SecurityTab() {
 
   return (
     <div className="space-y-6">
-      {/* Security Overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Security Overview
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              {user?.email_verified ? (
-                <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-2" />
-              ) : (
-                <AlertTriangle className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
-              )}
-              <h4 className="font-medium">Email Verification</h4>
-              <Badge variant={user?.email_verified ? "default" : "secondary"} className="mt-1">
-                {user?.email_verified ? "Verified" : "Unverified"}
-              </Badge>
-            </div>
-            
-            <div className="text-center">
-              {settings.twoFactorEnabled ? (
-                <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-2" />
-              ) : (
-                <AlertTriangle className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
-              )}
-              <h4 className="font-medium">Two-Factor Auth</h4>
-              <Badge variant={settings.twoFactorEnabled ? "default" : "secondary"} className="mt-1">
-                {settings.twoFactorEnabled ? "Enabled" : "Disabled"}
-              </Badge>
-            </div>
-            
-            <div className="text-center">
-              <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-2" />
-              <h4 className="font-medium">Account Status</h4>
-              <Badge variant="default" className="mt-1">Active</Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Password & Authentication */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Key className="h-5 w-5" />
-            Password & Authentication
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {/* Password */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium">Password</h4>
-                <p className="text-sm text-muted-foreground">
-                  Last changed: {new Date(settings.lastPasswordChange).toLocaleDateString()}
-                </p>
-              </div>
-              <Button variant="outline" onClick={handleChangePassword}>
-                Change Password
-              </Button>
-            </div>
-
-            {/* Two-Factor Authentication */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium">Two-Factor Authentication</h4>
-                <p className="text-sm text-muted-foreground">
-                  Add an extra layer of security to your account
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                {settings.twoFactorEnabled ? (
-                  <>
-                    <Badge variant="default">Enabled</Badge>
-                    <Button variant="outline" size="sm">Manage</Button>
-                  </>
-                ) : (
-                  <Button onClick={handleEnable2FA}>Enable 2FA</Button>
-                )}
-              </div>
-            </div>
-
-            {/* Session Management */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-medium">Active Sessions</h4>
-                  <p className="text-sm text-muted-foreground">
-                    You have {settings.activeSessions} active sessions
-                  </p>
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setShowSessions(!showSessions)}
-                  className="flex items-center gap-2"
-                >
-                  {showSessions ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  {showSessions ? 'Hide' : 'View'} Sessions
-                </Button>
-              </div>
-              
-              {showSessions && (
-                <div className="space-y-2 p-4 bg-muted/50 rounded-lg">
-                  <div className="flex items-center justify-between p-2 bg-background rounded border">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <div>
-                        <p className="text-sm font-medium">Current Session</p>
-                        <p className="text-xs text-muted-foreground">Chrome on Windows • New York, NY</p>
-                      </div>
-                    </div>
-                    <Badge variant="default" className="text-xs">Active</Badge>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-2 bg-background rounded border">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                      <div>
-                        <p className="text-sm font-medium">Mobile Session</p>
-                        <p className="text-xs text-muted-foreground">Safari on iPhone • Last seen 2 hours ago</p>
-                      </div>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={() => handleRevokeSession('mobile')}>
-                      Revoke
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Privacy Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Lock className="h-5 w-5" />
-            Privacy Settings
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="email-notifications">Email Notifications</Label>
-                <p className="text-sm text-muted-foreground">
-                  Receive emails about account activity and updates
-                </p>
-              </div>
-              <input
-                id="email-notifications"
-                type="checkbox"
-                checked={settings.emailNotifications}
-                onChange={(e) => handleSettingChange('emailNotifications', e.target.checked)}
-                className="rounded border-border"
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="login-alerts">Login Alerts</Label>
-                <p className="text-sm text-muted-foreground">
-                  Get notified of new login attempts
-                </p>
-              </div>
-              <input
-                id="login-alerts"
-                type="checkbox"
-                checked={settings.loginAlerts}
-                onChange={(e) => handleSettingChange('loginAlerts', e.target.checked)}
-                className="rounded border-border"
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="data-download">Data Download</Label>
-                <p className="text-sm text-muted-foreground">
-                  Allow downloading of your account data
-                </p>
-              </div>
-              <input
-                id="data-download"
-                type="checkbox"
-                checked={settings.dataDownloadEnabled}
-                onChange={(e) => handleSettingChange('dataDownloadEnabled', e.target.checked)}
-                className="rounded border-border"
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Session Timeout</Label>
-                <p className="text-sm text-muted-foreground">
-                  Automatically log out after {settings.sessionTimeout} minutes of inactivity
-                </p>
-              </div>
-              <select 
-                value={settings.sessionTimeout}
-                onChange={(e) => handleSettingChange('sessionTimeout', Number(e.target.value))}
-                className="px-3 py-2 border border-input bg-background rounded-md text-sm"
-              >
-                <option value={15}>15 minutes</option>
-                <option value={30}>30 minutes</option>
-                <option value={60}>1 hour</option>
-                <option value={120}>2 hours</option>
-                <option value={480}>8 hours</option>
-              </select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Recent Activity
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {recentActivity.map((activity) => (
-              <div key={activity.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  {activity.success ? (
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <AlertTriangle className="h-4 w-4 text-red-500" />
-                  )}
-                  <div>
-                    <p className="text-sm font-medium">{activity.action}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {activity.device} • {activity.location}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground">{activity.timestamp}</p>
-                  <Badge variant={activity.success ? "default" : "destructive"} className="text-xs mt-1">
-                    {activity.success ? "Success" : "Failed"}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          <div className="mt-4 text-center">
-            <Button variant="outline" size="sm">View All Activity</Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Data Management */}
       <Card>
         <CardHeader>
@@ -374,9 +298,13 @@ export default function SecurityTab() {
                   Export all your account data and trading information
                 </p>
               </div>
-              <Button variant="outline" onClick={handleDownloadData}>
+              <Button 
+                variant="outline" 
+                onClick={handleDownloadData}
+                disabled={isDownloadingData}
+              >
                 <Download className="h-4 w-4 mr-2" />
-                Download Data
+                {isDownloadingData ? 'Downloading...' : 'Download Data'}
               </Button>
             </div>
           </div>
@@ -393,32 +321,112 @@ export default function SecurityTab() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium text-red-600 dark:text-red-400">Delete Account</h4>
-                <p className="text-sm text-muted-foreground">
-                  Permanently delete your account and all associated data
-                </p>
+            {isLoadingStatus ? (
+              <div className="flex items-center justify-center py-4">
+                <p className="text-sm text-muted-foreground">Loading deletion status...</p>
               </div>
-              <Button 
-                variant="destructive" 
-                onClick={handleDeleteAccount}
-                className="flex items-center gap-2"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete Account
-              </Button>
-            </div>
-            
-            <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <p className="text-sm text-red-800 dark:text-red-200">
-                <strong>Warning:</strong> This action cannot be undone. All your trades, reports, 
-                and account data will be permanently deleted.
-              </p>
-            </div>
+            ) : deletionStatus?.isDeletionRequested ? (
+              // Account deletion requested - show status and reactivation option
+              <div className="space-y-4">
+                <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5" />
+                    <div className="flex-1">
+                      <h4 className="font-medium text-red-600 dark:text-red-400 mb-2">
+                        Account Deletion Requested
+                      </h4>
+                      <p className="text-sm text-red-800 dark:text-red-200 mb-3">
+                        Your account is scheduled for deletion. You have{' '}
+                        <strong>{deletionStatus.daysUntilFinalDeletion} days</strong> to reactivate.
+                      </p>
+                      {deletionStatus.deletionRequestedAt && (
+                        <p className="text-xs text-red-700 dark:text-red-300 mb-2">
+                          Requested: {new Date(deletionStatus.deletionRequestedAt).toLocaleDateString()}
+                        </p>
+                      )}
+                      {deletionStatus.reason && (
+                        <p className="text-xs text-red-700 dark:text-red-300">
+                          Reason: {deletionStatus.reason}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {deletionStatus.canReactivate && (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium">Reactivate Account</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Cancel your deletion request and restore full access
+                      </p>
+                    </div>
+                    <Button 
+                      variant="outline"
+                      onClick={handleReactivateAccount}
+                      className="flex items-center gap-2"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      Reactivate Account
+                    </Button>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                  <div className="p-3 border rounded-lg">
+                    <div className="font-medium text-yellow-600 dark:text-yellow-400">Grace Period</div>
+                    <div className="text-muted-foreground">30 days to reactivate</div>
+                  </div>
+                  <div className="p-3 border rounded-lg">
+                    <div className="font-medium text-orange-600 dark:text-orange-400">Data Anonymization</div>
+                    <div className="text-muted-foreground">After 30 days</div>
+                  </div>
+                  <div className="p-3 border rounded-lg">
+                    <div className="font-medium text-red-600 dark:text-red-400">Final Deletion</div>
+                    <div className="text-muted-foreground">After 90 days</div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // Normal state - show delete account option
+              <>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium text-red-600 dark:text-red-400">Delete Account</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Permanently delete your account and all associated data
+                    </p>
+                  </div>
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleDeleteAccount}
+                    className="flex items-center gap-2 bg-theme-red"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete Account
+                  </Button>
+                </div>
+                
+                <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <p className="text-sm text-red-800 dark:text-red-200">
+                    <strong>Warning:</strong> This action starts a deletion process with a 30-day grace period. 
+                    All your trades, reports, and account data will be permanently deleted after 90 days.
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Account Confirmation Dialog */}
+      <DeleteAccountDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleConfirmDeleteAccount}
+        isLoading={isDeletingAccount}
+        userEmail={user?.email || undefined}
+      />
     </div>
   );
 }

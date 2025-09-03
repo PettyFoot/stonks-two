@@ -76,34 +76,12 @@ function SubscriptionTabInternal() {
               <Crown className="h-5 w-5" />
               Current Plan
             </CardTitle>
-            <Badge variant={isFree ? 'secondary' : 'default'}>
-              {isFree ? 'Free' : 'Premium'} Plan
-            </Badge>
           </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
             {/* Plan Status */}
             <SubscriptionStatus />
-            
-            {/* Plan Features Comparison */}
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Your Current Features</h4>
-              <div className="space-y-3">
-                {planFeatures[tierKey].map((feature, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    {feature.included ? (
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                    ) : (
-                      <XCircle className="h-5 w-5 text-gray-400" />
-                    )}
-                    <span className={feature.included ? 'text-foreground' : 'text-muted-foreground'}>
-                      {feature.name}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
 
             {/* Upgrade Prompt for Free Users */}
             {isFree && (
@@ -149,73 +127,6 @@ function SubscriptionTabInternal() {
         </CardContent>
       </Card>
 
-      {/* Feature Benefits */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
-            Pro Plan Benefits
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-primary" />
-                <h4 className="font-semibold">Unlimited Trades</h4>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Track unlimited trades without monthly limits
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                <h4 className="font-semibold">Advanced Analytics</h4>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Access detailed performance metrics and insights
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                <h4 className="font-semibold">Custom Reports</h4>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Generate customized reports for tax and analysis
-              </p>
-            </div>
-          </div>
-
-          {isFree && (
-            <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-semibold text-primary">Ready to upgrade?</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Get access to all Pro features with a 14-day free trial
-                  </p>
-                </div>
-                <Button 
-                  className="flex items-center gap-2"
-                  onClick={async () => {
-                    const result = await createCheckoutSession();
-                    if (result.url) {
-                      window.location.href = result.url;
-                    }
-                  }}
-                >
-                  Start Free Trial
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* FAQ Section */}
       <Card>

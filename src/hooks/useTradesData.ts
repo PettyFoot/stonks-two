@@ -55,7 +55,10 @@ export function useTradesData(
       return;
     }
 
-    async function fetchData() {
+    async function fetchData(retryCount = 0) {
+      const maxRetries = 3;
+      const retryDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
+      
       try {
         setLoading(true);
         setError(null);
@@ -102,6 +105,14 @@ export function useTradesData(
           console.log('Filtered API response status:', response.status);
 
           if (!response.ok) {
+            // If it's a 401 error and we haven't exceeded max retries, retry after delay
+            if (response.status === 401 && retryCount < maxRetries) {
+              console.log(`Trades filtered API authentication failed, retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/${maxRetries + 1})`);
+              setTimeout(() => {
+                fetchData(retryCount + 1);
+              }, retryDelay);
+              return;
+            }
             throw new Error('Failed to fetch filtered trades data');
           }
           
@@ -131,6 +142,14 @@ export function useTradesData(
           console.log('Simple API response status:', response.status);
           
           if (!response.ok) {
+            // If it's a 401 error and we haven't exceeded max retries, retry after delay
+            if (response.status === 401 && retryCount < maxRetries) {
+              console.log(`Trades API authentication failed, retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/${maxRetries + 1})`);
+              setTimeout(() => {
+                fetchData(retryCount + 1);
+              }, retryDelay);
+              return;
+            }
             throw new Error('Failed to fetch trades data');
           }
           const result = await response.json();
@@ -143,9 +162,19 @@ export function useTradesData(
           });
         }
       } catch (err) {
+        // If it's a network error and we haven't exceeded max retries, retry after delay
+        if (retryCount < maxRetries && (err instanceof TypeError || (err instanceof Error && err.message.includes('fetch')))) {
+          console.log(`Trades network error, retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/${maxRetries + 1})`);
+          setTimeout(() => {
+            fetchData(retryCount + 1);
+          }, retryDelay);
+          return;
+        }
+        
         console.error('=== useTradesData FETCH ERROR ===', err);
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
+        // Only set loading to false if we're not retrying (when we've reached max retries or succeeded)
         setLoading(false);
         console.log('=== useTradesData FETCH COMPLETE ===');
       }

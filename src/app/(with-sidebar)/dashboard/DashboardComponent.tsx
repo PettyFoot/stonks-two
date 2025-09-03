@@ -17,6 +17,7 @@ import { Upload, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import AdSense from '@/components/AdSense';
+import WelcomeBackBanner from '@/components/WelcomeBackBanner';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 import { CHART_HEIGHTS } from '@/constants/chartHeights';
@@ -209,6 +210,7 @@ export default function DashboardComponent() {
       <FilterPanel />
       
       <div className="flex-1 overflow-auto p-3 sm:p-6">
+        <WelcomeBackBanner />
         {/* Daily Calendar Cards */}
         <div className="mb-4 sm:mb-6">
           <h2 className="text-base sm:text-lg font-semibold text-primary mb-3 sm:mb-4">

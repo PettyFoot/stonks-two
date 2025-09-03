@@ -7,7 +7,7 @@ export const SEO_CONFIG = {
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://tradevoyageranalytics.com',
   twitterHandle: '@tradinganalytics',
   defaultImage: '/og-image.png',
-  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'support@tradevoyageranalytics.com',
+  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'tradevoyageranalyticssup@gmail.com',
   keywords: {
     primary: ['trade analytics', 'trading analytics', 'trade analysis', 'trade metrics', 'trading performance', 'trader tools'],
     secondary: ['stock trade analytics', 'forex trade analytics', 'options trade analytics', 'trade dashboard', 'trade tracking', 'investment analytics'],

@@ -32,7 +32,10 @@ export function useDashboardData() {
   const cacheRef = useRef<Map<string, { data: DashboardData; timestamp: number }>>(new Map());
   const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 
-  const fetchData = useCallback(async (options = toFilterOptions()) => {
+  const fetchData = useCallback(async (options = toFilterOptions(), retryCount = 0) => {
+    const maxRetries = 3;
+    const retryDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
+    
     // Abort any ongoing request
     if (currentRequestRef.current) {
       currentRequestRef.current.abort();
@@ -77,6 +80,14 @@ export function useDashboardData() {
       });
       
       if (!response.ok) {
+        // If it's a 401 error and we haven't exceeded max retries, retry after delay
+        if (response.status === 401 && retryCount < maxRetries) {
+          console.log(`Authentication failed, retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/${maxRetries + 1})`);
+          setTimeout(() => {
+            fetchData(options, retryCount + 1);
+          }, retryDelay);
+          return;
+        }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
@@ -100,11 +111,24 @@ export function useDashboardData() {
       if (err instanceof Error && err.name === 'AbortError') {
         return; // Request was cancelled, don't update error state
       }
+      
+      // If it's a network error and we haven't exceeded max retries, retry after delay
+      if (retryCount < maxRetries && (err instanceof TypeError || (err instanceof Error && err.message.includes('fetch')))) {
+        console.log(`Network error, retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/${maxRetries + 1})`);
+        setTimeout(() => {
+          fetchData(options, retryCount + 1);
+        }, retryDelay);
+        return;
+      }
+      
       setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
       console.error('Dashboard data fetch error:', err);
     } finally {
-      setLoading(false);
-      currentRequestRef.current = null;
+      // Only set loading to false if we're not retrying
+      if (retryCount >= maxRetries || currentRequestRef.current === controller) {
+        setLoading(false);
+        currentRequestRef.current = null;
+      }
     }
   }, [toFilterOptions]);
   

@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { Claims } from '@auth0/nextjs-auth0';
+import { accountDeletionService } from '@/lib/services/accountDeletion';
 
 const prisma = new PrismaClient();
 
@@ -7,12 +8,22 @@ export async function syncUserToDatabase(user: Claims) {
   try {
     if (!user.sub || !user.email) {
       console.warn('Missing required user data for sync:', { sub: user.sub, email: user.email });
-      return null;
+      return { user: null, wasReactivated: false };
     }
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { auth0Id: user.sub }
+      where: { auth0Id: user.sub },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        auth0Id: true,
+        deletionRequestedAt: true,
+        deletedAt: true,
+        createdAt: true,
+        updatedAt: true
+      }
     });
 
     if (!existingUser) {
@@ -26,7 +37,7 @@ export async function syncUserToDatabase(user: Claims) {
       });
       
       console.log('Created new user in database:', newUser.id);
-      return newUser;
+      return { user: newUser, wasReactivated: false };
     } else {
       // Update existing user info if needed
       const updatedUser = await prisma.user.update({
@@ -39,10 +50,29 @@ export async function syncUserToDatabase(user: Claims) {
       });
       
       console.log('Updated existing user in database:', existingUser.id);
-      return updatedUser;
+
+      // Check if account was marked for deletion and reactivate if possible
+      let wasReactivated = false;
+      if (existingUser.deletionRequestedAt || existingUser.deletedAt) {
+        try {
+          wasReactivated = await accountDeletionService.reactivateOnLogin(
+            existingUser.id,
+            user.email || existingUser.email
+          );
+          
+          if (wasReactivated) {
+            console.log('Account automatically reactivated during sync:', existingUser.id);
+          }
+        } catch (reactivationError) {
+          console.error('Failed to reactivate account during sync:', reactivationError);
+          // Don't fail the sync process for reactivation errors
+        }
+      }
+
+      return { user: updatedUser, wasReactivated };
     }
   } catch (error) {
     console.error('Error syncing user to database:', error);
-    return null;
+    return { user: null, wasReactivated: false };
   }
 }

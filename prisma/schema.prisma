@@ -33,6 +33,14 @@ model User {
   subscriptionTier     SubscriptionTier @default(FREE)
   subscriptionStatus   SubscriptionStatus @default(INACTIVE)
   
+  // Account deletion fields
+  deletionRequestedAt  DateTime?
+  deletedAt            DateTime?
+  deletionReason       String?
+  finalDeletionAt      DateTime?
+  anonymizedAt         DateTime?
+  canReactivate        Boolean  @default(true)
+  
   // Relations
   trades        Trade[]
   orders        Order[]
@@ -42,6 +50,7 @@ model User {
   csvUploadLogs CsvUploadLog[]
   subscriptions Subscription[]
   paymentHistory PaymentHistory[]
+  accountDeletionLogs AccountDeletionLog[]
   
   @@map("users")
 }
@@ -556,4 +565,38 @@ enum ParseMethod {
   USER_CORRECTED
   
   @@map("parse_method")
+}
+
+// Account Deletion Management
+model AccountDeletionLog {
+  id              String           @id @default(cuid())
+  userId          String
+  userEmail       String
+  action          DeletionAction
+  performedBy     String           // User ID who performed the action
+  reason          String?
+  details         Json?            // Additional metadata (IP, user agent, etc.)
+  scheduledFor    DateTime?        // When action is scheduled to happen
+  completedAt     DateTime?        // When action was actually completed
+  
+  // Metadata
+  createdAt       DateTime         @default(now())
+  
+  // Relations
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("account_deletion_logs")
+}
+
+enum DeletionAction {
+  REQUESTED
+  REACTIVATED
+  SOFT_DELETED
+  HARD_DELETED
+  EXPIRED
+  
+  @@map("deletion_action")
 }

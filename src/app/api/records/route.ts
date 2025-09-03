@@ -44,6 +44,8 @@ export async function GET(request: Request) {
           // Enhanced data consistency logging for debugging data integrity issues
           const ordersInTradeCount = trade.ordersInTrade ? trade.ordersInTrade.length : 0;
           const foundOrdersCount = orders.length;
+          const foundOrderSymbols = [...new Set(orders.map(o => o.symbol))];
+          const hasSymbolMismatch = foundOrderSymbols.some(symbol => symbol !== trade.symbol);
           
           if (ordersInTradeCount !== foundOrdersCount) {
             console.warn(`[RECORDS API] Order fetching issue detected for trade ${trade.id}:`, {
@@ -55,9 +57,23 @@ export async function GET(request: Request) {
               ordersInTradeCount,
               foundOrdersCount,
               foundOrderIds: orders.map(o => o.id),
+              foundOrderSymbols,
+              hasSymbolMismatch,
               missingOrderIds: (trade.ordersInTrade || []).filter(id => !orders.some(o => o.id === id)),
               issueType: ordersInTradeCount > foundOrdersCount ? 'ORDERS_NOT_FOUND_IN_DB' : 'UNEXPECTED_EXTRA_ORDERS',
               recommendation: 'Check if order IDs in ordersInTrade array exist in orders table'
+            });
+          }
+          
+          // Additional logging for symbol mismatches even when order counts match
+          if (hasSymbolMismatch && ordersInTradeCount === foundOrdersCount) {
+            console.warn(`[RECORDS API] Symbol mismatch detected in trade ${trade.id}:`, {
+              tradeId: trade.id,
+              tradeSymbol: trade.symbol,
+              foundOrderSymbols,
+              ordersWithSymbols: orders.map(o => ({ id: o.id, symbol: o.symbol })),
+              message: 'Trade contains orders from different symbols - this indicates incorrect trade calculation',
+              recommendation: 'Review trade builder logic to prevent cross-symbol order assignments'
             });
           }
           
@@ -72,7 +88,32 @@ export async function GET(request: Request) {
             });
           }
           
-          executions = orders.map(order => ({
+          // Filter orders to only include those matching the trade's symbol
+          const filteredOrders = orders.filter(order => {
+            const symbolMatches = order.symbol === trade.symbol;
+            
+            // Log data integrity issues for debugging
+            if (!symbolMatches) {
+              console.warn(`[RECORDS API] Symbol mismatch detected for trade ${trade.id}:`, {
+                tradeId: trade.id,
+                tradeSymbol: trade.symbol,
+                orderSymbol: order.symbol,
+                orderId: order.id,
+                message: `Order ${order.id} with symbol ${order.symbol} found in trade ${trade.id} with symbol ${trade.symbol}`,
+                recommendation: 'Check trade calculation logic - orders from different symbols should not be in the same trade'
+              });
+            }
+            
+            return symbolMatches;
+          });
+          
+          // Log if any orders were filtered out due to symbol mismatch
+          const filteredCount = orders.length - filteredOrders.length;
+          if (filteredCount > 0) {
+            console.warn(`[RECORDS API] Filtered out ${filteredCount} orders with mismatched symbols from trade ${trade.id}`);
+          }
+          
+          executions = filteredOrders.map(order => ({
             id: order.id,
             userId: order.userId,
             orderId: order.orderId,

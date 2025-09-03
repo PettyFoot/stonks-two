@@ -10,19 +10,20 @@ export async function POST() {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const syncedUser = await syncUserToDatabase(session.user);
+    const syncResult = await syncUserToDatabase(session.user);
     
-    if (!syncedUser) {
+    if (!syncResult.user) {
       return NextResponse.json({ error: 'Failed to sync user' }, { status: 500 });
     }
 
     return NextResponse.json({ 
       success: true, 
       user: {
-        id: syncedUser.id,
-        email: syncedUser.email,
-        name: syncedUser.name
-      }
+        id: syncResult.user.id,
+        email: syncResult.user.email,
+        name: syncResult.user.name
+      },
+      wasReactivated: syncResult.wasReactivated
     });
   } catch (error) {
     console.error('Error in user sync API:', error);
