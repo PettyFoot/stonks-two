@@ -1,19 +1,13 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, TrendingUp, Shield, Users, Target, Zap, Lock, PieChart } from 'lucide-react';
 import Footer from '@/components/Footer';
 
-export const metadata: Metadata = {
-  title: 'About Us - Trade Voyager Analytics',
-  description: 'Learn about Trade Voyager Analytics, the professional trading analytics platform built for serious traders. Discover our mission, features, and commitment to trader success.',
-  robots: {
-    index: true,
-    follow: true,
-  },
-};
+import { generateMetadata as generateSEOMetadata } from '@/lib/seo';
+
+export const metadata: Metadata = generateSEOMetadata('about');
 
 export default function AboutUs() {
   return (
@@ -22,14 +16,10 @@ export default function AboutUs() {
       <nav className="p-6">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-3">
-            <Image 
-              src="/trade-voyager-logo.png" 
-              alt="Trade Voyager Analytics Logo" 
-              width={48} 
-              height={48} 
-              className="rounded-lg"
-            />
-            <span className="text-2xl font-bold text-[var(--theme-primary-text)]">Trade Voyager Analytics</span>
+            <div className="w-12 h-12 bg-[var(--theme-tertiary)] rounded-lg flex items-center justify-center">
+              <BarChart3 className="h-6 w-6 text-white" />
+            </div>
+            <span className="text-2xl font-bold text-[var(--theme-primary-text)]">Trading Analytics Platform</span>
           </Link>
           <Link href="/">
             <Button variant="outline" className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/50">
@@ -43,9 +33,9 @@ export default function AboutUs() {
       <main className="max-w-6xl mx-auto px-6 py-12">
         {/* Hero Section */}
         <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold text-[var(--theme-primary-text)] mb-6">About Trade Voyager Analytics</h1>
+<h1 className="text-5xl font-bold text-[var(--theme-primary-text)] mb-6">About Our Trading Analytics Platform</h1>
           <p className="text-xl text-[var(--theme-primary-text)] mb-8 max-w-3xl mx-auto">
-            Empowering traders with professional-grade analytics and performance tracking tools 
+            Empowering traders with professional-grade analytics and trade metrics tracking tools 
             to make informed decisions and improve trading outcomes.
           </p>
         </div>
@@ -55,16 +45,16 @@ export default function AboutUs() {
           <CardContent className="p-8">
             <div className="grid md:grid-cols-2 gap-8 items-center">
               <div>
-                <h2 className="text-3xl font-bold text-[var(--theme-primary-text)] mb-4">Our Mission</h2>
+<h2 className="text-3xl font-bold text-[var(--theme-primary-text)] mb-4">Our Mission</h2>
                 <p className="text-gray-700 leading-relaxed mb-4">
-                  Trade Voyager was built by traders, for traders. We understand the challenges of tracking performance, 
-                  analyzing trades, and making data-driven improvements to your trading strategy. Our mission is to provide 
+                  Our trading analytics platform was built by traders, for traders. We understand the challenges of tracking performance, 
+                  analyzing trade metrics, and making data-driven improvements to your trading strategy. Our mission is to provide 
                   professional-grade analytics tools that were previously only available to institutional traders.
                 </p>
                 <p className="text-gray-700 leading-relaxed">
                   We believe that every trader deserves access to comprehensive performance analytics, secure data management, 
                   and actionable insights that can help improve their trading outcomes. Whether you're a day trader, swing trader, 
-                  or long-term investor, Trade Voyager provides the tools you need to succeed.
+                  or long-term investor, our platform provides the trader tools you need to succeed.
                 </p>
               </div>
               <div className="flex justify-center">
@@ -138,7 +128,7 @@ export default function AboutUs() {
         {/* Why Choose Us Section */}
         <Card className="bg-white shadow-lg mb-12">
           <CardContent className="p-8">
-            <h2 className="text-3xl font-bold text-[var(--theme-primary-text)] mb-8 text-center">Why Traders Choose Trade Voyager</h2>
+<h2 className="text-3xl font-bold text-[var(--theme-primary-text)] mb-8 text-center">Why Traders Choose Our Analytics Platform</h2>
             <div className="grid md:grid-cols-2 gap-8">
               <div>
                 <h3 className="text-xl font-semibold text-[var(--theme-primary-text)] mb-3 flex items-center">
@@ -213,12 +203,12 @@ export default function AboutUs() {
         {/* Get Started CTA */}
         <Card className="bg-gradient-to-r from-[var(--theme-tertiary)]/10 to-[var(--theme-green)]/10 border-[var(--theme-tertiary)]/30">
           <CardContent className="p-8 text-center">
-            <h2 className="text-3xl font-bold text-[var(--theme-tertiary)] mb-4">
+<h2 className="text-3xl font-bold text-[var(--theme-tertiary)] mb-4">
               Ready to Improve Your Trading Performance?
             </h2>
             <p className="text-lg text-[var(--theme-tertiary)] mb-6 max-w-2xl mx-auto">
-              Join thousands of traders who use Trade Voyager to track their performance, 
-              analyze their trades, and make data-driven improvements to their trading strategies.
+              Join thousands of traders who use our analytics platform to track their performance, 
+              analyze their trade metrics, and make data-driven improvements to their trading strategies.
             </p>
             <div className="flex items-center justify-center space-x-4">
               <Link href="/demo">

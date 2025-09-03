@@ -4,14 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import Footer from '@/components/Footer';
 
-export const metadata: Metadata = {
-  title: 'Terms of Service - Trade Voyager Analytics',
-  description: 'Trade Voyager Analytics terms of service covering usage rights, responsibilities, and legal agreements for our trading analytics platform.',
-  robots: {
-    index: true,
-    follow: true,
-  },
-};
+import { generateMetadata as generateSEOMetadata } from '@/lib/seo';
+
+export const metadata: Metadata = generateSEOMetadata('terms');
 
 export default function TermsOfService() {
   return (
@@ -20,7 +15,7 @@ export default function TermsOfService() {
       <nav className="p-6">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-3">
-            <span className="text-2xl font-bold text-[var(--theme-primary-text)]">Trade Voyager Analytics</span>
+<span className="text-2xl font-bold text-[var(--theme-primary-text)]">Trading Analytics Platform</span>
           </Link>
           <Link href="/">
             <Button variant="outline" className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/50">
@@ -41,14 +36,14 @@ export default function TermsOfService() {
               <section>
                 <h2 className="text-2xl font-semibold text-[var(--theme-primary-text)] mb-4">1. Acceptance of Terms</h2>
                 <p className="text-gray-700 leading-relaxed">
-                  By accessing or using Trade Voyager Analytics, you agree to be bound by these Terms of Service and our Privacy Policy. If you do not agree to these terms, please do not use our platform. Trade Voyager Analytics is a professional trading analytics platform designed to help traders track, analyze, and improve their trading performance.
+By accessing or using our trading analytics platform, you agree to be bound by these Terms of Service and our Privacy Policy. If you do not agree to these terms, please do not use our platform. Our platform is a professional trading analytics service designed to help traders track, analyze, and improve their trading performance.
                 </p>
               </section>
 
               <section>
                 <h2 className="text-2xl font-semibold text-[var(--theme-primary-text)] mb-4">2. Description of Service</h2>
                 <p className="text-gray-700 leading-relaxed mb-4">
-                  Trade Voyager Analytics provides professional trading analytics services including:
+Our trading analytics platform provides professional services including:
                 </p>
                 <ul className="list-disc pl-6 text-gray-700 space-y-2">
                   <li>Real-time P&L tracking and performance analytics</li>
@@ -63,7 +58,7 @@ export default function TermsOfService() {
               <section>
                 <h2 className="text-2xl font-semibold text-[var(--theme-primary-text)] mb-4">3. User Accounts and Registration</h2>
                 <p className="text-gray-700 leading-relaxed mb-4">
-                  To use Trade Voyager Analytics, you must create an account. You agree to:
+To use our trading analytics platform, you must create an account. You agree to:
                 </p>
                 <ul className="list-disc pl-6 text-gray-700 space-y-2">
                   <li>Provide accurate and complete information during registration</li>
@@ -124,14 +119,14 @@ export default function TermsOfService() {
               <section>
                 <h2 className="text-2xl font-semibold text-[var(--theme-primary-text)] mb-4">7. Intellectual Property</h2>
                 <p className="text-gray-700 leading-relaxed">
-                  Trade Voyager Analytics and its content are protected by intellectual property laws. You retain ownership of your trading data, but grant us the right to use it solely for providing our services. Our platform, algorithms, and design elements remain our exclusive property. You may not reproduce, distribute, or create derivative works without our written permission.
+                  Our trading analytics platform and its content are protected by intellectual property laws. You retain ownership of your trading data, but grant us the right to use it solely for providing our services. Our platform, algorithms, and design elements remain our exclusive property. You may not reproduce, distribute, or create derivative works without our written permission.
                 </p>
               </section>
 
               <section>
                 <h2 className="text-2xl font-semibold text-[var(--theme-primary-text)] mb-4">8. Disclaimers and Limitations</h2>
                 <p className="text-gray-700 leading-relaxed mb-4">
-                  <strong>IMPORTANT:</strong> Trade Voyager Analytics is an analytics tool only. We provide:
+                  <strong>IMPORTANT:</strong> Our trading analytics platform is an analytics tool only. We provide:
                 </p>
                 <ul className="list-disc pl-6 text-gray-700 space-y-2 mb-4">
                   <li>No investment advice or trading recommendations</li>
@@ -162,7 +157,7 @@ export default function TermsOfService() {
               <section>
                 <h2 className="text-2xl font-semibold text-[var(--theme-primary-text)] mb-4">11. Changes to Terms</h2>
                 <p className="text-gray-700 leading-relaxed">
-                  We may update these Terms of Service periodically. Material changes will be communicated through our platform or via email with at least 30 days notice. Your continued use of Trade Voyager Analytics after changes are posted constitutes acceptance of the updated terms.
+                  We may update these Terms of Service periodically. Material changes will be communicated through our platform or via email with at least 30 days notice. Your continued use of our trading analytics platform after changes are posted constitutes acceptance of the updated terms.
                 </p>
               </section>
 

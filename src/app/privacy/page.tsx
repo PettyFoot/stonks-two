@@ -128,8 +128,17 @@ export default function PrivacyPolicy() {
 
               <section>
                 <h2 className="text-2xl font-semibold text-[var(--theme-primary-text)] mb-4">8. Cookies and Tracking</h2>
+                <p className="text-gray-700 leading-relaxed mb-4">
+                  We use essential cookies for authentication and session management. We also use analytics cookies to understand how users interact with our platform. You have full control over which cookies we can use through our cookie consent system.
+                </p>
                 <p className="text-gray-700 leading-relaxed">
-                  We use essential cookies for authentication and session management. We also use analytics cookies to understand how users interact with our platform. You can control cookie settings through your browser, though disabling essential cookies may affect platform functionality.
+                  For detailed information about the cookies we use, their purposes, and how to manage your preferences, please see our{' '}
+                  <Link href="/cookies" className="text-[var(--theme-tertiary)] hover:underline">
+                    Cookie Policy
+                  </Link>. You can also manage your cookie preferences at any time in your{' '}
+                  <Link href="/settings" className="text-[var(--theme-tertiary)] hover:underline">
+                    account settings
+                  </Link>.
                 </p>
               </section>
 

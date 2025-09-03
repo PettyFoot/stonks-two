@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-import { Analytics } from "@vercel/analytics/next";
-import { OrganizationStructuredData } from "@/components/SEO";
+import { OrganizationStructuredData, SoftwareApplicationStructuredData } from "@/components/SEO";
 import { SEO_CONFIG } from "@/lib/seo";
+import { CookieConsent } from "@/components/CookieConsent";
+import { ConditionalAnalytics } from "@/components/ConditionalAnalytics";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -15,9 +16,9 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SEO_CONFIG.siteUrl),
-  title: {
-    default: "Trade Voyager Analytics - Professional Trading Analytics Platform",
-    template: "%s | Trade Voyager Analytics"
+title: {
+    default: "Trading Analytics Platform - Professional Trade Metrics & Performance Tracking",
+    template: "%s | Trading Analytics Platform"
   },
   description: SEO_CONFIG.siteDescription,
   keywords: [
@@ -39,10 +40,10 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  openGraph: {
+openGraph: {
     type: 'website',
     siteName: SEO_CONFIG.siteName,
-    title: 'Trade Voyager Analytics - Professional Trading Analytics Platform',
+    title: 'Trading Analytics Platform - Professional Trade Metrics & Performance Tracking',
     description: SEO_CONFIG.siteDescription,
     url: SEO_CONFIG.siteUrl,
     images: [
@@ -50,17 +51,17 @@ export const metadata: Metadata = {
         url: `${SEO_CONFIG.siteUrl}${SEO_CONFIG.defaultImage}`,
         width: 1200,
         height: 630,
-        alt: 'Trade Voyager Analytics - Professional Trading Analytics Platform',
+alt: 'Trading Analytics Platform - Professional Trade Metrics & Performance Tracking',
         type: 'image/png',
       },
     ],
     locale: 'en_US',
   },
-  twitter: {
+twitter: {
     card: 'summary_large_image',
     site: SEO_CONFIG.twitterHandle,
     creator: SEO_CONFIG.twitterHandle,
-    title: 'Trade Voyager Analytics - Professional Trading Analytics Platform',
+    title: 'Trading Analytics Platform - Professional Trade Metrics & Performance Tracking',
     description: SEO_CONFIG.siteDescription,
     images: [`${SEO_CONFIG.siteUrl}${SEO_CONFIG.defaultImage}`],
   },
@@ -111,8 +112,9 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
         
-        {/* Structured Data for Organization */}
+        {/* Structured Data for Organization and Software Application */}
         <OrganizationStructuredData />
+        <SoftwareApplicationStructuredData />
         
         {/* Resource hints for critical CSS */}
       </head>
@@ -131,32 +133,56 @@ export default function RootLayout({
           </main>
         </Providers>
         
-        {/* Analytics */}
-        <Analytics />
+        {/* Cookie Consent Banner */}
+        <CookieConsent />
         
-        {/* Performance monitoring script */}
+        {/* Conditional Analytics */}
+        <ConditionalAnalytics />
+        
+        {/* Conditional Performance monitoring script */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // Report Web Vitals to analytics
-              function sendToAnalytics(metric) {
-                const body = JSON.stringify(metric);
-                if (navigator.sendBeacon) {
-                  navigator.sendBeacon('/api/vitals', body);
-                } else {
-                  fetch('/api/vitals', { body, method: 'POST', keepalive: true });
+              // Initialize conditional web vitals reporting
+              function initWebVitals() {
+                try {
+                  // Check if analytics cookies are enabled
+                  const consentCookie = document.cookie
+                    .split('; ')
+                    .find(row => row.startsWith('cookie-consent='));
+                    
+                  if (consentCookie) {
+                    const consentData = JSON.parse(decodeURIComponent(consentCookie.split('=')[1]));
+                    if (consentData.hasConsented && consentData.preferences.analytics) {
+                      // Only load web vitals if analytics are enabled
+                      import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+                        function sendToAnalytics(metric) {
+                          const body = JSON.stringify(metric);
+                          if (navigator.sendBeacon) {
+                            navigator.sendBeacon('/api/vitals', body);
+                          } else {
+                            fetch('/api/vitals', { body, method: 'POST', keepalive: true });
+                          }
+                        }
+                        
+                        getCLS(sendToAnalytics);
+                        getFID(sendToAnalytics);
+                        getFCP(sendToAnalytics);
+                        getLCP(sendToAnalytics);
+                        getTTFB(sendToAnalytics);
+                      });
+                    }
+                  }
+                } catch (error) {
+                  console.error('Failed to initialize web vitals:', error);
                 }
               }
               
-              // Initialize web vitals reporting
-              if (typeof window !== 'undefined') {
-                import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
-                  getCLS(sendToAnalytics);
-                  getFID(sendToAnalytics);
-                  getFCP(sendToAnalytics);
-                  getLCP(sendToAnalytics);
-                  getTTFB(sendToAnalytics);
-                });
+              // Initialize when DOM is ready
+              if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initWebVitals);
+              } else {
+                initWebVitals();
               }
             `
           }}

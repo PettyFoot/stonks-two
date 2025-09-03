@@ -2,30 +2,30 @@ import { Metadata } from 'next';
 
 // SEO Configuration Constants
 export const SEO_CONFIG = {
-  siteName: 'Trade Voyager Analytics',
-  siteDescription: 'Professional trading analytics and performance tracking for serious traders. Track P&L, analyze performance, and improve your trading with comprehensive analytics.',
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tradevoyageranalytics.com',
-  twitterHandle: '@tradevoyager',
+  siteName: 'Trading Analytics Platform',
+  siteDescription: 'Professional trading analytics and performance tracking for serious traders. Track P&L, analyze trade metrics, and improve your trading performance with comprehensive analytics.',
+  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://localhost:3000',
+  twitterHandle: '@tradinganalytics',
   defaultImage: '/og-image.png',
-  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'support@tradevoyageranalytics.com',
+  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'support@tradinganalytics.com',
   keywords: {
-    primary: ['trading analytics', 'trade tracking', 'P&L analysis', 'trading performance'],
-    secondary: ['stock trading', 'forex trading', 'options trading', 'trading dashboard', 'broker integration', 'trading reports'],
-    technical: ['Interactive Brokers', 'TD Ameritrade', 'trading platform', 'portfolio analysis', 'risk management']
+    primary: ['trading analytics', 'trade metrics', 'trading performance', 'trader tools'],
+    secondary: ['stock trading', 'forex trading', 'options trading', 'trading dashboard', 'portfolio tracker', 'investment analytics'],
+    technical: ['Interactive Brokers', 'TD Ameritrade', 'trading platform', 'portfolio analysis', 'trade tracking']
   }
 };
 
 // Page-specific SEO configurations
 export const PAGE_SEO = {
   home: {
-    title: 'Trade Voyager Analytics | Professional Trading Platform',
-    description: 'Track your trading performance like a pro. Real-time P&L analysis, win rates, broker integration with Interactive Brokers & TD Ameritrade. Start free demo →',
-    keywords: ['trading analytics platform', 'professional trading tools', 'trading performance tracker', 'broker integration', 'P&L tracking'],
+    title: 'Trading Analytics Platform | Trade Metrics & Performance Tracking',
+    description: 'Track your trading performance like a pro. Real-time trade metrics, P&L analysis, win rates, and comprehensive analytics for serious traders. Start free demo →',
+    keywords: ['trading analytics platform', 'trade metrics', 'trading performance tracker', 'trader tools', 'P&L tracking'],
     path: '/'
   },
   login: {
-    title: 'Sign In | Trade Voyager Analytics Dashboard Access',
-    description: 'Access your trading analytics dashboard. View real-time P&L, analyze performance, and improve your trading results. Secure login for professional traders.',
+    title: 'Sign In | Trading Analytics Dashboard Access',
+    description: 'Access your trading analytics dashboard. View real-time P&L, analyze trade metrics, and improve your trading results. Secure login for professional traders.',
     keywords: ['trading login', 'trading account', 'secure trading platform', 'trading dashboard access'],
     path: '/login'
   },
@@ -84,9 +84,9 @@ export const PAGE_SEO = {
     path: '/demo'
   },
   contact: {
-    title: 'Contact Support | Get Trading Analytics Help Fast',
-    description: 'Need help with trading analytics or broker integration? Our expert team responds within 24 hours. Get support for imports, reports, and more.',
-    keywords: ['contact support', 'trading analytics help', 'customer service', 'trading platform support', 'broker integration help', 'trading analytics contact'],
+    title: 'Contact Trading Analytics Support | Help for Traders',
+    description: 'Need help with trading analytics or broker integration? Our expert team responds within 24 hours. Get support for imports, trade metrics, and more.',
+    keywords: ['contact support', 'trading analytics help', 'trader support', 'trading platform support', 'broker integration help'],
     path: '/contact'
   },
   features: {
@@ -102,20 +102,20 @@ export const PAGE_SEO = {
     path: '/pricing'
   },
   about: {
-    title: 'About Us | Trade Voyager Analytics Mission & Team',
-    description: 'Learn about Trade Voyager Analytics: our mission to help traders succeed, our team of trading and technology experts, and our commitment to your success.',
-    keywords: ['about trade voyager', 'trading analytics company', 'trading platform team', 'trading analytics mission', 'professional trading tools'],
+    title: 'About Us | Professional Trading Analytics for Traders',
+    description: 'Learn about our trading analytics platform: our mission to help traders succeed with advanced trade metrics, performance tracking, and professional tools.',
+    keywords: ['trading analytics company', 'trader tools', 'trading platform team', 'trading performance mission', 'professional trading analytics'],
     path: '/about'
   },
   privacy: {
-    title: 'Privacy Policy | How We Protect Your Trading Data',
-    description: 'Your trading data privacy is our priority. Learn how Trade Voyager Analytics protects, encrypts, and secures your sensitive trading information.',
+    title: 'Privacy Policy | Secure Trading Data Protection',
+    description: 'Your trading data privacy is our priority. Learn how our trading analytics platform protects, encrypts, and secures your sensitive trading information.',
     keywords: ['trading data privacy', 'data security', 'privacy policy', 'trading data protection', 'secure trading platform'],
     path: '/privacy'
   },
   terms: {
-    title: 'Terms of Service | Trade Voyager Analytics Agreement',
-    description: 'Read our terms of service for Trade Voyager Analytics. Clear, fair terms for using our professional trading analytics and performance tracking platform.',
+    title: 'Terms of Service | Trading Platform Agreement',
+    description: 'Read our terms of service for our trading analytics platform. Clear, fair terms for using our professional trading analytics and performance tracking tools.',
     keywords: ['terms of service', 'trading platform terms', 'service agreement', 'trading analytics terms', 'user agreement'],
     path: '/terms'
   }

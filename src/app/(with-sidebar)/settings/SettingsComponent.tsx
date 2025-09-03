@@ -15,6 +15,7 @@ import {
   CreditCard,
   Shield,
   Settings as SettingsIcon,
+  Cookie,
   Loader2
 } from 'lucide-react';
 
@@ -22,6 +23,7 @@ import {
 import ProfileTab from './components/ProfileTab';
 import SubscriptionTab from './components/SubscriptionTab';
 import BillingTab from './components/BillingTab';
+import CookieSettingsTab from './components/CookieSettingsTab';
 
 export default function SettingsComponent() {
   const { user, isLoading } = useAuth();
@@ -79,6 +81,12 @@ export default function SettingsComponent() {
       label: 'Billing',
       icon: CreditCard,
       description: 'Payment methods and history'
+    },
+    {
+      id: 'cookies',
+      label: 'Privacy',
+      icon: Cookie,
+      description: 'Manage your cookie and privacy preferences'
     }
   ];
 
@@ -113,7 +121,7 @@ export default function SettingsComponent() {
           {/* Tabs Navigation */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <div className="overflow-x-auto">
-              <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-flex">
+              <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
                 {tabs.map((tab) => (
                   <TabsTrigger 
                     key={tab.id} 
@@ -155,6 +163,10 @@ export default function SettingsComponent() {
 
               <TabsContent value="billing" className="space-y-6">
                 <BillingTab />
+              </TabsContent>
+
+              <TabsContent value="cookies" className="space-y-6">
+                <CookieSettingsTab />
               </TabsContent>
 
             </div>

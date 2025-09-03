@@ -347,24 +347,15 @@ function RecordsContent() {
           </Card>
 
           {/* Row 3: Orders/Executions Table (full width) */}
-          <Card className="bg-surface border-default">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-medium text-primary">
-                Orders ({recordsData.executions.length} executions)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ExecutionsTable 
-                executions={recordsData.executions}
-                loading={false}
-                error={null}
-                showActions={true}
-                onExecutionSelect={(execution) => {
-                  console.log('Selected execution:', execution);
-                }}
-              />
-            </CardContent>
-          </Card>
+          <ExecutionsTable 
+            executions={recordsData.executions}
+            loading={false}
+            error={null}
+            showActions={true}
+            onExecutionSelect={(execution) => {
+              console.log('Selected execution:', execution);
+            }}
+          />
 
           {/* AdSense Ad Unit */}
           <div className="mt-6">

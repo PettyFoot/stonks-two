@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@auth0/nextjs-auth0';
 import { getDemoSessionFromCookies } from './demo/demoSession';
+import { cookies } from 'next/headers';
 
 export async function getCurrentUser() {
   try {
@@ -19,6 +20,8 @@ export async function getCurrentUser() {
     }
 
     // Fall back to Auth0 session
+    // Ensure cookies are awaited before Auth0 session
+    await cookies();
     const session = await getSession();
   
     if (!session?.user?.sub) {
