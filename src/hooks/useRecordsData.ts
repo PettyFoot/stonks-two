@@ -104,7 +104,7 @@ export function useRecordsData(date: string | null): UseRecordsDataReturn {
     } finally {
       setLoading(false);
     }
-  }, [date, isDemo, authLoading]);
+  }, [date, authLoading]);
 
   useEffect(() => {
     fetchRecordsData();

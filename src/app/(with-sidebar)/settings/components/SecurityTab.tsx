@@ -1,65 +1,19 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-// Using custom checkbox instead of switch
-import { Label } from '@/components/ui/label';
 import DeleteAccountDialog from '@/components/DeleteAccountDialog';
 import { toast } from 'sonner';
 import {
-  Shield,
-  Key,
-  Eye,
-  EyeOff,
   AlertTriangle,
   CheckCircle,
-  Lock,
   Download,
-  Trash2,
-  Activity
+  Trash2
 } from 'lucide-react';
 
-// Mock security data - replace with actual data
-const securitySettings = {
-  twoFactorEnabled: false,
-  sessionTimeout: 30,
-  emailNotifications: true,
-  loginAlerts: true,
-  dataDownloadEnabled: true,
-  accountDeletionRequested: false,
-  lastPasswordChange: '2023-12-15',
-  activeSessions: 2
-};
 
-const recentActivity = [
-  {
-    id: 1,
-    action: 'Login',
-    location: 'New York, NY',
-    device: 'Chrome on Windows',
-    timestamp: '2024-01-15 10:30 AM',
-    success: true
-  },
-  {
-    id: 2,
-    action: 'Settings Changed',
-    location: 'New York, NY',
-    device: 'Chrome on Windows',
-    timestamp: '2024-01-14 3:45 PM',
-    success: true
-  },
-  {
-    id: 3,
-    action: 'Failed Login',
-    location: 'Unknown',
-    device: 'Unknown Browser',
-    timestamp: '2024-01-12 8:22 AM',
-    success: false
-  }
-];
 
 interface DeletionStatus {
   isDeletionRequested: boolean;
@@ -72,8 +26,6 @@ interface DeletionStatus {
 
 export default function SecurityTab() {
   const { user } = useUser();
-  const [settings, setSettings] = useState(securitySettings);
-  const [showSessions, setShowSessions] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [deletionStatus, setDeletionStatus] = useState<DeletionStatus | null>(null);
@@ -81,7 +33,7 @@ export default function SecurityTab() {
   const [isDownloadingData, setIsDownloadingData] = useState(false);
 
   // Load deletion status function
-  const loadDeletionStatus = async () => {
+  const loadDeletionStatus = useCallback(async () => {
     if (!user?.sub) return;
 
     setIsLoadingStatus(true);
@@ -109,7 +61,7 @@ export default function SecurityTab() {
     } finally {
       setIsLoadingStatus(false);
     }
-  };
+  }, [user?.sub]);
 
   // Load deletion status on component mount and refresh periodically
   useEffect(() => {
@@ -119,23 +71,8 @@ export default function SecurityTab() {
     const interval = setInterval(loadDeletionStatus, 10000); // Refresh every 10 seconds
     
     return () => clearInterval(interval);
-  }, [user?.sub]);
+  }, [user?.sub, loadDeletionStatus]);
 
-  const handleSettingChange = (key: keyof typeof securitySettings, value: boolean | number) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
-    // TODO: Save to API
-    console.log(`Setting ${key} changed to:`, value);
-  };
-
-  const handleChangePassword = () => {
-    // Redirect to Auth0 password change
-    window.location.href = '/api/auth/logout?returnTo=' + encodeURIComponent(window.location.origin + '/login?action=reset-password');
-  };
-
-  const handleEnable2FA = () => {
-    // TODO: Implement 2FA setup flow
-    console.log('Enable 2FA');
-  };
 
   const handleDownloadData = async () => {
     setIsDownloadingData(true);
@@ -274,10 +211,6 @@ export default function SecurityTab() {
     }
   };
 
-  const handleRevokeSession = (sessionId: string) => {
-    // TODO: Implement session revocation
-    console.log('Revoke session:', sessionId);
-  };
 
   return (
     <div className="space-y-6">

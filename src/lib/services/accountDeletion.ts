@@ -138,7 +138,7 @@ class AccountDeletionServiceImpl implements AccountDeletionService {
         data: {
           userId: anonymousId, // Use new anonymous ID
           userEmail: user.email, // Keep original for audit
-          action: DeletionAction.ANONYMIZED,
+          action: DeletionAction.HARD_DELETED,
           performedBy: 'system',
           details: {
             timestamp: new Date().toISOString(),

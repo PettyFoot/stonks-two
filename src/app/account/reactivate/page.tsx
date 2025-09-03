@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,7 +35,7 @@ export default function AccountReactivatePage() {
   const [isLoadingStatus, setIsLoadingStatus] = useState(false);
   const [isReactivating, setIsReactivating] = useState(false);
 
-  const loadDeletionStatus = async () => {
+  const loadDeletionStatus = useCallback(async () => {
     setIsLoadingStatus(true);
     try {
       const response = await fetch('/api/account/delete', {
@@ -69,7 +69,7 @@ export default function AccountReactivatePage() {
     } finally {
       setIsLoadingStatus(false);
     }
-  };
+  }, [router]);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -81,7 +81,7 @@ export default function AccountReactivatePage() {
     if (user) {
       loadDeletionStatus();
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, loadDeletionStatus]);
 
   const handleReactivate = async () => {
     setIsReactivating(true);

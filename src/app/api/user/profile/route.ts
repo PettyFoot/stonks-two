@@ -339,7 +339,7 @@ export async function PUT(request: NextRequest) {
     });
 
     // If we have a Stripe customer and email changed, update Stripe
-    if (email && email !== user.email && 'stripeCustomerId' in user && user.stripeCustomerId) {
+    if (email && email !== user.email && 'stripeCustomerId' in user && user.stripeCustomerId && typeof user.stripeCustomerId === 'string') {
       try {
         const { customerService } = await import('@/lib/stripe');
         await customerService.updateCustomer(user.stripeCustomerId, {

@@ -130,7 +130,7 @@ export function useDashboardData() {
         currentRequestRef.current = null;
       }
     }
-  }, [toFilterOptions]);
+  }, [toFilterOptions, CACHE_TTL]);
   
   useEffect(() => {
     // Don't fetch data until auth state is resolved

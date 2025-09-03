@@ -259,7 +259,7 @@ export default function TradeCandlestickChart({
     };
 
     fetchMarketData();
-  }, [symbol, tradeDate, tradeTime, timeInterval, executions]);
+  }, [symbol, tradeDate, tradeTime, timeInterval, executions, validateInputs]);
 
   // Process executions for annotations
   const executionAnnotations = useMemo(() => {

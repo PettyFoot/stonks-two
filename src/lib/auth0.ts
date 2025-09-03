@@ -93,6 +93,10 @@ export async function getCurrentUser() {
     }
 
     // Return user without deletion fields for regular auth flow
+    if (!user) {
+      throw new Error('User not found after reactivation attempt');
+    }
+    
     return {
       id: user.id,
       auth0Id: user.auth0Id,
