@@ -9,7 +9,7 @@ import KPICards from '@/components/KPICards';
 import EquityChart from '@/components/charts/EquityChart';
 import CustomPieChart from '@/components/charts/PieChart';
 import DistributionCharts from '@/components/charts/DistributionCharts';
-import HorizontalBarChart, { formatDuration, formatCurrency } from '@/components/charts/HorizontalBarChart';
+import TradeDistributionChart from '@/components/charts/TradeDistributionChart';
 import GaugeChart from '@/components/charts/GaugeChart';
 import LargestGainLossGauge from '@/components/charts/LargestGainLossGauge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +21,25 @@ import WelcomeBackBanner from '@/components/WelcomeBackBanner';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 import { CHART_HEIGHTS } from '@/constants/chartHeights';
+
+// Helper formatters
+const formatDuration = (seconds: number): string => {
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  if (seconds < 3600) {
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.round(seconds % 60);
+    return secs > 0 ? `${minutes}m ${secs}s` : `${minutes}m`;
+  }
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.round((seconds % 3600) / 60);
+  return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+};
+
+const formatCurrency = (value: number): string => {
+  const absValue = Math.abs(value);
+  const formatted = absValue.toFixed(2);
+  return value < 0 ? `-$${formatted}` : `$${formatted}`;
+};
 
 export default function DashboardComponent() {
   const { user, isLoading } = useAuth();
@@ -288,19 +307,27 @@ export default function DashboardComponent() {
           {/* Row 2: Horizontal Bar Charts and Metrics */}
           {/* Hold Time Winning Trades vs Losing Trades */}
           <div className="col-span-1 lg:col-span-2">
-            <HorizontalBarChart
+            <TradeDistributionChart
               title="Hold Time Winning vs Losing Trades"
-              data={holdTimeData}
+              data={holdTimeData.map(item => ({ date: item.label, value: item.value, category: item.label }))}
               height={CHART_HEIGHTS.SM}
+              orientation="horizontal"
+              renderMode="html"
+              valueFormatter={formatDuration}
+              conditionalColors={true}
             />
           </div>
 
           {/* Average Winning Trade vs Losing Trade */}
           <div className="col-span-1 lg:col-span-2">
-            <HorizontalBarChart
+            <TradeDistributionChart
               title="Average Winning vs Losing Trade"
-              data={avgWinLossData}
+              data={avgWinLossData.map(item => ({ date: item.label, value: item.value, category: item.label }))}
               height={CHART_HEIGHTS.SM}
+              orientation="horizontal"
+              renderMode="html"
+              valueFormatter={formatCurrency}
+              conditionalColors={true}
             />
           </div>
 
@@ -331,10 +358,14 @@ export default function DashboardComponent() {
 
           {/* Performance By Duration */}
           <div className="col-span-1 lg:col-span-2">
-            <HorizontalBarChart
+            <TradeDistributionChart
               title="Performance By Duration"
-              data={durationData}
+              data={durationData.map(item => ({ date: item.label, value: item.value, category: item.label }))}
               height={CHART_HEIGHTS.SM}
+              orientation="horizontal"
+              renderMode="html"
+              valueFormatter={formatCurrency}
+              conditionalColors={true}
             />
           </div>
 

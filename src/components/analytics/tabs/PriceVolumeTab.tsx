@@ -4,7 +4,6 @@ import React, { useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import TradeDistributionChart from '@/components/charts/TradeDistributionChart';
-import ConditionalBarChart from '@/components/charts/ConditionalBarChart';
 import { AnalyticsTabContentProps } from '../AnalyticsTabsSection';
 
 export default function PriceVolumeTab({ data }: AnalyticsTabContentProps) {
@@ -95,10 +94,13 @@ export default function PriceVolumeTab({ data }: AnalyticsTabContentProps) {
               title="TRADE DISTRIBUTION BY PRICE RANGE"
               orientation="horizontal"
             />
-            <ConditionalBarChart
+            <TradeDistributionChart
               data={priceRangeData.map(item => ({ date: item.category, value: item.avgPnl }))}
               title="AVERAGE P&L BY PRICE RANGE"
               valueFormatter={(value) => `$${value.toFixed(2)}`}
+              conditionalColors={true}
+              chartType="currency"
+              showReferenceLine={true}
             />
           </div>
         </TabsContent>
@@ -111,10 +113,13 @@ export default function PriceVolumeTab({ data }: AnalyticsTabContentProps) {
               title="TRADE DISTRIBUTION BY VOLUME"
               orientation="horizontal"
             />
-            <ConditionalBarChart
+            <TradeDistributionChart
               data={volumeRangeData.map(item => ({ date: item.category, value: item.avgPnl }))}
               title="AVERAGE P&L BY VOLUME RANGE"
               valueFormatter={(value) => `$${value.toFixed(2)}`}
+              conditionalColors={true}
+              chartType="currency"
+              showReferenceLine={true}
             />
           </div>
         </TabsContent>
@@ -122,10 +127,13 @@ export default function PriceVolumeTab({ data }: AnalyticsTabContentProps) {
         {/* Position Sizing Tab */}
         <TabsContent value="position-sizing" className="space-y-6">
           <div className="grid grid-cols-2 gap-6">
-            <ConditionalBarChart
+            <TradeDistributionChart
               data={positionSizeData}
               title="P&L BY POSITION SIZE"
               valueFormatter={(value) => `$${value.toFixed(2)}`}
+              conditionalColors={true}
+              chartType="currency"
+              showReferenceLine={true}
             />
             <Card className="bg-theme-surface border-theme-border">
               <CardHeader className="pb-2">

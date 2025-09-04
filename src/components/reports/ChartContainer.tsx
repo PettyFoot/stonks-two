@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import CustomBarChart from '@/components/charts/BarChart';
+import TradeDistributionChart from '@/components/charts/TradeDistributionChart';
 import { ChartDataPoint } from '@/types';
 import { ChartType } from '@/lib/chartFormatters';
 
@@ -56,15 +56,16 @@ export default function ChartContainer({
       <CardContent className={containerClass}>
         <div style={contentStyle}>
           {hasData ? (
-            <CustomBarChart
+            <TradeDistributionChart
               data={data}
               title=""
               height={height}
               chartType={valueType}
               color={getChartColor()}
-              useConditionalColors={chartType === 'performance'}
+              conditionalColors={chartType === 'performance'}
               showGrid={true}
               showTooltip={true}
+              showReferenceLine={chartType === 'performance'}
             />
           ) : (
             <div className="flex items-center justify-center h-[300px] text-theme-secondary-text">

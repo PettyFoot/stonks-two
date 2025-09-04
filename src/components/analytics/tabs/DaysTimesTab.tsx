@@ -2,7 +2,6 @@
 
 import React from 'react';
 import TradeDistributionChart from '@/components/charts/TradeDistributionChart';
-import ConditionalBarChart from '@/components/charts/ConditionalBarChart';
 import { AnalyticsTabContentProps } from '../AnalyticsTabsSection';
 
 export default function DaysTimesTab({ data }: AnalyticsTabContentProps) {
@@ -17,10 +16,13 @@ export default function DaysTimesTab({ data }: AnalyticsTabContentProps) {
             title="TRADE DISTRIBUTION BY MONTH OF YEAR"
             orientation="horizontal"
           />
-          <ConditionalBarChart
+          <TradeDistributionChart
             data={data.performance.byMonth}
             title="PERFORMANCE BY MONTH OF YEAR"
             valueFormatter={(value) => `$${value.toFixed(2)}`}
+            conditionalColors={true}
+            chartType="currency"
+            showReferenceLine={true}
           />
         </div>
 
@@ -31,10 +33,13 @@ export default function DaysTimesTab({ data }: AnalyticsTabContentProps) {
             title="TRADE DISTRIBUTION BY DURATION"
             orientation="horizontal"
           />
-          <ConditionalBarChart
+          <TradeDistributionChart
             data={data.performance.byDuration}
             title="PERFORMANCE BY DURATION"
             valueFormatter={(value) => `$${value.toFixed(2)}`}
+            conditionalColors={true}
+            chartType="currency"
+            showReferenceLine={true}
           />
         </div>
 
@@ -45,10 +50,13 @@ export default function DaysTimesTab({ data }: AnalyticsTabContentProps) {
             title="TRADE DISTRIBUTION BY INTRADAY DURATION"
             orientation="horizontal"
           />
-          <ConditionalBarChart
+          <TradeDistributionChart
             data={data.performance.byIntradayDuration}
             title="PERFORMANCE BY INTRADAY DURATION"
             valueFormatter={(value) => `$${value.toFixed(2)}`}
+            conditionalColors={true}
+            chartType="currency"
+            showReferenceLine={true}
           />
         </div>
 
@@ -59,10 +67,13 @@ export default function DaysTimesTab({ data }: AnalyticsTabContentProps) {
             title="TRADE DISTRIBUTION BY DAY OF WEEK"
             orientation="horizontal"
           />
-          <ConditionalBarChart
+          <TradeDistributionChart
             data={data.performance.byDayOfWeek}
             title="PERFORMANCE BY DAY OF WEEK"
             valueFormatter={(value) => `$${value.toFixed(2)}`}
+            conditionalColors={true}
+            chartType="currency"
+            showReferenceLine={true}
           />
         </div>
 
@@ -72,10 +83,13 @@ export default function DaysTimesTab({ data }: AnalyticsTabContentProps) {
             data={data.distribution.byHourOfDay}
             title="TRADE DISTRIBUTION BY HOUR OF DAY"
           />
-          <ConditionalBarChart
+          <TradeDistributionChart
             data={data.performance.byHourOfDay}
             title="PERFORMANCE BY HOUR OF DAY"
             valueFormatter={(value) => `$${value.toFixed(2)}`}
+            conditionalColors={true}
+            chartType="currency"
+            showReferenceLine={true}
           />
         </div>
       </div>

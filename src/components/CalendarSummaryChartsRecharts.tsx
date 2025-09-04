@@ -148,7 +148,7 @@ export default function CalendarSummaryChartsRecharts({ isDemo = false }: Calend
           <BarChart data={data} margin={{ 
             top: 10, 
             right: 20, 
-            left: 20, 
+            left: 0, 
             bottom: isSmallScreen ? 60 : 40 
           }}>
             <CartesianGrid 
@@ -169,16 +169,18 @@ export default function CalendarSummaryChartsRecharts({ isDemo = false }: Calend
               angle={isSmallScreen ? -45 : 0}
               interval={xAxisInterval}
               stroke="#E5E7EB"
-              label={{ 
-                value: xLabel, 
-                position: 'insideBottom', 
-                offset: -5, 
-                style: { 
-                  textAnchor: 'middle', 
-                  fontSize: '12px', 
-                  fill: '#53565c' 
-                } 
-              }}
+              {...(!isSmallScreen && {
+                label: { 
+                  value: xLabel, 
+                  position: 'insideBottom', 
+                  offset: -5, 
+                  style: { 
+                    textAnchor: 'middle', 
+                    fontSize: '12px', 
+                    fill: '#53565c' 
+                  } 
+                }
+              })}
             />
             <YAxis 
               axisLine={true}
@@ -186,17 +188,19 @@ export default function CalendarSummaryChartsRecharts({ isDemo = false }: Calend
               tick={{ fontSize: 12, fill: '#53565c' }}
               tickFormatter={formatter}
               stroke="#E5E7EB"
-              label={{ 
-                value: yLabel, 
-                angle: -90, 
-                position: 'insideLeft',
-                offset: -5,
-                style: { 
-                  textAnchor: 'middle', 
-                  fontSize: '12px', 
-                  fill: '#53565c' 
-                } 
-              }}
+              {...(!isSmallScreen && {
+                label: { 
+                  value: yLabel, 
+                  angle: -90, 
+                  position: 'insideLeft',
+                  offset: -5,
+                  style: { 
+                    textAnchor: 'middle', 
+                    fontSize: '12px', 
+                    fill: '#53565c' 
+                  } 
+                }
+              })}
             />
             {showZeroLine && (
               <ReferenceLine 
@@ -279,9 +283,9 @@ export default function CalendarSummaryChartsRecharts({ isDemo = false }: Calend
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={data} margin={{ 
             top: 10, 
-            right: 20, 
-            left: 5, 
-            bottom: isSmallScreen ? 60 : 40 
+            right:isSmallScreen ? -25  : 20,
+            left: isSmallScreen ? -30  : 20,
+            bottom: isSmallScreen ? 40  : 20 
           }}>
             <CartesianGrid 
               strokeDasharray="3 3" 
@@ -301,16 +305,18 @@ export default function CalendarSummaryChartsRecharts({ isDemo = false }: Calend
               angle={isSmallScreen ? -45 : 0}
               interval={xAxisInterval}
               stroke="#E5E7EB"
-              label={{ 
-                value: xLabel, 
-                position: 'insideBottom', 
-                offset: -5, 
-                style: { 
-                  textAnchor: 'middle', 
-                  fontSize: '12px', 
-                  fill: '#53565c' 
-                } 
-              }}
+              {...(!isSmallScreen && {
+                label: { 
+                  value: xLabel, 
+                  position: 'insideBottom', 
+                  offset: -5, 
+                  style: { 
+                    textAnchor: 'middle', 
+                    fontSize: '12px', 
+                    fill: '#53565c' 
+                  } 
+                }
+              })}
             />
             <YAxis 
               yAxisId="left"
@@ -320,17 +326,19 @@ export default function CalendarSummaryChartsRecharts({ isDemo = false }: Calend
               tick={{ fontSize: 12, fill: '#53565c' }}
               tickFormatter={formatTrades}
               stroke="#E5E7EB"
-              label={{ 
-                value: 'Trade Count', 
-                angle: -90, 
-                position: 'insideLeft',
-                offset: 0,
-                style: { 
-                  textAnchor: 'middle', 
-                  fontSize: '12px', 
-                  fill: 'var(--theme-green)' 
-                } 
-              }}
+              {...(!isSmallScreen && {
+                label: { 
+                  value: 'Trade Count', 
+                  angle: -90, 
+                  position: 'insideLeft',
+                  offset: 0,
+                  style: { 
+                    textAnchor: 'middle', 
+                    fontSize: '12px', 
+                    fill: 'var(--theme-green)' 
+                  } 
+                }
+              })}
             />
             <YAxis 
               yAxisId="right"
@@ -340,17 +348,19 @@ export default function CalendarSummaryChartsRecharts({ isDemo = false }: Calend
               tick={{ fontSize: 12, fill: '#53565c' }}
               tickFormatter={formatShares}
               stroke="#E5E7EB"
-              label={{ 
-                value: 'Share Volume', 
-                angle: 90, 
-                position: 'insideRight',
-                offset: -15,
-                style: { 
-                  textAnchor: 'middle', 
-                  fontSize: '12px', 
-                  fill: '#3b82f6' 
-                } 
-              }}
+              {...(!isSmallScreen && {
+                label: { 
+                  value: 'Share Volume', 
+                  angle: 90, 
+                  position: 'insideRight',
+                  offset: -15,
+                  style: { 
+                    textAnchor: 'middle', 
+                    fontSize: '12px', 
+                    fill: '#3b82f6' 
+                  } 
+                }
+              })}
             />
             <Tooltip 
               formatter={(value: number | string, name: string) => {

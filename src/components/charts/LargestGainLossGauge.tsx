@@ -2,7 +2,12 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { formatCurrency } from '@/components/charts/HorizontalBarChart';
+// Helper function for currency formatting
+const formatCurrency = (value: number): string => {
+  const absValue = Math.abs(value);
+  const formatted = absValue.toFixed(2);
+  return value < 0 ? `-$${formatted}` : `$${formatted}`;
+};
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface LargestGainLossGaugeProps {

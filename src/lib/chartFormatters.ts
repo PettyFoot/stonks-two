@@ -54,7 +54,7 @@ export const formatAxisValue = (value: number, type: ChartType): string => {
     default:
       if (Math.abs(value) >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
       if (Math.abs(value) >= 1000) return `$${(value / 1000).toFixed(1)}K`;
-      return `$${value}`;
+      return value === 0 ? '$0' : `$${value.toFixed(0)}`;
   }
 };
 

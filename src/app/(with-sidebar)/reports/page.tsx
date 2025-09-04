@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EquityChart from '@/components/charts/EquityChart';
-import CustomBarChart from '@/components/charts/BarChart';
+import TradeDistributionChart from '@/components/charts/TradeDistributionChart';
 import { useReportsData } from '@/hooks/useReportsData';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 
@@ -226,13 +226,14 @@ export default function Reports() {
             {!loading && !error && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Daily P&L Average Chart */}
-                <CustomBarChart 
+                <TradeDistributionChart 
                   data={dailyPnlData}
                   title="GROSS DAILY P&L"
                   height={300}
                   dataKey="value"
                   chartType="currency"
-                  useConditionalColors={true}
+                  conditionalColors={true}
+                  showReferenceLine={true}
                 />
                 
                 {/* Cumulative P&L Chart */}
@@ -244,23 +245,23 @@ export default function Reports() {
                 />
                 
                 {/* Daily Volume Chart */}
-                <CustomBarChart 
+                <TradeDistributionChart 
                   data={dailyVolumeData}
                   title="DAILY VOLUME"
                   height={300}
                   dataKey="value"
                   chartType="shares"
-                  useConditionalColors={true}
+                  conditionalColors={true}
                 />
                 
                 {/* Win Percentage Chart */}
-                <CustomBarChart 
+                <TradeDistributionChart 
                   data={winPercentageData}
                   title="WIN %"
                   height={300}
                   dataKey="value"
                   chartType="percentage"
-                  useConditionalColors={true}
+                  conditionalColors={true}
                 />
               </div>
             )}
@@ -457,7 +458,7 @@ export default function Reports() {
                       <CardTitle className="text-base font-medium text-primary">WIN/LOSS P&L COMPARISON</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <CustomBarChart
+                      <TradeDistributionChart
                         data={[
                           { date: 'Avg Win', value: winLossPnlComparison.avgWin },
                           { date: 'Avg Loss', value: -winLossPnlComparison.avgLoss },
@@ -467,9 +468,10 @@ export default function Reports() {
                         title=""
                         height={300}
                         chartType="currency"
-                        useConditionalColors={true}
+                        conditionalColors={true}
                         showGrid={true}
                         showTooltip={true}
+                        showReferenceLine={true}
                       />
                     </CardContent>
                   </Card>

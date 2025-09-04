@@ -76,10 +76,27 @@ const EquityChart = React.memo(function EquityChart({
   // Calculate dynamic left margin based on max value to prevent label cutoff
   const leftMargin = React.useMemo(() => {
     const maxValue = Math.max(...data.map(d => Math.abs(d.value || 0)), 0);
-    if (maxValue >= 1000000) return 45; // For values like $1.5M
-    if (maxValue >= 10000) return 40;   // For values like $78.5K
+    if (maxValue >= 1000000) return 25; // For values like $1.5M
+    if (maxValue >= 10000) return -5;   // For values like $78.5K
     return 5; // For smaller values
   }, [data]);
+
+  // Calculate responsive right margin - reduce on mobile for more chart space
+  const [rightMargin, setRightMargin] = React.useState(30);
+  
+  React.useEffect(() => {
+    const updateMargin = () => {
+      setRightMargin(window.innerWidth < 640 ? 5 : 30);
+    };
+    
+    // Set initial margin
+    updateMargin();
+    
+    // Add resize listener
+    window.addEventListener('resize', updateMargin);
+    
+    return () => window.removeEventListener('resize', updateMargin);
+  }, []);
 
   // Calculate gradient offset for positive/negative value coloring
   const gradientOffset = React.useMemo(() => {
@@ -130,7 +147,7 @@ const EquityChart = React.memo(function EquityChart({
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={height}>
-          <LineChart data={data} margin={{ top: 5, right: 30, left: leftMargin, bottom: 5 }}>
+          <LineChart data={data} margin={{ top: 5, right: rightMargin, left: leftMargin, bottom: 5 }}>
             {useConditionalColors && gradientOffset !== null && (
               <defs>
                 <linearGradient id="splitColor" x1="0" y1="0" x2="0" y2="1">

@@ -4,7 +4,6 @@ import React, { useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import TradeDistributionChart from '@/components/charts/TradeDistributionChart';
-import ConditionalBarChart from '@/components/charts/ConditionalBarChart';
 import { AnalyticsTabContentProps } from '../AnalyticsTabsSection';
 
 export default function InstrumentTab({ data }: AnalyticsTabContentProps) {
@@ -97,10 +96,13 @@ export default function InstrumentTab({ data }: AnalyticsTabContentProps) {
               title="TRADE DISTRIBUTION BY SYMBOL"
               orientation="horizontal"
             />
-            <ConditionalBarChart
+            <TradeDistributionChart
               data={symbolData.map(item => ({ date: item.category, value: item.avgPnl }))}
               title="AVERAGE P&L BY SYMBOL"
               valueFormatter={(value) => `$${value.toFixed(2)}`}
+              conditionalColors={true}
+              chartType="currency"
+              showReferenceLine={true}
             />
           </div>
           
@@ -144,10 +146,13 @@ export default function InstrumentTab({ data }: AnalyticsTabContentProps) {
               title="TRADE DISTRIBUTION BY SECTOR"
               orientation="horizontal"
             />
-            <ConditionalBarChart
+            <TradeDistributionChart
               data={sectorData.map(item => ({ date: item.category, value: item.avgPnl }))}
               title="AVERAGE P&L BY SECTOR"
               valueFormatter={(value) => `$${value.toFixed(2)}`}
+              conditionalColors={true}
+              chartType="currency"
+              showReferenceLine={true}
             />
           </div>
         </TabsContent>
@@ -155,10 +160,12 @@ export default function InstrumentTab({ data }: AnalyticsTabContentProps) {
         {/* Correlation Tab */}
         <TabsContent value="correlation" className="space-y-6">
           <div className="grid grid-cols-2 gap-6">
-            <ConditionalBarChart
+            <TradeDistributionChart
               data={correlationData}
               title="PORTFOLIO CORRELATION ANALYSIS"
               valueFormatter={(value) => value.toFixed(3)}
+              conditionalColors={true}
+              showReferenceLine={true}
             />
             <Card className="bg-theme-surface border-theme-border">
               <CardHeader className="pb-2">
