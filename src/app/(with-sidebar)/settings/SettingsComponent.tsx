@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import TopBar from '@/components/TopBar';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 // Card components imported by tab components
@@ -16,7 +17,8 @@ import {
   Shield,
   Settings as SettingsIcon,
   Cookie,
-  Loader2
+  Loader2,
+  Mail
 } from 'lucide-react';
 
 // Import settings tab components
@@ -113,7 +115,7 @@ export default function SettingsComponent() {
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
                 <User className="h-6 w-6 text-primary" />
               </div>
-              <div>
+              <div className="flex-1">
                 <h1 className="text-2xl font-bold text-primary">
                   Welcome, {user.name || user.email || 'User'}
                 </h1>
@@ -121,6 +123,13 @@ export default function SettingsComponent() {
                   Manage your account settings and preferences
                 </p>
               </div>
+              <Link 
+                href="/contact"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-colors text-sm font-medium"
+              >
+                <Mail className="h-4 w-4" />
+                Contact Us
+              </Link>
             </div>
             <div className="h-px bg-border"></div>
           </div>

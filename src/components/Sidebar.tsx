@@ -24,6 +24,7 @@ import {
   Plus, 
   Search,
   Settings,
+  Import,
   User,
   LogOut,
   ChevronLeft,
@@ -36,8 +37,8 @@ const navigation = [
   { name: 'Reports', href: '/reports', icon: BarChart3 },
   { name: 'Trades', href: '/trades', icon: TrendingUp },
   { name: 'Records', href: '/records', icon: BookOpen },
-  { name: 'New Trade', href: '/new-trade', icon: Plus },
   { name: 'Search', href: '/search', icon: Search },
+  { name: 'Import Trades', href: '/import', icon: Import },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
@@ -147,54 +148,8 @@ export default function Sidebar() {
             return navLink;
           })}
           
-          {/* Upgrade Button - Moved here after Search */}
-          {!isCollapsed ? (
-            <div className="pt-4">
-              <Button className="w-full bg-positive hover:bg-positive text-white rounded-lg font-medium">
-                ⚡ Upgrade
-              </Button>
-            </div>
-          ) : (
-            <div className="pt-4">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button className="w-full p-2 bg-positive hover:bg-positive text-white rounded-lg">
-                    ⚡
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="bg-secondary text-white">
-                  Upgrade
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          )}
         </nav>
 
-        {/* Import Trades Button */}
-        {!isCollapsed ? (
-          <div className="px-4 py-4">
-            <Link href="/import">
-              <Button className="w-full bg-positive hover:bg-positive text-white rounded-lg font-medium">
-                📊 Import Trades
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <div className="px-4 py-4">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link href="/import">
-                  <Button className="w-full p-2 bg-positive hover:bg-positive text-white rounded-lg">
-                    📊
-                  </Button>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="bg-secondary text-white">
-                Import Trades
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        )}
 
         {/* User Profile */}
         <div className={cn(

@@ -35,7 +35,6 @@ const navigation = [
   { name: 'Reports', href: '/reports', icon: BarChart3 },
   { name: 'Trades', href: '/trades', icon: TrendingUp },
   { name: 'Records', href: '/records', icon: BookOpen },
-  { name: 'New Trade', href: '/new-trade', icon: Plus },
   { name: 'Community', href: '/community', icon: Users },
   { name: 'Search', href: '/search', icon: Search },
 ];

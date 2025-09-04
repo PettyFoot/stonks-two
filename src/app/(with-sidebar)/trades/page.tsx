@@ -6,7 +6,7 @@ import FilterPanel from '@/components/FilterPanel';
 import TradesTable from '@/components/TradesTable';
 import ColumnSettingsModal from '@/components/ColumnSettingsModal';
 import { Button } from '@/components/ui/button';
-import { Trade, ViewMode, ColumnConfiguration } from '@/types';
+import { Trade, ColumnConfiguration } from '@/types';
 import { useTradesData } from '@/hooks/useTradesData';
 import { useAuth } from '@/contexts/AuthContext';
 import { RefreshCw } from 'lucide-react';
@@ -14,7 +14,6 @@ import { toast } from 'sonner';
 import AdSense from '@/components/AdSense';
 
 export default function Trades() {
-  const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [calculating, setCalculating] = useState(false);
   const [columnConfig, setColumnConfig] = useState<ColumnConfiguration[]>([]);
   
@@ -55,11 +54,6 @@ export default function Trades() {
     }
   };
 
-  const viewModeButtons = [
-    { id: 'table', label: 'Table', active: viewMode === 'table' },
-    { id: 'gross', label: 'Gross', active: viewMode === 'gross' },
-    { id: 'net', label: 'Net', active: viewMode === 'net' }
-  ];
 
   const handleTradeSelect = (trade: Trade) => {
     // Handle trade selection - could open a modal or navigate to trade detail
@@ -125,26 +119,6 @@ export default function Trades() {
                 {calculating ? 'Calculating...' : 'Calculate Trades'}
               </Button>
 
-              <div className="flex rounded-lg border border-default bg-surface">
-                {viewModeButtons.map((button, index) => (
-                  <Button
-                    key={button.id}
-                    variant="ghost"
-                    size="sm"
-                    className={`
-                      h-8 text-xs
-                      ${index === 0 ? 'rounded-l-lg rounded-r-none' : ''}
-                      ${index === viewModeButtons.length - 1 ? 'rounded-r-lg rounded-l-none' : ''}
-                      ${index > 0 && index < viewModeButtons.length - 1 ? 'rounded-none' : ''}
-                      ${index > 0 ? 'border-l' : ''}
-                      ${button.active ? 'bg-muted/10' : ''}
-                    `}
-                    onClick={() => setViewMode(button.id as ViewMode)}
-                  >
-                    {button.label}
-                  </Button>
-                ))}
-              </div>
               
               <ColumnSettingsModal onColumnsChange={handleColumnsChange} />
             </div>
@@ -152,38 +126,13 @@ export default function Trades() {
         </div>
 
         {/* Trades Content */}
-        {viewMode === 'table' && (
-          <TradesTable 
-            trades={filteredTrades}
-            showCheckboxes={true}
-            showPagination={true}
-            onTradeSelect={handleTradeSelect}
-            columnConfig={columnConfig}
-          />
-        )}
-
-
-        {viewMode === 'gross' && (
-          <div className="bg-surface border border-default rounded-lg p-8">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-primary mb-2">
-                ${(tradesData?.totalPnl || 0).toFixed(2)}
-              </div>
-              <div className="text-muted">Gross P&L</div>
-            </div>
-          </div>
-        )}
-
-        {viewMode === 'net' && (
-          <div className="bg-surface border border-default rounded-lg p-8">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-primary mb-2">
-                ${((tradesData?.totalPnl || 0) * 0.95).toFixed(2)}
-              </div>
-              <div className="text-muted">Net P&L (after commissions)</div>
-            </div>
-          </div>
-        )}
+        <TradesTable 
+          trades={filteredTrades}
+          showCheckboxes={true}
+          showPagination={true}
+          onTradeSelect={handleTradeSelect}
+          columnConfig={columnConfig}
+        />
 
         {/* Summary Stats */}
         <div className="mt-4 sm:mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">

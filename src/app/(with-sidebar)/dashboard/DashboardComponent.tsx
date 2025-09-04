@@ -120,11 +120,6 @@ export default function DashboardComponent() {
                       Import Trades
                     </Button>
                   </Link>
-                  <Link href="/new-trade">
-                    <Button variant="outline" className="w-full">
-                      Add Manual Trade
-                    </Button>
-                  </Link>
                 </div>
               </div>
             )}

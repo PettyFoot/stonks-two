@@ -65,12 +65,6 @@ export const PAGE_SEO = {
     keywords: ['import trades', 'broker integration', 'CSV import', 'Interactive Brokers', 'TD Ameritrade', 'trade import'],
     path: '/import'
   },
-  'new-trade': {
-    title: 'Add New Trade | Manual Trade Entry & Logging',
-    description: 'Log trades manually with complete details. Entry/exit prices, quantities, notes, and custom tags. Perfect for any broker or manual tracking.',
-    keywords: ['add trade', 'manual trade entry', 'new trade', 'trade input', 'trade logging'],
-    path: '/new-trade'
-  },
   search: {
     title: 'Search Trades | Find Patterns & Analyze Performance',
     description: 'Powerful trade search with advanced filters. Find winning patterns, analyze by symbol, date, or strategy. Discover what makes you profitable.',

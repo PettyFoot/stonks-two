@@ -64,12 +64,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.6,
     },
     {
-      url: `${baseUrl}/demo/new-trade`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.6,
-    },
-    {
       url: `${baseUrl}/demo/search`,
       lastModified: currentDate,
       changeFrequency: 'weekly',
@@ -129,7 +123,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // - /calendar
     // - /records
     // - /import
-    // - /new-trade
     // - /search
     // These should not be indexed as they require authentication
   ];
