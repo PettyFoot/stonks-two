@@ -324,16 +324,16 @@ export default function WinVsLossReport({ trades, loading, error }: WinVsLossRep
     };
 
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2 border-b border-border last:border-b-0">
+      <div className="hidden md:grid grid-cols-2 gap-4 py-2 border-b border-border last:border-b-0">
         {/* Winning Days Column */}
-        <div className="flex justify-between items-center gap-2 md:border-r md:border-border md:pr-4">
+        <div className="flex justify-between items-center gap-2 border-r border-border pr-4">
           <div className="text-sm text-theme-secondary-text">{label}</div>
           <div className={`text-sm font-medium ${getValueColor(winValue, true)}`}>
             {formattedWinValue}
           </div>
         </div>
         {/* Losing Days Column */}
-        <div className="flex justify-between items-center gap-2 md:pl-4">
+        <div className="flex justify-between items-center gap-2 pl-4">
           <div className="text-sm text-theme-secondary-text">{label}</div>
           <div className={`text-sm font-medium ${getValueColor(lossValue, false)}`}>
             {formattedLossValue}
@@ -343,16 +343,90 @@ export default function WinVsLossReport({ trades, loading, error }: WinVsLossRep
     );
   };
 
+  const renderMobileStatRow = (
+    label: string,
+    value: number,
+    format: 'currency' | 'number' | 'time' | 'decimal' = 'number'
+  ) => {
+    let formattedValue: string;
+    
+    switch (format) {
+      case 'currency':
+        formattedValue = formatCurrency(value);
+        break;
+      case 'time':
+        formattedValue = formatTime(value);
+        break;
+      case 'decimal':
+        formattedValue = formatNumber(value, 2);
+        break;
+      default:
+        formattedValue = formatNumber(value);
+    }
+
+    const getValueColor = (value: number) => {
+      // Zero values always use primary text color
+      if (value === 0) {
+        return 'text-theme-primary-text';
+      }
+
+      // Fields that can be green (positive) or red (negative)
+      const greenRedFields = [
+        'Total Gain / Loss',
+        'Average Daily Gain / Loss',
+        'Average Per-Share Gain / Loss',
+        'Average Trade Gain / Loss',
+        'Winning Trades',
+        'Average Winning Trade',
+        'Largest Gain'
+      ];
+
+      // Fields that are typically red when negative
+      const redFields = [
+        'Largest Loss',
+        'Average Losing Trade',
+        'Losing Trades'
+      ];
+
+      if (greenRedFields.includes(label)) {
+        return value > 0 ? 'text-theme-green' : 'text-theme-red';
+      }
+
+      if (redFields.includes(label)) {
+        return value < 0 ? 'text-theme-red' : 'text-theme-primary-text';
+      }
+
+      // All other fields use primary text color
+      return 'text-theme-primary-text';
+    };
+
+    return (
+      <div className="flex justify-between items-center gap-2 py-2 border-b border-border last:border-b-0">
+        <div className="text-sm text-theme-secondary-text">{label}</div>
+        <div className={`text-sm font-medium ${getValueColor(value)}`}>
+          {formattedValue}
+        </div>
+      </div>
+    );
+  };
+
   const renderSkeletonRow = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2 border-b border-border">
-      <div className="flex justify-between items-center gap-2 md:border-r md:border-border md:pr-4">
+    <div className="hidden md:grid grid-cols-2 gap-4 py-2 border-b border-border">
+      <div className="flex justify-between items-center gap-2 border-r border-border pr-4">
         <Skeleton className="h-4 w-32" />
         <Skeleton className="h-4 w-20" />
       </div>
-      <div className="flex justify-between items-center gap-2 md:pl-4">
+      <div className="flex justify-between items-center gap-2 pl-4">
         <Skeleton className="h-4 w-32" />
         <Skeleton className="h-4 w-20" />
       </div>
+    </div>
+  );
+
+  const renderMobileSkeletonRow = () => (
+    <div className="flex justify-between items-center gap-2 py-2 border-b border-border">
+      <Skeleton className="h-4 w-32" />
+      <Skeleton className="h-4 w-20" />
     </div>
   );
 
@@ -370,7 +444,8 @@ export default function WinVsLossReport({ trades, loading, error }: WinVsLossRep
     <Card className="bg-theme-surface border-theme-border">
       <CardHeader className="pb-4">
         <CardTitle className="text-lg font-medium text-theme-primary-text">Win vs Loss Days Analysis</CardTitle>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pb-2 border-b border-border">
+        {/* Desktop header - side by side */}
+        <div className="hidden md:grid grid-cols-2 gap-4 mt-4 pb-2 border-b border-border">
           <div className="text-center">
             <span 
               className="font-semibold text-lg text-theme-primary-text"
@@ -390,7 +465,8 @@ export default function WinVsLossReport({ trades, loading, error }: WinVsLossRep
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="space-y-0">
+        {/* Desktop Layout */}
+        <div className="hidden md:block space-y-0">
           {/* P&L Metrics Section */}
           <div className="pt-3 pb-2">
             <div className="text-xs font-semibold text-theme-secondary-text uppercase tracking-wider">
@@ -485,6 +561,217 @@ export default function WinVsLossReport({ trades, loading, error }: WinVsLossRep
               {renderStatRow('Total Fees', data.winningDays.totalFees, data.losingDays.totalFees, 'currency')}
             </>
           ) : null}
+        </div>
+
+        {/* Mobile Layout */}
+        <div className="md:hidden space-y-6">
+          {/* Winning Days Section */}
+          <div>
+            <div className="text-center mb-4">
+              <span className="font-semibold text-lg text-theme-primary-text">
+                Winning Days {data ? `(${data.winningDaysCount})` : ''}
+              </span>
+            </div>
+            
+            {/* P&L Metrics - Winning Days */}
+            <div className="pb-2">
+              <div className="text-xs font-semibold text-theme-secondary-text uppercase tracking-wider">
+                P&L Metrics
+              </div>
+            </div>
+            
+            {loading ? (
+              <>
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+              </>
+            ) : data ? (
+              <>
+                {renderMobileStatRow('Total Gain / Loss', data.winningDays.totalGainLoss, 'currency')}
+                {renderMobileStatRow('Average Daily Gain / Loss', data.winningDays.avgDailyGainLoss, 'currency')}
+                {renderMobileStatRow('Average Daily Volume', data.winningDays.avgDailyVolume, 'number')}
+                {renderMobileStatRow('Average Per-Share Gain / Loss', data.winningDays.avgPerShareGainLoss, 'currency')}
+                {renderMobileStatRow('Average Trade Gain / Loss', data.winningDays.avgTradeGainLoss, 'currency')}
+              </>
+            ) : null}
+            
+            {/* Trading Activity - Winning Days */}
+            <div className="pt-4 pb-2">
+              <div className="text-xs font-semibold text-theme-secondary-text uppercase tracking-wider">
+                Trading Activity
+              </div>
+            </div>
+            
+            {loading ? (
+              <>
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+              </>
+            ) : data ? (
+              <>
+                {renderMobileStatRow('Total Number of Trades', data.winningDays.totalTrades, 'number')}
+                {renderMobileStatRow('Winning Trades', data.winningDays.winningTrades, 'number')}
+                {renderMobileStatRow('Losing Trades', data.winningDays.losingTrades, 'number')}
+              </>
+            ) : null}
+            
+            {/* Performance Metrics - Winning Days */}
+            <div className="pt-4 pb-2">
+              <div className="text-xs font-semibold text-theme-secondary-text uppercase tracking-wider">
+                Performance Metrics
+              </div>
+            </div>
+            
+            {loading ? (
+              <>
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+              </>
+            ) : data ? (
+              <>
+                {renderMobileStatRow('Average Winning Trade', data.winningDays.avgWinningTrade, 'currency')}
+                {renderMobileStatRow('Average Losing Trade', data.winningDays.avgLosingTrade, 'currency')}
+                {renderMobileStatRow('Trade P&L Standard Deviation', data.winningDays.tradeStdDev, 'currency')}
+                {renderMobileStatRow('Average Hold Time (Winning Trades)', data.winningDays.avgHoldWinning, 'time')}
+                {renderMobileStatRow('Average Hold Time (Losing Trades)', data.winningDays.avgHoldLosing, 'time')}
+                {renderMobileStatRow('Profit Factor', data.winningDays.profitFactor, 'decimal')}
+                {renderMobileStatRow('Largest Gain', data.winningDays.largestGain, 'currency')}
+                {renderMobileStatRow('Largest Loss', data.winningDays.largestLoss, 'currency')}
+              </>
+            ) : null}
+            
+            {/* Costs - Winning Days */}
+            <div className="pt-4 pb-2">
+              <div className="text-xs font-semibold text-theme-secondary-text uppercase tracking-wider">
+                Costs
+              </div>
+            </div>
+            
+            {loading ? (
+              <>
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+              </>
+            ) : data ? (
+              <>
+                {renderMobileStatRow('Total Commissions', data.winningDays.totalCommissions, 'currency')}
+                {renderMobileStatRow('Total Fees', data.winningDays.totalFees, 'currency')}
+              </>
+            ) : null}
+          </div>
+
+          {/* Losing Days Section */}
+          <div>
+            <div className="text-center mb-4">
+              <span className="font-semibold text-lg text-theme-primary-text">
+                Losing Days {data ? `(${data.losingDaysCount})` : ''}
+              </span>
+            </div>
+            
+            {/* P&L Metrics - Losing Days */}
+            <div className="pb-2">
+              <div className="text-xs font-semibold text-theme-secondary-text uppercase tracking-wider">
+                P&L Metrics
+              </div>
+            </div>
+            
+            {loading ? (
+              <>
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+              </>
+            ) : data ? (
+              <>
+                {renderMobileStatRow('Total Gain / Loss', data.losingDays.totalGainLoss, 'currency')}
+                {renderMobileStatRow('Average Daily Gain / Loss', data.losingDays.avgDailyGainLoss, 'currency')}
+                {renderMobileStatRow('Average Daily Volume', data.losingDays.avgDailyVolume, 'number')}
+                {renderMobileStatRow('Average Per-Share Gain / Loss', data.losingDays.avgPerShareGainLoss, 'currency')}
+                {renderMobileStatRow('Average Trade Gain / Loss', data.losingDays.avgTradeGainLoss, 'currency')}
+              </>
+            ) : null}
+            
+            {/* Trading Activity - Losing Days */}
+            <div className="pt-4 pb-2">
+              <div className="text-xs font-semibold text-theme-secondary-text uppercase tracking-wider">
+                Trading Activity
+              </div>
+            </div>
+            
+            {loading ? (
+              <>
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+              </>
+            ) : data ? (
+              <>
+                {renderMobileStatRow('Total Number of Trades', data.losingDays.totalTrades, 'number')}
+                {renderMobileStatRow('Winning Trades', data.losingDays.winningTrades, 'number')}
+                {renderMobileStatRow('Losing Trades', data.losingDays.losingTrades, 'number')}
+              </>
+            ) : null}
+            
+            {/* Performance Metrics - Losing Days */}
+            <div className="pt-4 pb-2">
+              <div className="text-xs font-semibold text-theme-secondary-text uppercase tracking-wider">
+                Performance Metrics
+              </div>
+            </div>
+            
+            {loading ? (
+              <>
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+              </>
+            ) : data ? (
+              <>
+                {renderMobileStatRow('Average Winning Trade', data.losingDays.avgWinningTrade, 'currency')}
+                {renderMobileStatRow('Average Losing Trade', data.losingDays.avgLosingTrade, 'currency')}
+                {renderMobileStatRow('Trade P&L Standard Deviation', data.losingDays.tradeStdDev, 'currency')}
+                {renderMobileStatRow('Average Hold Time (Winning Trades)', data.losingDays.avgHoldWinning, 'time')}
+                {renderMobileStatRow('Average Hold Time (Losing Trades)', data.losingDays.avgHoldLosing, 'time')}
+                {renderMobileStatRow('Profit Factor', data.losingDays.profitFactor, 'decimal')}
+                {renderMobileStatRow('Largest Gain', data.losingDays.largestGain, 'currency')}
+                {renderMobileStatRow('Largest Loss', data.losingDays.largestLoss, 'currency')}
+              </>
+            ) : null}
+            
+            {/* Costs - Losing Days */}
+            <div className="pt-4 pb-2">
+              <div className="text-xs font-semibold text-theme-secondary-text uppercase tracking-wider">
+                Costs
+              </div>
+            </div>
+            
+            {loading ? (
+              <>
+                {renderMobileSkeletonRow()}
+                {renderMobileSkeletonRow()}
+              </>
+            ) : data ? (
+              <>
+                {renderMobileStatRow('Total Commissions', data.losingDays.totalCommissions, 'currency')}
+                {renderMobileStatRow('Total Fees', data.losingDays.totalFees, 'currency')}
+              </>
+            ) : null}
+          </div>
         </div>
       </CardContent>
     </Card>
