@@ -27,7 +27,7 @@ interface UseRecordsDataReturn {
   refetch: () => void;
 }
 
-export function useRecordsData(date: string | null): UseRecordsDataReturn {
+export function useRecordsData(date: string | null, tradeId?: string | null): UseRecordsDataReturn {
   const [data, setData] = useState<RecordsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,9 +48,12 @@ export function useRecordsData(date: string | null): UseRecordsDataReturn {
       setLoading(true);
       setError(null);
 
-      // Fetch records data for the specified date
+      // Fetch records data for the specified date and optionally specific trade
       const params = new URLSearchParams();
       params.append('date', date);
+      if (tradeId) {
+        params.append('tradeId', tradeId);
+      }
 
       const response = await fetch(`/api/records?${params}`);
       if (!response.ok) {
@@ -104,7 +107,7 @@ export function useRecordsData(date: string | null): UseRecordsDataReturn {
     } finally {
       setLoading(false);
     }
-  }, [date, authLoading]);
+  }, [date, tradeId, authLoading]);
 
   useEffect(() => {
     fetchRecordsData();

@@ -167,9 +167,9 @@ export default function TradesTable({
     );
   };
 
-  // Navigate to records page with selected trade's date
+  // Navigate to records page with selected trade's date and ID
   const handleTradeClick = (trade: Trade) => {
-    router.push(`/records?date=${trade.date}`);
+    router.push(`/records?date=${trade.date}&tradeId=${trade.id}`);
   };
 
   const formatPnL = (pnl: number) => {

@@ -9,6 +9,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
+    const tradeId = searchParams.get('tradeId'); // Get optional trade ID
 
     // Get current user (handles both demo and Auth0)
     const user = await getCurrentUser();
@@ -28,8 +29,16 @@ export async function GET(request: Request) {
 
     const recordsDate = new Date(date);
 
-    // Get trades for the specified date
-    const trades = await tradesRepo.getTradesForRecordsDate(user.id, recordsDate);
+    // Get trades for the specified date, optionally filtered by trade ID
+    let trades;
+    if (tradeId) {
+      // Get specific trade by ID
+      const specificTrade = await tradesRepo.getTradeById(user.id, tradeId);
+      trades = specificTrade ? [specificTrade] : [];
+    } else {
+      // Get all trades for the date
+      trades = await tradesRepo.getTradesForRecordsDate(user.id, recordsDate);
+    }
 
     // Transform trades and get executions for each
     const tradesWithExecutions = await Promise.all(

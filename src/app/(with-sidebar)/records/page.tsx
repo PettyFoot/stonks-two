@@ -1,20 +1,21 @@
 'use client';
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import TopBar from '@/components/TopBar';
 import FilterPanel from '@/components/FilterPanel';
 import ExecutionsTable from '@/components/ExecutionsTable';
 import StatsGrid from '@/components/StatsGrid';
+import TradesTable from '@/components/TradesTable';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Lock } from 'lucide-react';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useRecordsData } from '@/hooks/useRecordsData';
+import { useTradesData } from '@/hooks/useTradesData';
 import { useAuth } from '@/contexts/AuthContext';
 import TradeCandlestickChart from '@/components/charts/TradeCandlestickChart';
-import CalendarYearView from '@/components/CalendarYearView';
 import AdSense from '@/components/AdSense';
 
 function RecordsContent() {
@@ -25,7 +26,10 @@ function RecordsContent() {
   const { isDemo } = useAuth();
   
   // Use real records data instead of mock data
-  const { data: recordsData, loading, error, refetch } = useRecordsData(selectedDate);
+  const { data: recordsData, loading, error, refetch } = useRecordsData(selectedDate, selectedTradeId);
+  
+  // Get trades data for the default view when no specific trade is selected
+  const { data: tradesData, loading: tradesLoading } = useTradesData();
   
   // Calculate execution metrics from real data
   const executionMetrics = {
@@ -127,51 +131,57 @@ function RecordsContent() {
     enabled: !!recordsData // Only enable auto-save when data is loaded
   });
 
+  // Use ref to track if notes have been initialized to prevent loops
+  const notesInitialized = useRef(false);
+
   // Update notes when records data first loads (but don't override user input)
   useEffect(() => {
     const initialValue = targetTrade 
       ? targetTrade.notesChanges || targetTrade.notes || ''
       : recordsData?.notesChanges || recordsData?.notes || '';
     
-    if (recordsData && notes === '' && initialValue) {
+    if (recordsData && !notesInitialized.current && initialValue) {
       setNotes(initialValue);
+      notesInitialized.current = true;
     }
 
     // Update local notesChanges tracking when data changes
     setLocalNotesChanges(targetTrade ? (targetTrade.notesChanges || targetTrade.notes || '') 
       : (recordsData?.notesChanges || recordsData?.notes || ''));
-  }, [recordsData, targetTrade, notes, setNotes]);
+  }, [recordsData, targetTrade, setNotes]);
 
-  // Check if there are unsaved changes (notesChanges different from notes)
-  const hasUnsavedChanges = () => {
+  // Memoize shouldShowSaveButton to prevent unnecessary recalculations
+  const shouldShowSaveButton = useMemo(() => {
     const savedNotes = targetTrade ? targetTrade.notes : recordsData?.notes;
     return localNotesChanges && localNotesChanges !== (savedNotes || '');
-  };
-
-  const shouldShowSaveButton = hasUnsavedChanges();
+  }, [localNotesChanges, targetTrade, recordsData]);
 
 
-  // All executions for this records entry
-  const allExecutions = recordsData?.executions || [];
+  // All executions for this records entry - memoized to prevent unnecessary recalculations
+  const { mostActiveSymbol, chartExecutions, executionsBySymbol } = useMemo(() => {
+    const allExecutions = recordsData?.executions || [];
 
-  // Group executions by symbol and find the most active symbol
-  const executionsBySymbol = allExecutions.reduce((acc, execution) => {
-    const symbol = execution.symbol;
-    if (!acc[symbol]) {
-      acc[symbol] = [];
-    }
-    acc[symbol].push(execution);
-    return acc;
-  }, {} as Record<string, typeof allExecutions>);
+    // Group executions by symbol and find the most active symbol
+    const executionsBySymbol = allExecutions.reduce((acc, execution) => {
+      const symbol = execution.symbol;
+      if (!acc[symbol]) {
+        acc[symbol] = [];
+      }
+      acc[symbol].push(execution);
+      return acc;
+    }, {} as Record<string, typeof allExecutions>);
 
-  // Find the symbol with the most executions for chart display
-  const mostActiveSymbol = Object.keys(executionsBySymbol).length > 0 
-    ? Object.entries(executionsBySymbol).reduce((a, b) => 
-        executionsBySymbol[a[0]].length > executionsBySymbol[b[0]].length ? a : b
-      )[0] 
-    : null;
+    // Find the symbol with the most executions for chart display
+    const mostActiveSymbol = Object.keys(executionsBySymbol).length > 0 
+      ? Object.entries(executionsBySymbol).reduce((a, b) => 
+          executionsBySymbol[a[0]].length > executionsBySymbol[b[0]].length ? a : b
+        )[0] 
+      : null;
 
-  const chartExecutions = mostActiveSymbol ? executionsBySymbol[mostActiveSymbol] : [];
+    const chartExecutions = mostActiveSymbol ? executionsBySymbol[mostActiveSymbol] : [];
+
+    return { mostActiveSymbol, chartExecutions, executionsBySymbol };
+  }, [recordsData?.executions]);
 
   // Show loading state
   if (loading) {
@@ -197,19 +207,33 @@ function RecordsContent() {
     );
   }
 
-  // Handle no data case - show calendar year view for trade selection
+  // Handle no data case - show trades table for trade selection
   if (!recordsData) {
-    const currentYear = selectedDate ? new Date(selectedDate).getFullYear() : new Date().getFullYear();
-    
     return (
       <div className="flex flex-col h-full">
         <TopBar title="Records" showTimeRangeFilters={false} />
+        <FilterPanel showAdvanced={true} />
         <div className="flex-1 overflow-auto p-6">
           <div className="mb-6">
-            <h2 className="text-xl font-semibold text-primary mb-2">Select a Trading Day</h2>
-            <p className="text-muted text-sm">No records found for {selectedDate}. Choose a date from the calendar below to view trading records.</p>
+            <h2 className="text-xl font-semibold text-primary mb-2">Select a Trade to View Records</h2>
+            <p className="text-muted text-sm">
+              {selectedDate 
+                ? `No records found for ${selectedDate}. Select a trade from the table below to view its detailed records.`
+                : 'Select a trade from the table below to view its detailed records.'
+              }
+            </p>
           </div>
-          <CalendarYearView year={currentYear} isDemo={isDemo} />
+          {tradesLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--theme-tertiary)]"></div>
+            </div>
+          ) : (
+            <TradesTable 
+              trades={tradesData?.trades || []}
+              showCheckboxes={false}
+              showPagination={true}
+            />
+          )}
         </div>
       </div>
     );

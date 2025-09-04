@@ -104,7 +104,8 @@
       "Read(/C:\\Dev\\AI\\StonksTwo\\stonks\\src\\components\\charts/**)",
       "Read(/C:\\Dev\\AI\\StonksTwo\\stonks\\src\\components\\charts/**)",
       "Bash(npm i:*)",
-      "Read(/C:\\Dev\\AI\\StonksTwo\\stonks\\src\\app/**)"
+      "Read(/C:\\Dev\\AI\\StonksTwo\\stonks\\src\\app/**)",
+      "Read(/c:\\Users\\lcorr\\OneDrive\\Pictures\\CC/**)"
     ],
     "deny": [],
     "ask": []

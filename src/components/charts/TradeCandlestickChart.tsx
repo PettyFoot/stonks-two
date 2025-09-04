@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import './chart-styles.css';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,8 +53,8 @@ export default function TradeCandlestickChart({
     };
   }, [symbol, tradeDate, tradeTime]);
 
-  // Validate inputs
-  const validateInputs = (symbol: string, tradeDate: string) => {
+  // Validate inputs - memoized to prevent useEffect loops
+  const validateInputs = useCallback((symbol: string, tradeDate: string) => {
     const errors = [];
     
     // Validate symbol
@@ -86,7 +86,7 @@ export default function TradeCandlestickChart({
     }
     
     return errors;
-  };
+  }, [timeInterval]);
 
   // Fetch trade-aware market data with caching
   useEffect(() => {
@@ -530,18 +530,17 @@ export default function TradeCandlestickChart({
             </span>
           </CardTitle>
           <div className="flex items-center gap-2">
-            <Select value={timeInterval} onValueChange={(value: TimeInterval) => setTimeInterval(value)}>
-              <SelectTrigger className="w-20">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1m">1m</SelectItem>
-                <SelectItem value="5m">5m</SelectItem>
-                <SelectItem value="15m">15m</SelectItem>
-                <SelectItem value="1h">1h</SelectItem>
-                <SelectItem value="1d">1d</SelectItem>
-              </SelectContent>
-            </Select>
+            <select 
+              value={timeInterval} 
+              onChange={(e) => setTimeInterval(e.target.value as TimeInterval)}
+              className="w-20 h-9 px-3 py-2 text-sm border border-input rounded-md bg-white shadow-xs outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+            >
+              <option value="1m">1m</option>
+              <option value="5m">5m</option>
+              <option value="15m">15m</option>
+              <option value="1h">1h</option>
+              <option value="1d">1d</option>
+            </select>
           </div>
         </div>
       </CardHeader>

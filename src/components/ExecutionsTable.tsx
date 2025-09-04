@@ -91,6 +91,9 @@ export default function ExecutionsTable({
   const [startX, setStartX] = useState(0);
   const [startWidth, setStartWidth] = useState(0);
   
+  // Flag to track if we're still loading initial preferences
+  const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
+  
   // Media queries
   const isMobile = useMediaQuery('(max-width: 639px)');
   const isTablet = useMediaQuery('(min-width: 640px) and (max-width: 1023px)');
@@ -124,20 +127,29 @@ export default function ExecutionsTable({
         console.warn('Failed to parse saved column widths');
       }
     }
+    
+    // Mark preferences as loaded
+    setIsLoadingPreferences(false);
   }, []);
 
-  // Save preferences to localStorage
+  // Save preferences to localStorage (but not during initial load)
   React.useEffect(() => {
-    localStorage.setItem('executions-table-column-order', JSON.stringify(columnOrder));
-  }, [columnOrder]);
+    if (!isLoadingPreferences) {
+      localStorage.setItem('executions-table-column-order', JSON.stringify(columnOrder));
+    }
+  }, [columnOrder, isLoadingPreferences]);
 
   React.useEffect(() => {
-    localStorage.setItem('executions-table-visible-columns', JSON.stringify(visibleColumns));
-  }, [visibleColumns]);
+    if (!isLoadingPreferences) {
+      localStorage.setItem('executions-table-visible-columns', JSON.stringify(visibleColumns));
+    }
+  }, [visibleColumns, isLoadingPreferences]);
 
   React.useEffect(() => {
-    localStorage.setItem('executions-table-column-widths', JSON.stringify(columnWidths));
-  }, [columnWidths]);
+    if (!isLoadingPreferences) {
+      localStorage.setItem('executions-table-column-widths', JSON.stringify(columnWidths));
+    }
+  }, [columnWidths, isLoadingPreferences]);
 
   // Filter columns based on device type and user preferences
   const getVisibleColumns = () => {

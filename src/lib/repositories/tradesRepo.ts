@@ -174,6 +174,18 @@ export class TradesRepository {
   }
 
   /**
+   * Get a specific trade by ID
+   */
+  async getTradeById(userId: string, tradeId: string): Promise<Trade | null> {
+    return await prisma.trade.findFirst({
+      where: {
+        id: tradeId,
+        userId
+      }
+    });
+  }
+
+  /**
    * Get trade with associated orders for records display
    * Uses Order.tradeId as primary relationship (as per schema comment line 86)
    */

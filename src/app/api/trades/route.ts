@@ -104,8 +104,8 @@ export async function GET(request: Request) {
     // Build pagination options
     const paginationOptions = buildOffsetPaginationOptions(paginationParams);
     
-    // Get total count for pagination metadata (using a more efficient count query)
-    const [trades, totalCount] = await Promise.all([
+    // Get total count and aggregates for pagination metadata (using efficient queries)
+    const [trades, totalCount, aggregateResult] = await Promise.all([
       // Get paginated trades with optimized field selection
       prisma.trade.findMany({
         where,
@@ -136,7 +136,15 @@ export async function GET(request: Request) {
         take: paginationOptions.take
       }),
       // Efficient count query
-      prisma.trade.count({ where })
+      prisma.trade.count({ where }),
+      // Aggregate query for totals across all filtered trades
+      prisma.trade.aggregate({
+        where,
+        _sum: {
+          pnl: true,
+          quantity: true
+        }
+      })
     ]);
 
     if (process.env.NODE_ENV === 'development') {
@@ -176,9 +184,9 @@ export async function GET(request: Request) {
       orderType: trade.orderType || undefined
     }));
 
-    // Calculate aggregates only for current page data (for performance)
-    const pagePnl = transformedTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'number' ? trade.pnl : 0), 0);
-    const pageVolume = transformedTrades.reduce((sum, trade) => sum + (trade.quantity || 0), 0);
+    // Calculate totals from database aggregates
+    const totalPnl = aggregateResult._sum.pnl ? Number(aggregateResult._sum.pnl) : 0;
+    const totalVolume = aggregateResult._sum.quantity || 0;
     
     // Create paginated response
     const paginatedResponse = createPaginatedResponse(
@@ -194,9 +202,9 @@ export async function GET(request: Request) {
       trades: paginatedResponse.data,
       count: paginatedResponse.data.length,
       totalCount,
-      // Page-level aggregates (more efficient than calculating for all data)
-      pagePnl,
-      pageVolume,
+      // Total aggregates across all filtered trades
+      totalPnl,
+      totalVolume,
       // Performance metrics
       ...(process.env.NODE_ENV === 'development' && {
         performance: {

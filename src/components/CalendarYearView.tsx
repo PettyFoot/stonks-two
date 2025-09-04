@@ -76,8 +76,9 @@ export default function CalendarYearView({ year: initialYear, isDemo = false }: 
   };
 
   const handleDayClick = (dateStr: string) => {
-    // Navigate to records page with the selected date
-    router.push(`/records?date=${dateStr}`);
+    // Navigate to calendar page with month view focused on the selected date
+    const date = new Date(dateStr);
+    router.push(`/calendar?view=month&date=${date.toISOString()}`);
   };
 
   const dayHasTradeData = (day: Record<string, unknown>) => {

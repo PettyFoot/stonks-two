@@ -13,6 +13,7 @@ import TradesTable from '@/components/TradesTable';
 import CalendarSummaryChartsRecharts from '@/components/CalendarSummaryChartsRecharts';
 import CalendarYearView from '@/components/CalendarYearView';
 import { useAuth } from '@/contexts/AuthContext';
+import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 import { Trade } from '@/types';
 
 type ViewType = 'summary' | 'year' | 'month';
@@ -28,6 +29,7 @@ const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function CalendarContent() {
   const { user, isLoading: authLoading, isDemo } = useAuth();
+  const { setCustomDateRange } = useGlobalFilters();
   const searchParams = useSearchParams();
   const router = useRouter();
   
@@ -151,8 +153,14 @@ export default function CalendarContent() {
   // Handle day click with conditional navigation
   const handleDayClick = (dayStr: string) => {
     if (dayHasTradeData(dayStr)) {
-      // Navigate to records page with the selected date
-      router.push(`/records?date=${dayStr}`);
+      // Set global filter to the selected date (from dayStr to next day)
+      const selectedDate = new Date(dayStr);
+      const nextDay = new Date(selectedDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      const toDayStr = nextDay.toISOString().split('T')[0];
+      
+      setCustomDateRange(dayStr, toDayStr);
+      router.push('/trades');
     } else {
       // Just update the selected day for display purposes
       setSelectedDay(dayStr);
