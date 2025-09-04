@@ -6,6 +6,7 @@ import { OrganizationStructuredData, SoftwareApplicationStructuredData } from "@
 import { SEO_CONFIG } from "@/lib/seo";
 import { CookieConsent } from "@/components/CookieConsent";
 import { ConditionalAnalytics } from "@/components/ConditionalAnalytics";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -141,6 +142,9 @@ export default function RootLayout({
         
         {/* Conditional Analytics */}
         <ConditionalAnalytics />
+        
+        {/* Vercel Speed Insights */}
+        <SpeedInsights />
         
         {/* Conditional Performance monitoring script */}
         <script

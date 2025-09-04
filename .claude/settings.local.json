@@ -102,7 +102,9 @@
       "Read(/C:\\Dev\\AI\\StonksTwo\\stonks\\src\\components/**)",
       "Read(/C:\\Dev\\AI\\StonksTwo\\stonks\\src\\components/**)",
       "Read(/C:\\Dev\\AI\\StonksTwo\\stonks\\src\\components\\charts/**)",
-      "Read(/C:\\Dev\\AI\\StonksTwo\\stonks\\src\\components\\charts/**)"
+      "Read(/C:\\Dev\\AI\\StonksTwo\\stonks\\src\\components\\charts/**)",
+      "Bash(npm i:*)",
+      "Read(/C:\\Dev\\AI\\StonksTwo\\stonks\\src\\app/**)"
     ],
     "deny": [],
     "ask": []
