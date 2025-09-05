@@ -108,8 +108,8 @@ export default function ExecutionsTable({
     // Helper function to merge new columns into existing saved data
     const mergeNewColumns = (savedOrder: string[], savedVisible: Record<string, boolean>, savedWidths: Record<string, number>) => {
       const defaultOrder = DEFAULT_COLUMNS.map(col => col.id);
-      const defaultVisible = DEFAULT_COLUMNS.reduce((acc, col) => ({ ...acc, [col.id]: col.visible }), {});
-      const defaultWidths = DEFAULT_COLUMNS.reduce((acc, col) => ({ ...acc, [col.id]: parseInt(col.width.replace('px', '')) }), {});
+      const defaultVisible = DEFAULT_COLUMNS.reduce((acc, col) => ({ ...acc, [col.id]: col.visible }), {} as Record<string, boolean>);
+      const defaultWidths = DEFAULT_COLUMNS.reduce((acc, col) => ({ ...acc, [col.id]: parseInt(col.width.replace('px', '')) }), {} as Record<string, number>);
       
       // Find columns that exist in defaults but not in saved data
       const newColumns = defaultOrder.filter(colId => !savedOrder.includes(colId));
@@ -164,7 +164,7 @@ export default function ExecutionsTable({
       if (savedVisibleColumns) {
         try {
           const parsedVisible = JSON.parse(savedVisibleColumns);
-          const defaultVisible = DEFAULT_COLUMNS.reduce((acc, col) => ({ ...acc, [col.id]: col.visible }), {});
+          const defaultVisible = DEFAULT_COLUMNS.reduce((acc, col) => ({ ...acc, [col.id]: col.visible }), {} as Record<string, boolean>);
           setVisibleColumns({ ...defaultVisible, ...parsedVisible });
         } catch {
           console.warn('Failed to parse saved visible columns');
@@ -174,7 +174,7 @@ export default function ExecutionsTable({
       if (savedColumnWidths) {
         try {
           const parsedWidths = JSON.parse(savedColumnWidths);
-          const defaultWidths = DEFAULT_COLUMNS.reduce((acc, col) => ({ ...acc, [col.id]: parseInt(col.width.replace('px', '')) }), {});
+          const defaultWidths = DEFAULT_COLUMNS.reduce((acc, col) => ({ ...acc, [col.id]: parseInt(col.width.replace('px', '')) }), {} as Record<string, number>);
           setColumnWidths({ ...defaultWidths, ...parsedWidths });
         } catch {
           console.warn('Failed to parse saved column widths');
@@ -382,8 +382,8 @@ export default function ExecutionsTable({
 
   const resetColumnsToDefault = () => {
     const defaultOrder = DEFAULT_COLUMNS.map(col => col.id);
-    const defaultVisible = DEFAULT_COLUMNS.reduce((acc, col) => ({ ...acc, [col.id]: col.visible }), {});
-    const defaultWidths = DEFAULT_COLUMNS.reduce((acc, col) => ({ ...acc, [col.id]: parseInt(col.width.replace('px', '')) }), {});
+    const defaultVisible = DEFAULT_COLUMNS.reduce((acc, col) => ({ ...acc, [col.id]: col.visible }), {} as Record<string, boolean>);
+    const defaultWidths = DEFAULT_COLUMNS.reduce((acc, col) => ({ ...acc, [col.id]: parseInt(col.width.replace('px', '')) }), {} as Record<string, number>);
     setColumnOrder(defaultOrder);
     setVisibleColumns(defaultVisible);
     setColumnWidths(defaultWidths);

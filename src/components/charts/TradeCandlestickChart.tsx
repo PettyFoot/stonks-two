@@ -421,7 +421,12 @@ export default function TradeCandlestickChart({
             fontSize: '10px',
             fontWeight: 'bold',
             borderRadius: '3px',
-            padding: '2px 4px'
+            padding: {
+              left: 4,
+              right: 4,
+              top: 2,
+              bottom: 2
+            }
           },
           offsetY: isBuy ? -20 : 20, // Position label above/below marker
           offsetX: 0,
