@@ -1,0 +1,538 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  auth0Id             String               @unique
+  name                String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  stripeCustomerId    String?              @unique
+  subscriptionStatus  SubscriptionStatus   @default(INACTIVE)
+  subscriptionTier    SubscriptionTier     @default(FREE)
+  canReactivate       Boolean              @default(true)
+  deletedAt           DateTime?
+  deletionReason      String?
+  deletionRequestedAt DateTime?
+  finalDeletionAt     DateTime?
+  anonymizedAt        DateTime?
+  accountDeletionLogs AccountDeletionLog[]
+  csvUploadLogs       CsvUploadLog[]
+  dayData             DayData[]
+  importBatches       ImportBatch[]
+  orders              Order[]
+  paymentHistory      PaymentHistory[]
+  recordsEntries      RecordsEntry[]
+  sharedTrades        SharedTrade[]
+  subscriptions       Subscription[]
+  trades              Trade[]
+
+  @@map("users")
+}
+
+model Trade {
+  id                String        @id @default(cuid())
+  userId            String
+  symbol            String
+  assetClass        AssetClass    @default(EQUITY)
+  brokerName        String?
+  tradeSource       TradeSource   @default(IMPORTED)
+  orderType         OrderType     @default(MARKET)
+  side              TradeSide
+  timeInForce       TimeInForce   @default(DAY)
+  remainingQuantity Int?
+  averageFillPrice  Decimal?      @db.Decimal(10, 2)
+  status            TradeStatus   @default(OPEN)
+  avgEntryPrice     Decimal?
+  avgExitPrice      Decimal?
+  openQuantity      Int?
+  closeQuantity     Int?
+  entryDate         DateTime
+  exitDate          DateTime?
+  timeInTrade       Int?
+  marketSession     MarketSession @default(REGULAR)
+  holdingPeriod     HoldingPeriod @default(INTRADAY)
+  entryPrice        Decimal?      @db.Decimal(10, 2)
+  exitPrice         Decimal?      @db.Decimal(10, 2)
+  highDuringTrade   Decimal?      @db.Decimal(10, 2)
+  lowDuringTrade    Decimal?      @db.Decimal(10, 2)
+  openTime          DateTime?
+  closeTime         DateTime?
+  quantity          Int?
+  costBasis         Decimal?      @db.Decimal(10, 2)
+  proceeds          Decimal?      @db.Decimal(10, 2)
+  ordersInTrade     String[]
+  ordersCount       Int?
+  isCalculated      Boolean       @default(false)
+  date              DateTime
+  executions        Int           @default(1)
+  pnl               Decimal       @default(0) @db.Decimal(10, 2)
+  commission        Decimal?      @db.Decimal(10, 2)
+  fees              Decimal?      @db.Decimal(10, 2)
+  notes             String?
+  tags              String[]
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  importBatchId     String?
+  notesChanges      String?
+  recordsEntryId    String?
+  partialFills      PartialFill[]
+  importBatch       ImportBatch?  @relation(fields: [importBatchId], references: [id])
+  recordsEntry      RecordsEntry? @relation(fields: [recordsEntryId], references: [id])
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@index([userId, symbol])
+  @@index([userId, assetClass])
+  @@index([userId, side])
+  @@index([userId, symbol, status])
+  @@index([userId, entryPrice])
+  @@index([userId, exitPrice])
+  @@index([userId, quantity])
+  @@index([userId, executions])
+  @@index([userId, commission])
+  @@index([userId, fees])
+  @@index([userId, entryDate])
+  @@index([userId, exitDate])
+  @@index([userId, status, date])
+  @@index([userId, date, status])
+  @@map("trades")
+}
+
+model Order {
+  id                 String       @id @default(cuid())
+  userId             String
+  orderId            String
+  parentOrderId      String?
+  symbol             String
+  orderType          OrderType
+  side               OrderSide
+  timeInForce        TimeInForce
+  orderQuantity      Int
+  limitPrice         Decimal?     @db.Decimal(10, 2)
+  stopPrice          Decimal?     @db.Decimal(10, 2)
+  orderStatus        OrderStatus
+  orderPlacedTime    DateTime
+  orderExecutedTime  DateTime?
+  orderUpdatedTime   DateTime?
+  orderCancelledTime DateTime?
+  accountId          String?
+  orderAccount       String?
+  orderRoute         String?
+  brokerType         BrokerType   @default(GENERIC_CSV)
+  tags               String[]
+  usedInTrade        Boolean      @default(false)
+  tradeId            String?
+  importBatchId      String?
+  importBatch        ImportBatch? @relation(fields: [importBatchId], references: [id])
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, brokerType])
+  @@index([userId, symbol])
+  @@index([userId, orderStatus])
+  @@index([tradeId])
+  @@index([userId, tradeId])
+  @@map("orders")
+}
+
+model PartialFill {
+  id            String         @id @default(cuid())
+  tradeId       String
+  fillSequence  Int
+  fillQuantity  Int
+  fillPrice     Decimal        @db.Decimal(10, 2)
+  fillTime      DateTime
+  venue         String?
+  liquidityFlag LiquidityFlag?
+  trade         Trade          @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  @@index([tradeId, fillSequence])
+  @@map("partial_fills")
+}
+
+model DayData {
+  id          String   @id @default(cuid())
+  userId      String
+  date        DateTime
+  pnl         Float
+  trades      Int
+  volume      Int
+  winRate     Float?
+  commissions Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@map("day_data")
+}
+
+model RecordsEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  date        DateTime
+  pnl         Float
+  totalTrades Int
+  totalVolume Int
+  winRate     Float?
+  mfeRatio    Float?
+  netPnl      Float?
+  commissions Float?
+  notes       String?
+  chartImage  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trades      Trade[]
+
+  @@index([userId, date])
+  @@map("records_entries")
+}
+
+model ImportBatch {
+  id                  String         @id @default(cuid())
+  userId              String
+  filename            String
+  fileSize            Int?
+  brokerType          BrokerType
+  importType          ImportType     @default(STANDARD)
+  status              ImportStatus
+  totalRecords        Int            @default(0)
+  successCount        Int            @default(0)
+  errorCount          Int            @default(0)
+  errors              Json?
+  aiMappingUsed       Boolean        @default(false)
+  mappingConfidence   Float?
+  columnMappings      Json?
+  userReviewRequired  Boolean        @default(false)
+  jobId               String?
+  processingStarted   DateTime?
+  processingCompleted DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  csvUploadLogs       CsvUploadLog[]
+  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders              Order[]
+  trades              Trade[]
+
+  @@index([userId, status])
+  @@index([userId, importType])
+  @@map("import_batches")
+}
+
+model CsvUploadLog {
+  id              String       @id @default(cuid())
+  userId          String
+  importBatchId   String?
+  filename        String
+  originalHeaders String[]
+  mappedHeaders   Json?
+  rowCount        Int
+  uploadStatus    UploadStatus
+  errorMessage    String?
+  parseMethod     ParseMethod
+  aiConfidence    Float?
+  userInteraction Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+  importBatch     ImportBatch? @relation(fields: [importBatchId], references: [id])
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("csv_upload_logs")
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String
+  stripeSubscriptionId String             @unique
+  stripeCustomerId     String
+  stripePriceId        String
+  tier                 SubscriptionTier
+  status               SubscriptionStatus
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean            @default(false)
+  canceledAt           DateTime?
+  trialStart           DateTime?
+  trialEnd             DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([stripeSubscriptionId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+model PaymentHistory {
+  id                    String        @id @default(cuid())
+  userId                String
+  stripePaymentIntentId String        @unique
+  stripeSubscriptionId  String?
+  amount                Int
+  currency              String        @default("usd")
+  status                PaymentStatus
+  description           String?
+  receiptUrl            String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([stripePaymentIntentId])
+  @@index([status])
+  @@map("payment_history")
+}
+
+model WebhookEvent {
+  id            String    @id @default(cuid())
+  stripeEventId String    @unique
+  eventType     String
+  processed     Boolean   @default(false)
+  processedAt   DateTime?
+  data          Json
+  createdAt     DateTime  @default(now())
+
+  @@index([stripeEventId])
+  @@index([eventType])
+  @@index([processed])
+  @@map("webhook_events")
+}
+
+model AccountDeletionLog {
+  id           String         @id @default(cuid())
+  userId       String
+  userEmail    String
+  action       DeletionAction
+  performedBy  String
+  reason       String?
+  details      Json?
+  scheduledFor DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime       @default(now())
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("account_deletion_logs")
+}
+
+model SharedTrade {
+  id            String   @id @default(cuid())
+  shareKey      String   @unique
+  userId        String
+  tradeSnapshot Json
+  orderSnapshot Json
+  metadata      Json?
+  expiresAt     DateTime
+  accessCount   Int      @default(0)
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([shareKey])
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+  @@map("shared_trades")
+}
+
+enum SubscriptionTier {
+  FREE
+  PREMIUM
+
+  @@map("subscription_tier")
+}
+
+enum SubscriptionStatus {
+  INACTIVE
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  TRIALING
+
+  @@map("subscription_status")
+}
+
+enum PaymentStatus {
+  SUCCEEDED
+  PENDING
+  FAILED
+  CANCELED
+  REFUNDED
+
+  @@map("payment_status")
+}
+
+enum AssetClass {
+  EQUITY
+  FUTURES
+  OPTIONS
+  FOREX
+  CRYPTO
+  BOND
+  ETF
+  MUTUAL_FUND
+  COMMODITY
+
+  @@map("asset_class")
+}
+
+enum TradeSide {
+  LONG
+  SHORT
+
+  @@map("trade_side")
+}
+
+enum TradeStatus {
+  OPEN
+  CLOSED
+  BLANK
+
+  @@map("trade_status")
+}
+
+enum OrderSide {
+  BUY
+  SELL
+
+  @@map("order_side")
+}
+
+enum TradeSource {
+  MANUAL
+  ALGORITHMIC
+  API
+  IMPORTED
+  COPY_TRADING
+
+  @@map("trade_source")
+}
+
+enum OrderType {
+  MARKET
+  LIMIT
+  STOP
+  STOP_LIMIT
+  TRAILING_STOP
+  MARKET_ON_CLOSE
+  LIMIT_ON_CLOSE
+  PEGGED_TO_MIDPOINT
+
+  @@map("order_type")
+}
+
+enum TimeInForce {
+  DAY
+  GTC
+  IOC
+  FOK
+  GTD
+
+  @@map("time_in_force")
+}
+
+enum LiquidityFlag {
+  MAKER
+  TAKER
+  UNKNOWN
+
+  @@map("liquidity_flag")
+}
+
+enum MarketSession {
+  PRE_MARKET
+  REGULAR
+  AFTER_HOURS
+  EXTENDED
+
+  @@map("market_session")
+}
+
+enum HoldingPeriod {
+  SCALP
+  INTRADAY
+  SWING
+  POSITION
+  LONG_TERM
+
+  @@map("holding_period")
+}
+
+enum OrderStatus {
+  PENDING
+  PARTIALLY_FILLED
+  FILLED
+  CANCELLED
+  REJECTED
+  EXPIRED
+
+  @@map("order_status")
+}
+
+enum BrokerType {
+  INTERACTIVE_BROKERS
+  TD_AMERITRADE
+  E_TRADE
+  CHARLES_SCHWAB
+  FIDELITY
+  ROBINHOOD
+  GENERIC_CSV
+
+  @@map("broker_type")
+}
+
+enum ImportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+
+  @@map("import_status")
+}
+
+enum ImportType {
+  STANDARD
+  CUSTOM
+
+  @@map("import_type")
+}
+
+enum UploadStatus {
+  UPLOADED
+  PARSING
+  MAPPED
+  VALIDATED
+  IMPORTED
+  FAILED
+
+  @@map("upload_status")
+}
+
+enum ParseMethod {
+  STANDARD
+  AI_MAPPED
+  USER_CORRECTED
+
+  @@map("parse_method")
+}
+
+enum DeletionAction {
+  REQUESTED
+  REACTIVATED
+  SOFT_DELETED
+  HARD_DELETED
+  EXPIRED
+
+  @@map("deletion_action")
+}

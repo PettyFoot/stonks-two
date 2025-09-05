@@ -9,6 +9,7 @@ import {
   calculatePerformanceByDuration
 } from '@/lib/tradeAggregations';
 import { cacheService } from '@/lib/services/cacheService';
+import { calculateCumulativePnl } from '@/lib/cumulativePnlCalculation';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -105,6 +106,7 @@ export async function GET(request: Request) {
         select: {
           id: true,
           date: true,
+          exitDate: true,
           pnl: true,
           quantity: true,
           timeInTrade: true,
@@ -172,42 +174,8 @@ export async function GET(request: Request) {
     const uniqueDays = new Set(trades.map(trade => trade.date.toISOString().split('T')[0]));
     const avgDailyVolume = uniqueDays.size > 0 ? totalVolume / uniqueDays.size : 0;
 
-    // Calculate cumulative P&L for chart
-    const cumulativePnl: { date: string; value: number }[] = [];
-    let runningPnl = 0;
-    const tradesByDate = new Map<string, typeof trades>();
-    
-    // Add starting point at the beginning of selected time period
-    if (filters.dateFrom) {
-      cumulativePnl.push({
-        date: filters.dateFrom.toISOString().split('T')[0],
-        value: 0
-      });
-    } else if (trades.length > 0) {
-      // If no dateFrom filter, start from the earliest trade date
-      const earliestTradeDate = new Date(Math.min(...trades.map(t => t.date.getTime())));
-      cumulativePnl.push({
-        date: earliestTradeDate.toISOString().split('T')[0],
-        value: 0
-      });
-    }
-    
-    trades.forEach(trade => {
-      const dateStr = trade.date.toISOString().split('T')[0];
-      if (!tradesByDate.has(dateStr)) {
-        tradesByDate.set(dateStr, []);
-      }
-      tradesByDate.get(dateStr)!.push(trade);
-    });
-
-    tradesByDate.forEach((dayTrades, dateStr) => {
-      const dayPnl = dayTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : Number(trade.pnl)), 0);
-      runningPnl += dayPnl;
-      cumulativePnl.push({
-        date: dateStr,
-        value: runningPnl
-      });
-    });
+    // Calculate cumulative P&L using shared utility (consistent with reports page)
+    const cumulativePnl = calculateCumulativePnl(trades, filters.dateFrom);
 
     // Execute all advanced metrics calculations in parallel for optimal performance
     const [

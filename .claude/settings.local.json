@@ -109,7 +109,8 @@
       "Read(/c:\\Users\\lcorr\\OneDrive\\Pictures\\CC/**)",
       "Bash(ls:*)",
       "Read(/c:\\Users\\lcorr\\OneDrive\\Pictures\\CC/**)",
-      "Read(//c/Users/lcorr/OneDrive/Pictures/CC/**)"
+      "Read(//c/Users/lcorr/OneDrive/Pictures/CC/**)",
+      "WebFetch(domain:docs.snaptrade.com)"
     ],
     "deny": [],
     "ask": []

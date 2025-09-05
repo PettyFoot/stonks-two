@@ -51,10 +51,8 @@ export async function POST(request: Request) {
         );
       }
 
-      // Update the trade's notes based on the operation type
-      const updateData = saveChanges 
-        ? { notes, notesChanges: notes } // Save changes: copy notesChanges to notes
-        : { notesChanges: notes }; // Auto-save: save to notesChanges only
+      // Always save directly to notes field
+      const updateData = { notes };
 
       const updatedTrade = await prisma.trade.update({
         where: { id: tradeId },
@@ -63,7 +61,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: true,
-        message: saveChanges ? 'Trade notes saved successfully' : 'Trade notes auto-saved to draft',
+        message: 'Trade notes saved successfully',
         trade: {
           id: updatedTrade.id,
           notes: updatedTrade.notes,
@@ -101,9 +99,8 @@ export async function POST(request: Request) {
         }
       });
 
-      const updateData = saveChanges 
-        ? { notes, notesChanges: notes } // Save changes: copy notesChanges to notes
-        : { notesChanges: notes }; // Auto-save: save to notesChanges only
+      // Always save directly to notes field
+      const updateData = { notes };
 
       if (blankTrade) {
         // Update existing blank trade
@@ -134,7 +131,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: true,
-        message: saveChanges ? 'Records notes saved successfully' : 'Records notes auto-saved to draft',
+        message: 'Records notes saved successfully',
         trade: {
           id: blankTrade.id,
           notes: blankTrade.notes,
@@ -147,9 +144,8 @@ export async function POST(request: Request) {
     }
 
     // No trades exist for this date, create a blank trade to hold the notes
-    const updateData = saveChanges 
-      ? { notes, notesChanges: notes } // Save changes: copy notesChanges to notes
-      : { notesChanges: notes }; // Auto-save: save to notesChanges only
+    // Always save directly to notes field
+    const updateData = { notes };
 
     const blankTrade = await prisma.trade.create({
       data: {
@@ -171,7 +167,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: saveChanges ? 'Records notes saved successfully' : 'Records notes auto-saved to draft',
+      message: 'Records notes saved successfully',
       trade: {
         id: blankTrade.id,
         notes: blankTrade.notes,

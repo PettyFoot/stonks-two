@@ -5,6 +5,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { startOfDay, endOfDay, subDays, format } from 'date-fns';
 import { determineOptimalInterval } from '@/lib/timeIntervals';
 import { aggregateWinRatesByInterval } from '@/lib/reportCalculations';
+import { calculateCumulativePnl } from '@/lib/cumulativePnlCalculation';
 
 export async function GET(request: NextRequest) {
   try {
@@ -64,6 +65,13 @@ export async function GET(request: NextRequest) {
     // Fetch trades
     const trades = await prisma.trade.findMany({
       where: whereConditions,
+      select: {
+        id: true,
+        date: true,
+        exitDate: true,
+        pnl: true,
+        quantity: true
+      },
       orderBy: { date: 'asc' }
     });
 
@@ -132,23 +140,8 @@ export async function GET(request: NextRequest) {
     }, 0);
     const averageDailyPnl = totalPnl / daysDiff;
 
-    // Calculate cumulative P&L
-    const cumulativePnl = [];
-    
-    // Add starting point at the beginning of selected time period
-    cumulativePnl.push({
-      date: format(fromDate, 'yyyy-MM-dd'),
-      value: 0
-    });
-    
-    let cumulativeSum = 0;
-    dailyPnl.forEach(day => {
-      cumulativeSum += day.pnl;
-      cumulativePnl.push({
-        date: day.date,
-        value: parseFloat(cumulativeSum.toFixed(2))
-      });
-    });
+    // Calculate cumulative P&L using shared utility
+    const cumulativePnl = calculateCumulativePnl(trades, fromDate);
 
     // Calculate overall win percentage
     const totalWins = trades.filter(t => {

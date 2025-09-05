@@ -6,20 +6,22 @@ import { useRouter } from 'next/navigation';
 import TopBar from '@/components/TopBar';
 import EnhancedFileUpload from '@/components/csv/EnhancedFileUpload';
 import ColumnMappingModal from '@/components/csv/ColumnMappingModal';
+import BrokerList from '@/components/broker/BrokerList';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
- 
   FileText, 
   CheckCircle, 
- 
   Download,
   BookOpen,
-  Zap,
   Brain,
   Shield,
-  TrendingUp
+  TrendingUp,
+  Building2,
+  Upload,
+  Workflow
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -145,55 +147,107 @@ export default function EnhancedImportPage() {
           <div className="text-center space-y-4">
             <div className="flex items-center justify-center gap-3 mb-4">
               <div className="p-3 bg-tertiary/10 rounded-full">
-                <Zap className="h-8 w-8 text-[var(--theme-tertiary)]" />
+                <Workflow className="h-8 w-8 text-[var(--theme-tertiary)]" />
               </div>
-              <h1 className="text-3xl font-bold text-gray-900">Smart CSV Import</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Trade Data Import</h1>
             </div>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Import your trading data with AI-powered column mapping, real-time validation, 
-              and comprehensive error handling.
+              Import your trading data either by connecting your broker directly or uploading CSV files 
+              with AI-powered column mapping and real-time validation.
             </p>
           </div>
 
-          {/* Features Grid */}
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
-            <Card className="bg-gradient-to-br from-tertiary/10 to-tertiary/20 border-tertiary/30">
-              <CardContent className="p-6 text-center">
-                <Brain className="h-12 w-12 text-[var(--theme-tertiary)] mx-auto mb-4" />
-                <h3 className="font-semibold text-tertiary mb-2">AI-Powered Mapping</h3>
-                <p className="text-sm text-tertiary">
-                  Smart column detection with confidence scoring and manual correction options.
-                </p>
-              </CardContent>
-            </Card>
+          {/* Import Methods Tabs */}
+          <Tabs defaultValue="broker" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-8">
+              <TabsTrigger value="broker" className="flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                Connect Broker
+              </TabsTrigger>
+              <TabsTrigger value="csv" className="flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                Upload CSV
+              </TabsTrigger>
+            </TabsList>
 
-            <Card className="bg-gradient-to-br from-positive/10 to-positive/20 border-positive/30">
-              <CardContent className="p-6 text-center">
-                <Shield className="h-12 w-12 text-[var(--theme-green)] mx-auto mb-4" />
-                <h3 className="font-semibold text-positive mb-2">Secure Processing</h3>
-                <p className="text-sm text-positive">
-                  Server-side validation, sanitization, and user-isolated data storage.
-                </p>
-              </CardContent>
-            </Card>
+            {/* Broker Connection Tab */}
+            <TabsContent value="broker" className="space-y-6">
+              <div className="grid md:grid-cols-3 gap-6 mb-8">
+                <Card className="bg-gradient-to-br from-tertiary/10 to-tertiary/20 border-tertiary/30">
+                  <CardContent className="p-6 text-center">
+                    <Building2 className="h-12 w-12 text-[var(--theme-tertiary)] mx-auto mb-4" />
+                    <h3 className="font-semibold text-tertiary mb-2">Direct Broker Connection</h3>
+                    <p className="text-sm text-tertiary">
+                      Connect your broker account directly for automatic trade synchronization.
+                    </p>
+                  </CardContent>
+                </Card>
 
-            <Card className="bg-gradient-to-br from-warning/10 to-warning/20 border-warning/30">
-              <CardContent className="p-6 text-center">
-                <TrendingUp className="h-12 w-12 text-[var(--theme-tertiary)] mx-auto mb-4" />
-                <h3 className="font-semibold text-warning mb-2">Real-time Analytics</h3>
-                <p className="text-sm text-warning">
-                  Instant validation feedback and processing status with detailed error reporting.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+                <Card className="bg-gradient-to-br from-positive/10 to-positive/20 border-positive/30">
+                  <CardContent className="p-6 text-center">
+                    <Shield className="h-12 w-12 text-[var(--theme-green)] mx-auto mb-4" />
+                    <h3 className="font-semibold text-positive mb-2">Secure OAuth</h3>
+                    <p className="text-sm text-positive">
+                      Bank-level security with encrypted connections and no stored credentials.
+                    </p>
+                  </CardContent>
+                </Card>
 
-          {/* Main Upload Component */}
-          <EnhancedFileUpload
-            onUploadComplete={handleUploadComplete}
-            onMappingRequired={handleMappingRequired}
-            accountTags={[]}
-          />
+                <Card className="bg-gradient-to-br from-warning/10 to-warning/20 border-warning/30">
+                  <CardContent className="p-6 text-center">
+                    <TrendingUp className="h-12 w-12 text-[var(--theme-tertiary)] mx-auto mb-4" />
+                    <h3 className="font-semibold text-warning mb-2">Real-time Sync</h3>
+                    <p className="text-sm text-warning">
+                      Automatic updates with webhook notifications and scheduled syncing.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <BrokerList onConnectionsChange={() => {}} />
+            </TabsContent>
+
+            {/* CSV Upload Tab */}
+            <TabsContent value="csv" className="space-y-6">
+              <div className="grid md:grid-cols-3 gap-6 mb-8">
+                <Card className="bg-gradient-to-br from-tertiary/10 to-tertiary/20 border-tertiary/30">
+                  <CardContent className="p-6 text-center">
+                    <Brain className="h-12 w-12 text-[var(--theme-tertiary)] mx-auto mb-4" />
+                    <h3 className="font-semibold text-tertiary mb-2">AI-Powered Mapping</h3>
+                    <p className="text-sm text-tertiary">
+                      Smart column detection with confidence scoring and manual correction options.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-positive/10 to-positive/20 border-positive/30">
+                  <CardContent className="p-6 text-center">
+                    <Shield className="h-12 w-12 text-[var(--theme-green)] mx-auto mb-4" />
+                    <h3 className="font-semibold text-positive mb-2">Secure Processing</h3>
+                    <p className="text-sm text-positive">
+                      Server-side validation, sanitization, and user-isolated data storage.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-warning/10 to-warning/20 border-warning/30">
+                  <CardContent className="p-6 text-center">
+                    <TrendingUp className="h-12 w-12 text-[var(--theme-tertiary)] mx-auto mb-4" />
+                    <h3 className="font-semibold text-warning mb-2">Flexible Formats</h3>
+                    <p className="text-sm text-warning">
+                      Support for all major broker formats with intelligent format detection.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <EnhancedFileUpload
+                onUploadComplete={handleUploadComplete}
+                onMappingRequired={handleMappingRequired}
+                accountTags={[]}
+              />
+            </TabsContent>
+          </Tabs>
 
           {/* Documentation Section */}
           <div className="grid md:grid-cols-2 gap-6">

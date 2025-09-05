@@ -194,13 +194,18 @@ export async function GET(request: Request) {
       return acc;
     }, [] as ExecutionOrder[]);
 
+    // Calculate total volume directly from executions (more accurate than summary)
+    const totalVolumeFromExecutions = allExecutions.reduce((sum, execution) => {
+      return sum + (execution.orderQuantity || 0);
+    }, 0);
+
     // Create records entry format
     const recordsEntry = {
       id: `records_${user.id}_${date}`,
       date,
       pnl: summary.totalPnl,
       totalTrades: summary.totalTrades,
-      totalVolume: summary.totalVolume,
+      totalVolume: totalVolumeFromExecutions,
       winRate: summary.winRate,
       notes: tradesWithExecutions.find(t => t.status === 'BLANK')?.notes || '',
       notesChanges: tradesWithExecutions.find(t => t.status === 'BLANK')?.notesChanges || '',

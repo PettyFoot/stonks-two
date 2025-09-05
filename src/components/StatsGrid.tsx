@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 
 export interface StatsGridProps {
   totalExecutions: number;
-  winRate?: number;
+  symbol?: string;
   totalVolume: number;
   mfeRatio?: number;
   commissions?: number;
@@ -15,7 +15,7 @@ export interface StatsGridProps {
 
 export default function StatsGrid({
   totalExecutions,
-  winRate,
+  symbol,
   totalVolume,
   mfeRatio,
   commissions = 0,
@@ -38,10 +38,10 @@ export default function StatsGrid({
       <Card className="bg-surface border-default">
         <CardContent className="p-3 sm:p-4">
           <div className="flex flex-col h-full">
-            <div className="text-xs sm:text-sm text-muted mb-2 text-center">Win %</div>
+            <div className="text-xs sm:text-sm text-muted mb-2 text-center">Symbol</div>
             <div className="flex-1 flex items-center justify-center">
-              <div className="text-base sm:text-lg font-bold text-positive">
-                {winRate ? winRate.toFixed(0) : '0'}%
+              <div className="text-base sm:text-lg font-bold text-primary">
+                {symbol || '-'}
               </div>
             </div>
           </div>
