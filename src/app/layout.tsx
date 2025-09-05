@@ -164,11 +164,15 @@ export default function RootLayout({
                       // Only load web vitals if analytics are enabled
                       import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
                         function sendToAnalytics(metric) {
-                          const body = JSON.stringify(metric);
-                          if (navigator.sendBeacon) {
-                            navigator.sendBeacon('/api/vitals', body);
-                          } else {
-                            fetch('/api/vitals', { body, method: 'POST', keepalive: true });
+                          try {
+                            const body = JSON.stringify(metric);
+                            if (navigator.sendBeacon) {
+                              navigator.sendBeacon('/api/vitals', body);
+                            } else {
+                              fetch('/api/vitals', { body, method: 'POST', keepalive: true }).catch(console.error);
+                            }
+                          } catch (error) {
+                            console.error('Failed to send analytics:', error);
                           }
                         }
                         
@@ -177,6 +181,9 @@ export default function RootLayout({
                         getFCP(sendToAnalytics);
                         getLCP(sendToAnalytics);
                         getTTFB(sendToAnalytics);
+                      }).catch(error => {
+                        // Silently handle web-vitals import failure
+                        console.warn('Web vitals module not available:', error.message);
                       });
                     }
                   }

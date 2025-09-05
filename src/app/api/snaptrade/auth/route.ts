@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
     // Get user session
     const session = await getSession(request, NextResponse.next());
     if (!session?.user?.sub) {
+      console.warn('SnapTrade auth endpoint called without valid session');
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -94,6 +95,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getSession(request, NextResponse.next());
     if (!session?.user?.sub) {
+      console.warn('SnapTrade status check called without valid session');
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -103,6 +105,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       configured: isSnapTradeConfigured(),
       available: true,
+      authenticated: true,
+      userId: session.user.sub
     });
 
   } catch (error) {

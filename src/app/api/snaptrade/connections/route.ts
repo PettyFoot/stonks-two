@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getSession(request, NextResponse.next());
     if (!session?.user?.sub) {
+      console.warn('SnapTrade connections endpoint called without valid session');
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -57,6 +58,7 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await getSession(request, NextResponse.next());
     if (!session?.user?.sub) {
+      console.warn('SnapTrade connections PUT endpoint called without valid session');
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
