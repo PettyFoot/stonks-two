@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import './chart-styles.css';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { ApexOptions } from 'apexcharts';
 import { ExecutionOrder } from '@/components/ExecutionsTable';
@@ -43,18 +42,11 @@ export default function TradeCandlestickChart({
   const [timeInterval, setTimeInterval] = useState<TimeInterval>('5m');
   const [selectedExecution, setSelectedExecution] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<string>('');
+  const [chartDate, setChartDate] = useState<string>(tradeDate); // Independent chart date
 
-  // Simple trade context with just the basic info needed
-  const tradeContext = useMemo(() => {
-    return {
-      symbol,
-      date: tradeDate,
-      time: tradeTime
-    };
-  }, [symbol, tradeDate, tradeTime]);
 
   // Validate inputs - memoized to prevent useEffect loops
-  const validateInputs = useCallback((symbol: string, tradeDate: string) => {
+  const validateInputs = useCallback((symbol: string, chartDate: string) => {
     const errors = [];
     
     // Validate symbol
@@ -67,21 +59,21 @@ export default function TradeCandlestickChart({
     }
     
     // Validate date
-    const date = new Date(tradeDate);
+    const date = new Date(chartDate);
     if (isNaN(date.getTime())) {
-      errors.push('Invalid trade date format');
+      errors.push('Invalid chart date format');
     } else {
       const now = new Date();
       const daysDiff = (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24);
       
       if (daysDiff > 365) {
-        errors.push('Trade date is more than 1 year old - market data may not be available');
+        errors.push('Chart date is more than 1 year old - market data may not be available');
       } else if (daysDiff > 60 && timeInterval !== '1d') {
         errors.push(`Intraday data (${timeInterval}) is only available for the last 60 days`);
       }
       
       if (date.getTime() > now.getTime()) {
-        errors.push('Trade date cannot be in the future');
+        errors.push('Chart date cannot be in the future');
       }
     }
     
@@ -97,13 +89,13 @@ export default function TradeCandlestickChart({
       }
       
       // Validate inputs
-      const validationErrors = validateInputs(symbol, tradeDate);
+      const validationErrors = validateInputs(symbol, chartDate);
       if (validationErrors.length > 0) {
         console.warn('❌ Input validation failed:', validationErrors);
         setError(`Validation error: ${validationErrors[0]}`);
         setMarketData({
           symbol,
-          date: tradeDate,
+          date: chartDate,
           interval: timeInterval,
           ohlc: [],
           success: false,
@@ -119,6 +111,7 @@ export default function TradeCandlestickChart({
       console.log('📊 Chart initialization:', {
         symbol,
         tradeDate,
+        chartDate,
         timeInterval,
         executionsCount: executions.length,
         executions: executions.map(e => ({
@@ -135,12 +128,12 @@ export default function TradeCandlestickChart({
       setError(null);
       
       try {
-        console.log(`🔍 Fetching market data for ${symbol} on ${tradeDate} (${timeInterval})`);
+        console.log(`🔍 Fetching market data for ${symbol} on ${chartDate} (${timeInterval})`);
         
         // Check client-side cache first (unless bypassed)
         const bypassCache = new URLSearchParams(window.location.search).get('nocache') === 'true';
         if (!bypassCache) {
-          const cached = MarketDataCache.get(symbol, tradeDate, timeInterval, tradeTime);
+          const cached = MarketDataCache.get(symbol, chartDate, timeInterval, tradeTime);
           if (cached) {
             console.log(`📋 Using cached data for ${symbol}:`, {
               source: cached.source,
@@ -153,7 +146,7 @@ export default function TradeCandlestickChart({
             // Validate cache data matches requested date
             if (cached.ohlc?.length > 0) {
               const firstCandleDate = new Date(cached.ohlc[0].timestamp).toDateString();
-              const requestedDate = new Date(tradeDate).toDateString();
+              const requestedDate = new Date(chartDate).toDateString();
               if (firstCandleDate !== requestedDate) {
                 console.warn(`⚠️  Cache date mismatch: requested ${requestedDate}, cached data is from ${firstCandleDate}`);
                 console.log('💀 Clearing stale cache and fetching fresh data...');
@@ -171,7 +164,7 @@ export default function TradeCandlestickChart({
               return;
             }
           } else {
-            console.log(`📥 No cache found for ${symbol} on ${tradeDate}`);
+            console.log(`📥 No cache found for ${symbol} on ${chartDate}`);
           }
         } else {
           console.log(`🚫 Cache bypass enabled via ?nocache=true`);
@@ -180,7 +173,7 @@ export default function TradeCandlestickChart({
         // Build simple API URL with just symbol, date, and interval
         const params = new URLSearchParams({
           symbol,
-          date: tradeDate,
+          date: chartDate,
           interval: timeInterval
         });
         
@@ -209,7 +202,7 @@ export default function TradeCandlestickChart({
           if (data.ohlc?.length > 0) {
             const firstCandle = new Date(data.ohlc[0].timestamp);
             const lastCandle = new Date(data.ohlc[data.ohlc.length - 1].timestamp);
-            const requestedDate = new Date(tradeDate);
+            const requestedDate = new Date(chartDate);
             
             console.log(`📈 Data analysis:`, {
               requestedDate: requestedDate.toDateString(),
@@ -244,7 +237,7 @@ export default function TradeCandlestickChart({
         // Set empty market data to show error state
         setMarketData({
           symbol,
-          date: tradeDate,
+          date: chartDate,
           interval: timeInterval,
           ohlc: [],
           success: false,
@@ -259,57 +252,10 @@ export default function TradeCandlestickChart({
     };
 
     fetchMarketData();
-  }, [symbol, tradeDate, tradeTime, timeInterval, executions, validateInputs]);
-
-  // Process executions for annotations
-  const executionAnnotations = useMemo(() => {
-    if (!executions.length) return { yaxis: [], points: [] };
-    
-    const yAxisAnnotations = executions.map((execution, index) => ({
-      y: Number(execution.limitPrice) / 100 || 0,
-      borderColor: execution.side === 'BUY' ? 'var(--theme-green)' : 'var(--theme-red)',
-      borderWidth: 2,
-      strokeDashArray: selectedExecution === execution.id ? 0 : 5,
-      label: {
-        text: `${execution.side} ${execution.orderQuantity}@$${((Number(execution.limitPrice) / 100) || 0).toFixed(2)}`,
-        style: {
-          background: execution.side === 'BUY' ? 'var(--theme-green)' : 'var(--theme-red)',
-          color: 'var(--theme-surface)',
-          fontSize: '10px'
-        },
-        position: 'left',
-        offsetX: index * 100 // Offset multiple executions
-      }
-    }));
-
-    const pointAnnotations = executions.map(execution => ({
-      x: execution.orderExecutedTime ? new Date(execution.orderExecutedTime).getTime() : Date.now(),
-      y: Number(execution.limitPrice) / 100 || 0,
-      marker: {
-        size: selectedExecution === execution.id ? 10 : 6,
-        fillColor: execution.side === 'BUY' ? 'var(--theme-green)' : 'var(--theme-red)',
-        strokeColor: 'var(--theme-surface)',
-        strokeWidth: 2,
-        shape: execution.side === 'BUY' ? 'circle' : 'square'
-      },
-      label: {
-        text: `${execution.orderQuantity}`,
-        style: {
-          background: execution.side === 'BUY' ? 'var(--theme-green)' : 'var(--theme-red)',
-          color: 'var(--theme-surface)',
-          fontSize: '8px'
-        }
-      }
-    }));
-
-    return {
-      yaxis: yAxisAnnotations,
-      points: pointAnnotations
-    };
-  }, [executions, selectedExecution]);
+  }, [symbol, chartDate, tradeTime, timeInterval, executions, validateInputs]);
 
   // Calculate x-axis range based on actual data availability
-  const getXAxisRange = () => {
+  const getXAxisRange = useCallback(() => {
     if (marketData?.ohlc && marketData.ohlc.length > 0) {
       const timestamps = marketData.ohlc.map(d => d.timestamp);
       const minTimestamp = Math.min(...timestamps);
@@ -324,7 +270,7 @@ export default function TradeCandlestickChart({
       
       console.log(`📊 Chart range calculation:`, {
         actualDataDate: actualTradingDate.toDateString(),
-        requestedDate: new Date(tradeDate).toDateString(),
+        requestedDate: new Date(chartDate).toDateString(),
         dataSpanHours: dataSpanHours.toFixed(2),
         minTimestamp: new Date(minTimestamp).toLocaleString(),
         maxTimestamp: new Date(maxTimestamp).toLocaleString()
@@ -368,10 +314,10 @@ export default function TradeCandlestickChart({
         return range;
       }
     } else {
-      // Fallback to requested trade date (regular hours since we don't know data availability)
-      const fallbackStart = new Date(tradeDate);
+      // Fallback to requested chart date (regular hours since we don't know data availability)
+      const fallbackStart = new Date(chartDate);
       fallbackStart.setHours(9, 30, 0, 0);
-      const fallbackEnd = new Date(tradeDate);
+      const fallbackEnd = new Date(chartDate);
       fallbackEnd.setHours(16, 0, 0, 0);
       
       const range = {
@@ -381,13 +327,108 @@ export default function TradeCandlestickChart({
       console.log(`📏 Using fallback range: ${new Date(range.min).toLocaleString()} to ${new Date(range.max).toLocaleString()}`);
       return range;
     }
-  };
+  }, [marketData, chartDate]);
+
+  // Process executions for triangular annotations
+  const executionAnnotations = useMemo(() => {
+    if (!executions.length || !marketData?.ohlc?.length) return { points: [] };
+    
+    const xAxisRange = getXAxisRange();
+    
+    // Get price range from current market data
+    const priceRange = {
+      min: Math.min(...marketData.ohlc.map(c => c.low)),
+      max: Math.max(...marketData.ohlc.map(c => c.high))
+    };
+    
+    // Filter executions that are within visible time and price ranges
+    const visibleExecutions = executions.filter(execution => {
+      const executionTime = execution.orderExecutedTime ? new Date(execution.orderExecutedTime).getTime() : null;
+      const executionPrice = Number(execution.limitPrice) || 0;
+      
+      // MORE LENIENT TIME FILTERING: Check if execution is on the same date as chart
+      // OR if execution time falls within the chart's time range
+      let withinTimeRange = false;
+      if (executionTime) {
+        const executionDate = new Date(executionTime).toDateString();
+        const chartDateObj = new Date(chartDate).toDateString();
+        
+        // Allow executions if they're on the same date OR within the time range
+        withinTimeRange = (executionDate === chartDateObj) || 
+          (executionTime >= xAxisRange.min && executionTime <= xAxisRange.max);
+      }
+      
+      // Check if execution price is within chart's price range (with 10% padding for safety)
+      const priceBuffer = (priceRange.max - priceRange.min) * 0.10;
+      const withinPriceRange = executionPrice >= (priceRange.min - priceBuffer) && 
+        executionPrice <= (priceRange.max + priceBuffer);
+      
+      return withinTimeRange && withinPriceRange;
+    });
+    
+    console.log(`📍 Filtering ${executions.length} executions -> ${visibleExecutions.length} visible`, {
+      timeRange: `${new Date(xAxisRange.min).toLocaleTimeString()} - ${new Date(xAxisRange.max).toLocaleTimeString()}`,
+      priceRange: `$${priceRange.min.toFixed(2)} - $${priceRange.max.toFixed(2)}`,
+      chartDate,
+      visibleExecutions: visibleExecutions.map(e => ({
+        side: e.side,
+        price: Number(e.limitPrice).toFixed(2),
+        time: e.orderExecutedTime ? new Date(e.orderExecutedTime).toLocaleTimeString() : 'N/A',
+        executedTime: e.orderExecutedTime,
+        withinRange: e.orderExecutedTime ? new Date(e.orderExecutedTime).getTime() >= xAxisRange.min && new Date(e.orderExecutedTime).getTime() <= xAxisRange.max : false
+      }))
+    });
+
+    // Create triangular point annotations for visible executions
+    const pointAnnotations = visibleExecutions.map(execution => {
+      const isBuy = execution.side === 'BUY';
+      const executionPrice = Number(execution.limitPrice) || 0;
+      
+      return {
+        x: execution.orderExecutedTime ? new Date(execution.orderExecutedTime).getTime() : Date.now(),
+        y: executionPrice,
+        marker: {
+          size: selectedExecution === execution.id ? 12 : 10,
+          fillColor: isBuy ? '#10b981' : '#ef4444', // Green for buy, red for sell
+          strokeColor: '#ffffff',
+          strokeWidth: 2,
+          shape: 'circle' // Start with circles to test if annotations work
+        },
+        label: {
+          text: `${isBuy ? '▲' : '▼'}${execution.orderQuantity}`,
+          style: {
+            background: isBuy ? '#10b981' : '#ef4444',
+            color: '#ffffff',
+            fontSize: '10px',
+            fontWeight: 'bold',
+            borderRadius: '3px',
+            padding: '2px 4px'
+          },
+          offsetY: isBuy ? -20 : 20, // Position label above/below marker
+          offsetX: 0,
+          borderWidth: 0
+        }
+      };
+    });
+
+    console.log(`🎯 Created ${pointAnnotations.length} point annotations:`, pointAnnotations.map(p => ({
+      x: new Date(p.x).toLocaleString(),
+      y: p.y,
+      markerShape: p.marker.shape,
+      markerSize: p.marker.size,
+      markerColor: p.marker.fillColor
+    })));
+
+    return {
+      points: pointAnnotations
+    };
+  }, [executions, selectedExecution, marketData, getXAxisRange]);
 
   const xAxisRange = getXAxisRange();
 
   const chartOptions: ApexOptions = {
     chart: {
-      type: 'candlestick',
+      type: 'candlestick', // Reverted back to candlestick
       height: height,
       background: 'transparent',
       toolbar: {
@@ -402,11 +443,17 @@ export default function TradeCandlestickChart({
       },
       events: {
         markerClick: (_event, _chartContext, { dataPointIndex }) => {
-          // Handle execution marker clicks
-          const execution = executions[dataPointIndex];
-          if (execution) {
-            setSelectedExecution(execution.id);
-            onExecutionSelect?.(execution);
+          console.log('Annotation marker clicked:', { dataPointIndex });
+          // Handle execution annotation clicks
+          if (executionAnnotations.points[dataPointIndex]) {
+            const executionData = executionAnnotations.points[dataPointIndex];
+            const execution = executions.find(e => 
+              e.orderExecutedTime && new Date(e.orderExecutedTime).getTime() === executionData.x
+            );
+            if (execution) {
+              setSelectedExecution(execution.id);
+              onExecutionSelect?.(execution);
+            }
           }
         }
       }
@@ -479,25 +526,27 @@ export default function TradeCandlestickChart({
         if (!ohlc) return '';
         
         return `
-          <div class="apex-tooltip-candlestick">
-            <div class="apex-tooltip-title">
-              ${new Date(ohlc.timestamp).toLocaleTimeString('en-US', { 
+          <div class="apex-tooltip-candlestick" style="background: rgba(40, 40, 40, 0.5); border: 1px solid #555; border-radius: 6px; padding: 8px; color: #e5e5e5; font-family: system-ui, -apple-system, sans-serif;">
+            <div class="apex-tooltip-title" style="color: #ffffff; font-weight: 600; font-size: 12px; margin-bottom: 6px; text-align: center;">
+              <span style="color: #ffffff;">${new Date(ohlc.timestamp).toLocaleTimeString('en-US', { 
                 hour: '2-digit', 
                 minute: '2-digit' 
-              })}
+              })}</span>
             </div>
-            <div class="apex-tooltip-body">
-              <div>Open: <span class="value">$${ohlc.open.toFixed(2)}</span></div>
-              <div>High: <span class="value">$${ohlc.high.toFixed(2)}</span></div>
-              <div>Low: <span class="value">$${ohlc.low.toFixed(2)}</span></div>
-              <div>Close: <span class="value">$${ohlc.close.toFixed(2)}</span></div>
-              ${ohlc.volume ? `<div>Volume: <span class="value">${ohlc.volume.toLocaleString()}</span></div>` : ''}
+            <div class="apex-tooltip-body" style="font-size: 11px; line-height: 1.4;">
+              <div style="color: #e5e5e5; margin-bottom: 2px;">Open: <span class="value" style="color: #ffffff; font-weight: 500;">$${ohlc.open.toFixed(2)}</span></div>
+              <div style="color: #e5e5e5; margin-bottom: 2px;">High: <span class="value" style="color: #10b981; font-weight: 500;">$${ohlc.high.toFixed(2)}</span></div>
+              <div style="color: #e5e5e5; margin-bottom: 2px;">Low: <span class="value" style="color: #ef4444; font-weight: 500;">$${ohlc.low.toFixed(2)}</span></div>
+              <div style="color: #e5e5e5; margin-bottom: 2px;">Close: <span class="value" style="color: #ffffff; font-weight: 500;">$${ohlc.close.toFixed(2)}</span></div>
+              ${ohlc.volume ? `<div style="color: #e5e5e5;">Volume: <span class="value" style="color: #a3a3a3; font-weight: 500;">${ohlc.volume.toLocaleString()}</span></div>` : ''}
             </div>
           </div>
         `;
       }
     },
-    annotations: executionAnnotations,
+    annotations: {
+      points: executionAnnotations.points
+    },
     theme: {
       mode: 'dark'
     }
@@ -530,6 +579,13 @@ export default function TradeCandlestickChart({
             </span>
           </CardTitle>
           <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={chartDate}
+              onChange={(e) => setChartDate(e.target.value)}
+              className="w-36 h-9 px-3 py-2 text-sm border border-input rounded-md bg-white shadow-xs outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+              title="Chart Date (independent of trade date)"
+            />
             <select 
               value={timeInterval} 
               onChange={(e) => setTimeInterval(e.target.value as TimeInterval)}
@@ -548,7 +604,7 @@ export default function TradeCandlestickChart({
         {error && marketData && !marketData.success && (
           <div className="text-center py-8">
             <p className="text-muted-foreground text-lg">Chart data not available</p>
-            <p className="text-sm text-muted mt-2">Unable to fetch market data for {symbol} on {tradeDate}</p>
+            <p className="text-sm text-muted mt-2">Unable to fetch market data for {symbol} on {chartDate}</p>
             <p className="text-xs text-red-500 mt-1">{error}</p>
             {marketData.error && (
               <p className="text-xs text-orange-500 mt-1">API Error: {marketData.error}</p>
@@ -556,7 +612,7 @@ export default function TradeCandlestickChart({
             <div className="mt-4 text-xs text-muted space-y-1">
               <p>Troubleshooting tips:</p>
               <p>• Check if the symbol '{symbol}' is valid</p>
-              <p>• Ensure the date {tradeDate} is within the last 60 days for intraday data</p>
+              <p>• Ensure the date {chartDate} is within the last 60 days for intraday data</p>
               <p>• Try refreshing the page or clearing the cache</p>
             </div>
           </div>
@@ -572,6 +628,7 @@ export default function TradeCandlestickChart({
         ) : marketData && marketData.ohlc.length > 0 ? (
           <div className="relative">
             <Chart
+              key={`${symbol}-${timeInterval}-${executions.length}-${chartDate}`}
               options={chartOptions}
               series={chartSeries}
               type="candlestick"
@@ -595,7 +652,7 @@ export default function TradeCandlestickChart({
                       }`}
                       onClick={() => handleExecutionClick(execution)}
                     >
-                      {execution.side} {execution.orderQuantity}@${((Number(execution.limitPrice) / 100) || 0).toFixed(2)}
+                      {execution.side} {execution.orderQuantity}@${(Number(execution.limitPrice) || 0).toFixed(2)}
                     </Button>
                   ))}
                 </div>
@@ -605,11 +662,11 @@ export default function TradeCandlestickChart({
         ) : (
           <div className="text-center py-8">
             <p className="text-muted-foreground text-lg">Chart data not available</p>
-            <p className="text-sm text-muted mt-2">Unable to fetch market data for {symbol} on {tradeDate}</p>
+            <p className="text-sm text-muted mt-2">Unable to fetch market data for {symbol} on {chartDate}</p>
             <div className="mt-4 text-xs text-muted space-y-1">
               <p>This could be due to:</p>
               <p>• Market data for {symbol} is not available</p>
-              <p>• Date {tradeDate} is outside the available data range</p>
+              <p>• Date {chartDate} is outside the available data range</p>
               <p>• Symbol '{symbol}' may not be recognized by market data providers</p>
             </div>
             {executions.length > 0 && (

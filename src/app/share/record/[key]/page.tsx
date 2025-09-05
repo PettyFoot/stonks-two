@@ -1,0 +1,284 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Clock, AlertCircle, BarChart3, TrendingUp, TrendingDown } from 'lucide-react';
+import TradeCandlestickChart from '@/components/charts/TradeCandlestickChart';
+import ExecutionsTable from '@/components/ExecutionsTable';
+
+interface SharedTradeData {
+  trade: any;
+  orders: any[];
+  metadata: any;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export default function SharedTradePage() {
+  const params = useParams();
+  const { key } = params;
+  
+  const [data, setData] = useState<SharedTradeData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
+
+  useEffect(() => {
+    const fetchSharedTrade = async () => {
+      try {
+        const response = await fetch(`/api/share/${key}`);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to load shared trade');
+        }
+
+        const result = await response.json();
+        setData(result);
+      } catch (error) {
+        console.error('Failed to fetch shared trade:', error);
+        setError(error instanceof Error ? error.message : 'Failed to load shared trade');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (key) {
+      fetchSharedTrade();
+    }
+  }, [key]);
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getTimeToExpiry = (expiresAt: string) => {
+    const now = new Date();
+    const expiry = new Date(expiresAt);
+    const diffTime = expiry.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays <= 0) return 'Expired';
+    if (diffDays === 1) return '1 day remaining';
+    return `${diffDays} days remaining`;
+  };
+
+  const isRecordsShare = data?.metadata?.isRecordsShare;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="text-lg text-gray-600">Loading shared trade...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6 text-center space-y-4">
+            <AlertCircle className="h-16 w-16 text-red-500 mx-auto" />
+            <div className="space-y-2">
+              <h1 className="text-xl font-semibold text-gray-900">Unable to Load Trade</h1>
+              <p className="text-gray-600">{error}</p>
+            </div>
+            {error.includes('expired') && (
+              <Alert>
+                <Clock className="h-4 w-4" />
+                <AlertDescription>
+                  Shared trade links expire after 14 days for security purposes.
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-xl text-gray-600">Shared trade not found</h1>
+        </div>
+      </div>
+    );
+  }
+
+  const { trade, orders } = data;
+
+  // For records shares, show multiple trades, for single trade shares show single trade
+  const isMultipleTrades = isRecordsShare && trade.trades && trade.trades.length > 0;
+  const tradesToShow = isMultipleTrades ? trade.trades : [trade];
+
+  // Calculate aggregate stats for records shares
+  const totalPnl = isMultipleTrades 
+    ? trade.trades.reduce((sum: number, t: any) => sum + (t.pnl || 0), 0)
+    : trade.pnl || 0;
+
+  const totalTrades = isMultipleTrades ? trade.trades.length : 1;
+  const totalVolume = isMultipleTrades ? trade.quantity : trade.quantity || 0;
+  const totalExecutions = isMultipleTrades 
+    ? trade.trades.reduce((sum: number, t: any) => sum + (t.executions || 0), 0)
+    : trade.executions || orders.length;
+
+  // Group orders by symbol for chart display
+  const ordersBySymbol = orders.reduce((acc: any, order: any) => {
+    const symbol = order.symbol;
+    if (!acc[symbol]) {
+      acc[symbol] = [];
+    }
+    acc[symbol].push(order);
+    return acc;
+  }, {});
+
+  const mostActiveSymbol = Object.keys(ordersBySymbol).length > 0 
+    ? Object.entries(ordersBySymbol).reduce((a: any, b: any) => 
+        ordersBySymbol[a[0]].length > ordersBySymbol[b[0]].length ? a : b
+      )[0] 
+    : null;
+
+  const chartExecutions = mostActiveSymbol ? ordersBySymbol[mostActiveSymbol] : [];
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-4 py-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <BarChart3 className="h-6 w-6 text-blue-600" />
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900">
+                {isRecordsShare ? `Trading Record - ${formatDate(trade.date)}` : `Trade: ${trade.symbol}`}
+              </h1>
+              <p className="text-sm text-gray-500">Shared via Trade Voyager Analytics</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <Clock className="h-4 w-4" />
+            {getTimeToExpiry(data.expiresAt)}
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="max-w-6xl mx-auto p-4 space-y-6">
+        
+        {/* Summary Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4 text-center">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                {totalPnl >= 0 ? (
+                  <TrendingUp className="h-4 w-4 text-green-600" />
+                ) : (
+                  <TrendingDown className="h-4 w-4 text-red-600" />
+                )}
+                <div className={`text-lg font-semibold ${
+                  totalPnl >= 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  ${totalPnl.toFixed(2)}
+                </div>
+              </div>
+              <div className="text-xs text-gray-500">P&L</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4 text-center">
+              <div className="text-lg font-semibold text-gray-900">{totalTrades}</div>
+              <div className="text-xs text-gray-500">Trade{totalTrades !== 1 ? 's' : ''}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4 text-center">
+              <div className="text-lg font-semibold text-gray-900">{totalVolume.toLocaleString()}</div>
+              <div className="text-xs text-gray-500">Volume</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4 text-center">
+              <div className="text-lg font-semibold text-gray-900">{totalExecutions}</div>
+              <div className="text-xs text-gray-500">Execution{totalExecutions !== 1 ? 's' : ''}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Chart Section */}
+        {mostActiveSymbol && chartExecutions.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">
+                Price Chart - {mostActiveSymbol}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TradeCandlestickChart
+                symbol={mostActiveSymbol}
+                executions={chartExecutions.map((order: any) => ({
+                  ...order,
+                  userId: 'shared',
+                  orderQuantity: order.orderQuantity || 0,
+                  limitPrice: order.limitPrice || null,
+                  stopPrice: order.stopPrice || null
+                }))}
+                tradeDate={isRecordsShare ? trade.date : formatDate(trade.date)}
+                height={400}
+                onExecutionSelect={() => {}} // No interaction in shared view
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Executions Table */}
+        <ExecutionsTable 
+          executions={orders.map((order: any) => ({
+            ...order,
+            id: order.id || `order-${order.orderId}`,
+            userId: order.userId || 'shared'
+          }))}
+          loading={false}
+          error={null}
+          showActions={false}
+          onExecutionSelect={(execution) => {
+            console.log('Selected execution from shared view:', execution);
+          }}
+        />
+
+        {/* Footer */}
+        <div className="text-center py-6 border-t border-gray-200">
+          <div className="text-sm text-gray-500">
+            Powered by <span className="font-medium text-blue-600">Trade Voyager Analytics</span>
+          </div>
+          <div className="text-xs text-gray-400 mt-1">
+            Shared on {formatDate(data.createdAt)} • Expires {formatDate(data.expiresAt)}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

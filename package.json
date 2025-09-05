@@ -21,7 +21,8 @@
     "db:backup-info": "tsx scripts/backup-users.ts info",
     "db:clean-backups": "tsx scripts/backup-users.ts clean",
     "fix-trade-orders": "tsx scripts/fix-trade-order-data.ts",
-    "process-deletions": "tsx scripts/processAccountDeletions.ts"
+    "process-deletions": "tsx scripts/processAccountDeletions.ts",
+    "cleanup-shares": "tsx scripts/cleanupExpiredShares.ts"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^3.8.0",

@@ -33,13 +33,13 @@ interface ExecutionsTableProps {
   showActions?: boolean;
 }
 
-type SortField = 'id' | 'orderId' | 'symbol' | 'orderType' | 'side' | 'timeInForce' | 'orderQuantity' | 'limitPrice' | 'stopPrice' | 'orderStatus' | 'orderPlacedTime' | 'orderExecutedTime' | 'orderCancelledTime' | 'orderRoute' | 'brokerType' | 'tradeId';
+type SortField = 'id' | 'orderId' | 'symbol' | 'orderType' | 'side' | 'timeInForce' | 'orderQuantity' | 'limitPrice' | 'costBasis' | 'stopPrice' | 'orderStatus' | 'orderPlacedTime' | 'orderExecutedTime' | 'orderCancelledTime' | 'orderRoute' | 'brokerType' | 'tradeId';
 type SortDirection = 'asc' | 'desc';
 
 // Define priority columns for different screen sizes
 const PRIORITY_COLUMNS = {
   mobile: ['symbol', 'side', 'orderQuantity', 'orderStatus'],
-  tablet: ['orderExecutedTime', 'symbol', 'side', 'orderQuantity', 'orderStatus', 'limitPrice'],
+  tablet: ['orderExecutedTime', 'symbol', 'side', 'orderQuantity', 'orderStatus', 'limitPrice', 'costBasis'],
   desktop: 'all'
 };
 
@@ -54,6 +54,7 @@ const DEFAULT_COLUMNS = [
   { id: 'timeInForce', label: 'Time In Force', visible: true, sortable: true, minWidth: '100px', width: '100px' },
   { id: 'orderQuantity', label: 'Order Quantity', visible: true, sortable: true, minWidth: '120px', width: '120px' },
   { id: 'limitPrice', label: 'Limit Price', visible: true, sortable: true, minWidth: '100px', width: '100px' },
+  { id: 'costBasis', label: 'Cost Basis', visible: true, sortable: true, minWidth: '120px', width: '120px' },
   { id: 'stopPrice', label: 'Stop Price', visible: true, sortable: true, minWidth: '100px', width: '100px' },
   { id: 'orderStatus', label: 'Order Status', visible: true, sortable: true, minWidth: '110px', width: '110px' },
   { id: 'orderPlacedTime', label: 'Order Placed Time', visible: true, sortable: true, minWidth: '160px', width: '160px' },
@@ -104,27 +105,80 @@ export default function ExecutionsTable({
     const savedVisibleColumns = localStorage.getItem('executions-table-visible-columns');
     const savedColumnWidths = localStorage.getItem('executions-table-column-widths');
     
+    // Helper function to merge new columns into existing saved data
+    const mergeNewColumns = (savedOrder: string[], savedVisible: Record<string, boolean>, savedWidths: Record<string, number>) => {
+      const defaultOrder = DEFAULT_COLUMNS.map(col => col.id);
+      const defaultVisible = DEFAULT_COLUMNS.reduce((acc, col) => ({ ...acc, [col.id]: col.visible }), {});
+      const defaultWidths = DEFAULT_COLUMNS.reduce((acc, col) => ({ ...acc, [col.id]: parseInt(col.width.replace('px', '')) }), {});
+      
+      // Find columns that exist in defaults but not in saved data
+      const newColumns = defaultOrder.filter(colId => !savedOrder.includes(colId));
+      
+      // Merge new columns into the order, maintaining their relative positions from DEFAULT_COLUMNS
+      const mergedOrder = [...savedOrder];
+      newColumns.forEach(newColId => {
+        const defaultIndex = defaultOrder.indexOf(newColId);
+        // Find the best insertion position by looking for the next existing column
+        let insertIndex = mergedOrder.length; // default to end
+        
+        for (let i = defaultIndex + 1; i < defaultOrder.length; i++) {
+          const nextColId = defaultOrder[i];
+          const existingIndex = mergedOrder.indexOf(nextColId);
+          if (existingIndex !== -1) {
+            insertIndex = existingIndex;
+            break;
+          }
+        }
+        
+        mergedOrder.splice(insertIndex, 0, newColId);
+      });
+      
+      // Merge visibility and widths for new columns
+      const mergedVisible = { ...savedVisible };
+      const mergedWidths = { ...savedWidths };
+      
+      newColumns.forEach(colId => {
+        mergedVisible[colId] = defaultVisible[colId];
+        mergedWidths[colId] = defaultWidths[colId];
+      });
+      
+      return { order: mergedOrder, visible: mergedVisible, widths: mergedWidths };
+    };
+    
     if (savedColumnOrder) {
       try {
-        setColumnOrder(JSON.parse(savedColumnOrder));
+        const parsedOrder = JSON.parse(savedColumnOrder);
+        const parsedVisible = savedVisibleColumns ? JSON.parse(savedVisibleColumns) : {};
+        const parsedWidths = savedColumnWidths ? JSON.parse(savedColumnWidths) : {};
+        
+        const merged = mergeNewColumns(parsedOrder, parsedVisible, parsedWidths);
+        
+        setColumnOrder(merged.order);
+        setVisibleColumns(merged.visible);
+        setColumnWidths(merged.widths);
       } catch {
-        console.warn('Failed to parse saved column order');
+        console.warn('Failed to parse saved column preferences');
       }
-    }
-    
-    if (savedVisibleColumns) {
-      try {
-        setVisibleColumns(JSON.parse(savedVisibleColumns));
-      } catch {
-        console.warn('Failed to parse saved visible columns');
+    } else {
+      // No saved preferences, load defaults
+      if (savedVisibleColumns) {
+        try {
+          const parsedVisible = JSON.parse(savedVisibleColumns);
+          const defaultVisible = DEFAULT_COLUMNS.reduce((acc, col) => ({ ...acc, [col.id]: col.visible }), {});
+          setVisibleColumns({ ...defaultVisible, ...parsedVisible });
+        } catch {
+          console.warn('Failed to parse saved visible columns');
+        }
       }
-    }
-    
-    if (savedColumnWidths) {
-      try {
-        setColumnWidths(JSON.parse(savedColumnWidths));
-      } catch {
-        console.warn('Failed to parse saved column widths');
+      
+      if (savedColumnWidths) {
+        try {
+          const parsedWidths = JSON.parse(savedColumnWidths);
+          const defaultWidths = DEFAULT_COLUMNS.reduce((acc, col) => ({ ...acc, [col.id]: parseInt(col.width.replace('px', '')) }), {});
+          setColumnWidths({ ...defaultWidths, ...parsedWidths });
+        } catch {
+          console.warn('Failed to parse saved column widths');
+        }
       }
     }
     
@@ -215,6 +269,10 @@ export default function ExecutionsTable({
         case 'limitPrice':
           aValue = Number(a.limitPrice) || 0;
           bValue = Number(b.limitPrice) || 0;
+          break;
+        case 'costBasis':
+          aValue = (a.orderQuantity || 0) * (Number(a.limitPrice) || 0);
+          bValue = (b.orderQuantity || 0) * (Number(b.limitPrice) || 0);
           break;
         case 'stopPrice':
           aValue = Number(a.stopPrice) || 0;
@@ -476,6 +534,13 @@ export default function ExecutionsTable({
             {formatPrice(execution.limitPrice)}
           </TableCell>
         );
+      case 'costBasis':
+        const costBasis = (execution.orderQuantity || 0) * (Number(execution.limitPrice) || 0);
+        return (
+          <TableCell className={cn("text-sm text-theme-primary-text whitespace-nowrap font-medium", cellClassName)} style={cellStyle}>
+            {costBasis > 0 ? formatPrice(costBasis) : '-'}
+          </TableCell>
+        );
       case 'stopPrice':
         return (
           <TableCell className={cn("text-sm text-theme-primary-text whitespace-nowrap", cellClassName)} style={cellStyle}>
@@ -613,6 +678,11 @@ export default function ExecutionsTable({
                       </span>
                     ) : col.id === 'orderQuantity' ? (
                       execution.orderQuantity.toLocaleString()
+                    ) : col.id === 'costBasis' ? (
+                      (() => {
+                        const costBasis = (execution.orderQuantity || 0) * (Number(execution.limitPrice) || 0);
+                        return costBasis > 0 ? formatPrice(costBasis) : '-';
+                      })()
                     ) : col.id === 'limitPrice' || col.id === 'stopPrice' ? (
                       formatPrice((execution as ExecutionOrder & Record<string, unknown>)[col.id])
                     ) : col.id === 'orderPlacedTime' || col.id === 'orderExecutedTime' || col.id === 'orderCancelledTime' ? (
@@ -651,8 +721,9 @@ export default function ExecutionsTable({
     return executions.reduce((acc, execution) => ({
       executions: acc.executions + 1,
       volume: acc.volume + execution.orderQuantity,
-      pnl: acc.pnl + (execution.pnl || 0)
-    }), { executions: 0, volume: 0, pnl: 0 });
+      pnl: acc.pnl + (execution.pnl || 0),
+      costBasis: acc.costBasis + ((execution.orderQuantity || 0) * (Number(execution.limitPrice) || 0))
+    }), { executions: 0, volume: 0, pnl: 0, costBasis: 0 });
   }, [executions]);
 
   // Loading state
@@ -955,6 +1026,12 @@ export default function ExecutionsTable({
                       return (
                         <TableCell key={column.id} className="text-sm font-semibold text-theme-primary-text">
                           {totals.volume.toLocaleString()}
+                        </TableCell>
+                      );
+                    case 'costBasis':
+                      return (
+                        <TableCell key={column.id} className="text-sm font-semibold text-theme-primary-text">
+                          {totals.costBasis > 0 ? formatPrice(totals.costBasis) : '-'}
                         </TableCell>
                       );
                     case 'orderStatus':

@@ -17,6 +17,7 @@ import { useTradesData } from '@/hooks/useTradesData';
 import { useAuth } from '@/contexts/AuthContext';
 import TradeCandlestickChart from '@/components/charts/TradeCandlestickChart';
 import AdSense from '@/components/AdSense';
+import ShareButton from '@/components/ShareButton';
 
 function RecordsContent() {
   const searchParams = useSearchParams();
@@ -269,6 +270,14 @@ function RecordsContent() {
               </div>
             </div>
 
+            <div className="flex items-center gap-2">
+              <ShareButton 
+                date={selectedDate || undefined}
+                tradeId={selectedTradeId || undefined}
+                variant="button"
+                className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+              />
+            </div>
           </div>
         </div>
 
