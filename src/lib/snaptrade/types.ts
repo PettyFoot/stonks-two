@@ -34,6 +34,7 @@ export interface SyncResult {
 export interface CreateConnectionRequest {
   userId: string;
   redirectUri: string;
+  broker?: string;
 }
 
 export interface CreateConnectionResponse {

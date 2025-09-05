@@ -138,8 +138,105 @@ export default function ConnectBrokerModal({
 
       setConnectionState(ConnectionState.REDIRECTING);
 
-      // Redirect to SnapTrade authorization
-      window.location.href = data.redirectUri;
+      // Open SnapTrade authorization in a popup instead of redirect
+      const popup = window.open(
+        data.redirectUri,
+        'snapTradeAuth',
+        'width=600,height=700,scrollbars=yes,resizable=yes'
+      );
+
+      if (!popup) {
+        throw new Error('Popup blocked. Please allow popups and try again.');
+      }
+
+      // Listen for messages from the popup
+      const handleMessage = async (event: MessageEvent) => {
+        // Only accept messages from SnapTrade domain
+        if (!event.origin.includes('snaptrade.com') && !event.origin.includes('localhost')) {
+          return;
+        }
+
+        console.log('Received message from popup:', event.data);
+
+        switch (event.data.type) {
+          case 'SUCCESS':
+            setConnectionState(ConnectionState.COMPLETING);
+            
+            try {
+              // Complete the connection using the authorization data
+              const completeResponse = await fetch('/api/snaptrade/redirect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  brokerAuthorizationCode: event.data.authorizationId || 'success',
+                  snapTradeUserId: data.snapTradeUserId,
+                  snapTradeUserSecret: data.snapTradeUserSecret,
+                }),
+              });
+
+              const completeData = await completeResponse.json();
+
+              if (completeResponse.ok && completeData.success) {
+                setConnectionState(ConnectionState.SUCCESS);
+                toast.success(`Successfully connected to ${broker.name}!`);
+                
+                // Close popup and modal after a delay
+                popup.close();
+                setTimeout(() => {
+                  onConnectionComplete();
+                  handleClose();
+                }, 2000);
+              } else {
+                throw new Error(completeData.error || 'Failed to complete connection');
+              }
+            } catch (completeError) {
+              console.error('Error completing connection:', completeError);
+              setError(completeError instanceof Error ? completeError.message : 'Failed to complete connection');
+              setConnectionState(ConnectionState.ERROR);
+            }
+            break;
+
+          case 'ERROR':
+            console.error('SnapTrade connection error:', event.data);
+            setError(event.data.error || 'Connection failed');
+            setConnectionState(ConnectionState.ERROR);
+            popup.close();
+            break;
+
+          case 'CLOSED':
+            console.log('SnapTrade connection closed by user');
+            setConnectionState(ConnectionState.SELECTING);
+            popup.close();
+            break;
+
+          case 'CLOSE_MODAL':
+            console.log('User requested to close modal');
+            popup.close();
+            setConnectionState(ConnectionState.SELECTING);
+            break;
+        }
+      };
+
+      // Add message listener
+      window.addEventListener('message', handleMessage);
+
+      // Check if popup is closed manually
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          window.removeEventListener('message', handleMessage);
+          
+          if (connectionState === ConnectionState.REDIRECTING) {
+            setConnectionState(ConnectionState.SELECTING);
+          }
+        }
+      }, 1000);
+
+      // Cleanup function
+      setTimeout(() => {
+        window.removeEventListener('message', handleMessage);
+        clearInterval(checkClosed);
+      }, 5 * 60 * 1000); // 5 minutes timeout
 
     } catch (error) {
       console.error('Error connecting to broker:', error);
@@ -250,11 +347,41 @@ export default function ConnectBrokerModal({
               <ExternalLink className="h-8 w-8 text-theme-tertiary" />
             </div>
             <h3 className="text-lg font-semibold text-theme-primary-text">
-              Redirecting to {selectedBroker?.name}
+              Opening {selectedBroker?.name} Connection
             </h3>
             <p className="text-sm text-theme-secondary-text">
-              You'll be redirected to {selectedBroker?.name} to authorize the connection. 
-              After authorization, you'll be brought back here.
+              A popup window will open for you to authorize the connection with {selectedBroker?.name}. 
+              Please complete the authorization process in the popup window.
+            </p>
+            <p className="text-xs text-theme-secondary-text">
+              If the popup doesn't open, please check your popup blocker settings.
+            </p>
+          </div>
+        );
+
+      case ConnectionState.COMPLETING:
+        return (
+          <div className="text-center space-y-4">
+            <Loader2 className="h-12 w-12 text-theme-tertiary mx-auto animate-spin" />
+            <h3 className="text-lg font-semibold text-theme-primary-text">
+              Completing Connection
+            </h3>
+            <p className="text-sm text-theme-secondary-text">
+              Setting up your connection with {selectedBroker?.name}...
+            </p>
+          </div>
+        );
+
+      case ConnectionState.SUCCESS:
+        return (
+          <div className="text-center space-y-4">
+            <CheckCircle className="h-12 w-12 text-theme-green mx-auto" />
+            <h3 className="text-lg font-semibold text-theme-green">
+              Connection Successful!
+            </h3>
+            <p className="text-sm text-theme-secondary-text">
+              Your {selectedBroker?.name} account has been successfully connected. 
+              Your trades will now be automatically synced.
             </p>
           </div>
         );

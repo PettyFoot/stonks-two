@@ -46,10 +46,37 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error initiating SnapTrade auth:', error);
     
+    // Log additional error details for debugging
+    if (error && typeof error === 'object') {
+      console.error('Error details:', {
+        message: (error as any).message,
+        response: (error as any).response?.data,
+        status: (error as any).response?.status,
+        stack: (error as any).stack
+      });
+    }
+    
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Invalid request data', details: error.issues },
         { status: 400 }
+      );
+    }
+    
+    // Handle specific SnapTrade API errors
+    if (error && typeof error === 'object' && (error as any).response) {
+      const apiError = (error as any).response;
+      const status = apiError.status || 500;
+      const errorMessage = apiError.data?.detail || apiError.data?.message || 'SnapTrade API error';
+      
+      console.error(`SnapTrade API error ${status}:`, errorMessage);
+      
+      return NextResponse.json(
+        { 
+          error: `SnapTrade API error: ${errorMessage}`,
+          status: status
+        },
+        { status: status >= 400 && status < 600 ? status : 500 }
       );
     }
     

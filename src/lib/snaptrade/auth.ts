@@ -10,20 +10,60 @@ import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 
 // Encryption helpers for storing SnapTrade user secrets
-const ENCRYPTION_KEY = process.env.SNAPTRADE_ENCRYPTION_KEY || 'default-key-change-in-production';
+const ENCRYPTION_KEY = process.env.SNAPTRADE_ENCRYPTION_KEY || 'default-key-change-in-production-32b';
+const ALGORITHM = 'aes-256-cbc';
+const IV_LENGTH = 16; // For AES, this is always 16
 
 function encrypt(text: string): string {
-  const cipher = crypto.createCipher('aes-256-cbc', ENCRYPTION_KEY);
+  // Create a random initialization vector
+  const iv = crypto.randomBytes(IV_LENGTH);
+  
+  // Create a key from the provided key (ensure it's 32 bytes for AES-256)
+  const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
+  
+  // Create cipher
+  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+  
   let encrypted = cipher.update(text, 'utf8', 'hex');
   encrypted += cipher.final('hex');
-  return encrypted;
+  
+  // Prepend IV to the encrypted data
+  return iv.toString('hex') + ':' + encrypted;
 }
 
 function decrypt(text: string): string {
-  const decipher = crypto.createDecipher('aes-256-cbc', ENCRYPTION_KEY);
-  let decrypted = decipher.update(text, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-  return decrypted;
+  try {
+    // Split IV and encrypted data
+    const parts = text.split(':');
+    if (parts.length !== 2) {
+      throw new Error('Invalid encrypted data format');
+    }
+    
+    const iv = Buffer.from(parts[0], 'hex');
+    const encryptedData = parts[1];
+    
+    // Create a key from the provided key
+    const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
+    
+    // Create decipher
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+    
+    let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    
+    return decrypted;
+  } catch (error) {
+    // Fallback to old decryption method for backwards compatibility
+    console.warn('Falling back to legacy decryption method');
+    try {
+      const decipher = crypto.createDecipher('aes-256-cbc', ENCRYPTION_KEY);
+      let decrypted = decipher.update(text, 'hex', 'utf8');
+      decrypted += decipher.final('utf8');
+      return decrypted;
+    } catch (legacyError) {
+      throw new Error('Failed to decrypt data with both new and legacy methods');
+    }
+  }
 }
 
 /**
@@ -51,7 +91,13 @@ export async function createBrokerConnection(
       throw new Error('Failed to get user secret from SnapTrade registration');
     }
 
-    // Get authorization URL from SnapTrade (simplified call first to get redirect)
+    // Get authorization URL from SnapTrade for the connection portal
+    console.log('Calling SnapTrade loginSnapTradeUser with:', {
+      userId: snapTradeUserId,
+      userSecret: snapTradeUserSecret ? '[REDACTED]' : 'undefined',
+      redirectUri: request.redirectUri
+    });
+
     const authResponse = await client.authentication.loginSnapTradeUser({
       userId: snapTradeUserId,
       userSecret: snapTradeUserSecret,
@@ -59,12 +105,14 @@ export async function createBrokerConnection(
 
     // Extract redirect URI from response
     const loginResponse = authResponse.data as any;
-    const redirectUri = loginResponse.redirectURI || loginResponse.redirectUri || loginResponse.redirectURL;
+    const redirectUri = loginResponse.redirectURI || loginResponse.redirectUri || loginResponse.redirectURL || loginResponse.authenticationLoginURL;
     
     console.log('SnapTrade login response:', loginResponse);
+    console.log('Available response keys:', Object.keys(loginResponse));
 
     if (!redirectUri) {
-      throw new Error('Failed to get redirect URI from SnapTrade');
+      console.error('No redirect URI found in response. Full response:', JSON.stringify(loginResponse, null, 2));
+      throw new Error('Failed to get redirect URI from SnapTrade. Check API credentials and configuration.');
     }
 
     return {
@@ -177,15 +225,38 @@ export function validateWebhookSignature(
   signature: string,
   secret: string
 ): boolean {
-  const expectedSignature = crypto
-    .createHmac('sha256', secret)
-    .update(payload)
-    .digest('hex');
-  
-  return crypto.timingSafeEqual(
-    Buffer.from(signature, 'hex'),
-    Buffer.from(expectedSignature, 'hex')
-  );
+  try {
+    // SnapTrade typically sends signatures with a prefix (e.g., "sha256=")
+    let cleanSignature = signature;
+    if (signature.startsWith('sha256=')) {
+      cleanSignature = signature.substring(7);
+    }
+
+    // Create HMAC signature
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(payload, 'utf8')
+      .digest('hex');
+    
+    console.log('Webhook signature validation:', {
+      receivedSignature: cleanSignature,
+      expectedSignature: expectedSignature,
+      payloadLength: payload.length
+    });
+
+    // Use timing-safe comparison
+    if (cleanSignature.length !== expectedSignature.length) {
+      return false;
+    }
+
+    return crypto.timingSafeEqual(
+      Buffer.from(cleanSignature, 'hex'),
+      Buffer.from(expectedSignature, 'hex')
+    );
+  } catch (error) {
+    console.error('Error validating webhook signature:', error);
+    return false;
+  }
 }
 
 /**
