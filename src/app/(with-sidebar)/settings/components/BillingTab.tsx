@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { PaymentHistory } from '@/components/subscription';
 import { useSubscription } from '@/hooks/useSubscription';
 import { SubscriptionTier } from '@prisma/client';
@@ -16,38 +15,8 @@ import {
   Loader2
 } from 'lucide-react';
 
-// Mock payment method data - replace with actual data
-const paymentMethods = [
-  {
-    id: 'pm_1',
-    type: 'card',
-    brand: 'visa',
-    last4: '4242',
-    expMonth: 12,
-    expYear: 2025,
-    isDefault: true
-  }
-];
-
-// Mock billing information
-const billingInfo = {
-  nextBillingDate: '2024-01-15',
-  amount: 29.99,
-  currency: 'USD',
-  billingCycle: 'monthly',
-  tax: 2.40,
-  total: 32.39
-};
-
 export default function BillingTab() {
   const { subscription, isLoading, createCheckoutSession, createBillingPortalSession } = useSubscription();
-  const [isAddingCard, setIsAddingCard] = useState(false);
-
-  const handleAddPaymentMethod = () => {
-    setIsAddingCard(true);
-    // TODO: Integrate with Stripe or payment processor
-    console.log('Adding payment method...');
-  };
 
   const handleUpgradeClick = async () => {
     const result = await createCheckoutSession();
@@ -63,15 +32,6 @@ export default function BillingTab() {
     }
   };
 
-  const handleRemovePaymentMethod = (id: string) => {
-    // TODO: Implement payment method removal
-    console.log('Removing payment method:', id);
-  };
-
-  const handleDownloadInvoice = (invoiceId: string) => {
-    // TODO: Implement invoice download
-    console.log('Downloading invoice:', invoiceId);
-  };
 
   if (isLoading) {
     return (
@@ -127,9 +87,11 @@ export default function BillingTab() {
                   </p>
                 )}
               </div>
-              <Badge variant={isPremium ? "default" : "secondary"}>
+              <span className={`px-2 py-1 rounded text-xs font-medium ${
+                isPremium ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
+              }`}>
                 {subscription?.statusText || 'Free'}
-              </Badge>
+              </span>
             </div>
             
             {isFree && (

@@ -2,8 +2,6 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   SubscriptionManagement,
   PricingCards,
@@ -15,40 +13,14 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { SubscriptionTier } from '@prisma/client';
 import {
   Crown,
-  Zap,
   TrendingUp,
-  BarChart3,
   Settings as SettingsIcon,
-  CheckCircle,
-  XCircle,
-  ArrowRight,
   Loader2
 } from 'lucide-react';
 
 
-const planFeatures = {
-  free: [
-    { name: 'Up to 50 trades per month', included: true },
-    { name: 'Basic reports', included: true },
-    { name: 'Standard dashboard', included: true },
-    { name: 'CSV export', included: false },
-    { name: 'Advanced analytics', included: false },
-    { name: 'Priority support', included: false },
-    { name: 'Custom reports', included: false }
-  ],
-  pro: [
-    { name: 'Unlimited trades', included: true },
-    { name: 'Advanced reports', included: true },
-    { name: 'Premium dashboard', included: true },
-    { name: 'CSV & PDF export', included: true },
-    { name: 'Advanced analytics', included: true },
-    { name: 'Priority support', included: true },
-    { name: 'Custom reports', included: true }
-  ]
-};
-
 function SubscriptionTabInternal() {
-  const { subscription, isLoading, hasPremiumAccess, createCheckoutSession } = useSubscription();
+  const { subscription, isLoading } = useSubscription();
 
   if (isLoading) {
     return (
@@ -64,7 +36,6 @@ function SubscriptionTabInternal() {
   const currentTier = subscription?.tier || SubscriptionTier.FREE;
   const isFree = currentTier === SubscriptionTier.FREE;
   const isPremium = currentTier === SubscriptionTier.PREMIUM;
-  const tierKey = isFree ? 'free' : 'pro';
 
   return (
     <div className="space-y-6">

@@ -53,7 +53,7 @@ export default function AboutUs() {
                 </p>
                 <p className="text-gray-700 leading-relaxed">
                   We believe that every trader deserves access to comprehensive performance analytics, secure data management, 
-                  and actionable insights that can help improve their trading outcomes. Whether you're a day trader, swing trader, 
+                  and actionable insights that can help improve their trading outcomes. Whether you&apos;re a day trader, swing trader, 
                   or long-term investor, our platform provides the trader tools you need to succeed.
                 </p>
               </div>
@@ -179,7 +179,7 @@ export default function AboutUs() {
             <Shield className="h-16 w-16 text-[var(--theme-tertiary)] mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-[var(--theme-primary-text)] mb-4">Security & Reliability</h2>
             <p className="text-gray-700 leading-relaxed max-w-3xl mx-auto mb-6">
-              We understand that your trading data is highly sensitive. That's why we've implemented bank-level 
+              We understand that your trading data is highly sensitive. That&apos;s why we&apos;ve implemented bank-level 
               security measures including end-to-end encryption, secure hosting, regular security audits, 
               and complete user data isolation. Your trading strategies and performance data remain confidential and secure.
             </p>
