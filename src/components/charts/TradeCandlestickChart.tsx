@@ -24,6 +24,7 @@ interface TradeCandlestickChartProps {
   tradeTime?: string;
   height?: number;
   onExecutionSelect?: (execution: ExecutionOrder) => void;
+  onMarketDataUpdate?: (marketData: MarketDataResponse) => void;
 }
 
 type TimeInterval = '1m' | '5m' | '15m' | '1h' | '1d';
@@ -34,7 +35,8 @@ export default function TradeCandlestickChart({
   tradeDate,
   tradeTime,
   height = 400,
-  onExecutionSelect
+  onExecutionSelect,
+  onMarketDataUpdate
 }: TradeCandlestickChartProps) {
   const [marketData, setMarketData] = useState<MarketDataResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -154,12 +156,24 @@ export default function TradeCandlestickChart({
               } else {
                 setMarketData(cached);
                 setDataSource(`${cached.source} (cached)`);
+                
+                // Notify parent component of cached market data
+                if (onMarketDataUpdate) {
+                  onMarketDataUpdate(cached);
+                }
+                
                 setIsLoading(false);
                 return;
               }
             } else {
               setMarketData(cached);
               setDataSource(`${cached.source} (cached)`);
+              
+              // Notify parent component of cached market data
+              if (onMarketDataUpdate) {
+                onMarketDataUpdate(cached);
+              }
+              
               setIsLoading(false);
               return;
             }
@@ -220,6 +234,11 @@ export default function TradeCandlestickChart({
           
           setMarketData(data);
           setDataSource(data.cached ? `${data.source} (cached)` : data.source);
+          
+          // Notify parent component of market data update
+          if (onMarketDataUpdate) {
+            onMarketDataUpdate(data);
+          }
           
           // Cache the response client-side
           if (!data.cached) {

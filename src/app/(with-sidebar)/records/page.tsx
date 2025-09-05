@@ -18,6 +18,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import TradeCandlestickChart from '@/components/charts/TradeCandlestickChart';
 import AdSense from '@/components/AdSense';
 import ShareButton from '@/components/ShareButton';
+import { calculateTradeMetrics } from '@/lib/tradeMetrics';
+import { MarketDataResponse } from '@/lib/marketData/types';
 
 function RecordsContent() {
   const searchParams = useSearchParams();
@@ -31,6 +33,9 @@ function RecordsContent() {
   
   // Get trades data for the default view when no specific trade is selected
   const { data: tradesData, loading: tradesLoading } = useTradesData();
+
+  // State for market data from the chart component
+  const [chartMarketData, setChartMarketData] = useState<MarketDataResponse | null>(null);
   
   // Calculate execution metrics from real data
   const executionMetrics = {
@@ -184,6 +189,27 @@ function RecordsContent() {
     return { mostActiveSymbol, chartExecutions, executionsBySymbol };
   }, [recordsData?.executions]);
 
+  // Calculate MFE/MAE metrics using chart data
+  const tradeMetrics = useMemo(() => {
+    if (!mostActiveSymbol || !chartExecutions.length || !chartMarketData?.ohlc?.length) {
+      return null;
+    }
+
+    try {
+      const metrics = calculateTradeMetrics({
+        symbol: mostActiveSymbol,
+        executions: chartExecutions,
+        ohlcData: chartMarketData.ohlc
+      });
+
+      console.log('📊 Trade metrics calculated:', metrics);
+      return metrics;
+    } catch (error) {
+      console.error('Error calculating trade metrics:', error);
+      return null;
+    }
+  }, [mostActiveSymbol, chartExecutions, chartMarketData]);
+
   // Show loading state
   if (loading) {
     return (
@@ -296,6 +322,9 @@ function RecordsContent() {
                     console.log('Selected execution from chart:', execution);
                     // TODO: Highlight the execution in the table
                   }}
+                  onMarketDataUpdate={(marketData) => {
+                    setChartMarketData(marketData);
+                  }}
                 />
               ) : (
                 <Card className="bg-surface border-default">
@@ -324,6 +353,7 @@ function RecordsContent() {
                     totalExecutions={executionMetrics.totalExecutions}
                     winRate={recordsData.winRate}
                     totalVolume={executionMetrics.totalVolume}
+                    mfeRatio={tradeMetrics?.mfeRatio}
                     commissions={recordsData.commissions}
                     netPnl={recordsData.netPnl || recordsData.pnl}
                     className="flex-1"
