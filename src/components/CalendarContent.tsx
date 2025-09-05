@@ -336,9 +336,11 @@ export default function CalendarContent() {
             {/* Calendar Header */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-4">
-                <h1 className="text-2xl font-bold text-theme-primary-text">
-                  {format(currentDate, 'MMMM yyyy')}
-                </h1>
+                <div className="min-w-[200px]">
+                  <h1 className="text-2xl font-bold text-theme-primary-text">
+                    {format(currentDate, 'MMMM yyyy')}
+                  </h1>
+                </div>
                 <div className="flex items-center space-x-2">
                   <Button 
                     variant="outline" 

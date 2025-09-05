@@ -415,7 +415,7 @@ export default function CalendarSummaryChartsRecharts({ isDemo = false }: Calend
             showZeroLine={true}
           />
           <DualAxisChart
-            title="TRADE DISTRIBUTION BY DAY"
+            title="TRADE DISTRIBUTION BY DAY OF MONTH"
             data={dayData}
             xKey="day"
             xLabel="Day of Month"

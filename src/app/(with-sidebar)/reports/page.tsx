@@ -10,6 +10,7 @@ import EquityChart from '@/components/charts/EquityChart';
 import TradeDistributionChart from '@/components/charts/TradeDistributionChart';
 import { useReportsData } from '@/hooks/useReportsData';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
+import { useIsMobile } from '@/hooks/useMediaQuery';
 
 // New enhanced components
 import StatsSection from '@/components/reports/StatsSection';
@@ -35,6 +36,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 export default function Reports() {
   const [pnlType, setPnlType] = useState('Gross');
   const { filters } = useGlobalFilters();
+  const isMobile = useIsMobile();
 
   // Calculate effective date range for display
   const getEffectiveDateRange = useCallback(() => {
@@ -138,8 +140,20 @@ export default function Reports() {
   // Calculate dynamic scale for Trade Expectation chart
   const expectationScale = useMemo(() => {
     const expectation = tradeExpectation.expectation;
+    
+    // Use fewer ticks on mobile to prevent overflow
+    const tickCount = isMobile ? 5 : 9;
+    
     if (expectation === 0) {
-      return { min: -5, max: 5, range: 10, ticks: [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5] };
+      const defaultRange = 10;
+      const min = -5;
+      const max = 5;
+      const tickInterval = defaultRange / (tickCount - 1);
+      const ticks = [];
+      for (let i = 0; i < tickCount; i++) {
+        ticks.push(min + (i * tickInterval));
+      }
+      return { min, max, range: defaultRange, ticks };
     }
     
     // Calculate dynamic range with padding
@@ -154,7 +168,6 @@ export default function Reports() {
     const range = max - min;
     
     // Generate tick marks
-    const tickCount = 9;
     const tickInterval = range / (tickCount - 1);
     const ticks = [];
     for (let i = 0; i < tickCount; i++) {
@@ -162,7 +175,7 @@ export default function Reports() {
     }
     
     return { min, max, range, ticks };
-  }, [tradeExpectation.expectation]);
+  }, [tradeExpectation.expectation, isMobile]);
 
   return (
     <div className="flex flex-col h-full">
@@ -486,12 +499,12 @@ export default function Reports() {
                         {/* Bar container */}
                         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
                           <span style={{ 
-                            marginRight: '15px', 
-                            fontSize: '12px', 
+                            marginRight: isMobile ? '10px' : '15px', 
+                            fontSize: isMobile ? '11px' : '12px', 
                             color: 'var(--theme-primary-text)',
-                            minWidth: '70px'
+                            minWidth: isMobile ? '60px' : '70px'
                           }}>
-                            Expectation
+                            {isMobile ? 'Expect' : 'Expectation'}
                           </span>
                           <div style={{ 
                             flex: 1,
@@ -562,13 +575,22 @@ export default function Reports() {
                         <div style={{
                           display: 'flex',
                           justifyContent: 'space-between',
-                          marginLeft: '85px',
-                          fontSize: '11px',
-                          color: 'var(--theme-primary-text)'
+                          marginLeft: isMobile ? '70px' : '85px',
+                          fontSize: isMobile ? '10px' : '11px',
+                          color: 'var(--theme-primary-text)',
+                          overflow: 'hidden'
                         }}>
                           {expectationScale.ticks.map((tick, index) => (
-                            <span key={index}>
-                              {tick >= 0 ? '$' + tick.toFixed(tick % 1 === 0 ? 0 : 1) : '-$' + Math.abs(tick).toFixed(tick % 1 === 0 ? 0 : 1)}
+                            <span key={index} style={{ 
+                              whiteSpace: 'nowrap',
+                              textOverflow: 'ellipsis',
+                              overflow: 'hidden',
+                              maxWidth: isMobile ? '45px' : 'auto'
+                            }}>
+                              {tick >= 0 
+                                ? '$' + tick.toFixed(isMobile && tick % 1 !== 0 ? 1 : tick % 1 === 0 ? 0 : 1) 
+                                : '-$' + Math.abs(tick).toFixed(isMobile && tick % 1 !== 0 ? 1 : tick % 1 === 0 ? 0 : 1)
+                              }
                             </span>
                           ))}
                         </div>

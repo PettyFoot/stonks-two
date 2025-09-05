@@ -370,23 +370,24 @@ export function calculateProfitFactor(trades: TradeData[]): number {
 }
 
 // Price bucket type
-export type PriceBucket = '<1' | '1-2' | '2-5' | '5-10' | '10-20' | '20-50' | '50-100' | '100+';
+export type PriceBucket = '0-1' | '1-5' | '5-20' | '20-50' | '50-100' | '100-200' | '200-400' | '400-1000' | '1000+';
 
 // Helper to get price bucket
 export function getPriceBucket(price: number): PriceBucket {
-  if (price < 1) return '<1';
-  if (price < 2) return '1-2';
-  if (price < 5) return '2-5';
-  if (price < 10) return '5-10';
-  if (price < 20) return '10-20';
+  if (price < 1) return '0-1';
+  if (price < 5) return '1-5';
+  if (price < 20) return '5-20';
   if (price < 50) return '20-50';
   if (price < 100) return '50-100';
-  return '100+';
+  if (price < 200) return '100-200';
+  if (price < 400) return '200-400';
+  if (price < 1000) return '400-1000';
+  return '1000+';
 }
 
 // Aggregate trades by price
 export function aggregateByPrice(trades: TradeData[]) {
-  const buckets: PriceBucket[] = ['<1', '1-2', '2-5', '5-10', '10-20', '20-50', '50-100', '100+'];
+  const buckets: PriceBucket[] = ['0-1', '1-5', '5-20', '20-50', '50-100', '100-200', '200-400', '400-1000', '1000+'];
   const distribution: Record<PriceBucket, number> = {} as Record<PriceBucket, number>;
   const performance: Record<PriceBucket, number> = {} as Record<PriceBucket, number>;
   

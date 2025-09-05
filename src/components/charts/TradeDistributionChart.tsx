@@ -240,11 +240,19 @@ export default function TradeDistributionChart({
 
   // Calculate tick interval to prevent overcrowding
   const tickInterval = React.useMemo(() => {
-    // Show all labels for duration-related charts
-    if (normalizedData.length > 0 && normalizedData[0]?.date && 
-        (normalizedData[0].date.includes('min') || normalizedData[0].date.includes('hr') || 
-         normalizedData[0].date === 'Intraday' || normalizedData[0].date === 'Multiday')) {
-      return 0; // Show all labels
+    if (normalizedData.length > 0 && normalizedData[0]?.date) {
+      const firstDate = normalizedData[0].date;
+      
+      // Show all labels for duration-related charts
+      if (firstDate.includes('min') || firstDate.includes('hr') || 
+          firstDate === 'Intraday' || firstDate === 'Multiday') {
+        return 0; // Show all labels
+      }
+      
+      // Show all labels for price bucket charts (numeric ranges like "0-1", "1-5", etc.)
+      if (firstDate.match(/^\d+[-–]\d+$/) || firstDate.match(/^\d+\+$/)) {
+        return 0; // Show all labels
+      }
     }
     return calculateTickInterval(normalizedData.length, timeInterval?.tickCount || 8);
   }, [normalizedData, timeInterval]);
