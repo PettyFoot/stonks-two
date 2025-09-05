@@ -14,7 +14,6 @@ import {
   SheetTrigger,
   SheetTitle,
 } from '@/components/ui/sheet';
-import ThemeSelector from '@/components/ThemeSelector';
 import { 
   Home, 
   Calendar, 
@@ -22,8 +21,9 @@ import {
   TrendingUp, 
   BookOpen, 
   Plus, 
-  Users,
   Search,
+  Settings,
+  Import,
   User,
   LogOut,
   Menu
@@ -35,8 +35,9 @@ const navigation = [
   { name: 'Reports', href: '/reports', icon: BarChart3 },
   { name: 'Trades', href: '/trades', icon: TrendingUp },
   { name: 'Records', href: '/records', icon: BookOpen },
-  { name: 'Community', href: '/community', icon: Users },
   { name: 'Search', href: '/search', icon: Search },
+  { name: 'Import Trades', href: '/import', icon: Import },
+  { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
 export default function MobileNav() {
@@ -86,7 +87,7 @@ export default function MobileNav() {
                     'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                     isActive 
                       ? 'bg-white/10 text-white' 
-                      : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                      : 'text-secondary hover:bg-white/5 hover:text-white'
                   )}
                 >
                   <item.icon className="h-5 w-5" />
@@ -94,29 +95,7 @@ export default function MobileNav() {
                 </Link>
               );
             })}
-            
-            {/* Upgrade Button - Moved here after Search (matching desktop) */}
-            <div className="pt-4">
-              <Button className="w-full bg-theme-green hover:bg-theme-green/90 text-white rounded-lg font-medium">
-                ⚡ Upgrade
-              </Button>
-            </div>
           </nav>
-
-          {/* Import Trades Button */}
-          <div className="px-4 py-4">
-            <Link href="/import" onClick={() => setOpen(false)}>
-              <Button className="w-full bg-theme-green hover:bg-theme-green/90 text-white rounded-lg font-medium">
-                📊 Import Trades
-              </Button>
-            </Link>
-          </div>
-
-          {/* Theme Selector */}
-          <div className="px-4 py-2 border-t border-white/10">
-            <div className="text-xs text-gray-400 mb-2">Theme</div>
-            <ThemeSelector />
-          </div>
 
           {/* User Profile */}
           <div className="flex items-center gap-3 px-4 py-4 border-t border-white/10">
@@ -124,7 +103,7 @@ export default function MobileNav() {
               <>
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={user.picture || ''} alt={user.name || ''} />
-                  <AvatarFallback className="bg-theme-green text-white">
+                  <AvatarFallback className="bg-positive text-white">
                     {user.name?.charAt(0) || user.email?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
@@ -132,11 +111,11 @@ export default function MobileNav() {
                   <p className="text-sm font-medium text-white truncate">
                     {user.name || user.email || 'User'}
                   </p>
-                  <p className="text-xs text-gray-400">Plan: Free</p>
+                  <p className="text-xs text-secondary">Plan: Free</p>
                 </div>
                 <Link 
                   href="/api/auth/logout" 
-                  className="text-gray-400 hover:text-white transition-colors"
+                  className="text-secondary hover:text-white transition-colors"
                   title="Logout"
                 >
                   <LogOut className="h-4 w-4" />
@@ -144,16 +123,16 @@ export default function MobileNav() {
               </>
             ) : (
               <>
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-theme-surface">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
                   <User className="h-5 w-5 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white">Guest</p>
-                  <p className="text-xs text-gray-400">Not logged in</p>
+                  <p className="text-xs text-secondary">Not logged in</p>
                 </div>
                 <Link 
                   href="/api/auth/login" 
-                  className="text-gray-400 hover:text-white transition-colors"
+                  className="text-secondary hover:text-white transition-colors"
                   title="Login"
                 >
                   <User className="h-4 w-4" />
