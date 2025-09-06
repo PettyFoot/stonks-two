@@ -13,6 +13,7 @@ import { TradingFAQStructuredData } from '@/components/SEO/FAQStructuredData';
 import { OptimizedLogo } from '@/components/OptimizedImage';
 import Footer from '@/components/Footer';
 import { LoadingFallback, usePerformanceMonitor } from '@/components/Performance/LoadingOptimizer';
+import { WebGLCausticsBackground } from '@/components/backgrounds';
 
 export default function LandingPageComponent() {
   const { user, isLoading } = useUser();
@@ -83,41 +84,14 @@ export default function LandingPageComponent() {
       
       {/* Hero Section - Full Screen */}
       <div className="h-screen w-full relative overflow-hidden">
-        {/* Animated Background Layers */}
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-95 mix-blend-screen"></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-90 mix-blend-theme-primary" style={{animationDelay: '1s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-85 mix-blend-screen" style={{animationDelay: '2s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-80 mix-blend-theme-primary" style={{animationDelay: '3s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-75 mix-blend-screen" style={{animationDelay: '4s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-70 mix-blend-theme-primary" style={{animationDelay: '5s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-65 mix-blend-screen" style={{animationDelay: '6s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-60 mix-blend-theme-primary" style={{animationDelay: '7s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-55 mix-blend-screen" style={{animationDelay: '8s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-50 mix-blend-theme-primary" style={{animationDelay: '9s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-45 mix-blend-screen" style={{animationDelay: '10s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-40 mix-blend-theme-primary" style={{animationDelay: '11s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-35 mix-blend-screen" style={{animationDelay: '12s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-30 mix-blend-theme-primary" style={{animationDelay: '13s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-25 mix-blend-screen" style={{animationDelay: '14s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-20 mix-blend-theme-primary" style={{animationDelay: '15s'}}></div>
-
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-95 mix-blend-screen"></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-90 mix-blend-theme-secondary" style={{animationDelay: '1s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-85 mix-blend-screen" style={{animationDelay: '2s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-80 mix-blend-theme-secondary" style={{animationDelay: '3s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-75 mix-blend-screen" style={{animationDelay: '4s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-70 mix-blend-theme-secondary" style={{animationDelay: '5s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-65 mix-blend-screen" style={{animationDelay: '6s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-60 mix-blend-theme-secondary" style={{animationDelay: '7s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-55 mix-blend-screen" style={{animationDelay: '8s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-50 mix-blend-theme-secondary" style={{animationDelay: '9s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-45 mix-blend-screen" style={{animationDelay: '10s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-40 mix-blend-theme-secondary" style={{animationDelay: '11s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-35 mix-blend-screen" style={{animationDelay: '12s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-30 mix-blend-theme-secondary" style={{animationDelay: '13s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-25 mix-blend-screen" style={{animationDelay: '14s'}}></div>
-        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-20 mix-blend-theme-secondary" style={{animationDelay: '15s'}}></div>
-
+        <WebGLCausticsBackground 
+          intensity={0.7}
+          speed={0.8}
+          color={[0.8, 0.95, 1.0]}
+          backgroundColor={[0.05, 0.15, 0.3]}
+          fallbackToCSS={true}
+        />
+        
         {/* Navigation - Absolute positioned at top */}
         <nav className="absolute top-0 left-0 right-0 z-20 p-8" role="navigation" aria-label="Main navigation">
           <div className="max-w-5xl mx-auto">
@@ -148,7 +122,7 @@ export default function LandingPageComponent() {
         </nav>
 
         {/* Hero Content - Perfect Center */}
-        <div className="absolute -inset-10 flex items-center justify-center z-10" aria-labelledby="hero-heading">
+        <div className="absolute -inset-10 flex items-center justify-center z-30" aria-labelledby="hero-heading">
           <div className="text-center space-y-12 max-w-4xl mx-auto px-6">
             <h1 id="hero-heading" className="text-9xl font-bold text-white mb-9 leading-tight">
               Elevate<br />

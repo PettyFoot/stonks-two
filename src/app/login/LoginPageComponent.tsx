@@ -66,7 +66,7 @@ export default function LoginPageComponent() {
   };
 
   return (
-    <div className="min-h-screen relative flex flex-col">
+    <div className="h-screen relative flex flex-col">
       <WebGLCausticsBackground 
         intensity={0.7}
         speed={0.8}

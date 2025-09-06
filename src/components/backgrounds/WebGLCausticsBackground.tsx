@@ -66,33 +66,58 @@ const WebGLCausticsBackground: React.FC<WebGLCausticsBackgroundProps> = ({
       return value;
     }
     
-    // Caustics function - creates light focusing patterns
+    // Caustics function - creates sharp light focusing patterns using distance fields
     float caustics(vec2 uv, float time) {
-      // Create multiple layers of caustics
-      vec2 p1 = uv * 8.0 + vec2(time * 0.3, time * 0.2);
-      vec2 p2 = uv * 6.0 + vec2(-time * 0.2, time * 0.4);
-      vec2 p3 = uv * 4.0 + vec2(time * 0.1, -time * 0.3);
+      float caustic = 0.0;
       
-      // Use sine waves to create light focusing patterns
-      float c1 = sin(p1.x + sin(p1.y + time)) * 0.5 + 0.5;
-      float c2 = sin(p2.x + sin(p2.y + time * 1.2)) * 0.5 + 0.5;
-      float c3 = sin(p3.x + sin(p3.y + time * 0.8)) * 0.5 + 0.5;
+      // Create multiple caustic lines using distance from curves
+      for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        
+        // Create animated curves for each caustic line
+        vec2 offset = vec2(
+          sin(time * 0.4 + fi * 2.1) * 0.5,
+          cos(time * 0.3 + fi * 1.7) * 0.3
+        );
+        
+        // Create wavy lines
+        float x = uv.x + offset.x;
+        float y = uv.y + offset.y;
+        float wave = sin(x * 6.0 + time * 0.5 + fi) * 0.1;
+        float dist = abs(y - wave);
+        
+        // Create sharp caustic line using inverse distance
+        float line = 1.0 / (dist * 40.0 + 1.0);
+        line = pow(line, 2.0);
+        
+        // Add to caustic value
+        caustic += line;
+      }
       
-      // Add some noise for organic variation
-      float n1 = fbm(uv * 5.0 + time * 0.1);
-      float n2 = fbm(uv * 3.0 - time * 0.05);
+      // Add crossing patterns for more realistic caustics
+      for (int i = 0; i < 2; i++) {
+        float fi = float(i);
+        
+        vec2 offset = vec2(
+          cos(time * 0.35 + fi * 3.14) * 0.4,
+          sin(time * 0.25 + fi * 2.5) * 0.6
+        );
+        
+        float x = uv.x * 0.7 + uv.y * 0.3 + offset.x;
+        float y = uv.y * 0.7 - uv.x * 0.3 + offset.y;
+        float wave = sin(x * 4.0 + time * 0.6 + fi * 1.5) * 0.15;
+        float dist = abs(y - wave);
+        
+        float line = 1.0 / (dist * 35.0 + 1.0);
+        line = pow(line, 1.8);
+        
+        caustic += line * 0.6;
+      }
       
-      // Combine layers with different weights
-      float caustic = (c1 * 0.4 + c2 * 0.3 + c3 * 0.3) * (n1 * 0.3 + n2 * 0.2 + 0.5);
+      // Add some subtle background variation
+      float background = sin(uv.x * 3.0 + time * 0.1) * sin(uv.y * 3.0 + time * 0.15) * 0.05 + 0.05;
       
-      // Create sharper light rays by using power function
-      caustic = pow(caustic, 2.0);
-      
-      // Add some subtle secondary patterns
-      vec2 p4 = uv * 12.0 + vec2(sin(time * 0.7), cos(time * 0.5));
-      float detail = sin(p4.x) * sin(p4.y) * 0.1 + 0.1;
-      
-      return caustic + detail;
+      return clamp(caustic + background, 0.0, 1.0);
     }
     
     void main() {
