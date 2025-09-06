@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useUser } from '@auth0/nextjs-auth0/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +11,8 @@ import {
   RefreshCw, 
   AlertCircle, 
   CheckCircle,
-  Clock
+  Clock,
+  TestTube
 } from 'lucide-react';
 import BrokerConnectionCard from './BrokerConnectionCard';
 import ConnectBrokerModal from './ConnectBrokerModal';
@@ -22,12 +24,14 @@ interface BrokerListProps {
 }
 
 export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
+  const { user } = useUser();
   const [connections, setConnections] = useState<BrokerConnectionData[]>([]);
   const [syncHistory, setSyncHistory] = useState<Record<string, SyncLogData[]>>({});
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [syncingConnections, setSyncingConnections] = useState<Set<string>>(new Set());
   const [snapTradeConfigured, setSnapTradeConfigured] = useState(false);
+  const [testingHoldings, setTestingHoldings] = useState(false);
 
   useEffect(() => {
     checkSnapTradeConfiguration();
@@ -191,6 +195,40 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
     }
   };
 
+  const handleTestHoldings = async () => {
+    if (testingHoldings) return;
+    
+    setTestingHoldings(true);
+    
+    try {
+      console.log('Testing SnapTrade getUserHoldings API...');
+      
+      const response = await fetch('/api/snaptrade/holdings');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch holdings');
+      }
+
+      const holdingsData = await response.json();
+      
+      console.log('SnapTrade Holdings API Response:', holdingsData);
+      console.log('Full holdings data for analysis:', JSON.stringify(holdingsData, null, 2));
+      
+      if (holdingsData.success) {
+        toast.success(`Holdings fetched successfully! Check console for details. Found ${holdingsData.holdingsData.length} accounts.`);
+      } else {
+        toast.error('Failed to fetch holdings data');
+      }
+      
+    } catch (error) {
+      console.error('Error testing holdings API:', error);
+      toast.error(`Holdings API test failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setTestingHoldings(false);
+    }
+  };
+
   const handleConnectionComplete = () => {
     setIsConnectModalOpen(false);
     loadConnections();
@@ -236,13 +274,32 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
           </p>
         </div>
         
-        <Button
-          onClick={() => setIsConnectModalOpen(true)}
-          className="bg-theme-tertiary hover:bg-theme-tertiary/90 text-white"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Connect Broker
-        </Button>
+        <div className="flex items-center gap-3">
+          {/* Test Holdings Button - Only for dannyvera127@gmail.com */}
+          {user?.email === 'dannyvera127@gmail.com' && (
+            <Button
+              onClick={handleTestHoldings}
+              disabled={testingHoldings}
+              variant="outline"
+              className="border-theme-tertiary text-theme-tertiary hover:bg-theme-tertiary hover:text-white"
+            >
+              {testingHoldings ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <TestTube className="h-4 w-4 mr-2" />
+              )}
+              {testingHoldings ? 'Testing...' : 'Test Holdings API'}
+            </Button>
+          )}
+          
+          <Button
+            onClick={() => setIsConnectModalOpen(true)}
+            className="bg-theme-tertiary hover:bg-theme-tertiary/90 text-white"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Connect Broker
+          </Button>
+        </div>
       </div>
 
       {/* Connection Status Summary */}
