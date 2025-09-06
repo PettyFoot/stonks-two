@@ -152,14 +152,75 @@ export interface SnapTradeErrorResponse {
 }
 
 export interface WebhookPayload {
-  type: string;
-  data: {
+  webhookId: string;
+  clientId: string;
+  eventTimestamp: string;
+  userId: string;
+  eventType: 
+    | 'USER_REGISTERED'
+    | 'USER_DELETED'
+    | 'CONNECTION_ATTEMPTED'
+    | 'CONNECTION_ADDED'
+    | 'CONNECTION_DELETED'
+    | 'CONNECTION_BROKEN'
+    | 'CONNECTION_FIXED'
+    | 'CONNECTION_UPDATED'
+    | 'CONNECTION_FAILED'
+    | 'ACCOUNT_TRANSACTIONS_INITIAL_UPDATE'
+    | 'ACCOUNT_TRANSACTIONS_UPDATED'
+    | 'ACCOUNT_REMOVED'
+    | 'ACCOUNT_HOLDINGS_UPDATED'
+    | 'TRADES_PLACED'
+    | 'NEW_ACCOUNT_AVAILABLE'
+    // Legacy support
+    | 'ACCOUNT_UPDATED'
+    | 'TRADES_UPDATED'
+    | 'POSITIONS_UPDATED'
+    | 'CONNECTION_REMOVED';
+  webhookSecret: string;
+  type?: string; // legacy support
+  data?: {
     user_id: string;
-    user_secret: string;
-    brokerage_authorization_id: string;
+    user_secret?: string;
+    brokerage_authorization_id?: string;
     account_id?: string;
     activities?: SnapTradeActivity[];
+    result?: string; // For CONNECTION_ATTEMPTED events
+    error?: string;
+    success?: boolean;
+    accounts?: SnapTradeAccount[];
+    holdings?: any[];
+    trades?: any[];
   };
-  timestamp: string;
-  signature: string;
+}
+
+export interface ConnectionAttemptedWebhookData extends WebhookPayload {
+  eventType: 'CONNECTION_ATTEMPTED';
+  data: {
+    user_id: string;
+    brokerage_authorization_id?: string;
+    result: 'SUCCESS' | 'AUTH_EXPIRED' | 'INVALID_AUTH_CODE' | 'CONNECTION_FAILED' | 'UNKNOWN_ERROR';
+    error?: string;
+  };
+}
+
+export interface AccountWebhookData extends WebhookPayload {
+  eventType: 'ACCOUNT_TRANSACTIONS_INITIAL_UPDATE' | 'ACCOUNT_TRANSACTIONS_UPDATED' | 'ACCOUNT_HOLDINGS_UPDATED';
+  data: {
+    user_id: string;
+    account_id: string;
+    brokerage_authorization_id: string;
+    success?: boolean;
+    error?: string;
+  };
+}
+
+export interface TradesPlacedWebhookData extends WebhookPayload {
+  eventType: 'TRADES_PLACED';
+  data: {
+    user_id: string;
+    account_id: string;
+    brokerage_authorization_id: string;
+    trades?: any[];
+  };
 }
