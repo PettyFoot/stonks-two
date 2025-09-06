@@ -7,15 +7,11 @@ import TopBar from '@/components/TopBar';
 import EnhancedFileUpload from '@/components/csv/EnhancedFileUpload';
 import ColumnMappingModal from '@/components/csv/ColumnMappingModal';
 import BrokerList from '@/components/broker/BrokerList';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   FileText, 
-  CheckCircle, 
-  Download,
-  BookOpen,
   Brain,
   Shield,
   TrendingUp,
@@ -249,118 +245,6 @@ export default function EnhancedImportPage() {
             </TabsContent>
           </Tabs>
 
-          {/* Documentation Section */}
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Standard Format Documentation */}
-            <Card className="bg-surface border-default">
-              <CardHeader>
-                <CardTitle className="text-base font-medium text-primary flex items-center gap-2">
-                  <BookOpen className="h-5 w-5" />
-                  Standard CSV Format
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted">
-                  For fastest processing, use our standard format with these exact column headers:
-                </p>
-                
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="destructive" className="text-xs">Required</Badge>
-                        <span className="font-medium">Date</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="destructive" className="text-xs">Required</Badge>
-                        <span className="font-medium">Symbol</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="destructive" className="text-xs">Required</Badge>
-                        <span className="font-medium">Buy/Sell</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="destructive" className="text-xs">Required</Badge>
-                        <span className="font-medium">Shares</span>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">Optional</Badge>
-                        <span>Time</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">Optional</Badge>
-                        <span>Price</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">Optional</Badge>
-                        <span>Commission</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">Optional</Badge>
-                        <span>Fees</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">Optional</Badge>
-                        <span>Account</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => window.open('/api/csv/template', '_blank')}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Template
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Custom Format Documentation */}
-            <Card className="bg-surface border-default">
-              <CardHeader>
-                <CardTitle className="text-base font-medium text-primary flex items-center gap-2">
-                  <Brain className="h-5 w-5" />
-                  Custom Format Support
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted">
-                  Don&apos;t have the standard format? No problem! Our AI will:
-                </p>
-                
-                <ul className="text-sm text-muted space-y-2">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-[var(--theme-green)] mt-0.5 flex-shrink-0" />
-                    <span>Analyze your column headers and sample data</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-[var(--theme-green)] mt-0.5 flex-shrink-0" />
-                    <span>Suggest mappings with confidence scores</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-[var(--theme-green)] mt-0.5 flex-shrink-0" />
-                    <span>Let you review and correct any mappings</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-[var(--theme-green)] mt-0.5 flex-shrink-0" />
-                    <span>Provide clear guidance for problematic columns</span>
-                  </li>
-                </ul>
-
-                <div className="p-3 bg-tertiary/10 border border-tertiary/30 rounded-lg">
-                  <p className="text-xs text-tertiary">
-                    <strong>Supported brokers:</strong> Interactive Brokers, TD Ameritrade, 
-                    E*TRADE, Charles Schwab, and many others via custom mapping.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
 
           {/* Import History Link */}
           <Card className="bg-gradient-to-r from-background to-surface border-default">

@@ -17,6 +17,25 @@ import {
 import BrokerConnectionCard from './BrokerConnectionCard';
 import ConnectBrokerModal from './ConnectBrokerModal';
 import { BrokerConnectionData, SyncLogData } from '@/lib/snaptrade/types';
+
+interface LiveConnectionData {
+  id: string;
+  snapTradeAuthId: string;
+  brokerName: string;
+  type?: string;
+  status: string;
+  accounts: Array<{
+    id: string;
+    number: string;
+    name: string;
+    type?: string;
+    balance?: any;
+    currency?: string;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+  isLiveConnection: boolean;
+}
 import { toast } from 'sonner';
 
 interface BrokerListProps {
@@ -26,9 +45,11 @@ interface BrokerListProps {
 export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
   const { user } = useUser();
   const [connections, setConnections] = useState<BrokerConnectionData[]>([]);
+  const [liveConnections, setLiveConnections] = useState<LiveConnectionData[]>([]);
   const [syncHistory, setSyncHistory] = useState<Record<string, SyncLogData[]>>({});
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingLive, setLoadingLive] = useState(true);
   const [syncingConnections, setSyncingConnections] = useState<Set<string>>(new Set());
   const [snapTradeConfigured, setSnapTradeConfigured] = useState(false);
   const [testingHoldings, setTestingHoldings] = useState(false);
@@ -36,6 +57,7 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
   useEffect(() => {
     checkSnapTradeConfiguration();
     loadConnections();
+    loadLiveConnections();
   }, []);
 
   const checkSnapTradeConfiguration = async () => {
@@ -72,6 +94,38 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
       toast.error('Failed to load broker connections');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadLiveConnections = async () => {
+    try {
+      setLoadingLive(true);
+      const response = await fetch('/api/snaptrade/connections/live');
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          // User not authenticated, skip loading live connections
+          setLiveConnections([]);
+          return;
+        }
+        throw new Error('Failed to load live broker connections');
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setLiveConnections(data.connections || []);
+      } else {
+        console.warn('Failed to load live connections:', data.error);
+        setLiveConnections([]);
+      }
+
+    } catch (error) {
+      console.error('Error loading live connections:', error);
+      // Don't show error toast for live connections as they're supplementary
+      setLiveConnections([]);
+    } finally {
+      setLoadingLive(false);
     }
   };
 
@@ -232,6 +286,7 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
   const handleConnectionComplete = () => {
     setIsConnectModalOpen(false);
     loadConnections();
+    loadLiveConnections();
     onConnectionsChange?.();
     toast.success('Broker connected successfully!');
   };
@@ -383,6 +438,85 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
             </Button>
           </CardContent>
         </Card>
+      )}
+
+      {/* Available SnapTrade Connections */}
+      {!loadingLive && liveConnections.length > 0 && (
+        <div className="space-y-4">
+          <div className="border-t pt-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-theme-primary-text">
+                  Available SnapTrade Connections
+                </h3>
+                <p className="text-sm text-theme-secondary-text">
+                  Broker connections found in your SnapTrade account
+                </p>
+              </div>
+            </div>
+            
+            <div className="grid gap-4">
+              {liveConnections.map((liveConnection) => (
+                <Card key={liveConnection.id} className="bg-surface border-default">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 bg-theme-tertiary/10 rounded-full">
+                          <Building2 className="h-6 w-6 text-theme-tertiary" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-theme-primary-text">
+                            {liveConnection.brokerName}
+                          </h4>
+                          <p className="text-sm text-theme-secondary-text">
+                            {liveConnection.accounts.length} account{liveConnection.accounts.length !== 1 ? 's' : ''} 
+                            {liveConnection.accounts.length > 0 && ` • ${liveConnection.accounts[0].number}`}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Badge 
+                          variant={liveConnection.status === 'ACTIVE' ? 'default' : 'secondary'}
+                          className="text-xs"
+                        >
+                          {liveConnection.status}
+                        </Badge>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsConnectModalOpen(true)}
+                          className="border-theme-tertiary text-theme-tertiary hover:bg-theme-tertiary hover:text-white"
+                        >
+                          Import Connection
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {liveConnection.accounts.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-border">
+                        <h5 className="text-sm font-medium text-theme-primary-text mb-2">Accounts:</h5>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {liveConnection.accounts.map((account) => (
+                            <div key={account.id} className="flex items-center justify-between p-2 bg-background rounded-md">
+                              <span className="text-sm text-theme-secondary-text">
+                                {account.name || account.number} ({account.type || 'Unknown'})
+                              </span>
+                              {account.balance && (
+                                <span className="text-sm font-medium text-theme-primary-text">
+                                  {account.currency} {account.balance.total || '0'}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Connect Broker Modal */}
