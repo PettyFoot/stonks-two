@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, TrendingUp, Shield, Users, ArrowRight, Play } from 'lucide-react';
+import { BarChart3, TrendingUp, Shield, Users, ArrowRight, Play, ChevronDown } from 'lucide-react';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { useRouter } from 'next/navigation';
 import { SoftwareApplicationStructuredData } from '@/components/SEO';
@@ -81,159 +81,129 @@ export default function LandingPageComponent() {
       {/* FAQ Structured Data */}
       <TradingFAQStructuredData />
       
-      <div className="min-h-screen bg-gradient-to-br from-[var(--theme-primary)] via-[var(--theme-surface)] to-[var(--theme-primary)]">
-        {/* Navigation */}
-        <nav className="p-6" role="navigation" aria-label="Main navigation">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <OptimizedLogo size="large" priority={true} />
-              <span className="text-2xl font-bold text-[var(--theme-primary-text)]">Trade Voyager Analytics</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button 
-                variant="outline" 
-                className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/50"
-                onClick={startDemo}
-                disabled={isStartingDemo}
-                aria-label="Try Trade Voyager Analytics demo with sample trading data"
-              >
-                {isStartingDemo ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
-                    Starting Demo...
-                  </>
-                ) : (
-                  <>
-                    <Play className="h-4 w-4 mr-2" />
-                    Try Demo
-                  </>
-                )}
-              </Button>
-              <Link href="/login">
-                <Button className="bg-[var(--theme-tertiary)] hover:bg-[var(--theme-tertiary)]/80 text-white">
-                  Sign In
-                </Button>
-              </Link>
+      {/* Hero Section - Full Screen */}
+      <div className="h-screen w-full relative overflow-hidden">
+        {/* Animated Background Layers */}
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-95 mix-blend-screen"></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-90 mix-blend-theme-primary" style={{animationDelay: '1s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-85 mix-blend-screen" style={{animationDelay: '2s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-80 mix-blend-theme-primary" style={{animationDelay: '3s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-75 mix-blend-screen" style={{animationDelay: '4s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-70 mix-blend-theme-primary" style={{animationDelay: '5s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-65 mix-blend-screen" style={{animationDelay: '6s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-60 mix-blend-theme-primary" style={{animationDelay: '7s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-55 mix-blend-screen" style={{animationDelay: '8s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-50 mix-blend-theme-primary" style={{animationDelay: '9s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-45 mix-blend-screen" style={{animationDelay: '10s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-40 mix-blend-theme-primary" style={{animationDelay: '11s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-35 mix-blend-screen" style={{animationDelay: '12s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-30 mix-blend-theme-primary" style={{animationDelay: '13s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-25 mix-blend-screen" style={{animationDelay: '14s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite] opacity-20 mix-blend-theme-primary" style={{animationDelay: '15s'}}></div>
+
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-95 mix-blend-screen"></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-90 mix-blend-theme-secondary" style={{animationDelay: '1s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-85 mix-blend-screen" style={{animationDelay: '2s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-80 mix-blend-theme-secondary" style={{animationDelay: '3s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-75 mix-blend-screen" style={{animationDelay: '4s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-70 mix-blend-theme-secondary" style={{animationDelay: '5s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-65 mix-blend-screen" style={{animationDelay: '6s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-60 mix-blend-theme-secondary" style={{animationDelay: '7s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-55 mix-blend-screen" style={{animationDelay: '8s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-50 mix-blend-theme-secondary" style={{animationDelay: '9s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-45 mix-blend-screen" style={{animationDelay: '10s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-40 mix-blend-theme-secondary" style={{animationDelay: '11s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-35 mix-blend-screen" style={{animationDelay: '12s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-30 mix-blend-theme-secondary" style={{animationDelay: '13s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-25 mix-blend-screen" style={{animationDelay: '14s'}}></div>
+        <div className="absolute -inset-10 bg-[conic-gradient(from_180deg_at_50%_50%,var(--theme-secondary),var(--theme-primary),var(--theme-secondary),var(--theme-primary),var(--theme-secondary))] bg-[length:1500%_1500%] animate-[spin_80s_linear_infinite_reverse] opacity-20 mix-blend-theme-secondary" style={{animationDelay: '15s'}}></div>
+
+        {/* Navigation - Absolute positioned at top */}
+        <nav className="absolute top-0 left-0 right-0 z-20 p-8" role="navigation" aria-label="Main navigation">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex items-center justify-between">
+              <OptimizedLogo size="xlarge" priority={true} className="drop-shadow-sm" />
+              
+              <div className="flex items-center space-x-8">
+                <Link href="/about" className="text-white hover:text-[var(--theme-tertiary)] text-lg font-medium transition-colors">
+                  About Us
+                </Link>
+                <Link href="/features" className="text-white hover:text-[var(--theme-tertiary)] text-lg font-medium transition-colors">
+                  Features
+                </Link>
+                <Link href="/demo" className="text-white hover:text-[var(--theme-tertiary)] text-lg font-medium transition-colors">
+                  Demo
+                </Link>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <Link href="/login">
+                  <Button variant="ghost" className="text-white hover:bg-white/10 text-lg">
+                    Sign In
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </nav>
 
-        {/* Hero Section */}
-        <section className="max-w-7xl mx-auto px-6 py-20" aria-labelledby="hero-heading">
-          <div className="text-center mb-16">
-            <h1 id="hero-heading" className="text-5xl font-bold text-[var(--theme-primary-text)] mb-6 leading-tight">
-              Professional Trade Analytics<br />
-              <span className="text-[var(--theme-tertiary)]">Platform</span>
+        {/* Hero Content - Perfect Center */}
+        <div className="absolute -inset-10 flex items-center justify-center z-10" aria-labelledby="hero-heading">
+          <div className="text-center space-y-12 max-w-4xl mx-auto px-6">
+            <h1 id="hero-heading" className="text-9xl font-bold text-white mb-9 leading-tight">
+              Elevate<br />
+              Your<br />
+              <span className="text-[var(--theme-tertiary)]">Edge</span>
             </h1>
-            <p className="text-xl text-[var(--theme-primary-text)] mb-8 max-w-3xl mx-auto">
-              Master your trading performance with advanced trade analytics, 
-              real-time performance tracking, and <Link href="/features" className="text-[var(--theme-tertiary)] hover:underline">comprehensive trading insights</Link>. 
-              Connect with your broker for automatic trade analytics generation.
+            <p className="text-4xl text-white/90 mb-12 max-w-3xl mx-auto">
+              Harness powerful analytics to gain clarity, consistency, and an edge that lasts.
             </p>
             
-            <div className="flex items-center justify-center space-x-4">
+            <div className="flex items-center justify-center space-x-6">
               <Button 
                 size="lg" 
-                variant="outline" 
-                className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/50"
+                className="bg-[var(--theme-tertiary)] hover:bg-[var(--theme-tertiary)]/80 text-white px-12 py-6 text-2xl font-semibold rounded-lg"
                 onClick={startDemo}
                 disabled={isStartingDemo}
-                aria-label="Explore Trade Voyager Analytics demo with sample trading data"
+                aria-label="Experience Edge"
               >
                 {isStartingDemo ? (
                   <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current mr-2"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-current mr-3"></div>
                     Starting Demo...
                   </>
                 ) : (
-                  <>
-                    <Users className="h-5 w-5 mr-2" />
-                    Explore Demo
-                  </>
+                  "Experience Edge"
                 )}
               </Button>
-              <Link href="/login">
-                <Button size="lg" className="bg-[var(--theme-green)] hover:bg-[var(--theme-green)]/80 text-white">
-                  Get Started Free
-                  <ArrowRight className="h-5 w-5 ml-2" />
-                </Button>
-              </Link>
+              <Button 
+                size="lg" 
+                className="bg-[var(--theme-tertiary)]/80 hover:bg-[var(--theme-tertiary)]/60 text-white px-12 py-6 text-2xl font-semibold rounded-lg"
+                onClick={startDemo}
+                disabled={isStartingDemo}
+                aria-label="Try Demo"
+              >
+                {isStartingDemo ? (
+                  <>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-current mr-3"></div>
+                    Starting Demo...
+                  </>
+                ) : (
+                  "Demo"
+                )}
+              </Button>
             </div>
           </div>
+        </div>
+        
+        {/* Scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce z-20">
+          <ChevronDown className="h-6 w-6 text-white/50" />
+        </div>
+      </div>
 
-          {/* Feature Cards */}
-          <section className="grid md:grid-cols-3 gap-8 mb-20" aria-labelledby="features-heading">
-            <h2 id="features-heading" className="sr-only">Key Features of Trade Voyager Analytics</h2>
-            
-            <Card className="bg-white border-[var(--theme-primary)] hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="w-12 h-12 bg-gradient-to-br from-[var(--theme-green)] to-[var(--theme-green)]/80 rounded-lg flex items-center justify-center mb-4">
-                  <TrendingUp className="h-6 w-6 text-white" aria-hidden="true" />
-                </div>
-                <CardTitle className="text-[var(--theme-primary-text)]">Advanced Trade Analytics</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-[var(--theme-primary-text)]">
-                  Comprehensive trade analytics including real-time P&L tracking, win rates, risk metrics, and detailed performance breakdowns for every trade. <Link href="/features" className="text-[var(--theme-tertiary)] hover:underline text-sm">Learn more →</Link>
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white border-[var(--theme-primary)] hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="w-12 h-12 bg-gradient-to-br from-[var(--theme-tertiary)] to-[var(--theme-tertiary)]/80 rounded-lg flex items-center justify-center mb-4">
-                  <Shield className="h-6 w-6 text-white" aria-hidden="true" />
-                </div>
-                <CardTitle className="text-[var(--theme-primary-text)]">Secure & Private</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-[var(--theme-primary-text)]">
-                  Bank-level security with complete user data isolation and privacy protection.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white border-[var(--theme-primary)] hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="w-12 h-12 bg-gradient-to-br from-[var(--theme-secondary)] to-[var(--theme-secondary)]/80 rounded-lg flex items-center justify-center mb-4">
-                  <BarChart3 className="h-6 w-6 text-white" aria-hidden="true" />
-                </div>
-                <CardTitle className="text-[var(--theme-primary-text)]">Broker Integration</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-[var(--theme-primary-text)]">
-                  Import trades from Interactive Brokers, TD Ameritrade, and other major brokers.
-                </p>
-              </CardContent>
-            </Card>
-          </section>
-
-          {/* Demo CTA */}
-          <section aria-labelledby="demo-cta-heading">
-            <Card className="bg-gradient-to-r from-[var(--theme-tertiary)]/10 to-[var(--theme-tertiary)]/20 border-[var(--theme-tertiary)]/30 text-center">
-              <CardContent className="p-12">
-                <h2 id="demo-cta-heading" className="text-3xl font-bold text-[var(--theme-tertiary)] mb-4">
-                  Try Demo Mode
-                </h2>
-                <p className="text-lg text-[var(--theme-tertiary)] mb-8 max-w-2xl mx-auto">
-                  Explore all features with sample trading data. No signup required - 
-                  see exactly how Trade Voyager Analytics can improve your trading performance. 
-                  Ready to upgrade? Check our <Link href="/pricing" className="underline hover:no-underline">flexible pricing plans</Link>.
-                </p>
-                <div className="flex items-center justify-center space-x-4">
-                  <Link href="/demo">
-                    <Button size="lg" className="bg-[var(--theme-tertiary)] hover:bg-[var(--theme-tertiary)]/80 text-white">
-                      <Play className="h-5 w-5 mr-2" />
-                      Launch Demo
-                    </Button>
-                  </Link>
-                  <span className="text-[var(--theme-tertiary)] text-sm">No registration needed</span>
-                </div>
-              </CardContent>
-            </Card>
-          </section>
-        </section>
-
+      {/* Footer - Outside container but with higher z-index */}
+      <div className="relative z-40">
         <Footer />
       </div>
     </>

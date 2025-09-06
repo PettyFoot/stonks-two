@@ -52,13 +52,14 @@ export function OptimizedLogo({
   priority = false 
 }: { 
   className?: string; 
-  size?: 'small' | 'medium' | 'large';
+  size?: 'small' | 'medium' | 'large' | 'xlarge';
   priority?: boolean;
 }) {
   const sizeConfig = {
     small: { width: 32, height: 32 },
     medium: { width: 48, height: 48 },
-    large: { width: 64, height: 64 }
+    large: { width: 64, height: 64 },
+    xlarge: { width: 96, height: 96 }
   };
 
   const { width, height } = sizeConfig[size];
