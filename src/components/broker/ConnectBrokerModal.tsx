@@ -151,8 +151,10 @@ export default function ConnectBrokerModal({
 
       // Listen for messages from the popup
       const handleMessage = async (event: MessageEvent) => {
-        // Only accept messages from SnapTrade domain
-        if (!event.origin.includes('snaptrade.com') && !event.origin.includes('localhost')) {
+        // Only accept messages from our own domain or localhost (for development)
+        const currentOrigin = window.location.origin;
+        if (event.origin !== currentOrigin && !event.origin.includes('localhost')) {
+          console.log('Ignoring message from unknown origin:', event.origin);
           return;
         }
 

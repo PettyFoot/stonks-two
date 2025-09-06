@@ -90,7 +90,7 @@ export async function createBrokerConnection(
     if (existingUser?.snapTradeUserId && existingUser?.snapTradeUserSecret) {
       // Use existing credentials
       snapTradeUserId = existingUser.snapTradeUserId;
-      snapTradeUserSecret = decrypt(existingUser.snapTradeUserSecret);
+      snapTradeUserSecret = existingUser.snapTradeUserSecret;
       console.log('Using existing SnapTrade credentials for user:', request.userId);
     } else {
       // Generate unique SnapTrade user ID
@@ -115,7 +115,7 @@ export async function createBrokerConnection(
         where: { auth0Id: request.userId },
         data: {
           snapTradeUserId,
-          snapTradeUserSecret: encrypt(snapTradeUserSecret),
+          snapTradeUserSecret: snapTradeUserSecret,
           snapTradeRegisteredAt: new Date(),
         },
       });
@@ -180,7 +180,7 @@ export async function completeBrokerAuth(
       throw new Error('SnapTrade credentials not found for user');
     }
 
-    const snapTradeUserSecret = decrypt(user.snapTradeUserSecret);
+    const snapTradeUserSecret = user.snapTradeUserSecret;
 
     // Get all brokerage authorizations for this user
     const authorizationsResponse = await client.connections.listBrokerageAuthorizations({
@@ -235,13 +235,11 @@ export async function completeBrokerAuth(
       });
     } else {
       // Create new connection (fallback)
-      const encryptedSecret = encrypt(snapTradeUserSecret);
-      
       brokerConnection = await prisma.brokerConnection.create({
         data: {
           userId: request.userId,
           snapTradeUserId: request.snapTradeUserId,
-          snapTradeUserSecret: encryptedSecret,
+          snapTradeUserSecret: snapTradeUserSecret,
           brokerName: brokerAuth.name || 'Unknown Broker',
           accountId: primaryAccount?.id || null,
           accountName: primaryAccount?.name || primaryAccount?.number || null,
@@ -282,8 +280,8 @@ export async function completeBrokerAuth(
 /**
  * Get decrypted user secret for API calls
  */
-export function getDecryptedSecret(encryptedSecret: string): string {
-  return decrypt(encryptedSecret);
+export function getDecryptedSecret(secret: string): string {
+  return secret;
 }
 
 /**
@@ -307,7 +305,7 @@ export async function getSnapTradeCredentials(userId: string): Promise<{
 
   return {
     snapTradeUserId: user.snapTradeUserId,
-    snapTradeUserSecret: decrypt(user.snapTradeUserSecret),
+    snapTradeUserSecret: user.snapTradeUserSecret,
   };
 }
 
@@ -388,7 +386,7 @@ export async function deleteBrokerConnection(connectionId: string, userId: strin
 
     await RateLimitHelper.checkRateLimit();
     const client = getSnapTradeClient();
-    const decryptedSecret = getDecryptedSecret(connection.snapTradeUserSecret);
+    const decryptedSecret = connection.snapTradeUserSecret;
 
     // Try to delete from SnapTrade (don't fail if this errors)
     try {

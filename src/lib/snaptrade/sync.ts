@@ -39,7 +39,7 @@ export async function syncTradesForConnection(
 
     await RateLimitHelper.checkRateLimit();
     const client = getSnapTradeClient();
-    const decryptedSecret = getDecryptedSecret(connection.snapTradeUserSecret);
+    const decryptedSecret = connection.snapTradeUserSecret;
 
     // Get accounts for this connection
     const accountsResponse = await client.accountInformation.listUserAccounts({
