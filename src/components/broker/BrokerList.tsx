@@ -3,8 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { 
   Building2, 
   Plus, 
@@ -12,7 +18,10 @@ import {
   AlertCircle, 
   CheckCircle,
   Clock,
-  TestTube
+  TestTube,
+  MoreVertical,
+  RotateCcw,
+  Trash2
 } from 'lucide-react';
 import BrokerConnectionCard from './BrokerConnectionCard';
 import ConnectBrokerModal from './ConnectBrokerModal';
@@ -24,6 +33,12 @@ interface LiveConnectionData {
   brokerName: string;
   type?: string;
   status: string;
+  brokerage?: {
+    id: string;
+    name: string;
+    slug: string;
+    display_name?: string;
+  };
   accounts: Array<{
     id: string;
     number: string;
@@ -291,6 +306,63 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
     toast.success('Broker connected successfully!');
   };
 
+  const handleReconnectLiveConnection = async (connectionId: string) => {
+    try {
+      const response = await fetch('/api/snaptrade/connections/reconnect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ connectionId }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to reconnect');
+      }
+
+      if (result.redirectUri) {
+        // Open reconnection URL in new window
+        window.open(result.redirectUri, '_blank', 'width=600,height=700');
+        toast.success('Reconnection window opened. Please complete authentication.');
+      } else {
+        toast.error('Failed to get reconnection URL');
+      }
+
+    } catch (error) {
+      console.error('Error reconnecting live connection:', error);
+      toast.error(`Failed to reconnect: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleRemoveLiveConnection = async (connectionId: string, brokerName: string) => {
+    if (!confirm(`Are you sure you want to remove the ${brokerName} connection? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/snaptrade/connections/remove', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ connectionId }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to remove connection');
+      }
+
+      toast.success(`${brokerName} connection removed successfully`);
+      
+      // Reload live connections to reflect the change
+      await loadLiveConnections();
+
+    } catch (error) {
+      console.error('Error removing live connection:', error);
+      toast.error(`Failed to remove connection: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
   if (!snapTradeConfigured) {
     return (
       <Card className="bg-gradient-to-r from-theme-warning/10 to-theme-warning/5 border-theme-warning/30">
@@ -469,8 +541,7 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
                             {liveConnection.brokerName}
                           </h4>
                           <p className="text-sm text-theme-secondary-text">
-                            {liveConnection.accounts.length} account{liveConnection.accounts.length !== 1 ? 's' : ''} 
-                            {liveConnection.accounts.length > 0 && ` • ${liveConnection.accounts[0].number}`}
+                            Connected via SnapTrade
                           </p>
                         </div>
                       </div>
@@ -481,14 +552,36 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
                         >
                           {liveConnection.status}
                         </Badge>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setIsConnectModalOpen(true)}
-                          className="border-theme-tertiary text-theme-tertiary hover:bg-theme-tertiary hover:text-white"
-                        >
-                          Import Connection
-                        </Button>
+                        
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                              <span className="sr-only">Open menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem
+                              onClick={() => handleReconnectLiveConnection(liveConnection.id)}
+                              className="flex items-center gap-2"
+                            >
+                              <RotateCcw className="h-4 w-4" />
+                              Reconnect
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleRemoveLiveConnection(liveConnection.id, liveConnection.brokerName)}
+                              variant="destructive"
+                              className="flex items-center gap-2"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Remove
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                     

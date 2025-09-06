@@ -54,9 +54,10 @@ export async function GET(request: NextRequest) {
       return {
         id: auth.id,
         snapTradeAuthId: auth.id,
-        brokerName: auth.name || 'Unknown Broker',
+        brokerName: auth.brokerage?.name || auth.name || 'Unknown Broker',
         type: auth.type || null,
         status: auth.disabled ? 'INACTIVE' : 'ACTIVE',
+        brokerage: auth.brokerage, // Include full brokerage data
         accounts: associatedAccounts.map((account: any) => ({
           id: account.id,
           number: account.number,
