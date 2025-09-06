@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, Shield, Users } from 'lucide-react';
 import Footer from '@/components/Footer';
 import { MarketDataCache } from '@/lib/marketData/cache';
+import { WebGLCausticsBackground } from '@/components/backgrounds';
 
 export default function LoginPageComponent() {
   const router = useRouter();
@@ -65,8 +66,15 @@ export default function LoginPageComponent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--theme-primary)] via-[var(--theme-surface)] to-[var(--theme-primary)] flex flex-col">
-      <div className="flex-grow flex items-center justify-center p-4">
+    <div className="min-h-screen relative flex flex-col">
+      <WebGLCausticsBackground 
+        intensity={0.7}
+        speed={0.8}
+        color={[0.8, 0.95, 1.0]}
+        backgroundColor={[0.05, 0.15, 0.3]}
+        fallbackToCSS={true}
+      />
+      <div className="flex-grow flex items-center justify-center p-4 relative z-10">
         <div className="max-w-7xl w-full flex flex-col items-center">
           {/* Triangle Apex - Header/Logo Section */}
           <header className="text-center space-y-4 mb-16 max-w-2xl">
@@ -191,7 +199,9 @@ export default function LoginPageComponent() {
         </div>
       </div>
 
-      <Footer />
+      <div className="relative z-10">
+        <Footer />
+      </div>
     </div>
   );
 }

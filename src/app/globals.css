@@ -176,3 +176,81 @@ body {
 .hover\:bg-secondary:hover {
   background-color: var(--theme-secondary-hover);
 }
+
+/* Pool Caustics Effect */
+@layer utilities {
+  .bg-caustics {
+    --a: 0deg;      /* wave angle */
+    --x: 0%;        /* subtle swirl X */
+    --y: 0%;        /* subtle swirl Y */
+
+    /* base pool color */
+    background-color: #0b3d60;
+
+    /* layers: shimmer blobs, two wave interference grids, and a blue depth gradient */
+    background-image:
+      radial-gradient(ellipse at calc(50% + var(--x)) calc(50% + var(--y)),
+        rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.12) 18%, transparent 60%),
+      repeating-conic-gradient(from var(--a),
+        rgba(255,255,255,0.26) 0deg 7deg, transparent 7deg 14deg),
+      repeating-conic-gradient(from calc(var(--a) * -1),
+        rgba(255,255,255,0.16) 0deg 6deg, transparent 6deg 12deg),
+      radial-gradient(circle at 50% 40%,
+        #14b5e6 0%, #0ea5e9 35%, #0782c6 60%, #075985 100%);
+
+    background-blend-mode: screen, overlay, lighten, normal;
+    background-size: 280% 280%, 220% 220%, 180% 180%, cover;
+    background-position: 0% 0%, 0% 0%, 100% 100%, center;
+
+    /* add some "wet" punch */
+    filter: brightness(1.08) contrast(1.18) saturate(1.1);
+
+    /* gentle shimmer animation */
+    animation: causticsMove 18s linear infinite;
+
+    /* nice edges if you use rounded containers */
+    -webkit-mask-image: radial-gradient(140% 100% at 50% 50%, #000 40%, transparent 100%);
+            mask-image: radial-gradient(140% 100% at 50% 50%, #000 40%, transparent 100%);
+  }
+
+  @keyframes causticsMove {
+    0% {
+      --a: 0deg;
+      --x: -18%;
+      --y: -12%;
+      background-position: 0% 0%, 0% 0%, 100% 100%, center;
+      background-size: 280% 280%, 220% 220%, 180% 180%, cover;
+    }
+    50% {
+      --a: 180deg;
+      --x: 12%;
+      --y: 16%;
+      background-position: 100% 0%, 50% 100%, 0% 0%, center;
+      background-size: 260% 260%, 240% 240%, 200% 200%, cover;
+    }
+    100% {
+      --a: 360deg;
+      --x: -18%;
+      --y: -12%;
+      background-position: 0% 0%, 0% 0%, 100% 100%, center;
+      background-size: 280% 280%, 220% 220%, 180% 180%, cover;
+    }
+  }
+
+  /* Optional: tiny sparkles on top */
+  .caustics-sparkle::after {
+    content: "";
+    position: absolute; inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(255,255,255,0.15), transparent 35%),
+      radial-gradient(circle at 70% 60%, rgba(255,255,255,0.1), transparent 40%),
+      radial-gradient(circle at 40% 80%, rgba(255,255,255,0.08), transparent 45%);
+    mix-blend-mode: screen;
+    animation: sparkleDrift 10s ease-in-out infinite alternate;
+  }
+  @keyframes sparkleDrift {
+    0%   { transform: translate3d(-2%, -2%, 0) scale(1);   opacity: .6; }
+    100% { transform: translate3d(2%,  2%,  0) scale(1.05); opacity: .8; }
+  }
+}
