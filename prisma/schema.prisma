@@ -41,6 +41,11 @@ model User {
   anonymizedAt         DateTime?
   canReactivate        Boolean  @default(true)
   
+  // SnapTrade Integration
+  snapTradeUserId      String?     @unique  // SnapTrade user identifier
+  snapTradeUserSecret  String?              // Encrypted SnapTrade secret
+  snapTradeRegisteredAt DateTime?            // When user registered with SnapTrade
+  
   // Relations
   trades        Trade[]
   orders        Order[]

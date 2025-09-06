@@ -76,19 +76,51 @@ export async function createBrokerConnection(
     await RateLimitHelper.checkRateLimit();
     const client = getSnapTradeClient();
 
-    // Generate unique SnapTrade user ID
-    const snapTradeUserId = uuidv4();
-
-    // Register user with SnapTrade
-    const registerResponse = await client.authentication.registerSnapTradeUser({
-      userId: snapTradeUserId,
+    // Check if user already has SnapTrade credentials
+    const existingUser = await prisma.user.findFirst({
+      where: { 
+        auth0Id: request.userId,
+        snapTradeUserId: { not: null }
+      }
     });
 
-    // Get the userSecret from the registration response
-    const snapTradeUserSecret = registerResponse.data.userSecret;
+    let snapTradeUserId: string;
+    let snapTradeUserSecret: string;
 
-    if (!snapTradeUserSecret) {
-      throw new Error('Failed to get user secret from SnapTrade registration');
+    if (existingUser?.snapTradeUserId && existingUser?.snapTradeUserSecret) {
+      // Use existing credentials
+      snapTradeUserId = existingUser.snapTradeUserId;
+      snapTradeUserSecret = decrypt(existingUser.snapTradeUserSecret);
+      console.log('Using existing SnapTrade credentials for user:', request.userId);
+    } else {
+      // Generate unique SnapTrade user ID
+      snapTradeUserId = uuidv4();
+
+      // Register user with SnapTrade
+      const registerResponse = await client.authentication.registerSnapTradeUser({
+        userId: snapTradeUserId,
+      });
+
+      // Get the userSecret from the registration response
+      const userSecretFromResponse = registerResponse.data.userSecret;
+
+      if (!userSecretFromResponse) {
+        throw new Error('Failed to get user secret from SnapTrade registration');
+      }
+
+      snapTradeUserSecret = userSecretFromResponse;
+
+      // IMMEDIATELY store credentials in Users table
+      await prisma.user.update({
+        where: { auth0Id: request.userId },
+        data: {
+          snapTradeUserId,
+          snapTradeUserSecret: encrypt(snapTradeUserSecret),
+          snapTradeRegisteredAt: new Date(),
+        },
+      });
+
+      console.log('Stored new SnapTrade credentials for user:', request.userId);
     }
 
     // Get authorization URL from SnapTrade for the connection portal
@@ -136,10 +168,24 @@ export async function completeBrokerAuth(
     await RateLimitHelper.checkRateLimit();
     const client = getSnapTradeClient();
 
+    // Get user's SnapTrade credentials from Users table
+    const user = await prisma.user.findFirst({
+      where: { 
+        auth0Id: request.userId,
+        snapTradeUserId: request.snapTradeUserId 
+      }
+    });
+
+    if (!user?.snapTradeUserSecret) {
+      throw new Error('SnapTrade credentials not found for user');
+    }
+
+    const snapTradeUserSecret = decrypt(user.snapTradeUserSecret);
+
     // Get all brokerage authorizations for this user
     const authorizationsResponse = await client.connections.listBrokerageAuthorizations({
       userId: request.snapTradeUserId,
-      userSecret: request.snapTradeUserSecret,
+      userSecret: snapTradeUserSecret,
     });
 
     const authorizations = authorizationsResponse.data;
@@ -155,7 +201,7 @@ export async function completeBrokerAuth(
     // Get accounts for this authorization
     const accountsResponse = await client.accountInformation.listUserAccounts({
       userId: request.snapTradeUserId,
-      userSecret: request.snapTradeUserSecret,
+      userSecret: snapTradeUserSecret,
     });
 
     const accounts = accountsResponse.data || [];
@@ -166,22 +212,45 @@ export async function completeBrokerAuth(
       id: latestAuth.id,
     };
 
-    // Store the connection in our database
-    const encryptedSecret = encrypt(request.snapTradeUserSecret);
-    
-    const brokerConnection = await prisma.brokerConnection.create({
-      data: {
+    // Check if connection already exists
+    const existingConnection = await prisma.brokerConnection.findFirst({
+      where: { 
         userId: request.userId,
-        snapTradeUserId: request.snapTradeUserId,
-        snapTradeUserSecret: encryptedSecret,
-        brokerName: brokerAuth.name || 'Unknown Broker',
-        accountId: primaryAccount?.id || null,
-        accountName: primaryAccount?.name || primaryAccount?.number || null,
-        status: 'ACTIVE',
-        autoSyncEnabled: true,
-        syncInterval: 86400, // 24 hours
-      },
+        snapTradeUserId: request.snapTradeUserId 
+      }
     });
+
+    let brokerConnection;
+    if (existingConnection) {
+      // Update existing connection
+      brokerConnection = await prisma.brokerConnection.update({
+        where: { id: existingConnection.id },
+        data: {
+          brokerName: brokerAuth.name || 'Unknown Broker',
+          accountId: primaryAccount?.id || null,
+          accountName: primaryAccount?.name || primaryAccount?.number || null,
+          status: 'ACTIVE',
+          lastSyncError: null,
+        },
+      });
+    } else {
+      // Create new connection (fallback)
+      const encryptedSecret = encrypt(snapTradeUserSecret);
+      
+      brokerConnection = await prisma.brokerConnection.create({
+        data: {
+          userId: request.userId,
+          snapTradeUserId: request.snapTradeUserId,
+          snapTradeUserSecret: encryptedSecret,
+          brokerName: brokerAuth.name || 'Unknown Broker',
+          accountId: primaryAccount?.id || null,
+          accountName: primaryAccount?.name || primaryAccount?.number || null,
+          status: 'ACTIVE',
+          autoSyncEnabled: true,
+          syncInterval: 86400, // 24 hours
+        },
+      });
+    }
 
     return {
       success: true,
@@ -215,6 +284,31 @@ export async function completeBrokerAuth(
  */
 export function getDecryptedSecret(encryptedSecret: string): string {
   return decrypt(encryptedSecret);
+}
+
+/**
+ * Get SnapTrade credentials for a user from the Users table
+ */
+export async function getSnapTradeCredentials(userId: string): Promise<{
+  snapTradeUserId: string;
+  snapTradeUserSecret: string;
+} | null> {
+  const user = await prisma.user.findFirst({
+    where: { 
+      auth0Id: userId,
+      snapTradeUserId: { not: null },
+      snapTradeUserSecret: { not: null }
+    }
+  });
+
+  if (!user?.snapTradeUserId || !user?.snapTradeUserSecret) {
+    return null;
+  }
+
+  return {
+    snapTradeUserId: user.snapTradeUserId,
+    snapTradeUserSecret: decrypt(user.snapTradeUserSecret),
+  };
 }
 
 /**

@@ -144,8 +144,23 @@ export async function POST(request: NextRequest) {
 async function handleUserRegisteredWebhook(payload: WebhookPayload) {
   try {
     console.log('Processing USER_REGISTERED webhook for user:', payload.userId);
-    // This event is primarily for logging/analytics
-    // The actual user creation happens during our auth flow
+    
+    const snapTradeUserId = payload.userId || payload.data?.user_id;
+    if (!snapTradeUserId) {
+      console.error('No user ID found in user registered webhook payload');
+      return;
+    }
+
+    // Find the user by snapTradeUserId
+    const user = await prisma.user.findFirst({
+      where: { snapTradeUserId: snapTradeUserId }
+    });
+
+    if (user) {
+      console.log('USER_REGISTERED webhook received for existing user:', user.auth0Id);
+    } else {
+      console.warn('USER_REGISTERED webhook received for unknown SnapTrade user:', snapTradeUserId);
+    }
   } catch (error) {
     console.error('Error handling user registered webhook:', error);
   }
@@ -186,10 +201,23 @@ async function handleConnectionAttemptedWebhook(payload: ConnectionAttemptedWebh
       return;
     }
 
+    // Find the user by snapTradeUserId first
+    const user = await prisma.user.findFirst({
+      where: { snapTradeUserId: snapTradeUserId }
+    });
+
+    if (!user) {
+      console.error('No user found for SnapTrade user:', snapTradeUserId);
+      return;
+    }
+
     // Update connection status based on attempt result
     if (payload.data?.result === 'SUCCESS') {
       await prisma.brokerConnection.updateMany({
-        where: { snapTradeUserId: snapTradeUserId },
+        where: { 
+          userId: user.auth0Id,
+          snapTradeUserId: snapTradeUserId 
+        },
         data: {
           status: 'ACTIVE',
           lastSyncError: null,
@@ -197,7 +225,10 @@ async function handleConnectionAttemptedWebhook(payload: ConnectionAttemptedWebh
       });
     } else if (payload.data?.result) {
       await prisma.brokerConnection.updateMany({
-        where: { snapTradeUserId: snapTradeUserId },
+        where: { 
+          userId: user.auth0Id,
+          snapTradeUserId: snapTradeUserId 
+        },
         data: {
           status: 'ERROR',
           lastSyncError: `Connection attempt failed: ${payload.data.result}${payload.data.error ? ` - ${payload.data.error}` : ''}`,
@@ -219,9 +250,22 @@ async function handleConnectionAddedWebhook(payload: WebhookPayload) {
       return;
     }
 
+    // Find the user by snapTradeUserId first
+    const user = await prisma.user.findFirst({
+      where: { snapTradeUserId: snapTradeUserId }
+    });
+
+    if (!user) {
+      console.error('No user found for SnapTrade user:', snapTradeUserId);
+      return;
+    }
+
     // Find and update the connection status
     const updated = await prisma.brokerConnection.updateMany({
-      where: { snapTradeUserId: snapTradeUserId },
+      where: { 
+        userId: user.auth0Id,
+        snapTradeUserId: snapTradeUserId 
+      },
       data: {
         status: 'ACTIVE',
         lastSyncError: null,
@@ -233,7 +277,10 @@ async function handleConnectionAddedWebhook(payload: WebhookPayload) {
       
       // Trigger a sync for the connection
       const connection = await prisma.brokerConnection.findFirst({
-        where: { snapTradeUserId: snapTradeUserId },
+        where: { 
+          userId: user.auth0Id,
+          snapTradeUserId: snapTradeUserId 
+        },
       });
       
       if (connection) {
@@ -244,6 +291,8 @@ async function handleConnectionAddedWebhook(payload: WebhookPayload) {
         });
         console.log('Triggered sync for connection:', connection.id);
       }
+    } else {
+      console.log('No existing connection found to update, this may be the first connection attempt');
     }
   } catch (error) {
     console.error('Error handling connection added webhook:', error);
@@ -260,9 +309,22 @@ async function handleConnectionBrokenWebhook(payload: WebhookPayload) {
       return;
     }
 
+    // Find the user by snapTradeUserId first
+    const user = await prisma.user.findFirst({
+      where: { snapTradeUserId: snapTradeUserId }
+    });
+
+    if (!user) {
+      console.error('No user found for SnapTrade user:', snapTradeUserId);
+      return;
+    }
+
     // Mark connection as inactive
     const updated = await prisma.brokerConnection.updateMany({
-      where: { snapTradeUserId: snapTradeUserId },
+      where: { 
+        userId: user.auth0Id,
+        snapTradeUserId: snapTradeUserId 
+      },
       data: {
         status: 'ERROR',
         lastSyncError: `Connection ${payload.eventType.toLowerCase()} - requires re-authentication`,
@@ -290,8 +352,21 @@ async function handleAccountTransactionsWebhook(payload: AccountWebhookData) {
       return;
     }
 
+    // Find the user by snapTradeUserId first
+    const user = await prisma.user.findFirst({
+      where: { snapTradeUserId: snapTradeUserId }
+    });
+
+    if (!user) {
+      console.error('No user found for SnapTrade user:', snapTradeUserId);
+      return;
+    }
+
     const connection = await prisma.brokerConnection.findFirst({
-      where: { snapTradeUserId: snapTradeUserId },
+      where: { 
+        userId: user.auth0Id,
+        snapTradeUserId: snapTradeUserId 
+      },
     });
 
     if (!connection) {
@@ -314,13 +389,23 @@ async function handleAccountTransactionsWebhook(payload: AccountWebhookData) {
     
     const snapTradeUserId = payload.userId || payload.data?.user_id;
     if (snapTradeUserId) {
-      await prisma.brokerConnection.updateMany({
-        where: { snapTradeUserId: snapTradeUserId },
-        data: {
-          status: 'ERROR',
-          lastSyncError: 'Transaction webhook sync failed: ' + (error instanceof Error ? error.message : 'Unknown error'),
-        },
+      // Find user first, then update connection
+      const user = await prisma.user.findFirst({
+        where: { snapTradeUserId: snapTradeUserId }
       });
+      
+      if (user) {
+        await prisma.brokerConnection.updateMany({
+          where: { 
+            userId: user.auth0Id,
+            snapTradeUserId: snapTradeUserId 
+          },
+          data: {
+            status: 'ERROR',
+            lastSyncError: 'Transaction webhook sync failed: ' + (error instanceof Error ? error.message : 'Unknown error'),
+          },
+        });
+      }
     }
   }
 }

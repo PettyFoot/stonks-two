@@ -18,6 +18,7 @@ export {
   createBrokerConnection,
   completeBrokerAuth,
   getDecryptedSecret,
+  getSnapTradeCredentials,
   validateWebhookSignature,
   listBrokerConnections,
   getBrokerConnection,
