@@ -16,6 +16,7 @@ import {
   Target,
   DollarSign
 } from 'lucide-react';
+import { PageTriangleLoader } from '@/components/ui/TriangleLoader';
 import Image from 'next/image';
 
 interface OnboardingStep {
@@ -90,7 +91,7 @@ export default function OnboardingPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[var(--theme-background)] via-[var(--theme-surface)] to-[var(--theme-background)] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[var(--theme-tertiary)] mx-auto mb-4"></div>
+          <PageTriangleLoader />
           <p className="text-[var(--theme-secondary-text)]">Loading...</p>
         </div>
       </div>

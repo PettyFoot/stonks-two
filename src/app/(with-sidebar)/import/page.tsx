@@ -19,6 +19,7 @@ import {
   Upload,
   Workflow
 } from 'lucide-react';
+import { PageTriangleLoader } from '@/components/ui/TriangleLoader';
 import Link from 'next/link';
 
 interface ColumnMapping {
@@ -68,7 +69,7 @@ export default function EnhancedImportPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[var(--theme-tertiary)] mx-auto mb-4"></div>
+        <PageTriangleLoader />
       </div>
     );
   }

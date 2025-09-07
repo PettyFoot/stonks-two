@@ -6,13 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useSubscription } from '@/hooks/useSubscription';
 import { 
   Crown, 
-  Loader2, 
+ 
   Sparkles, 
   TrendingUp, 
   X,
   Zap,
   ArrowRight
 } from 'lucide-react';
+import { InlineTriangleLoader } from '@/components/ui/TriangleLoader';
 import { cn } from '@/lib/utils';
 
 interface UpgradePromptProps {
@@ -123,7 +124,7 @@ export function UpgradePrompt({
             className="shrink-0"
           >
             {actionLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <InlineTriangleLoader size="sm" />
             ) : (
               <Crown className="mr-2 h-4 w-4" />
             )}
@@ -157,7 +158,7 @@ export function UpgradePrompt({
           variant="outline"
         >
           {actionLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <InlineTriangleLoader size="sm" />
           ) : (
             <>
               Upgrade
@@ -233,7 +234,7 @@ export function UpgradePrompt({
           >
             {actionLoading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <InlineTriangleLoader size="sm" />
                 Creating checkout...
               </>
             ) : (

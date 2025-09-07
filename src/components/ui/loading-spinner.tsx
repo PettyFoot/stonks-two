@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Loader2 } from 'lucide-react';
+import { TriangleLoader, PageTriangleLoader, ButtonTriangleLoader, CardTriangleLoader, OverlayTriangleLoader, InlineTriangleLoader } from './TriangleLoader';
 import { cn } from '@/lib/utils';
 
 interface LoadingSpinnerProps {
@@ -31,87 +31,24 @@ export function LoadingSpinner({
   text,
   className 
 }: LoadingSpinnerProps) {
-  const spinner = (
-    <Loader2 
-      className={cn(
-        'animate-spin text-muted-foreground',
-        sizeClasses[size],
-        className
-      )}
-      role="status"
-      aria-label="Loading"
-    />
-  );
-
-  if (variant === 'inline') {
-    return (
-      <span className="inline-flex items-center gap-2">
-        {spinner}
-        {text && (
-          <span className={cn('text-muted-foreground', textSizeClasses[size])}>
-            {text}
-          </span>
-        )}
-      </span>
-    );
-  }
-
-  if (variant === 'overlay') {
-    return (
-      <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50">
-        <div className="flex flex-col items-center gap-3">
-          {spinner}
-          {text && (
-            <span className={cn('text-muted-foreground', textSizeClasses[size])}>
-              {text}
-            </span>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center justify-center gap-3">
-      {spinner}
-      {text && (
-        <span className={cn('text-muted-foreground', textSizeClasses[size])}>
-          {text}
-        </span>
-      )}
-    </div>
-  );
+  return <TriangleLoader size={size} variant={variant} text={text} className={className} />;
 }
 
 // Specific loading spinner variants for common use cases
 export function PageLoadingSpinner({ text = 'Loading...' }: { text?: string }) {
-  return (
-    <div className="flex items-center justify-center min-h-[200px]">
-      <LoadingSpinner size="lg" text={text} />
-    </div>
-  );
+  return <PageTriangleLoader text={text} />;
 }
 
 export function ButtonLoadingSpinner({ size = 'sm' }: { size?: 'sm' | 'md' }) {
-  return (
-    <LoadingSpinner 
-      size={size} 
-      variant="inline" 
-      className="text-current" 
-    />
-  );
+  return <ButtonTriangleLoader size={size} />;
 }
 
 export function CardLoadingSpinner({ text }: { text?: string }) {
-  return (
-    <div className="flex items-center justify-center py-8">
-      <LoadingSpinner text={text} />
-    </div>
-  );
+  return <CardTriangleLoader text={text} />;
 }
 
 export function OverlayLoadingSpinner({ text }: { text?: string }) {
-  return <LoadingSpinner variant="overlay" text={text} />;
+  return <OverlayTriangleLoader text={text} />;
 }
 
 // Skeleton loading components for better UX

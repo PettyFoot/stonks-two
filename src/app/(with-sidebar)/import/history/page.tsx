@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { useRouter } from 'next/navigation';
 import TopBar from '@/components/TopBar';
+import { PageTriangleLoader } from '@/components/ui/TriangleLoader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -150,7 +151,7 @@ export default function ImportHistoryPage() {
   if (isLoading || loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[var(--theme-tertiary)]"></div>
+        <PageTriangleLoader />
       </div>
     );
   }

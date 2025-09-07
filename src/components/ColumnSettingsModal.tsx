@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ColumnConfiguration } from '@/types';
 import { Settings } from 'lucide-react';
+import { InlineTriangleLoader } from '@/components/ui/TriangleLoader';
 
 interface ColumnSettingsModalProps {
   onColumnsChange: (columns: ColumnConfiguration[]) => void;
@@ -175,7 +176,7 @@ export default function ColumnSettingsModal({
         
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-theme-tertiary"></div>
+            <InlineTriangleLoader size="md" />
           </div>
         ) : (
           <div className="space-y-4">

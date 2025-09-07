@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, TrendingUp, Shield, Users, ArrowRight, Play, ChevronDown } from 'lucide-react';
+import { BarChart3, TrendingUp, Shield, Users, ArrowRight, Play, ChevronDown, Menu, X } from 'lucide-react';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { useRouter } from 'next/navigation';
 import { SoftwareApplicationStructuredData } from '@/components/SEO';
@@ -13,12 +13,13 @@ import { TradingFAQStructuredData } from '@/components/SEO/FAQStructuredData';
 import { OptimizedLogo } from '@/components/OptimizedImage';
 import Footer from '@/components/Footer';
 import { LoadingFallback, usePerformanceMonitor } from '@/components/Performance/LoadingOptimizer';
-import { WebGLCausticsBackground } from '@/components/backgrounds';
+import { InlineTriangleLoader, PageTriangleLoader } from '@/components/ui/TriangleLoader';
 
 export default function LandingPageComponent() {
   const { user, isLoading } = useUser();
   const router = useRouter();
   const [isStartingDemo, setIsStartingDemo] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // Monitor Core Web Vitals
   usePerformanceMonitor();
@@ -64,8 +65,7 @@ export default function LandingPageComponent() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[var(--theme-primary)] via-[var(--theme-surface)] to-[var(--theme-primary)] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[var(--theme-tertiary)] mx-auto mb-4"></div>
-          <p className="text-[var(--theme-primary-text)]">Loading...</p>
+          <PageTriangleLoader text="Loading..." />
         </div>
       </div>
     );
@@ -84,21 +84,22 @@ export default function LandingPageComponent() {
       
       {/* Hero Section - Full Screen */}
       <div className="h-screen w-full relative overflow-hidden">
-        <WebGLCausticsBackground 
-          intensity={0.7}
-          speed={0.8}
-          color={[0.8, 0.95, 1.0]}
-          backgroundColor={[0.05, 0.15, 0.3]}
-          fallbackToCSS={true}
+        <iframe 
+          className="absolute inset-0 w-full h-full object-cover -z-10"
+          src="https://www.shadertoy.com/embed/3cjcWD?gui=false&t=10&paused=false&muted=true" 
+          frameBorder="0"
+          allowFullScreen
+          style={{ pointerEvents: 'none' }}
         />
         
         {/* Navigation - Absolute positioned at top */}
-        <nav className="absolute top-0 left-0 right-0 z-20 p-8" role="navigation" aria-label="Main navigation">
-          <div className="max-w-5xl mx-auto">
+        <nav className="absolute top-0 left-0 right-0 z-50 px-4 sm:px-6 lg:px-8 pt-2 sm:pt-3 lg:pt-4 pb-4" role="navigation" aria-label="Main navigation">
+          <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between">
-              <OptimizedLogo size="xlarge" priority={true} className="drop-shadow-sm" />
+              <OptimizedLogo size="xxlarge" priority={true} className="drop-shadow-sm" />
               
-              <div className="flex items-center space-x-8">
+              {/* Desktop Navigation */}
+              <div className="hidden md:flex items-center space-x-8">
                 <Link href="/about" className="text-white hover:text-[var(--theme-tertiary)] text-lg font-medium transition-colors">
                   About Us
                 </Link>
@@ -110,57 +111,91 @@ export default function LandingPageComponent() {
                 </Link>
               </div>
               
-              <div className="flex items-center space-x-3">
+              <div className="hidden md:flex items-center space-x-3">
                 <Link href="/login">
                   <Button variant="ghost" className="text-white hover:bg-white/10 text-lg">
                     Sign In
                   </Button>
                 </Link>
               </div>
+
+              {/* Mobile Menu Button */}
+              <button
+                className="md:hidden text-white p-2"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label="Toggle mobile menu"
+              >
+                {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </button>
             </div>
+
+            {/* Mobile Menu */}
+            {isMobileMenuOpen && (
+              <div className="md:hidden absolute top-full left-0 right-0 bg-black/90 backdrop-blur-sm border-t border-white/20 mt-4 z-50">
+                <div className="flex flex-col space-y-4 p-6">
+                  <Link 
+                    href="/about" 
+                    className="text-white hover:text-[var(--theme-tertiary)] text-lg font-medium transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    About Us
+                  </Link>
+                  <Link 
+                    href="/features" 
+                    className="text-white hover:text-[var(--theme-tertiary)] text-lg font-medium transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Features
+                  </Link>
+                  <Link 
+                    href="/demo" 
+                    className="text-white hover:text-[var(--theme-tertiary)] text-lg font-medium transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Demo
+                  </Link>
+                  <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full text-white hover:bg-white/10 text-lg">
+                      Sign In
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         </nav>
 
         {/* Hero Content - Perfect Center */}
-        <div className="absolute -inset-10 flex items-center justify-center z-30" aria-labelledby="hero-heading">
-          <div className="text-center space-y-12 max-w-4xl mx-auto px-6">
-            <h1 id="hero-heading" className="text-9xl font-bold text-white mb-9 leading-tight">
-              Elevate<br />
-              Your<br />
-              <span className="text-[var(--theme-tertiary)]">Edge</span>
+        <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none" aria-labelledby="hero-heading">
+          <div className="text-center space-y-6 sm:space-y-8 md:space-y-10 lg:space-y-12 max-w-4xl mx-auto px-4 sm:px-6">
+            <h1 id="hero-heading" className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bebas text-white mb-4 sm:mb-6 md:mb-9 leading-tight">
+              <span className="text-black">Voyage Beyond the Market Depths</span>
             </h1>
-            <p className="text-4xl text-white/90 mb-12 max-w-3xl mx-auto">
-              Harness powerful analytics to gain clarity, consistency, and an edge that lasts.
+            <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl text-black/90 mb-6 sm:mb-8 md:mb-10 lg:mb-12 max-w-3xl mx-auto">
+              Explore deeper insights, chart smarter strategies, and trade with true direction.
             </p>
             
-            <div className="flex items-center justify-center space-x-6">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full sm:w-auto pointer-events-auto">
+              <Link href="/login" className="w-full sm:w-auto">
+                <Button 
+                  size="lg" 
+                  className="w-full sm:w-auto bg-[var(--theme-tertiary)] hover:bg-[var(--theme-tertiary)]/80 text-white px-6 py-3 sm:px-8 sm:py-4 lg:px-12 lg:py-6 text-base sm:text-lg lg:text-2xl font-semibold rounded-lg"
+                  aria-label="Voyage"
+                >
+                  Voyage
+                </Button>
+              </Link>
               <Button 
                 size="lg" 
-                className="bg-[var(--theme-tertiary)] hover:bg-[var(--theme-tertiary)]/80 text-white px-12 py-6 text-2xl font-semibold rounded-lg"
-                onClick={startDemo}
-                disabled={isStartingDemo}
-                aria-label="Experience Edge"
-              >
-                {isStartingDemo ? (
-                  <>
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-current mr-3"></div>
-                    Starting Demo...
-                  </>
-                ) : (
-                  "Experience Edge"
-                )}
-              </Button>
-              <Button 
-                size="lg" 
-                className="bg-[var(--theme-tertiary)]/80 hover:bg-[var(--theme-tertiary)]/60 text-white px-12 py-6 text-2xl font-semibold rounded-lg"
+                className="w-full sm:w-auto bg-[var(--theme-tertiary)]/80 hover:bg-[var(--theme-tertiary)]/60 text-white px-6 py-3 sm:px-8 sm:py-4 lg:px-12 lg:py-6 text-base sm:text-lg lg:text-2xl font-semibold rounded-lg"
                 onClick={startDemo}
                 disabled={isStartingDemo}
                 aria-label="Try Demo"
               >
                 {isStartingDemo ? (
                   <>
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-current mr-3"></div>
-                    Starting Demo...
+                    <InlineTriangleLoader size="sm" />
+                    <span className="ml-3">Starting Demo...</span>
                   </>
                 ) : (
                   "Demo"

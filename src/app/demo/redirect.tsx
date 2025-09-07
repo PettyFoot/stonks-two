@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { TriangleLoader } from '@/components/ui/TriangleLoader';
 import { useRouter } from 'next/navigation';
 
 interface DemoRedirectProps {
@@ -36,8 +37,7 @@ export function DemoRedirect({ to }: DemoRedirectProps) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Starting your demo session...</p>
+        <TriangleLoader size="lg" text="Starting your demo session..." />
       </div>
     </div>
   );

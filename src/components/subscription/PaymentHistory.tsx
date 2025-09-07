@@ -13,11 +13,11 @@ import {
   Calendar, 
   DollarSign,
   ExternalLink,
-  Loader2,
   AlertCircle,
   Receipt,
   RefreshCw
 } from 'lucide-react';
+import { InlineTriangleLoader } from '@/components/ui/TriangleLoader';
 import { cn } from '@/lib/utils';
 
 interface PaymentHistoryProps {
@@ -232,7 +232,7 @@ export function PaymentHistory({
             >
               {loadingMore ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <InlineTriangleLoader size="sm" />
                   Loading...
                 </>
               ) : (
@@ -322,7 +322,7 @@ function PaymentTableRow({
               disabled={isDownloading}
             >
               {isDownloading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <InlineTriangleLoader size="sm" />
               ) : (
                 <Download className="h-4 w-4" />
               )}
@@ -384,7 +384,7 @@ function PaymentCompactRow({
                 disabled={isDownloading}
               >
                 {isDownloading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <InlineTriangleLoader size="sm" />
                 ) : (
                   <Download className="h-4 w-4" />
                 )}

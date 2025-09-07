@@ -308,8 +308,7 @@ const WebGLCausticsBackground: React.FC<WebGLCausticsBackgroundProps> = ({
   if (webglFailed && fallbackToCSS) {
     return (
       <div 
-        className={`fixed inset-0 -z-10 bg-caustics ${className}`}
-        style={{ zIndex: -1 }}
+        className={`absolute inset-0 w-full h-full object-cover -z-10 bg-caustics ${className}`}
       />
     );
   }
@@ -322,8 +321,7 @@ const WebGLCausticsBackground: React.FC<WebGLCausticsBackgroundProps> = ({
   return (
     <canvas
       ref={canvasRef}
-      className={`fixed inset-0 -z-10 w-full h-full ${className}`}
-      style={{ zIndex: -1 }}
+      className={`absolute inset-0 w-full h-full object-cover -z-10 ${className}`}
     />
   );
 };

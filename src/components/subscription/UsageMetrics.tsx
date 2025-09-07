@@ -18,8 +18,8 @@ import {
   Crown,
   Calendar,
   Zap,
-  Loader2
 } from 'lucide-react';
+import { InlineTriangleLoader } from '@/components/ui/TriangleLoader';
 import { cn } from '@/lib/utils';
 
 interface UsageMetricsProps {
@@ -154,8 +154,8 @@ export function UsageMetrics({
                 >
                   {upgradeLoading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Loading...
+                      <InlineTriangleLoader size="sm" />
+                      <span className="ml-2">Loading...</span>
                     </>
                   ) : (
                     <>
@@ -260,7 +260,7 @@ export function UsageMetrics({
                   size="sm"
                 >
                   {upgradeLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <InlineTriangleLoader size="sm" />
                   ) : (
                     'Upgrade'
                   )}

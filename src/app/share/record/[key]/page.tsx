@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Clock, AlertCircle, BarChart3, TrendingUp, TrendingDown } from 'lucide-react';
 import TradeCandlestickChart from '@/components/charts/TradeCandlestickChart';
 import ExecutionsTable from '@/components/ExecutionsTable';
+import { TriangleLoader } from '@/components/ui/TriangleLoader';
 
 interface SharedTradeData {
   trade: any;
@@ -86,8 +87,7 @@ export default function SharedTradePage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <div className="text-lg text-gray-600">Loading shared trade...</div>
+          <TriangleLoader size="lg" text="Loading shared trade..." />
         </div>
       </div>
     );

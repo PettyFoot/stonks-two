@@ -18,6 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import TradeCandlestickChart from '@/components/charts/TradeCandlestickChart';
 import AdSense from '@/components/AdSense';
 import ShareButton from '@/components/ShareButton';
+import { InlineTriangleLoader } from '@/components/ui/TriangleLoader';
 import { calculateTradeMetrics } from '@/lib/tradeMetrics';
 import { MarketDataResponse } from '@/lib/marketData/types';
 
@@ -168,7 +169,7 @@ function RecordsContent() {
       <div className="flex flex-col h-full">
         <TopBar title="Records" showTimeRangeFilters={false} />
         <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--theme-tertiary)]"></div>
+          <InlineTriangleLoader size="md" />
         </div>
       </div>
     );
@@ -204,7 +205,7 @@ function RecordsContent() {
           </div>
           {tradesLoading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--theme-tertiary)]"></div>
+              <InlineTriangleLoader size="md" />
             </div>
           ) : (
             <TradesTable 
@@ -365,7 +366,7 @@ export default function Records() {
       <div className="flex flex-col h-full">
         <TopBar title="Records" showTimeRangeFilters={false} />
         <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--theme-tertiary)]"></div>
+          <InlineTriangleLoader size="md" />
         </div>
       </div>
     }>

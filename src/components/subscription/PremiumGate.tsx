@@ -4,7 +4,8 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSubscription } from '@/hooks/useSubscription';
-import { Crown, Lock, Loader2 } from 'lucide-react';
+import { Crown, Lock } from 'lucide-react';
+import { InlineTriangleLoader } from '@/components/ui/TriangleLoader';
 
 interface PremiumGateProps {
   children: React.ReactNode;
@@ -47,7 +48,7 @@ export function PremiumGate({
   if (isLoading) {
     return (
       <div className={`flex items-center justify-center py-8 ${className || ''}`}>
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <InlineTriangleLoader size="lg" />
       </div>
     );
   }
@@ -97,7 +98,7 @@ export function PremiumGate({
             >
               {upgradeLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <InlineTriangleLoader size="sm" />
                   Loading...
                 </>
               ) : (
@@ -150,7 +151,7 @@ export function usePremiumGate() {
 
   const renderPremium = (content: React.ReactNode, fallback?: React.ReactNode) => {
     if (isLoading) {
-      return <Loader2 className="h-4 w-4 animate-spin" />;
+      return <InlineTriangleLoader size="sm" />;
     }
     
     return hasPremiumAccess ? content : fallback;

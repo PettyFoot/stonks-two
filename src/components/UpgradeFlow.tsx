@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { InlineTriangleLoader } from '@/components/ui/TriangleLoader';
 import { CheckCircle, ArrowRight, X, Sparkles, TrendingUp, Database } from 'lucide-react';
 
 interface UpgradePromptProps {
@@ -126,8 +127,8 @@ export function UpgradePrompt({
             >
               {isTransitioning ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Setting up your account...
+                  <InlineTriangleLoader size="sm" />
+                  <span className="ml-2">Setting up your account...</span>
                 </>
               ) : (
                 <>

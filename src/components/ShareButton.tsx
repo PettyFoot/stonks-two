@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Share2, Copy, Check, AlertCircle, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { InlineTriangleLoader } from '@/components/ui/TriangleLoader';
 import {
   Dialog,
   DialogContent,
@@ -228,8 +229,8 @@ export default function ShareButton({
               >
                 {isLoading ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Creating...
+                    <InlineTriangleLoader size="sm" />
+                    <span className="ml-2">Creating...</span>
                   </>
                 ) : (
                   <>

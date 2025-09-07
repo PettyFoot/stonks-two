@@ -13,6 +13,7 @@ import TradeDistributionChart from '@/components/charts/TradeDistributionChart';
 import GaugeChart from '@/components/charts/GaugeChart';
 import LargestGainLossGauge from '@/components/charts/LargestGainLossGauge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageTriangleLoader } from '@/components/ui/TriangleLoader';
 import { Upload, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -78,7 +79,7 @@ export default function DashboardComponent() {
   if (isLoading || loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[var(--theme-tertiary)] mx-auto mb-4"></div>
+        <PageTriangleLoader />
       </div>
     );
   }

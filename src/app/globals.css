@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -146,6 +146,13 @@ body {
 
 .hover\:bg-theme-red\/80:hover {
   background-color: var(--theme-red-hover);
+}
+
+/* Oswald display font class */
+.font-oswald {
+  font-family: 'Oswald', sans-serif;
+  letter-spacing: 0.025em;
+  font-weight: 600;
 }
 
 .bg-negative {

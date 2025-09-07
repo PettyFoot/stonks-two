@@ -8,6 +8,7 @@ import ColumnSettingsModal from '@/components/ColumnSettingsModal';
 import { Button } from '@/components/ui/button';
 import { Trade, ColumnConfiguration } from '@/types';
 import { useTradesData } from '@/hooks/useTradesData';
+import { PageTriangleLoader } from '@/components/ui/TriangleLoader';
 import { useAuth } from '@/contexts/AuthContext';
 import { RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
@@ -75,7 +76,7 @@ export default function Trades() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--theme-tertiary)]"></div>
+        <PageTriangleLoader text="Loading trades..." />
       </div>
     );
   }
