@@ -83,7 +83,7 @@ export default function LandingPageComponent() {
       <TradingFAQStructuredData />
       
       {/* Hero Section - Full Screen */}
-      <div className="h-screen w-full relative overflow-hidden">
+      <div className="h-screen w-full relative overflow-hidden flex flex-col">
         <iframe 
           className="absolute inset-0 w-full h-full object-cover -z-10"
           src="https://www.shadertoy.com/embed/3cjcWD?gui=false&t=10&paused=false&muted=true" 
@@ -92,11 +92,11 @@ export default function LandingPageComponent() {
           style={{ pointerEvents: 'none' }}
         />
         
-        {/* Navigation - Absolute positioned at top */}
-        <nav className="absolute top-0 left-0 right-0 z-50 px-4 sm:px-6 lg:px-8 pt-2 sm:pt-3 lg:pt-4 pb-4" role="navigation" aria-label="Main navigation">
+        {/* Navigation - Relative positioned at top */}
+        <nav className="relative z-50 px-4 sm:px-6 lg:px-8 pt-2 sm:pt-3 lg:pt-4 pb-4" role="navigation" aria-label="Main navigation">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between">
-              <OptimizedLogo size="xxlarge" priority={true} className="drop-shadow-sm" />
+              <OptimizedLogo size="large" priority={true} className="drop-shadow-sm" />
               
               {/* Desktop Navigation */}
               <div className="hidden md:flex items-center space-x-8">
@@ -166,9 +166,9 @@ export default function LandingPageComponent() {
         </nav>
 
         {/* Hero Content - Perfect Center */}
-        <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none" aria-labelledby="hero-heading">
+        <div className="relative flex-1 flex items-center justify-center z-30 pointer-events-none" aria-labelledby="hero-heading">
           <div className="text-center space-y-6 sm:space-y-8 md:space-y-10 lg:space-y-12 max-w-4xl mx-auto px-4 sm:px-6">
-            <h1 id="hero-heading" className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bebas text-white mb-4 sm:mb-6 md:mb-9 leading-tight">
+            <h1 id="hero-heading" className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-oswald text-white mb-4 sm:mb-6 md:mb-9 leading-tight">
               <span className="text-black">Voyage Beyond the Market Depths</span>
             </h1>
             <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl text-black/90 mb-6 sm:mb-8 md:mb-10 lg:mb-12 max-w-3xl mx-auto">
@@ -205,10 +205,6 @@ export default function LandingPageComponent() {
           </div>
         </div>
         
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce z-20">
-          <ChevronDown className="h-6 w-6 text-white/50" />
-        </div>
       </div>
 
       {/* Footer - Outside container but with higher z-index */}
