@@ -8,7 +8,7 @@ interface TriangleBackgroundProps {
 
 export function TriangleBackground({ className = '' }: TriangleBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const animationRef = useRef<number>()
+  const animationRef = useRef<number | undefined>(undefined)
   const programRef = useRef<WebGLProgram | null>(null)
   const glRef = useRef<WebGLRenderingContext | null>(null)
   const startTimeRef = useRef<number>(Date.now())
@@ -157,23 +157,24 @@ export function TriangleBackground({ className = '' }: TriangleBackgroundProps) 
       return
     }
 
-    glRef.current = gl
+    glRef.current = gl as WebGLRenderingContext
 
     // Create shaders
-    const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource)
-    const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource)
+    const webgl = gl as WebGLRenderingContext
+    const vertexShader = createShader(webgl, webgl.VERTEX_SHADER, vertexShaderSource)
+    const fragmentShader = createShader(webgl, webgl.FRAGMENT_SHADER, fragmentShaderSource)
 
     if (!vertexShader || !fragmentShader) return
 
     // Create program
-    const program = createProgram(gl, vertexShader, fragmentShader)
+    const program = createProgram(webgl, vertexShader, fragmentShader)
     if (!program) return
 
     programRef.current = program
 
     // Set up geometry (full screen quad)
-    const positionBuffer = gl.createBuffer()
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
+    const positionBuffer = webgl.createBuffer()
+    webgl.bindBuffer(webgl.ARRAY_BUFFER, positionBuffer)
     const positions = new Float32Array([
       -1, -1,
        1, -1,
@@ -182,18 +183,18 @@ export function TriangleBackground({ className = '' }: TriangleBackgroundProps) 
        1, -1,
        1,  1,
     ])
-    gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW)
+    webgl.bufferData(webgl.ARRAY_BUFFER, positions, webgl.STATIC_DRAW)
 
-    const positionLocation = gl.getAttribLocation(program, 'a_position')
-    gl.enableVertexAttribArray(positionLocation)
-    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0)
+    const positionLocation = webgl.getAttribLocation(program, 'a_position')
+    webgl.enableVertexAttribArray(positionLocation)
+    webgl.vertexAttribPointer(positionLocation, 2, webgl.FLOAT, false, 0, 0)
 
     // Get uniform locations
-    const timeLocation = gl.getUniformLocation(program, 'u_time')
-    const resolutionLocation = gl.getUniformLocation(program, 'u_resolution')
+    const timeLocation = webgl.getUniformLocation(program, 'u_time')
+    const resolutionLocation = webgl.getUniformLocation(program, 'u_resolution')
 
     const render = () => {
-      if (!gl || !program) return
+      if (!webgl || !program) return
 
       // Resize canvas
       const displayWidth = canvas.clientWidth
@@ -202,21 +203,21 @@ export function TriangleBackground({ className = '' }: TriangleBackgroundProps) 
       if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
         canvas.width = displayWidth
         canvas.height = displayHeight
-        gl.viewport(0, 0, displayWidth, displayHeight)
+        webgl.viewport(0, 0, displayWidth, displayHeight)
       }
 
       // Clear and use program
-      gl.clearColor(0, 0, 0, 1)
-      gl.clear(gl.COLOR_BUFFER_BIT)
-      gl.useProgram(program)
+      webgl.clearColor(0, 0, 0, 1)
+      webgl.clear(webgl.COLOR_BUFFER_BIT)
+      webgl.useProgram(program)
 
       // Set uniforms
       const currentTime = (Date.now() - startTimeRef.current) / 1000
-      gl.uniform1f(timeLocation, currentTime)
-      gl.uniform2f(resolutionLocation, canvas.width, canvas.height)
+      webgl.uniform1f(timeLocation, currentTime)
+      webgl.uniform2f(resolutionLocation, canvas.width, canvas.height)
 
       // Draw
-      gl.drawArrays(gl.TRIANGLES, 0, 6)
+      webgl.drawArrays(webgl.TRIANGLES, 0, 6)
 
       animationRef.current = requestAnimationFrame(render)
     }
@@ -228,8 +229,8 @@ export function TriangleBackground({ className = '' }: TriangleBackgroundProps) 
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current)
       }
-      if (gl && programRef.current) {
-        gl.deleteProgram(programRef.current)
+      if (webgl && programRef.current) {
+        webgl.deleteProgram(programRef.current)
       }
     }
   }, [])
