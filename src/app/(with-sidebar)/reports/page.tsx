@@ -16,6 +16,7 @@ import { useIsMobile } from '@/hooks/useMediaQuery';
 import StatsSection from '@/components/reports/StatsSection';
 import ChartContainer from '@/components/reports/ChartContainer';
 import WinVsLossReport from '@/components/reports/WinVsLossReport';
+import { FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
 import { useDetailedReportsData } from '@/hooks/useDetailedReportsData';
 import { 
   aggregateByDayOfWeek, 
@@ -223,8 +224,8 @@ export default function Reports() {
           <TabsContent value="overview" className="space-y-6">
             {/* Loading state */}
             {loading && (
-              <div className="flex items-center justify-center h-64">
-                <div className="text-muted">Loading reports data...</div>
+              <div className="relative h-screen">
+                <FullPageTriangleLoader text="Loading reports data..." />
               </div>
             )}
             
@@ -282,6 +283,20 @@ export default function Reports() {
 
           {/* Detailed Tab - Contains Statistics and Enhanced Analysis */}
           <TabsContent value="detailed" className="space-y-6">
+            {/* Loading state for detailed data */}
+            {detailedLoading && (
+              <div className="relative h-screen">
+                <FullPageTriangleLoader text="Loading detailed analytics..." />
+              </div>
+            )}
+            
+            {/* Error state for detailed data */}
+            {detailedError && !detailedLoading && (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-red-500">Error: {detailedError}</div>
+              </div>
+            )}
+            
             {/* STATISTICS SECTION: 22 Trading Metrics */}
             {!detailedLoading && !detailedError && (
               <StatsSection stats={stats} />

@@ -20,6 +20,7 @@ import {
   Loader2,
   Mail
 } from 'lucide-react';
+import { FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
 
 // Import settings tab components
 import ProfileTab from './components/ProfileTab';
@@ -51,11 +52,8 @@ export default function SettingsComponent() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Loading settings...</p>
-        </div>
+      <div className="relative h-screen">
+        <FullPageTriangleLoader text="Loading settings..." />
       </div>
     );
   }

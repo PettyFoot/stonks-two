@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import TradesTable from '@/components/TradesTable';
 import { useTradesData } from '@/hooks/useTradesData';
+import { FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
 
 export default function Search() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -64,6 +65,15 @@ export default function Search() {
   }, [tradesData?.trades, debouncedQuery]);
 
   const hasSearched = !!debouncedQuery.trim();
+
+  // Show loading state when initially loading trades data
+  if (loading && !tradesData) {
+    return (
+      <div className="relative h-screen">
+        <FullPageTriangleLoader text="Loading search..." />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">

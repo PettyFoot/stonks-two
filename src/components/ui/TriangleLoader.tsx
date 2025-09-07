@@ -116,6 +116,22 @@ export function OverlayTriangleLoader({ text }: { text?: string }) {
   return <TriangleLoader variant="overlay" size="lg" text={text} />
 }
 
+// Full-page triangle loader that fills the entire content area
+export function FullPageTriangleLoader({ text = 'Loading...' }: { text?: string }) {
+  return (
+    <div className="absolute inset-0 bg-black overflow-hidden">
+      <TriangleBackground />
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <span className="text-white text-lg font-medium">
+            {text}
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Inline triangle loader for buttons and small spaces
 export function InlineTriangleLoader({ size = 'sm' }: { size?: 'sm' | 'md' }) {
   return (

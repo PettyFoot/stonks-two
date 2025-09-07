@@ -7,11 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   BarChart3, 
   TrendingUp, 
-  Shield, 
-  Users, 
   Target, 
-  Zap, 
-  Lock, 
   PieChart,
   FileText,
   Calendar,
@@ -65,12 +61,6 @@ export default function Features() {
       description: "Connect with major brokers for seamless data import and automated trade tracking.",
       features: ["Interactive Brokers", "TD Ameritrade", "CSV import", "API connectivity"]
     },
-    {
-      icon: <Shield className="h-8 w-8" />,
-      title: "Bank-Level Security",
-      description: "Enterprise-grade security with complete data isolation and encryption.",
-      features: ["Data encryption", "User isolation", "Secure hosting", "Regular audits"]
-    }
   ];
 
   const advancedFeatures = [
@@ -211,39 +201,6 @@ export default function Features() {
               </CardHeader>
             </Card>
           ))}
-        </div>
-      </section>
-
-      {/* Security Section */}
-      <section className="max-w-7xl mx-auto px-6 py-16">
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-12 shadow-xl">
-          <div className="text-center mb-12">
-            <Lock className="h-16 w-16 text-[var(--theme-tertiary)] mx-auto mb-6" />
-            <h2 className="text-4xl font-bold text-[var(--theme-primary-text)] mb-6">
-              Enterprise-Grade Security
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Your trading data is protected with the same security standards used by major financial institutions.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <Shield className="h-12 w-12 text-[var(--theme-tertiary)] mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-[var(--theme-primary-text)] mb-2">Data Encryption</h3>
-              <p className="text-gray-600">All data encrypted in transit and at rest using industry-standard protocols.</p>
-            </div>
-            <div className="text-center">
-              <Users className="h-12 w-12 text-[var(--theme-tertiary)] mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-[var(--theme-primary-text)] mb-2">Complete Isolation</h3>
-              <p className="text-gray-600">Your trading data is completely isolated from other users for maximum privacy.</p>
-            </div>
-            <div className="text-center">
-              <Zap className="h-12 w-12 text-[var(--theme-tertiary)] mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-[var(--theme-primary-text)] mb-2">Regular Audits</h3>
-              <p className="text-gray-600">Continuous security monitoring and regular audits ensure your data stays safe.</p>
-            </div>
-          </div>
         </div>
       </section>
 

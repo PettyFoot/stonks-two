@@ -88,9 +88,9 @@ export async function createBrokerConnection(
     let snapTradeUserSecret: string;
 
     if (existingUser?.snapTradeUserId && existingUser?.snapTradeUserSecret) {
-      // Use existing credentials
+      // Use existing credentials (decrypt the stored secret)
       snapTradeUserId = existingUser.snapTradeUserId;
-      snapTradeUserSecret = existingUser.snapTradeUserSecret;
+      snapTradeUserSecret = decrypt(existingUser.snapTradeUserSecret);
       console.log('Using existing SnapTrade credentials for user:', request.userId);
     } else {
       // Generate unique SnapTrade user ID
@@ -110,12 +110,12 @@ export async function createBrokerConnection(
 
       snapTradeUserSecret = userSecretFromResponse;
 
-      // IMMEDIATELY store credentials in Users table
+      // IMMEDIATELY store credentials in Users table (encrypt the secret)
       await prisma.user.update({
         where: { auth0Id: request.userId },
         data: {
           snapTradeUserId,
-          snapTradeUserSecret: snapTradeUserSecret,
+          snapTradeUserSecret: encrypt(snapTradeUserSecret),
           snapTradeRegisteredAt: new Date(),
         },
       });
@@ -180,7 +180,7 @@ export async function completeBrokerAuth(
       throw new Error('SnapTrade credentials not found for user');
     }
 
-    const snapTradeUserSecret = user.snapTradeUserSecret;
+    const snapTradeUserSecret = decrypt(user.snapTradeUserSecret);
 
     // Get all brokerage authorizations for this user
     const authorizationsResponse = await client.connections.listBrokerageAuthorizations({
@@ -207,65 +207,24 @@ export async function completeBrokerAuth(
     const accounts = accountsResponse.data || [];
     const primaryAccount = accounts[0]; // Use first account as primary
 
-    const brokerAuth = {
-      name: latestAuth.name || 'Connected Broker',
-      id: latestAuth.id,
-    };
-
-    // Check if connection already exists
-    const existingConnection = await prisma.brokerConnection.findFirst({
-      where: { 
-        userId: request.userId,
-        snapTradeUserId: request.snapTradeUserId 
-      }
-    });
-
-    let brokerConnection;
-    if (existingConnection) {
-      // Update existing connection
-      brokerConnection = await prisma.brokerConnection.update({
-        where: { id: existingConnection.id },
-        data: {
-          brokerName: brokerAuth.name || 'Unknown Broker',
-          accountId: primaryAccount?.id || null,
-          accountName: primaryAccount?.name || primaryAccount?.number || null,
-          status: 'ACTIVE',
-          lastSyncError: null,
-        },
-      });
-    } else {
-      // Create new connection (fallback)
-      brokerConnection = await prisma.brokerConnection.create({
-        data: {
-          userId: request.userId,
-          snapTradeUserId: request.snapTradeUserId,
-          snapTradeUserSecret: snapTradeUserSecret,
-          brokerName: brokerAuth.name || 'Unknown Broker',
-          accountId: primaryAccount?.id || null,
-          accountName: primaryAccount?.name || primaryAccount?.number || null,
-          status: 'ACTIVE',
-          autoSyncEnabled: true,
-          syncInterval: 86400, // 24 hours
-        },
-      });
-    }
-
+    // Connection successful - return broker info from SnapTrade
     return {
       success: true,
-      brokerConnection: {
-        id: brokerConnection.id,
-        userId: brokerConnection.userId,
-        snapTradeUserId: brokerConnection.snapTradeUserId,
-        brokerName: brokerConnection.brokerName,
-        accountId: brokerConnection.accountId || undefined,
-        accountName: brokerConnection.accountName || undefined,
-        status: brokerConnection.status,
-        lastSyncAt: brokerConnection.lastSyncAt || undefined,
-        lastSyncError: brokerConnection.lastSyncError || undefined,
-        autoSyncEnabled: brokerConnection.autoSyncEnabled,
-        syncInterval: brokerConnection.syncInterval,
-        createdAt: brokerConnection.createdAt,
-        updatedAt: brokerConnection.updatedAt,
+      connection: {
+        id: latestAuth.id,
+        snapTradeUserId: request.snapTradeUserId,
+        brokerName: latestAuth.name || 'Connected Broker',
+        accountId: primaryAccount?.id || null,
+        accountName: primaryAccount?.name || primaryAccount?.number || null,
+        status: 'ACTIVE',
+        accounts: accounts.map((account: any) => ({
+          id: account.id,
+          number: account.number,
+          name: account.name,
+          type: account.meta?.type || null,
+          balance: account.balance,
+          currency: account.balance?.currency || null,
+        })),
       },
     };
   } catch (error) {
@@ -281,7 +240,7 @@ export async function completeBrokerAuth(
  * Get decrypted user secret for API calls
  */
 export function getDecryptedSecret(secret: string): string {
-  return secret;
+  return decrypt(secret);
 }
 
 /**
@@ -305,7 +264,7 @@ export async function getSnapTradeCredentials(userId: string): Promise<{
 
   return {
     snapTradeUserId: user.snapTradeUserId,
-    snapTradeUserSecret: user.snapTradeUserSecret,
+    snapTradeUserSecret: decrypt(user.snapTradeUserSecret),
   };
 }
 
@@ -352,63 +311,100 @@ export function validateWebhookSignature(
 }
 
 /**
- * List all broker connections for a user
+ * Get all broker connections for a user from SnapTrade API
  */
-export async function listBrokerConnections(userId: string) {
-  return prisma.brokerConnection.findMany({
-    where: { userId },
-    orderBy: { createdAt: 'desc' },
-  });
-}
+export async function getSnapTradeBrokerConnections(userId: string) {
+  const credentials = await getSnapTradeCredentials(userId);
+  if (!credentials) {
+    return [];
+  }
 
-/**
- * Get broker connection by ID
- */
-export async function getBrokerConnection(connectionId: string, userId: string) {
-  return prisma.brokerConnection.findFirst({
-    where: { 
-      id: connectionId,
-      userId 
-    },
-  });
-}
-
-/**
- * Delete a broker connection
- */
-export async function deleteBrokerConnection(connectionId: string, userId: string) {
   try {
-    // Get connection to get SnapTrade user details
-    const connection = await getBrokerConnection(connectionId, userId);
-    if (!connection) {
-      throw new Error('Connection not found');
+    await RateLimitHelper.checkRateLimit();
+    const client = getSnapTradeClient();
+
+    // Get all brokerage authorizations from SnapTrade
+    const authorizationsResponse = await client.connections.listBrokerageAuthorizations({
+      userId: credentials.snapTradeUserId,
+      userSecret: credentials.snapTradeUserSecret,
+    });
+
+    const authorizations = authorizationsResponse.data || [];
+
+    // Get accounts for this user
+    const accountsResponse = await client.accountInformation.listUserAccounts({
+      userId: credentials.snapTradeUserId,
+      userSecret: credentials.snapTradeUserSecret,
+    });
+
+    const accounts = accountsResponse.data || [];
+
+    // Map authorizations to a consistent format
+    return authorizations.map((auth: any) => {
+      const associatedAccounts = accounts.filter((account: any) => 
+        account.brokerage_authorization?.id === auth.id
+      );
+
+      return {
+        id: auth.id,
+        snapTradeUserId: credentials.snapTradeUserId,
+        brokerName: auth.name || 'Unknown Broker',
+        status: auth.disabled ? 'INACTIVE' : 'ACTIVE',
+        accounts: associatedAccounts.map((account: any) => ({
+          id: account.id,
+          number: account.number,
+          name: account.name,
+          type: account.meta?.type || null,
+          balance: account.balance,
+          currency: account.balance?.currency || null,
+        })),
+        createdAt: auth.created_date,
+        updatedAt: auth.updated_date,
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching SnapTrade connections:', error);
+    return [];
+  }
+}
+
+/**
+ * Delete all broker connections for a user (delete SnapTrade user)
+ */
+export async function deleteSnapTradeUser(userId: string) {
+  try {
+    const credentials = await getSnapTradeCredentials(userId);
+    if (!credentials) {
+      throw new Error('SnapTrade credentials not found');
     }
 
     await RateLimitHelper.checkRateLimit();
     const client = getSnapTradeClient();
-    const decryptedSecret = connection.snapTradeUserSecret;
 
-    // Try to delete from SnapTrade (don't fail if this errors)
+    // Delete the SnapTrade user (this removes all their connections)
     try {
       await client.authentication.deleteSnapTradeUser({
-        userId: connection.snapTradeUserId,
+        userId: credentials.snapTradeUserId,
       });
-      console.log('Successfully deleted SnapTrade user:', connection.snapTradeUserId);
+      console.log('Successfully deleted SnapTrade user:', credentials.snapTradeUserId);
     } catch (error) {
-      console.warn('Failed to delete SnapTrade user, continuing with local deletion:', error);
+      console.warn('Failed to delete SnapTrade user:', error);
+      throw error;
     }
 
-    // Delete from our database
-    await prisma.brokerConnection.delete({
-      where: { 
-        id: connectionId,
-        userId 
+    // Clear SnapTrade credentials from our database
+    await prisma.user.update({
+      where: { auth0Id: userId },
+      data: {
+        snapTradeUserId: null,
+        snapTradeUserSecret: null,
+        snapTradeRegisteredAt: null,
       },
     });
 
     return { success: true };
   } catch (error) {
-    console.error('Error deleting broker connection:', error);
+    console.error('Error deleting SnapTrade user:', error);
     throw new Error(handleSnapTradeError(error));
   }
 }

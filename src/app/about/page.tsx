@@ -47,9 +47,9 @@ export default function AboutUs() {
               <div>
 <h2 className="text-3xl font-bold text-[var(--theme-primary-text)] mb-4">Our Mission</h2>
                 <p className="text-gray-700 leading-relaxed mb-4">
-                  Our trading analytics platform was built by traders, for traders. We understand the challenges of tracking performance, 
+                  Our trading analytics platform was built by traders, for traders. We understand the importance of tracking performance, 
                   analyzing trade metrics, and making data-driven improvements to your trading strategy. Our mission is to provide 
-                  professional-grade analytics tools that were previously only available to institutional traders.
+                  professional-grade analytics tools.
                 </p>
                 <p className="text-gray-700 leading-relaxed">
                   We believe that every trader deserves access to comprehensive performance analytics, secure data management, 
@@ -105,7 +105,7 @@ export default function AboutUs() {
             </CardHeader>
             <CardContent className="text-center">
               <p className="text-gray-600 text-sm">
-                Connect with Interactive Brokers, TD Ameritrade, and other major brokers for seamless data import.
+                Connect with your broker directly for seamless data import.
               </p>
             </CardContent>
           </Card>
@@ -145,7 +145,7 @@ export default function AboutUs() {
                   Professional-Grade Analytics
                 </h3>
                 <p className="text-gray-700">
-                  Access the same level of analytics used by institutional traders. Track everything from 
+                  Access the highest level of analytics available. Track everything from 
                   basic P&L to advanced risk metrics and performance attribution analysis.
                 </p>
               </div>

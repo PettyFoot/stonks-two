@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      connection: result.brokerConnection,
+      connection: result.connection,
     });
 
   } catch (error) {

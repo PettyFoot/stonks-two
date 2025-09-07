@@ -1,4 +1,21 @@
-import { ConnectionStatus, SyncStatus, SyncType } from '@prisma/client';
+// Local enums to replace removed Prisma types
+export enum ConnectionStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE'
+}
+
+export enum SyncStatus {
+  PENDING = 'PENDING',
+  RUNNING = 'RUNNING', 
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED'
+}
+
+export enum SyncType {
+  MANUAL = 'MANUAL',
+  AUTOMATIC = 'AUTOMATIC',
+  WEBHOOK = 'WEBHOOK'
+}
 
 export interface SnapTradeConfig {
   clientId: string;
@@ -52,7 +69,22 @@ export interface AuthCompleteRequest {
 
 export interface AuthCompleteResponse {
   success: boolean;
-  brokerConnection?: BrokerConnectionData;
+  connection?: {
+    id: string;
+    snapTradeUserId: string;
+    brokerName: string;
+    accountId?: string | null;
+    accountName?: string | null;
+    status: string;
+    accounts?: Array<{
+      id: string;
+      number?: string;
+      name?: string;
+      type?: string | null;
+      balance?: any;
+      currency?: string | null;
+    }>;
+  };
   error?: string;
 }
 

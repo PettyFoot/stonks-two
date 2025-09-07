@@ -57,7 +57,6 @@ model User {
   paymentHistory PaymentHistory[]
   accountDeletionLogs AccountDeletionLog[]
   sharedTrades SharedTrade[]
-  brokerConnections BrokerConnection[]
   
   @@map("users")
 }
@@ -131,8 +130,6 @@ model Trade {
   importBatchId         String?
   importBatch           ImportBatch? @relation(fields: [importBatchId], references: [id])
   partialFills          PartialFill[]
-  brokerConnection      BrokerConnection? @relation(fields: [brokerConnectionId], references: [id])
-  brokerConnectionId    String?
   snapTradeId           String?     // SnapTrade trade ID for tracking
   importSource          ImportSource @default(CSV)
   
@@ -635,84 +632,6 @@ model SharedTrade {
   @@map("shared_trades")
 }
 
-// SnapTrade Integration Models
-model BrokerConnection {
-  id                    String      @id @default(cuid())
-  userId                String
-  snapTradeUserId       String      @unique // SnapTrade user ID
-  snapTradeUserSecret   String      // Encrypted SnapTrade user secret
-  brokerName            String      // Name of the connected broker
-  accountId             String?     // Broker account ID
-  accountName           String?     // User-friendly account name
-  status                ConnectionStatus @default(ACTIVE)
-  lastSyncAt            DateTime?   // Last successful sync timestamp
-  lastSyncError         String?     // Last sync error if any
-  autoSyncEnabled       Boolean     @default(true) // Whether auto-sync is enabled
-  syncInterval          Int         @default(86400) // Sync interval in seconds (default: 24h)
-  
-  // Metadata
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
-  
-  // Relations
-  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  trades                Trade[]
-  syncLogs              SyncLog[]
-  
-  @@unique([userId, snapTradeUserId])
-  @@index([userId, status])
-  @@index([userId, lastSyncAt])
-  @@map("broker_connections")
-}
-
-model SyncLog {
-  id                    String      @id @default(cuid())
-  userId                String
-  brokerConnectionId    String
-  syncType              SyncType    @default(MANUAL)
-  status                SyncStatus
-  tradesImported        Int         @default(0)
-  tradesUpdated         Int         @default(0)
-  tradesSkipped         Int         @default(0)
-  errorCount            Int         @default(0)
-  errors                Json?       // Array of error messages
-  startedAt             DateTime    @default(now())
-  completedAt           DateTime?
-  
-  // Relations
-  brokerConnection      BrokerConnection @relation(fields: [brokerConnectionId], references: [id], onDelete: Cascade)
-  
-  @@index([userId, startedAt])
-  @@index([brokerConnectionId, status])
-  @@map("sync_logs")
-}
-
-// SnapTrade Enums
-enum ConnectionStatus {
-  ACTIVE
-  INACTIVE
-  ERROR
-  EXPIRED
-  
-  @@map("connection_status")
-}
-
-enum SyncType {
-  MANUAL
-  AUTOMATIC
-  WEBHOOK
-  
-  @@map("sync_type")
-}
-
-enum SyncStatus {
-  PENDING
-  RUNNING
-  COMPLETED
-  FAILED
-  
-  @@map("sync_status")
-}
 
 enum ImportSource {
   CSV

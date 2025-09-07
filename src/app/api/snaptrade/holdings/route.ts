@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@auth0/nextjs-auth0';
 import { getSnapTradeClient, handleSnapTradeError, RateLimitHelper } from '@/lib/snaptrade/client';
-import { getSnapTradeCredentials } from '@/lib/snaptrade/auth';
-import { listBrokerConnections } from '@/lib/snaptrade/auth';
+import { getSnapTradeCredentials, getSnapTradeBrokerConnections } from '@/lib/snaptrade/auth';
 
 // GET - Get user holdings from SnapTrade
 export async function GET(request: NextRequest) {
@@ -24,8 +23,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user's broker connections to find account IDs
-    const connections = await listBrokerConnections(session.user.sub);
+    // Get user's broker connections from SnapTrade API
+    const connections = await getSnapTradeBrokerConnections(session.user.sub);
     if (connections.length === 0) {
       return NextResponse.json(
         { error: 'No broker connections found. Please connect a broker first.' },
@@ -40,39 +39,42 @@ export async function GET(request: NextRequest) {
     const holdingsData = [];
     
     for (const connection of connections) {
-      if (connection.status !== 'ACTIVE' || !connection.accountId) {
+      if (connection.status !== 'ACTIVE' || !connection.accounts?.length) {
         console.log(`Skipping inactive connection ${connection.id}`);
         continue;
       }
 
-      try {
-        console.log(`Fetching holdings for account: ${connection.accountId}`);
-        
-        const holdingsResponse = await client.accountInformation.getUserHoldings({
-          userId: credentials.snapTradeUserId,
-          userSecret: credentials.snapTradeUserSecret,
-          accountId: connection.accountId,
-        });
+      // Process each account in this connection
+      for (const account of connection.accounts) {
+        try {
+          console.log(`Fetching holdings for account: ${account.id}`);
+          
+          const holdingsResponse = await client.accountInformation.getUserHoldings({
+            userId: credentials.snapTradeUserId,
+            userSecret: credentials.snapTradeUserSecret,
+            accountId: account.id,
+          });
 
-        console.log('Holdings response for account', connection.accountId, ':', holdingsResponse.data);
+          console.log('Holdings response for account', account.id, ':', holdingsResponse.data);
 
-        holdingsData.push({
-          connectionId: connection.id,
-          brokerName: connection.brokerName,
-          accountId: connection.accountId,
-          accountName: connection.accountName,
-          holdings: holdingsResponse.data,
-        });
+          holdingsData.push({
+            connectionId: connection.id,
+            brokerName: connection.brokerName,
+            accountId: account.id,
+            accountName: account.name || account.number,
+            holdings: holdingsResponse.data,
+          });
 
-      } catch (error) {
-        console.error(`Error fetching holdings for connection ${connection.id}:`, error);
-        holdingsData.push({
-          connectionId: connection.id,
-          brokerName: connection.brokerName,
-          accountId: connection.accountId,
-          accountName: connection.accountName,
-          error: handleSnapTradeError(error),
-        });
+        } catch (error) {
+          console.error(`Error fetching holdings for account ${account.id}:`, error);
+          holdingsData.push({
+            connectionId: connection.id,
+            brokerName: connection.brokerName,
+            accountId: account.id,
+            accountName: account.name || account.number,
+            error: handleSnapTradeError(error),
+          });
+        }
       }
     }
 

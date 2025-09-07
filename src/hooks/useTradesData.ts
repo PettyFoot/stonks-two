@@ -49,6 +49,19 @@ export function useTradesData(
     setPreviousDemo(isDemo);
   }, [isDemo, user, authLoading, previousDemo]);
 
+  // Validate data matches current user context
+  useEffect(() => {
+    if (data && user && !isDemo) {
+      // If we have data but the user is no longer demo, ensure this isn't stale demo data
+      const currentUserId = user.id;
+      if (currentUserId === 'demo-user-001') {
+        console.warn('useTradesData: Detected stale demo data for authenticated user, clearing');
+        setData(null);
+        setError(null);
+      }
+    }
+  }, [data, user, isDemo]);
+
   useEffect(() => {
     // Don't fetch data until auth state is resolved
     if (authLoading) {

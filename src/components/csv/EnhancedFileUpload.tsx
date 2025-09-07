@@ -270,10 +270,9 @@ export default function EnhancedFileUpload({
               <h3 className="font-semibold text-theme-tertiary mb-2">Trade Import</h3>
               <ul className="text-sm text-theme-tertiary space-y-1">
                 <li>• <strong>Intelligent Detection:</strong> Automatically recognizes broker formats</li>
-                <li>• <strong>Standard Format:</strong> Use our template for instant processing</li>
                 <li>• <strong>Custom Format:</strong> AI will help map unknown columns automatically</li>
-                <li>• <strong>Large Files:</strong> Files over 50MB will be processed in background</li>
                 <li>• <strong>Account Tags:</strong> Add tags to organize trades by account or strategy</li>
+                <li>• <strong>Standard Format:</strong> Use our template for instant processing</li>
               </ul>
               <div className="mt-3">
                 <Button 

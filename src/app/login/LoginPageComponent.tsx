@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -11,24 +11,27 @@ import Footer from '@/components/Footer';
 import { InlineTriangleLoader } from '@/components/ui/TriangleLoader';
 import { MarketDataCache } from '@/lib/marketData/cache';
 import { WebGLCausticsBackground } from '@/components/backgrounds';
+import { DemoCleanup } from '@/lib/demo/demoCleanup';
 
 export default function LoginPageComponent() {
   const router = useRouter();
   const [isStartingDemo, setIsStartingDemo] = useState(false);
   
-  const clearDemoData = () => {
+  // Clear demo data on component mount to ensure clean state
+  useEffect(() => {
+    const clearDemoDataOnMount = async () => {
+      if (DemoCleanup.hasDemoData()) {
+        console.log('Login page: Clearing demo data on mount');
+        await DemoCleanup.clearAllDemoData();
+      }
+    };
+    
+    clearDemoDataOnMount();
+  }, []);
+
+  const clearDemoData = async () => {
     try {
-      localStorage.removeItem('demo-mode');
-      MarketDataCache.clear();
-      
-      // Clear any other demo-related keys
-      const keys = Object.keys(localStorage);
-      keys.forEach(key => {
-        if (key.includes('demo') || key.includes('stonks_demo')) {
-          localStorage.removeItem(key);
-        }
-      });
-      
+      await DemoCleanup.clearAllDemoData();
       console.log('Demo data cleared before login');
     } catch (error) {
       console.warn('Error clearing demo data before login:', error);

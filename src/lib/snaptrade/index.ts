@@ -20,9 +20,8 @@ export {
   getDecryptedSecret,
   getSnapTradeCredentials,
   validateWebhookSignature,
-  listBrokerConnections,
-  getBrokerConnection,
-  deleteBrokerConnection,
+  getSnapTradeBrokerConnections,
+  deleteSnapTradeUser,
 } from './auth';
 
 export {

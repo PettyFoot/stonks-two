@@ -14,6 +14,7 @@ import { OptimizedLogo } from '@/components/OptimizedImage';
 import Footer from '@/components/Footer';
 import { LoadingFallback, usePerformanceMonitor } from '@/components/Performance/LoadingOptimizer';
 import { InlineTriangleLoader, PageTriangleLoader } from '@/components/ui/TriangleLoader';
+import { DemoCleanup } from '@/lib/demo/demoCleanup';
 
 export default function LandingPageComponent() {
   const { user, isLoading } = useUser();
@@ -23,6 +24,18 @@ export default function LandingPageComponent() {
   
   // Monitor Core Web Vitals
   usePerformanceMonitor();
+
+  // Clear demo data on component mount to ensure clean state
+  useEffect(() => {
+    const clearDemoDataOnMount = async () => {
+      if (DemoCleanup.hasDemoData()) {
+        console.log('Landing page: Clearing demo data on mount');
+        await DemoCleanup.clearAllDemoData();
+      }
+    };
+    
+    clearDemoDataOnMount();
+  }, []);
 
   useEffect(() => {
     if (!isLoading && user) {
@@ -168,7 +181,7 @@ export default function LandingPageComponent() {
         {/* Hero Content - Perfect Center */}
         <div className="relative flex-1 flex items-center justify-center z-30 pointer-events-none" aria-labelledby="hero-heading">
           <div className="text-center space-y-6 sm:space-y-8 md:space-y-10 lg:space-y-12 max-w-4xl mx-auto px-4 sm:px-6">
-            <h1 id="hero-heading" className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-oswald text-white mb-4 sm:mb-6 md:mb-9 leading-tight">
+            <h1 id="hero-heading" className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-oswald text-white mb-4 sm:mb-6 md:mb-9 leading-tight">
               <span className="text-black">Voyage Beyond the Market Depths</span>
             </h1>
             <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl text-black/90 mb-6 sm:mb-8 md:mb-10 lg:mb-12 max-w-3xl mx-auto">

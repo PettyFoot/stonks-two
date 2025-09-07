@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useUser as useAuth0User } from '@auth0/nextjs-auth0/client';
 import type { UserProfile } from '@auth0/nextjs-auth0/client';
 import { MarketDataCache } from '@/lib/marketData/cache';
+import { DemoCleanup } from '@/lib/demo/demoCleanup';
 
 interface DemoUser {
   isDemo: true;
@@ -105,6 +106,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Simply check if user is the demo user account
   const isDemo = user?.id === 'demo-user-001';
   
+  // Additional validation: ensure we don't have conflicting states
+  useEffect(() => {
+    if (auth0User && user?.id === 'demo-user-001') {
+      console.error('Critical: Detected demo user ID with Auth0 user present - clearing demo session');
+      setDemoSession(null);
+      // Force a comprehensive cleanup
+      DemoCleanup.clearAllDemoData().catch(error => {
+        console.warn('Error during emergency demo cleanup:', error);
+      });
+    }
+  }, [auth0User, user?.id]);
+  
   // Clear demo data when transitioning from demo to authenticated user
   useEffect(() => {
     const currentUserId = user?.id || null;
@@ -112,25 +125,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // If we transitioned from demo to authenticated user, clear demo data
     if (previousAuthState.wasDemo && !currentIsDemo && currentUserId && currentUserId !== 'demo-user-001') {
-      console.log('Detected transition from demo to authenticated user - clearing demo data');
+      console.log('Detected transition from demo to authenticated user - clearing all demo data');
       
-      // Clear all demo-related localStorage
-      try {
-        localStorage.removeItem('demo-mode');
-        MarketDataCache.clear();
-        
-        // Clear any other demo-related keys
-        const keys = Object.keys(localStorage);
-        keys.forEach(key => {
-          if (key.includes('demo') || key.includes('stonks_demo')) {
-            localStorage.removeItem(key);
-          }
+      // Use comprehensive demo cleanup
+      DemoCleanup.clearAllDemoData()
+        .then(() => {
+          console.log('Demo data cleared successfully after authentication transition');
+        })
+        .catch(error => {
+          console.warn('Error clearing demo data after authentication transition:', error);
         });
-        
-        console.log('Demo data cleared successfully');
-      } catch (error) {
-        console.warn('Error clearing demo data:', error);
-      }
     }
     
     // Update previous auth state
@@ -146,18 +150,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     if (isDemo) {
       try {
-        const response = await fetch('/api/demo/logout', { method: 'POST' });
-        const data = await response.json();
-        
-        // Clear any demo-related localStorage on logout
-        localStorage.removeItem('demo-mode');
-        
+        // Use comprehensive demo cleanup
+        await DemoCleanup.clearOnDemoLogout();
         setDemoSession(null);
         window.location.href = '/';
       } catch (error) {
         console.error('Error logging out of demo:', error);
-        // Clear localStorage on error
-        localStorage.removeItem('demo-mode');
+        // Fallback cleanup
+        await DemoCleanup.clearAllDemoData();
         window.location.href = '/';
       }
     } else {

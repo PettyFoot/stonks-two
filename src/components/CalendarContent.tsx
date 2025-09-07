@@ -15,6 +15,7 @@ import CalendarYearView from '@/components/CalendarYearView';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 import { Trade } from '@/types';
+import { FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
 
 type ViewType = 'summary' | 'year' | 'month';
 
@@ -295,7 +296,11 @@ export default function CalendarContent() {
   };
 
   if (authLoading) {
-    return <div className="flex items-center justify-center h-full">Loading...</div>;
+    return (
+      <div className="relative h-screen">
+        <FullPageTriangleLoader />
+      </div>
+    );
   }
 
   if (!user) {

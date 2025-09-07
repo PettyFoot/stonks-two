@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@auth0/nextjs-auth0';
-import { deleteBrokerConnection } from '@/lib/snaptrade';
-import { z } from 'zod';
-
-const DisconnectRequestSchema = z.object({
-  connectionId: z.string().min(1, 'Connection ID is required'),
-});
+import { deleteSnapTradeUser } from '@/lib/snaptrade';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,35 +12,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const { connectionId } = DisconnectRequestSchema.parse(body);
-
-    await deleteBrokerConnection(connectionId, session.user.sub);
+    await deleteSnapTradeUser(session.user.sub);
 
     return NextResponse.json({
       success: true,
-      message: 'Broker connection disconnected successfully',
+      message: 'All broker connections disconnected successfully',
     });
 
   } catch (error) {
-    console.error('Error disconnecting broker:', error);
+    console.error('Error disconnecting brokers:', error);
     
-    if (error instanceof z.ZodError) {
+    if (error instanceof Error && error.message === 'SnapTrade credentials not found') {
       return NextResponse.json(
-        { error: 'Invalid request data', details: error.issues },
-        { status: 400 }
-      );
-    }
-    
-    if (error instanceof Error && error.message === 'Connection not found') {
-      return NextResponse.json(
-        { error: 'Connection not found' },
+        { error: 'No broker connections found' },
         { status: 404 }
       );
     }
     
     return NextResponse.json(
-      { error: 'Failed to disconnect broker' },
+      { error: 'Failed to disconnect brokers' },
       { status: 500 }
     );
   }
@@ -62,35 +47,25 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const { searchParams } = new URL(request.url);
-    const connectionId = searchParams.get('connectionId');
-
-    if (!connectionId) {
-      return NextResponse.json(
-        { error: 'Connection ID is required' },
-        { status: 400 }
-      );
-    }
-
-    await deleteBrokerConnection(connectionId, session.user.sub);
+    await deleteSnapTradeUser(session.user.sub);
 
     return NextResponse.json({
       success: true,
-      message: 'Broker connection disconnected successfully',
+      message: 'All broker connections disconnected successfully',
     });
 
   } catch (error) {
-    console.error('Error disconnecting broker:', error);
+    console.error('Error disconnecting brokers:', error);
     
-    if (error instanceof Error && error.message === 'Connection not found') {
+    if (error instanceof Error && error.message === 'SnapTrade credentials not found') {
       return NextResponse.json(
-        { error: 'Connection not found' },
+        { error: 'No broker connections found' },
         { status: 404 }
       );
     }
     
     return NextResponse.json(
-      { error: 'Failed to disconnect broker' },
+      { error: 'Failed to disconnect brokers' },
       { status: 500 }
     );
   }

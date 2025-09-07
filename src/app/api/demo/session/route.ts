@@ -6,7 +6,11 @@ export async function GET(request: NextRequest) {
     const demoSession = await getDemoSessionFromCookies();
     
     if (!demoSession) {
-      return NextResponse.json({ isDemo: false }, { status: 200 });
+      const response = NextResponse.json({ isDemo: false }, { status: 200 });
+      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+      return response;
     }
 
     const responseData = {
@@ -17,11 +21,19 @@ export async function GET(request: NextRequest) {
       features: demoSession.features,
     };
 
-    // Return the demo session data
-    return NextResponse.json(responseData);
+    // Return the demo session data with cache control headers
+    const response = NextResponse.json(responseData);
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    return response;
   } catch (error) {
     console.error('Error getting demo session:', error);
-    return NextResponse.json({ isDemo: false }, { status: 200 });
+    const errorResponse = NextResponse.json({ isDemo: false }, { status: 200 });
+    errorResponse.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    errorResponse.headers.set('Pragma', 'no-cache');
+    errorResponse.headers.set('Expires', '0');
+    return errorResponse;
   }
 }
 
@@ -33,27 +45,43 @@ export async function POST(request: NextRequest) {
       const extendedSession = await extendDemoSession();
       
       if (!extendedSession) {
-        return NextResponse.json(
+        const notFoundResponse = NextResponse.json(
           { error: 'No active demo session to extend' },
           { status: 404 }
         );
+        notFoundResponse.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        notFoundResponse.headers.set('Pragma', 'no-cache');
+        notFoundResponse.headers.set('Expires', '0');
+        return notFoundResponse;
       }
 
-      return NextResponse.json({
+      const response = NextResponse.json({
         success: true,
         expiresAt: extendedSession.expiresAt,
       });
+      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+      return response;
     }
 
-    return NextResponse.json(
+    const badRequestResponse = NextResponse.json(
       { error: 'Invalid action' },
       { status: 400 }
     );
+    badRequestResponse.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    badRequestResponse.headers.set('Pragma', 'no-cache');
+    badRequestResponse.headers.set('Expires', '0');
+    return badRequestResponse;
   } catch (error) {
     console.error('Error handling demo session action:', error);
-    return NextResponse.json(
+    const errorResponse = NextResponse.json(
       { error: 'Failed to process request' },
       { status: 500 }
     );
+    errorResponse.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    errorResponse.headers.set('Pragma', 'no-cache');
+    errorResponse.headers.set('Expires', '0');
+    return errorResponse;
   }
 }

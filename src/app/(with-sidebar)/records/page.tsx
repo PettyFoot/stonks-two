@@ -18,7 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import TradeCandlestickChart from '@/components/charts/TradeCandlestickChart';
 import AdSense from '@/components/AdSense';
 import ShareButton from '@/components/ShareButton';
-import { InlineTriangleLoader } from '@/components/ui/TriangleLoader';
+import { InlineTriangleLoader, FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
 import { calculateTradeMetrics } from '@/lib/tradeMetrics';
 import { MarketDataResponse } from '@/lib/marketData/types';
 
@@ -166,11 +166,8 @@ function RecordsContent() {
   // Show loading state
   if (loading) {
     return (
-      <div className="flex flex-col h-full">
-        <TopBar title="Records" showTimeRangeFilters={false} />
-        <div className="flex-1 flex items-center justify-center">
-          <InlineTriangleLoader size="md" />
-        </div>
+      <div className="fixed inset-0 z-50">
+        <FullPageTriangleLoader text="Loading records..." />
       </div>
     );
   }
