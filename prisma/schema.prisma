@@ -57,6 +57,8 @@ model User {
   paymentHistory PaymentHistory[]
   accountDeletionLogs AccountDeletionLog[]
   sharedTrades SharedTrade[]
+  snapTradeSyncs SnapTradeSync[]
+  syncRateLimits SyncRateLimit[]
   
   @@map("users")
 }
@@ -178,6 +180,13 @@ model Order {
   tradeId               String?     // ID of the calculated trade this order belongs to
   importBatchId         String?     // ID of the import batch this order came from
   
+  // SnapTrade Integration Fields
+  snapTradeActivityId   String?     @unique  // Original activity ID from SnapTrade
+  datePrecision         DatePrecision @default(MILLISECOND) // Time precision from broker
+  importSequence        Int?        // For ordering same-timestamp activities
+  activityHash          String?     // SHA256 for deduplication
+  brokerMetadata        Json?       // Raw broker-specific data
+  
   // Relations
   user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   importBatch           ImportBatch? @relation(fields: [importBatchId], references: [id])
@@ -187,6 +196,9 @@ model Order {
   @@index([userId, orderStatus])
   @@index([tradeId])
   @@index([userId, tradeId])  // Optimized for records queries fetching orders by user and trade
+  @@index([userId, snapTradeActivityId])  // For SnapTrade activity lookups
+  @@index([userId, activityHash])  // For deduplication
+  @@index([userId, brokerType, orderExecutedTime])  // For time-based queries
   @@map("orders")
 }
 
@@ -639,4 +651,65 @@ enum ImportSource {
   MANUAL
   
   @@map("import_source")
+}
+
+enum DatePrecision {
+  DAILY
+  MILLISECOND
+  
+  @@map("date_precision")
+}
+
+// SnapTrade sync tracking
+model SnapTradeSync {
+  id              String     @id @default(cuid())
+  userId          String
+  connectionId    String
+  syncType        SyncType   @default(MANUAL)
+  status          SyncStatus @default(PENDING)
+  startedAt       DateTime   @default(now())
+  completedAt     DateTime?
+  activitiesFound Int        @default(0)
+  ordersCreated   Int        @default(0)
+  errors          Json?
+  
+  // Relations
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, connectionId])
+  @@index([userId, startedAt])
+  @@index([status])
+  @@map("snaptrade_syncs")
+}
+
+// Daily sync rate limiting
+model SyncRateLimit {
+  id              String   @id @default(cuid())
+  userId          String
+  date            DateTime @db.Date
+  manualSyncCount Int      @default(0)
+  lastSyncAt      DateTime?
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@map("sync_rate_limits")
+}
+
+enum SyncType {
+  MANUAL
+  AUTOMATIC
+  
+  @@map("sync_type")
+}
+
+enum SyncStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  
+  @@map("sync_status")
 }

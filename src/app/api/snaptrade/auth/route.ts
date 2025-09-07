@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     // Check if SnapTrade is configured
     if (!isSnapTradeConfigured()) {
       return NextResponse.json(
-        { error: 'SnapTrade is not configured on this server' },
+        { error: 'SnapTrade is 2t configured on this server' },
         { status: 503 }
       );
     }

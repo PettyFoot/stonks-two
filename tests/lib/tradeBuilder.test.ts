@@ -64,6 +64,11 @@ describe('TradeBuilder', () => {
         tags: [],
         importBatchId: null,
         usedInTrade: false,
+        snapTradeActivityId: null,
+        datePrecision: 'MILLISECOND' as any,
+        importSequence: null,
+        activityHash: null,
+        brokerMetadata: null,
       };
 
       mockOrdersRepo.getUnprocessedOrders.mockResolvedValue([mockOrder]);
@@ -108,6 +113,11 @@ describe('TradeBuilder', () => {
         tags: [],
         importBatchId: null,
         usedInTrade: false,
+        snapTradeActivityId: null,
+        datePrecision: 'MILLISECOND' as any,
+        importSequence: null,
+        activityHash: null,
+        brokerMetadata: null,
       };
 
       const sellOrder: Order = {
@@ -163,6 +173,11 @@ describe('TradeBuilder', () => {
         tags: [],
         importBatchId: null,
         usedInTrade: false,
+        snapTradeActivityId: null,
+        datePrecision: 'MILLISECOND' as any,
+        importSequence: null,
+        activityHash: null,
+        brokerMetadata: null,
       };
 
       const partialSellOrder: Order = {
@@ -217,6 +232,11 @@ describe('TradeBuilder', () => {
         tags: [],
         importBatchId: null,
         usedInTrade: false,
+        snapTradeActivityId: null,
+        datePrecision: 'MILLISECOND' as any,
+        importSequence: null,
+        activityHash: null,
+        brokerMetadata: null,
       };
 
       const oversellOrder: Order = {
@@ -282,6 +302,11 @@ describe('TradeBuilder', () => {
         tags: [],
         importBatchId: null,
         usedInTrade: false,
+        snapTradeActivityId: null,
+        datePrecision: 'MILLISECOND' as any,
+        importSequence: null,
+        activityHash: null,
+        brokerMetadata: null,
       };
 
       const coverOrder: Order = {
@@ -334,6 +359,11 @@ describe('TradeBuilder', () => {
         tags: [],
         importBatchId: null,
         usedInTrade: false,
+        snapTradeActivityId: null,
+        datePrecision: 'MILLISECOND' as any,
+        importSequence: null,
+        activityHash: null,
+        brokerMetadata: null,
       };
 
       mockOrdersRepo.getUnprocessedOrders.mockResolvedValue([invalidOrder]);
@@ -381,6 +411,11 @@ describe('TradeBuilder', () => {
         tags: [],
         importBatchId: null,
         usedInTrade: false,
+        snapTradeActivityId: null,
+        datePrecision: 'MILLISECOND' as any,
+        importSequence: null,
+        activityHash: null,
+        brokerMetadata: null,
       };
 
       // First run - order exists
@@ -429,6 +464,11 @@ describe('processUserOrders integration', () => {
       usedInTrade: false,
       brokerType: BrokerType.GENERIC_CSV,
       importBatchId: null,
+      snapTradeActivityId: null,
+      datePrecision: 'MILLISECOND' as any,
+      importSequence: null,
+      activityHash: null,
+      brokerMetadata: null,
     };
 
     mockOrdersRepo.getUnprocessedOrders.mockResolvedValue([mockOrder]);

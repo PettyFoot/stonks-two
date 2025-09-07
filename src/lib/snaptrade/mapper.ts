@@ -1,5 +1,6 @@
 import { SnapTradeActivity } from './types';
-import { TradeSide, OrderSide, TradeSource, AssetClass, TradeStatus, OrderType, TimeInForce, OrderStatus, BrokerType } from '@prisma/client';
+import { TradeSide, OrderSide, TradeSource, AssetClass, TradeStatus, OrderType, TimeInForce, OrderStatus, BrokerType, DatePrecision } from '@prisma/client';
+import crypto from 'crypto';
 
 /**
  * Map SnapTrade activity to our trade format

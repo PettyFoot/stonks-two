@@ -146,7 +146,12 @@ export async function GET(request: Request) {
             tags: order.tags,
             usedInTrade: order.usedInTrade,
             tradeId: order.tradeId,
-            importBatchId: order.importBatchId
+            importBatchId: order.importBatchId,
+            snapTradeActivityId: order.snapTradeActivityId,
+            datePrecision: order.datePrecision,
+            importSequence: order.importSequence,
+            activityHash: order.activityHash,
+            brokerMetadata: order.brokerMetadata
           }));
         }
 
