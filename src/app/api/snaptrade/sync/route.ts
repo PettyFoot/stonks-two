@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@auth0/nextjs-auth0';
 import { syncTradesForConnection, getSyncHistory } from '@/lib/snaptrade';
-import { SyncType } from '@prisma/client';
+import { SyncType } from '@/lib/snaptrade/types';
 import { z } from 'zod';
 
 const SyncRequestSchema = z.object({
   connectionId: z.string().min(1, 'Connection ID is required'),
-  syncType: z.nativeEnum(SyncType).optional().default(SyncType.MANUAL),
+  syncType: z.enum(['MANUAL', 'AUTOMATIC', 'WEBHOOK']).optional().default('MANUAL'),
 });
 
 // POST - Trigger manual sync
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     const result = await syncTradesForConnection({
       connectionId,
       userId: session.user.sub,
-      syncType,
+      syncType: syncType as SyncType,
     });
 
     return NextResponse.json({

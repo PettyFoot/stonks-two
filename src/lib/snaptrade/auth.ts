@@ -211,7 +211,7 @@ export async function completeBrokerAuth(
     return {
       success: true,
       connection: {
-        id: latestAuth.id,
+        id: latestAuth.id || '',
         snapTradeUserId: request.snapTradeUserId,
         brokerName: latestAuth.name || 'Connected Broker',
         accountId: primaryAccount?.id || null,
@@ -365,6 +365,25 @@ export async function getSnapTradeBrokerConnections(userId: string) {
   } catch (error) {
     console.error('Error fetching SnapTrade connections:', error);
     return [];
+  }
+}
+
+/**
+ * Get a broker connection by ID and verify ownership
+ */
+export async function getBrokerConnection(connectionId: string, userId: string) {
+  try {
+    const connection = await prisma.brokerConnection.findFirst({
+      where: {
+        id: connectionId,
+        userId,
+      },
+    });
+
+    return connection;
+  } catch (error) {
+    console.error('Error fetching broker connection:', error);
+    throw new Error('Failed to fetch broker connection');
   }
 }
 

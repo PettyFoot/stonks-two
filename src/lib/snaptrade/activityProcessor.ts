@@ -1,10 +1,10 @@
 import { getSnapTradeClient, handleSnapTradeError, RateLimitHelper } from './client';
-import { getDecryptedSecret, getBrokerConnection } from './auth';
+import { getBrokerConnection } from './auth';
 import { prisma } from '@/lib/prisma';
-import { SnapTradeActivity } from './types';
+import { SnapTradeActivity, SyncStatus, SyncType } from './types';
 import { mapBrokerType } from './mapper';
-import { DatePrecision, OrderSide, OrderType, OrderStatus, TimeInForce, SyncStatus, SyncType } from '@prisma/client';
-import crypto from 'crypto';
+import { DatePrecision, OrderSide, OrderType, OrderStatus, TimeInForce } from '@prisma/client';
+import { createHash } from 'crypto';
 
 export interface ActivityProcessorOptions {
   dateFrom?: Date;
@@ -73,7 +73,7 @@ export class SnapTradeActivityProcessor {
       activity.institution
     ].join('|');
     
-    return crypto.createHash('sha256').update(hashInput).digest('hex');
+    return createHash('sha256').update(hashInput).digest('hex');
   }
 
   /**
@@ -127,7 +127,7 @@ export class SnapTradeActivityProcessor {
         settlementDate: activity.settlement_date,
         institution: activity.institution,
         currency: activity.currency?.code,
-        fee: activity.fee,
+        fee: (activity as any).fee,
         description: activity.description,
         type: activity.type,
         exchange: activity.symbol?.exchange?.code,

@@ -10,14 +10,15 @@ import {
   CheckCircle, 
   Clock,
   TrendingUp,
+  AlertCircle,
 } from 'lucide-react';
 // Updated connection interface to match SnapTrade API response
 interface SnapTradeConnection {
   id: string;
   snapTradeUserId: string;
   brokerName: string;
-  status: 'ACTIVE' | 'INACTIVE';
-  accounts: Array<{
+  status: 'ACTIVE' | 'INACTIVE' | 'ERROR' | 'PENDING';
+  accounts?: Array<{
     id: string;
     number?: string;
     name?: string;
@@ -25,26 +26,40 @@ interface SnapTradeConnection {
     balance?: any;
     currency?: string | null;
   }>;
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  accountId?: string;
+  accountName?: string;
+  lastSyncAt?: Date;
+  lastSyncError?: string;
+  autoSyncEnabled?: boolean;
+  syncInterval?: number;
 }
 import { toast } from 'sonner';
 
 interface BrokerConnectionCardProps {
   connection: SnapTradeConnection;
-  onDisconnect: () => Promise<void>;
+  syncHistory?: any[];
+  isSyncing?: boolean;
+  onSync?: (connectionId: string) => Promise<void>;
+  onDisconnect: (connectionId: string) => Promise<void>;
+  onUpdateSettings?: (connectionId: string, settings: any) => Promise<void>;
 }
 
 export default function BrokerConnectionCard({
   connection,
+  syncHistory = [],
+  isSyncing = false,
+  onSync,
   onDisconnect,
+  onUpdateSettings,
 }: BrokerConnectionCardProps) {
   const [showDetails, setShowDetails] = useState(false);
 
   const handleDisconnect = async () => {
     if (confirm(`Are you sure you want to disconnect all brokers? This will remove your SnapTrade connection but preserve your imported trades.`)) {
       try {
-        await onDisconnect();
+        await onDisconnect(connection.id);
         toast.success(`Disconnected from all brokers`);
       } catch (error) {
         toast.error('Failed to disconnect');
@@ -53,18 +68,22 @@ export default function BrokerConnectionCard({
     }
   };
 
-  const getStatusColor = (status: 'ACTIVE' | 'INACTIVE') => {
+  const getStatusColor = (status: 'ACTIVE' | 'INACTIVE' | 'ERROR' | 'PENDING') => {
     switch (status) {
       case 'ACTIVE': return 'text-theme-green';
       case 'INACTIVE': return 'text-theme-secondary-text';
+      case 'ERROR': return 'text-red-500';
+      case 'PENDING': return 'text-yellow-500';
       default: return 'text-theme-secondary-text';
     }
   };
 
-  const getStatusIcon = (status: 'ACTIVE' | 'INACTIVE') => {
+  const getStatusIcon = (status: 'ACTIVE' | 'INACTIVE' | 'ERROR' | 'PENDING') => {
     switch (status) {
       case 'ACTIVE': return <CheckCircle className="h-4 w-4" />;
       case 'INACTIVE': return <Clock className="h-4 w-4" />;
+      case 'ERROR': return <AlertCircle className="h-4 w-4" />;
+      case 'PENDING': return <Clock className="h-4 w-4" />;
       default: return <Clock className="h-4 w-4" />;
     }
   };

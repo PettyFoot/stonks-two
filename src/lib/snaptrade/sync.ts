@@ -1,9 +1,9 @@
 import { getSnapTradeClient, handleSnapTradeError, RateLimitHelper } from './client';
-import { getDecryptedSecret, getBrokerConnection } from './auth';
+import { getBrokerConnection } from './auth';
 import { prisma } from '@/lib/prisma';
-import { SyncRequest, SyncResult, SnapTradeActivity } from './types';
+import { SyncRequest, SyncResult, SnapTradeActivity, ConnectionStatus, SyncStatus, SyncType } from './types';
 import { mapSnapTradeActivityToTrade } from './mapper';
-import { ConnectionStatus, SyncStatus, SyncType, ImportSource } from '@prisma/client';
+import { ImportSource } from '@prisma/client';
 
 /**
  * Sync trades from SnapTrade for a specific broker connection

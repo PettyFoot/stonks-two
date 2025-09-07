@@ -59,6 +59,8 @@ model User {
   sharedTrades SharedTrade[]
   snapTradeSyncs SnapTradeSync[]
   syncRateLimits SyncRateLimit[]
+  brokerConnections BrokerConnection[]
+  syncLogs SyncLog[]
   
   @@map("users")
 }
@@ -133,6 +135,8 @@ model Trade {
   importBatch           ImportBatch? @relation(fields: [importBatchId], references: [id])
   partialFills          PartialFill[]
   snapTradeId           String?     // SnapTrade trade ID for tracking
+  brokerConnectionId    String?     // Broker connection ID for SnapTrade trades
+  brokerConnection      BrokerConnection? @relation(fields: [brokerConnectionId], references: [id])
   importSource          ImportSource @default(CSV)
   
   @@index([userId, date])
@@ -698,9 +702,64 @@ model SyncRateLimit {
   @@map("sync_rate_limits")
 }
 
+// Broker Connection model for managing SnapTrade connections
+model BrokerConnection {
+  id                   String           @id @default(cuid())
+  userId               String
+  snapTradeUserId      String
+  snapTradeUserSecret  String           // Encrypted SnapTrade secret
+  brokerName           String
+  accountId            String?
+  accountName          String?
+  status               ConnectionStatus @default(PENDING)
+  lastSyncAt           DateTime?
+  lastSyncError        String?
+  autoSyncEnabled      Boolean          @default(true)
+  syncInterval         Int              @default(24) // Hours
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  
+  // Relations
+  user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  syncLogs             SyncLog[]
+  trades               Trade[]
+  
+  @@index([userId])
+  @@index([userId, status])
+  @@index([snapTradeUserId])
+  @@map("broker_connections")
+}
+
+// Sync Log model for tracking sync operations
+model SyncLog {
+  id                   String           @id @default(cuid())
+  userId               String
+  brokerConnectionId   String
+  syncType             SyncType         @default(MANUAL)
+  status               SyncStatus       @default(PENDING)
+  startedAt            DateTime         @default(now())
+  completedAt          DateTime?
+  tradesImported       Int              @default(0)
+  tradesUpdated        Int              @default(0)
+  tradesSkipped        Int              @default(0)
+  errorCount           Int              @default(0)
+  errors               Json?
+  
+  // Relations
+  user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brokerConnection     BrokerConnection @relation(fields: [brokerConnectionId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([brokerConnectionId])
+  @@index([userId, startedAt])
+  @@index([status])
+  @@map("sync_logs")
+}
+
 enum SyncType {
   MANUAL
   AUTOMATIC
+  WEBHOOK
   
   @@map("sync_type")
 }
@@ -712,4 +771,13 @@ enum SyncStatus {
   FAILED
   
   @@map("sync_status")
+}
+
+enum ConnectionStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+  PENDING
+  
+  @@map("connection_status")
 }

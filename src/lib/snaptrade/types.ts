@@ -1,12 +1,14 @@
-// Local enums to replace removed Prisma types
+// Type-safe enums matching Prisma schema
 export enum ConnectionStatus {
   ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE'
+  INACTIVE = 'INACTIVE',
+  ERROR = 'ERROR',
+  PENDING = 'PENDING'
 }
 
 export enum SyncStatus {
   PENDING = 'PENDING',
-  RUNNING = 'RUNNING', 
+  RUNNING = 'RUNNING',
   COMPLETED = 'COMPLETED',
   FAILED = 'FAILED'
 }
@@ -38,6 +40,14 @@ export interface BrokerConnectionData {
   syncInterval: number;
   createdAt: Date;
   updatedAt: Date;
+  accounts?: Array<{
+    id: string;
+    number?: string;
+    name?: string;
+    type?: string | null;
+    balance?: any;
+    currency?: string | null;
+  }>;
 }
 
 export interface SyncResult {
