@@ -23,7 +23,6 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 import { useCleanupDemoOnAuth } from '@/hooks/useCleanupDemoOnAuth';
 import { CHART_HEIGHTS } from '@/constants/chartHeights';
-import CausticsWrapper from '@/components/backgrounds/CausticsWrapper';
 
 // Helper formatters
 const formatDuration = (seconds: number): string => {
@@ -215,7 +214,7 @@ export default function DashboardComponent() {
   ];
 
   return (
-    <CausticsWrapper variant="pool" className="flex flex-col h-full">
+    <div className="flex flex-col h-full">
       <TopBar 
         title="Dashboard" 
         showEditLayout={false}
@@ -431,6 +430,6 @@ export default function DashboardComponent() {
           </div>
         </div>
       </div>
-    </CausticsWrapper>
+    </div>
   );
 }

@@ -4,6 +4,7 @@ import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CHART_HEIGHTS } from '@/constants/chartHeights';
+import './chart-styles.css';
 
 interface PieChartData {
   name: string;
@@ -39,7 +40,7 @@ export default function CustomPieChart({
   const formatTooltipValue = (value: number, name: string) => {
     const item = data.find(d => d.name === name);
     const percentage = item?.percentage || ((value / data.reduce((sum, d) => sum + Math.abs(d.value), 0)) * 100);
-    return [`$${Math.abs(value).toFixed(2)} (${percentage.toFixed(1)}%)`, name];
+    return [`${Math.abs(value)} trades (${percentage.toFixed(1)}%)`, name];
   };
 
   return (
@@ -72,6 +73,12 @@ export default function CustomPieChart({
                   borderRadius: '8px',
                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                   fontSize: '12px',
+                  color: 'var(--theme-chart-tooltip-text)'
+                }}
+                itemStyle={{
+                  color: 'var(--theme-chart-tooltip-text)'
+                }}
+                labelStyle={{
                   color: 'var(--theme-chart-tooltip-text)'
                 }}
               />

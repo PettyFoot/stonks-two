@@ -170,3 +170,25 @@
 .execution-button.sell.selected {
   background-color: var(--theme-red);
 }
+
+/* Recharts tooltip styles */
+.recharts-default-tooltip {
+  background: var(--theme-chart-tooltip-bg) !important;
+  border: 1px solid var(--theme-chart-grid) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+.recharts-tooltip-wrapper .recharts-tooltip-label,
+.recharts-tooltip-wrapper .recharts-tooltip-item-name,
+.recharts-tooltip-wrapper .recharts-tooltip-item-value {
+  color: var(--theme-chart-tooltip-text) !important;
+}
+
+.recharts-tooltip-item-list {
+  color: var(--theme-chart-tooltip-text) !important;
+}
+
+.recharts-tooltip-item {
+  color: var(--theme-chart-tooltip-text) !important;
+}
