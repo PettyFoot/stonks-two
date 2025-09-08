@@ -88,7 +88,7 @@ export default function Search() {
       />
       
       <div className="flex-1 overflow-auto p-6">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-2xl mx-auto mb-8">
           {/* Search Header */}
           <div className="text-center mb-8">
             <h2 className="text-xl font-semibold text-primary mb-2">Search</h2>
@@ -120,7 +120,9 @@ export default function Search() {
               <strong>Note:</strong> Searching through trades already filtered by your current global settings.
             </p>
           </div>
+        </div>
 
+        <div className="max-w-7xl mx-auto">
           {/* Search Results */}
           {error && (
             <div className="mt-8">

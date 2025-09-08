@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -22,59 +22,8 @@ interface ConnectBrokerModalProps {
   onConnectionComplete: () => void;
 }
 
-interface BrokerInfo {
-  id: string;
-  name: string;
-  description: string;
-  features: string[];
-  popular?: boolean;
-  comingSoon?: boolean;
-}
-
-const SUPPORTED_BROKERS: BrokerInfo[] = [
-  {
-    id: 'interactive_brokers',
-    name: 'Interactive Brokers',
-    description: 'Professional trading platform with global market access',
-    features: ['Real-time data', 'Options & Futures', 'Global markets', 'Low fees'],
-    popular: true,
-  },
-  {
-    id: 'td_ameritrade',
-    name: 'TD Ameritrade',
-    description: 'Commission-free trades with advanced research tools',
-    features: ['Commission-free stocks', 'Advanced charts', 'Research tools', 'Options trading'],
-    popular: true,
-  },
-  {
-    id: 'charles_schwab',
-    name: 'Charles Schwab',
-    description: 'Full-service brokerage with investment guidance',
-    features: ['No account minimums', 'Research reports', 'Investment advice', 'Global trading'],
-  },
-  {
-    id: 'e_trade',
-    name: 'E*TRADE',
-    description: 'Self-directed trading with powerful tools',
-    features: ['Mobile trading', 'Screeners', 'Educational resources', 'Options strategies'],
-  },
-  {
-    id: 'fidelity',
-    name: 'Fidelity',
-    description: 'Long-term investing with mutual funds',
-    features: ['Zero expense ratio funds', 'Retirement planning', 'Research', 'Mobile app'],
-  },
-  {
-    id: 'robinhood',
-    name: 'Robinhood',
-    description: 'Commission-free trading with a simple interface',
-    features: ['Commission-free', 'Fractional shares', 'Crypto trading', 'Simple interface'],
-    comingSoon: true,
-  },
-];
 
 enum ConnectionState {
-  SELECTING = 'selecting',
   CONNECTING = 'connecting',
   REDIRECTING = 'redirecting',
   COMPLETING = 'completing',
@@ -87,8 +36,7 @@ export default function ConnectBrokerModal({
   onClose,
   onConnectionComplete
 }: ConnectBrokerModalProps) {
-  const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.SELECTING);
-  const [selectedBroker, setSelectedBroker] = useState<BrokerInfo | null>(null);
+  const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.CONNECTING);
   const [snapTradeData, setSnapTradeData] = useState<{
     snapTradeUserId: string;
     snapTradeUserSecret: string;
@@ -96,20 +44,13 @@ export default function ConnectBrokerModal({
   const [error, setError] = useState<string | null>(null);
 
   const handleClose = () => {
-    setConnectionState(ConnectionState.SELECTING);
-    setSelectedBroker(null);
+    setConnectionState(ConnectionState.CONNECTING);
     setSnapTradeData(null);
     setError(null);
     onClose();
   };
 
-  const handleBrokerSelect = async (broker: BrokerInfo) => {
-    if (broker.comingSoon) {
-      toast.info(`${broker.name} support is coming soon!`);
-      return;
-    }
-
-    setSelectedBroker(broker);
+  const initiateBrokerConnection = async () => {
     setConnectionState(ConnectionState.CONNECTING);
     setError(null);
 
@@ -180,7 +121,7 @@ export default function ConnectBrokerModal({
 
               if (completeResponse.ok && completeData.success) {
                 setConnectionState(ConnectionState.SUCCESS);
-                toast.success(`Successfully connected to ${broker.name}!`);
+                toast.success('Successfully connected to your broker!');
                 
                 // Close popup and modal after a delay
                 popup.close();
@@ -207,14 +148,13 @@ export default function ConnectBrokerModal({
 
           case 'CLOSED':
             console.log('SnapTrade connection closed by user');
-            setConnectionState(ConnectionState.SELECTING);
-            popup.close();
+            handleClose();
             break;
 
           case 'CLOSE_MODAL':
             console.log('User requested to close modal');
             popup.close();
-            setConnectionState(ConnectionState.SELECTING);
+            handleClose();
             break;
         }
       };
@@ -229,7 +169,7 @@ export default function ConnectBrokerModal({
           window.removeEventListener('message', handleMessage);
           
           if (connectionState === ConnectionState.REDIRECTING) {
-            setConnectionState(ConnectionState.SELECTING);
+            handleClose();
           }
         }
       }, 1000);
@@ -247,73 +187,27 @@ export default function ConnectBrokerModal({
     }
   };
 
-  const renderBrokerCard = (broker: BrokerInfo) => (
-    <Card 
-      key={broker.id}
-      className={`cursor-pointer transition-all hover:shadow-md border-2 ${
-        broker.comingSoon 
-          ? 'border-theme-secondary-text opacity-60' 
-          : 'border-theme-border hover:border-theme-tertiary'
-      }`}
-      onClick={() => handleBrokerSelect(broker)}
-    >
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-theme-tertiary/10 rounded-lg">
-              <Building2 className="h-5 w-5 text-theme-tertiary" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-theme-primary-text">{broker.name}</h3>
-              {broker.popular && (
-                <Badge variant="default" className="text-xs mt-1 bg-theme-green">
-                  Popular
-                </Badge>
-              )}
-              {broker.comingSoon && (
-                <Badge variant="secondary" className="text-xs mt-1">
-                  Coming Soon
-                </Badge>
-              )}
-            </div>
-          </div>
-          {!broker.comingSoon && (
-            <ExternalLink className="h-4 w-4 text-theme-secondary-text" />
-          )}
-        </div>
-        
-        <p className="text-sm text-theme-secondary-text mb-3">{broker.description}</p>
-        
-        <div className="space-y-1">
-          {broker.features.map((feature, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <CheckCircle className="h-3 w-3 text-theme-green" />
-              <span className="text-xs text-theme-primary-text">{feature}</span>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
+  // Start connection immediately when modal opens
+  useEffect(() => {
+    if (isOpen && connectionState === ConnectionState.CONNECTING) {
+      initiateBrokerConnection();
+    }
+  }, [isOpen]);
+
 
   const renderConnectionState = () => {
     switch (connectionState) {
-      case ConnectionState.SELECTING:
+
+      case ConnectionState.CONNECTING:
         return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-lg font-semibold text-theme-primary-text mb-2">
-                Choose Your Broker
-              </h3>
-              <p className="text-sm text-theme-secondary-text">
-                Select your broker to connect and automatically sync your trades
-              </p>
-            </div>
-
-            <div className="grid gap-4">
-              {SUPPORTED_BROKERS.map(renderBrokerCard)}
-            </div>
-
+          <div className="text-center space-y-4">
+            <Loader2 className="h-12 w-12 text-theme-tertiary mx-auto animate-spin" />
+            <h3 className="text-lg font-semibold text-theme-primary-text">
+              Initializing Connection
+            </h3>
+            <p className="text-sm text-theme-secondary-text">
+              Setting up secure connection to SnapTrade...
+            </p>
             <div className="p-4 bg-theme-tertiary/10 border border-theme-tertiary/30 rounded-lg">
               <div className="flex items-start gap-2">
                 <Shield className="h-5 w-5 text-theme-tertiary flex-shrink-0 mt-0.5" />
@@ -329,19 +223,6 @@ export default function ConnectBrokerModal({
           </div>
         );
 
-      case ConnectionState.CONNECTING:
-        return (
-          <div className="text-center space-y-4">
-            <Loader2 className="h-12 w-12 text-theme-tertiary mx-auto animate-spin" />
-            <h3 className="text-lg font-semibold text-theme-primary-text">
-              Initializing Connection
-            </h3>
-            <p className="text-sm text-theme-secondary-text">
-              Setting up secure connection with {selectedBroker?.name}...
-            </p>
-          </div>
-        );
-
       case ConnectionState.REDIRECTING:
         return (
           <div className="text-center space-y-4">
@@ -349,14 +230,14 @@ export default function ConnectBrokerModal({
               <ExternalLink className="h-8 w-8 text-theme-tertiary" />
             </div>
             <h3 className="text-lg font-semibold text-theme-primary-text">
-              Opening {selectedBroker?.name} Connection
+              Choose Your Broker
             </h3>
             <p className="text-sm text-theme-secondary-text">
-              A popup window will open for you to authorize the connection with {selectedBroker?.name}. 
+              A popup window has opened where you can select and authorize your broker connection. 
               Please complete the authorization process in the popup window.
             </p>
             <p className="text-xs text-theme-secondary-text">
-              If the popup doesn't open, please check your popup blocker settings.
+              If the popup doesn't open, please check your popup blocker settings and try again.
             </p>
           </div>
         );
@@ -369,7 +250,7 @@ export default function ConnectBrokerModal({
               Completing Connection
             </h3>
             <p className="text-sm text-theme-secondary-text">
-              Setting up your connection with {selectedBroker?.name}...
+              Finalizing your broker connection...
             </p>
           </div>
         );
@@ -382,7 +263,7 @@ export default function ConnectBrokerModal({
               Connection Successful!
             </h3>
             <p className="text-sm text-theme-secondary-text">
-              Your {selectedBroker?.name} account has been successfully connected. 
+              Your broker account has been successfully connected. 
               Your trades will now be automatically synced.
             </p>
           </div>
@@ -399,7 +280,7 @@ export default function ConnectBrokerModal({
             <div className="flex gap-2 justify-center">
               <Button 
                 variant="outline" 
-                onClick={() => setConnectionState(ConnectionState.SELECTING)}
+                onClick={() => initiateBrokerConnection()}
               >
                 Try Again
               </Button>
@@ -429,7 +310,7 @@ export default function ConnectBrokerModal({
           {renderConnectionState()}
         </div>
 
-        {connectionState === ConnectionState.SELECTING && (
+        {connectionState === ConnectionState.CONNECTING && (
           <div className="flex justify-end pt-4 border-t border-theme-border">
             <Button variant="outline" onClick={handleClose}>
               Cancel

@@ -477,7 +477,7 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
       )}
 
       {/* Connections List */}
-      {connections.length > 0 ? (
+      {connections.length > 0 && (
         <div className="grid gap-6">
           {connections.map((connection) => (
             <BrokerConnectionCard
@@ -491,26 +491,27 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
             />
           ))}
         </div>
-      ) : (
-        <Card className="bg-gradient-to-r from-theme-tertiary/10 to-theme-tertiary/5 border-theme-tertiary/30">
-          <CardContent className="p-8 text-center">
-            <Building2 className="h-12 w-12 text-theme-tertiary mx-auto mb-4" />
-            <h3 className="font-semibold text-theme-tertiary mb-2">
-              No Broker Connections
-            </h3>
-            <p className="text-sm text-theme-tertiary mb-4">
-              Connect your broker to automatically sync your trades and get real-time updates.
-            </p>
-            <Button
-              onClick={() => setIsConnectModalOpen(true)}
-              className="bg-theme-green hover:bg-theme-tertiary/90 text-white"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Connect Your First Broker
-            </Button>
-          </CardContent>
-        </Card>
       )}
+
+      {/* Connection Card - Always show */}
+      <Card className="bg-gradient-to-r from-theme-tertiary/10 to-theme-tertiary/5 border-theme-tertiary/30">
+        <CardContent className="p-8 text-center">
+          <Building2 className="h-12 w-12 text-theme-tertiary mx-auto mb-4" />
+          <h3 className="font-semibold text-theme-tertiary mb-2">
+            {connections.length === 0 ? 'No Broker Connections' : `${connections.length} Connection${connections.length === 1 ? '' : 's'}`}
+          </h3>
+          <p className="text-sm text-theme-tertiary mb-4">
+            Connect your broker to automatically sync your trades and get real-time updates.
+          </p>
+          <Button
+            onClick={() => setIsConnectModalOpen(true)}
+            className="bg-theme-green hover:bg-theme-tertiary/90 text-white"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            {connections.length === 0 ? 'Connect Your First Broker' : 'Connect Another Broker'}
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Available SnapTrade Connections */}
       {!loadingLive && liveConnections.length > 0 && (

@@ -6,13 +6,24 @@ import { prisma } from '@/lib/prisma';
 import { ExecutionOrder } from '@/components/ExecutionsTable';
 
 export async function GET(request: Request) {
+  let user;
+  let date;
+  let tradeId;
+  
   try {
     const { searchParams } = new URL(request.url);
-    const date = searchParams.get('date');
-    const tradeId = searchParams.get('tradeId'); // Get optional trade ID
+    date = searchParams.get('date');
+    tradeId = searchParams.get('tradeId'); // Get optional trade ID
+    
+    console.log(`[RECORDS API] GET request:`, {
+      date,
+      tradeId,
+      url: request.url,
+      timestamp: new Date().toISOString()
+    });
 
     // Get current user (handles both demo and Auth0)
-    const user = await getCurrentUser();
+    user = await getCurrentUser();
     if (!user) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -33,8 +44,23 @@ export async function GET(request: Request) {
     let trades;
     if (tradeId) {
       // Get specific trade by ID
+      console.log(`[RECORDS API] Fetching trade by ID: ${tradeId} for user: ${user.id}`);
       const specificTrade = await tradesRepo.getTradeById(user.id, tradeId);
-      trades = specificTrade ? [specificTrade] : [];
+      
+      if (!specificTrade) {
+        console.warn(`[RECORDS API] Trade not found: ${tradeId} for user: ${user.id}`);
+        return NextResponse.json(
+          { 
+            error: 'Trade not found',
+            details: `No trade found with ID ${tradeId} for the current user`,
+            tradeId: tradeId
+          },
+          { status: 404 }
+        );
+      }
+      
+      console.log(`[RECORDS API] Found trade: ${specificTrade.id} (${specificTrade.symbol})`);
+      trades = [specificTrade];
     } else {
       // Get all trades for the date
       trades = await tradesRepo.getTradesForRecordsDate(user.id, recordsDate);
@@ -48,81 +74,100 @@ export async function GET(request: Request) {
         // Get orders/executions for calculated trades using the ordersInTrade array
         // This directly fetches orders by their IDs stored in the trade
         if (trade.isCalculated && trade.ordersInTrade && trade.ordersInTrade.length > 0) {
-          const orders = await ordersRepo.getOrdersByIds(trade.ordersInTrade);
+          // Validate ordersInTrade array contains valid IDs
+          const validOrderIds = trade.ordersInTrade.filter(id => 
+            id && typeof id === 'string' && id.trim().length > 0
+          );
           
-          // Enhanced data consistency logging for debugging data integrity issues
-          const ordersInTradeCount = trade.ordersInTrade ? trade.ordersInTrade.length : 0;
-          const foundOrdersCount = orders.length;
-          const foundOrderSymbols = [...new Set(orders.map(o => o.symbol))];
-          const hasSymbolMismatch = foundOrderSymbols.some(symbol => symbol !== trade.symbol);
-          
-          if (ordersInTradeCount !== foundOrdersCount) {
-            console.warn(`[RECORDS API] Order fetching issue detected for trade ${trade.id}:`, {
-              tradeId: trade.id,
-              symbol: trade.symbol,
-              date: trade.date.toISOString(),
-              status: trade.status,
-              ordersInTradeArray: trade.ordersInTrade || [],
-              ordersInTradeCount,
-              foundOrdersCount,
-              foundOrderIds: orders.map(o => o.id),
-              foundOrderSymbols,
-              hasSymbolMismatch,
-              missingOrderIds: (trade.ordersInTrade || []).filter(id => !orders.some(o => o.id === id)),
-              issueType: ordersInTradeCount > foundOrdersCount ? 'ORDERS_NOT_FOUND_IN_DB' : 'UNEXPECTED_EXTRA_ORDERS',
-              recommendation: 'Check if order IDs in ordersInTrade array exist in orders table'
-            });
-          }
-          
-          // Additional logging for symbol mismatches even when order counts match
-          if (hasSymbolMismatch && ordersInTradeCount === foundOrdersCount) {
-            console.warn(`[RECORDS API] Symbol mismatch detected in trade ${trade.id}:`, {
-              tradeId: trade.id,
-              tradeSymbol: trade.symbol,
-              foundOrderSymbols,
-              ordersWithSymbols: orders.map(o => ({ id: o.id, symbol: o.symbol })),
-              message: 'Trade contains orders from different symbols - this indicates incorrect trade calculation',
-              recommendation: 'Review trade builder logic to prevent cross-symbol order assignments'
-            });
-          }
-          
-          // Log if no orders found for calculated trade
-          if (orders.length === 0 && trade.status !== 'BLANK') {
-            console.warn(`[RECORDS API] No orders found for calculated trade:`, {
-              tradeId: trade.id,
-              symbol: trade.symbol,
-              status: trade.status,
-              ordersInTradeArray: trade.ordersInTrade || [],
-              message: 'Calculated trade has no linked orders - this may indicate data corruption'
-            });
-          }
-          
-          // Filter orders to only include those matching the trade's symbol
-          const filteredOrders = orders.filter(order => {
-            const symbolMatches = order.symbol === trade.symbol;
-            
-            // Log data integrity issues for debugging
-            if (!symbolMatches) {
-              console.warn(`[RECORDS API] Symbol mismatch detected for trade ${trade.id}:`, {
-                tradeId: trade.id,
-                tradeSymbol: trade.symbol,
-                orderSymbol: order.symbol,
-                orderId: order.id,
-                message: `Order ${order.id} with symbol ${order.symbol} found in trade ${trade.id} with symbol ${trade.symbol}`,
-                recommendation: 'Check trade calculation logic - orders from different symbols should not be in the same trade'
+          if (validOrderIds.length === 0) {
+            console.warn(`[RECORDS API] Trade ${trade.id} has invalid ordersInTrade array:`, trade.ordersInTrade);
+            // Continue without executions rather than failing
+          } else {
+            try {
+              const orders = await ordersRepo.getOrdersByIds(validOrderIds);
+              
+              if (orders.length !== validOrderIds.length) {
+                console.warn(`[RECORDS API] Some orders not found for trade ${trade.id}:`, {
+                  tradeId: trade.id,
+                  requestedOrderIds: validOrderIds,
+                  foundOrderIds: orders.map(o => o.id),
+                  missingOrderIds: validOrderIds.filter(id => !orders.some(o => o.id === id))
+                });
+              }
+              
+              // Enhanced data consistency logging for debugging data integrity issues
+              const ordersInTradeCount = trade.ordersInTrade ? trade.ordersInTrade.length : 0;
+              const foundOrdersCount = orders.length;
+              const foundOrderSymbols = [...new Set(orders.map(o => o.symbol))];
+              const hasSymbolMismatch = foundOrderSymbols.some(symbol => symbol !== trade.symbol);
+              
+              if (ordersInTradeCount !== foundOrdersCount) {
+                console.warn(`[RECORDS API] Order fetching issue detected for trade ${trade.id}:`, {
+                  tradeId: trade.id,
+                  symbol: trade.symbol,
+                  date: trade.date.toISOString(),
+                  status: trade.status,
+                  ordersInTradeArray: trade.ordersInTrade || [],
+                  ordersInTradeCount,
+                  foundOrdersCount,
+                  foundOrderIds: orders.map(o => o.id),
+                  foundOrderSymbols,
+                  hasSymbolMismatch,
+                  missingOrderIds: (trade.ordersInTrade || []).filter(id => !orders.some(o => o.id === id)),
+                  issueType: ordersInTradeCount > foundOrdersCount ? 'ORDERS_NOT_FOUND_IN_DB' : 'UNEXPECTED_EXTRA_ORDERS',
+                  recommendation: 'Check if order IDs in ordersInTrade array exist in orders table'
+                });
+              }
+              
+              // Additional logging for symbol mismatches even when order counts match
+              if (hasSymbolMismatch && ordersInTradeCount === foundOrdersCount) {
+                console.warn(`[RECORDS API] Symbol mismatch detected in trade ${trade.id}:`, {
+                  tradeId: trade.id,
+                  tradeSymbol: trade.symbol,
+                  foundOrderSymbols,
+                  ordersWithSymbols: orders.map(o => ({ id: o.id, symbol: o.symbol })),
+                  message: 'Trade contains orders from different symbols - this indicates incorrect trade calculation',
+                  recommendation: 'Review trade builder logic to prevent cross-symbol order assignments'
+                });
+              }
+              
+              // Log if no orders found for calculated trade
+              if (orders.length === 0 && trade.status !== 'BLANK') {
+                console.warn(`[RECORDS API] No orders found for calculated trade:`, {
+                  tradeId: trade.id,
+                  symbol: trade.symbol,
+                  status: trade.status,
+                  ordersInTradeArray: trade.ordersInTrade || [],
+                  message: 'Calculated trade has no linked orders - this may indicate data corruption'
+                });
+              }
+              
+              // Filter orders to only include those matching the trade's symbol
+              const filteredOrders = orders.filter(order => {
+                const symbolMatches = order.symbol === trade.symbol;
+                
+                // Log data integrity issues for debugging
+                if (!symbolMatches) {
+                  console.warn(`[RECORDS API] Symbol mismatch detected for trade ${trade.id}:`, {
+                    tradeId: trade.id,
+                    tradeSymbol: trade.symbol,
+                    orderSymbol: order.symbol,
+                    orderId: order.id,
+                    message: `Order ${order.id} with symbol ${order.symbol} found in trade ${trade.id} with symbol ${trade.symbol}`,
+                    recommendation: 'Check trade calculation logic - orders from different symbols should not be in the same trade'
+                  });
+                }
+                
+                return symbolMatches;
               });
-            }
-            
-            return symbolMatches;
-          });
-          
-          // Log if any orders were filtered out due to symbol mismatch
-          const filteredCount = orders.length - filteredOrders.length;
-          if (filteredCount > 0) {
-            console.warn(`[RECORDS API] Filtered out ${filteredCount} orders with mismatched symbols from trade ${trade.id}`);
-          }
-          
-          executions = filteredOrders.map(order => ({
+              
+              // Log if any orders were filtered out due to symbol mismatch
+              const filteredCount = orders.length - filteredOrders.length;
+              if (filteredCount > 0) {
+                console.warn(`[RECORDS API] Filtered out ${filteredCount} orders with mismatched symbols from trade ${trade.id}`);
+              }
+              
+              executions = filteredOrders.map(order => ({
             id: order.id,
             userId: order.userId,
             orderId: order.orderId,
@@ -153,6 +198,18 @@ export async function GET(request: Request) {
             activityHash: order.activityHash,
             brokerMetadata: order.brokerMetadata
           }));
+            } catch (orderError) {
+              console.error(`[RECORDS API] Error fetching orders for trade ${trade.id}:`, {
+                tradeId: trade.id,
+                symbol: trade.symbol,
+                ordersInTrade: trade.ordersInTrade,
+                error: orderError instanceof Error ? orderError.message : 'Unknown error',
+                stack: orderError instanceof Error ? orderError.stack : undefined
+              });
+              // Continue without executions rather than failing the entire request
+              executions = [];
+            }
+          }
         }
 
         return {
@@ -226,11 +283,20 @@ export async function GET(request: Request) {
     });
 
   } catch (error) {
-    console.error('Records API error:', error);
+    console.error('[RECORDS API] Unexpected error:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      date,
+      tradeId,
+      userId: user?.id,
+      timestamp: new Date().toISOString()
+    });
+    
     return NextResponse.json(
       { 
         error: error instanceof Error ? error.message : 'Failed to fetch records data',
-        details: 'Please try again or contact support if the problem persists'
+        details: 'Please try again or contact support if the problem persists',
+        timestamp: new Date().toISOString()
       },
       { status: 500 }
     );
