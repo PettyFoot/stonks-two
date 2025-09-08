@@ -337,87 +337,101 @@ export default function CalendarContent() {
 
           {/* Month View */}
           <TabsContent value="month">
-            {/* Calendar Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-4">
-                <div className="min-w-[200px]">
-                  <h1 className="text-2xl font-bold text-theme-primary-text">
-                    {format(currentDate, 'MMMM yyyy')}
+            {/* Modern Calendar Header */}
+            <div className="flex items-center justify-center mb-8">
+              <div className="flex items-center space-x-6 bg-white/60 backdrop-blur-sm rounded-2xl px-6 py-4 shadow-lg border border-theme-border/30">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handlePrevMonth}
+                  aria-label="Previous month"
+                  className="h-10 w-10 rounded-full hover:bg-theme-tertiary/10 hover:scale-110 transition-all duration-200 shadow-sm hover:shadow-md"
+                >
+                  <ChevronLeft className="h-5 w-5 text-theme-secondary" />
+                </Button>
+                <div className="text-center min-w-[250px]">
+                  <h1 className="text-3xl font-bold text-theme-primary-text tracking-tight bg-gradient-to-r from-theme-primary-text to-theme-secondary bg-clip-text">
+                    {format(currentDate, 'MMMM')}
                   </h1>
+                  <div className="text-xl font-semibold text-theme-secondary-text mt-1">
+                    {format(currentDate, 'yyyy')}
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={handlePrevMonth}
-                    aria-label="Previous month"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={handleNextMonth}
-                    aria-label="Next month"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleNextMonth}
+                  aria-label="Next month"
+                  className="h-10 w-10 rounded-full hover:bg-theme-tertiary/10 hover:scale-110 transition-all duration-200 shadow-sm hover:shadow-md"
+                >
+                  <ChevronRight className="h-5 w-5 text-theme-secondary" />
+                </Button>
               </div>
-              <div className="text-lg font-semibold text-theme-secondary-text">
-                Monthly P&L: <span className={`${summaryStats.monthlyPnl >= 0 ? 'text-theme-green' : 'text-theme-red'}`}>
-                  ${summaryStats.monthlyPnl.toFixed(2)}
-                </span>
+            </div>
+            
+            {/* Monthly P&L Summary */}
+            <div className="flex justify-center mb-6">
+              <div className="bg-gradient-to-r from-theme-surface via-theme-surface to-theme-surface/95 border border-theme-border/50 rounded-2xl px-6 py-3 shadow-lg">
+                <div className="text-center">
+                  <div className="text-sm font-medium text-theme-secondary-text uppercase tracking-wide mb-1">Monthly P&L</div>
+                  <div className={`text-2xl font-bold ${summaryStats.monthlyPnl >= 0 ? 'text-theme-green' : 'text-theme-red'}`}>
+                    ${summaryStats.monthlyPnl.toFixed(2)}
+                  </div>
+                </div>
               </div>
             </div>
 
         {/* Calendar Grid */}
-        <Card className="bg-theme-surface border-theme-border">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Calendar className="h-5 w-5 mr-2" />
+        <Card className="bg-gradient-to-br from-theme-surface via-theme-surface to-theme-surface/95 border-theme-border shadow-xl rounded-3xl overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-theme-tertiary/5 via-transparent to-theme-tertiary/5 opacity-30"></div>
+          <CardHeader className="pb-4 bg-gradient-to-r from-theme-surface via-theme-surface to-theme-surface/80 border-b border-theme-border/50 relative z-10">
+            <CardTitle className="flex items-center text-xl font-bold text-theme-primary-text">
+              <Calendar className="h-6 w-6 mr-3 text-theme-tertiary" />
               Trading Calendar
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6 relative z-10">
             {/* Days of Week Header */}
-            <div className="grid grid-cols-7 lg:grid-cols-8 gap-1 mb-2">
+            <div className="grid grid-cols-7 lg:grid-cols-8 gap-2 mb-4">
               {daysOfWeek.map(day => (
-                <div key={day} className="p-2 text-center text-sm font-medium text-theme-secondary-text">
+                <div key={day} className="p-3 text-center text-sm font-bold text-theme-primary-text bg-gradient-to-b from-theme-surface to-theme-surface/80 rounded-lg shadow-sm border border-theme-border/30">
                   {day}
                 </div>
               ))}
-              <div className="hidden lg:block p-2 text-center text-sm font-medium text-theme-secondary-text">
-                Total
+              <div className="hidden lg:block p-3 text-center text-sm font-bold text-theme-primary-text bg-gradient-to-b from-theme-surface to-theme-surface/80 rounded-lg shadow-sm border border-theme-border/30">
+                Week Total
               </div>
             </div>
 
                 {/* Calendar Days */}
-                <div className="grid grid-cols-7 lg:grid-cols-8 gap-1">
+                <div className="grid grid-cols-7 lg:grid-cols-8 gap-2">
                   {generateCalendarDays().map((day, index) => {
                     if (isWeekTotal(day)) {
                       // Weekly total cell - hidden on mobile
                       return (
                         <div
                           key={index}
-                          className="hidden lg:flex md:min-h-[120px] lg:min-h-[140px] border border-theme-border rounded-lg p-2 bg-theme-surface/50 text-center flex-col justify-center"
+                          className="hidden lg:flex md:min-h-[120px] lg:min-h-[140px] border border-theme-border/30 rounded-2xl p-4 bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm text-center flex-col justify-center shadow-lg hover:scale-105 transition-all duration-300 relative"
                         >
-                          <div className="text-sm font-bold mb-2 text-theme-primary-text">
-                            Week {day.weekNumber}
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent rounded-2xl"></div>
+                          <div className="relative z-10">
+                            <div className="text-sm font-bold mb-2 text-theme-primary-text">
+                              Week {day.weekNumber}
+                            </div>
+                            <div className={`text-lg font-bold mb-2 px-2 py-1 rounded-full ${day.weekPnl >= 0 ? 'text-theme-green bg-theme-green/10' : 'text-theme-red bg-theme-red/10'} shadow-sm`}>
+                              ${day.weekPnl.toFixed(2)}
+                            </div>
+                            {day.weekTrades > 0 && (
+                              <>
+                                <div className="text-xs text-theme-secondary-text mb-1">
+                                  {day.weekTrades} trade{day.weekTrades !== 1 ? 's' : ''}
+                                </div>
+                                <div className="text-xs text-theme-secondary-text">
+                                  {day.weekWinRate}% win
+                                </div>
+                              </>
+                            )}
                           </div>
-                          <div className={`text-sm font-bold mb-1 ${day.weekPnl >= 0 ? 'text-theme-green' : 'text-theme-red'}`}>
-                            ${day.weekPnl.toFixed(2)}
-                          </div>
-                          {day.weekTrades > 0 && (
-                            <>
-                              <div className="text-xs text-theme-secondary-text">
-                                {day.weekTrades} trade{day.weekTrades !== 1 ? 's' : ''}
-                              </div>
-                              <div className="text-xs text-theme-secondary-text">
-                                {day.weekWinRate}% win
-                              </div>
-                            </>
-                          )}
                         </div>
                       );
                     } else if (isDayData(day)) {
@@ -428,18 +442,18 @@ export default function CalendarContent() {
                           onClick={() => day && !day.isPrevMonth && !day.isNextMonth && handleDayClick(day.dayStr)}
                           disabled={!day || day.isPrevMonth || day.isNextMonth}
                           className={`
-                            min-h-[80px] md:min-h-[120px] lg:min-h-[140px] border border-theme-border rounded-lg p-1 lg:p-2 text-left transition-colors
+                            min-h-[80px] md:min-h-[120px] lg:min-h-[140px] border border-theme-border/30 rounded-2xl p-2 lg:p-3 text-left transition-all duration-300 relative shadow-sm
                             ${!day ? 'bg-theme-surface/20 cursor-default' : 
                               day.isPrevMonth || day.isNextMonth ? 
-                                'bg-theme-surface/10 cursor-default opacity-50' :
+                                'bg-theme-surface/10 cursor-default opacity-50 hover:opacity-60' :
                               day && dayHasTradeData(day.dayStr) ? 
-                                Number(day.pnl || 0) > 0 ? 'bg-theme-green hover:bg-theme-green/80 cursor-pointer text-white' :
-                                Number(day.pnl || 0) < 0 ? 'bg-theme-red hover:bg-theme-red/80 cursor-pointer text-white' :
-                                'bg-white hover:bg-theme-surface/50 cursor-pointer' : 
-                                'bg-white hover:bg-theme-surface/30 cursor-default'
+                                Number(day.pnl || 0) > 0 ? 'bg-theme-green hover:bg-theme-green/80 cursor-pointer text-white hover:scale-110 hover:shadow-xl hover:z-10 hover:-translate-y-2' :
+                                Number(day.pnl || 0) < 0 ? 'bg-theme-red hover:bg-theme-red/80 cursor-pointer text-white hover:scale-110 hover:shadow-xl hover:z-10 hover:-translate-y-2' :
+                                'bg-white hover:bg-theme-surface/50 cursor-pointer hover:scale-110 hover:shadow-xl hover:-translate-y-2' : 
+                                'bg-white hover:bg-theme-surface/30 cursor-default hover:scale-105 hover:-translate-y-1'
                             }
-                            ${selectedDay === day?.dayStr ? 'ring-2 ring-theme-primary' : ''}
-                            focus:outline-none focus:ring-2 focus:ring-theme-primary
+                            ${selectedDay === day?.dayStr ? 'ring-2 ring-theme-tertiary shadow-lg scale-105' : ''}
+                            focus:outline-none focus:ring-2 focus:ring-theme-tertiary
                           `}
                           aria-label={day ? `${day.date} - ${day.tradeCount || 0} trades${dayHasTradeData(day.dayStr) && !day.isPrevMonth && !day.isNextMonth ? ' (clickable)' : ''}` : undefined}
                         >
@@ -447,28 +461,33 @@ export default function CalendarContent() {
                             <div className="h-full flex flex-col relative">
                               {/* Date number - always visible in top left */}
                               <div className="absolute top-0 left-0">
-                                <div className={`text-lg font-medium ${day.isPrevMonth || day.isNextMonth ? 'text-theme-secondary-text opacity-75' : dayHasTradeData(day.dayStr) ? 'text-white' : 'text-theme-primary-text'}`}>
+                                <div className={`text-lg font-bold ${day.isPrevMonth || day.isNextMonth ? 'text-theme-secondary-text opacity-75' : dayHasTradeData(day.dayStr) ? 'text-white' : 'text-theme-primary-text'} transition-all duration-200`}>
                                   {day.date}
                                 </div>
                               </div>
+                              
+                              {/* Trading indicator dot */}
+                              {day && dayHasTradeData(day.dayStr) && !day.isPrevMonth && !day.isNextMonth && (
+                                <div className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-theme-tertiary opacity-70 animate-pulse shadow-sm"></div>
+                              )}
                               
                               {/* Trade statistics - centered in the cell, visible on tablet and larger screens */}
                               <div className="hidden md:flex flex-col flex-1 justify-center items-center space-y-1">
                                 {day && dayHasTradeData(day.dayStr) && !day.isPrevMonth && !day.isNextMonth && (
                                   <>
                                     {/* PnL */}
-                                    <div className={`text-sm font-semibold text-center ${dayHasTradeData(day.dayStr) ? 'text-white' : 'text-theme-primary-text'}`}>
+                                    <div className={`text-sm font-bold text-center transition-all duration-200 ${dayHasTradeData(day.dayStr) ? 'text-white' : 'text-theme-primary-text'}`}>
                                       ${Number(day.pnl || 0).toFixed(2)}
                                     </div>
                                     
                                     {/* Trade count */}
-                                    <div className={`text-xs text-center ${dayHasTradeData(day.dayStr) ? 'text-white/90' : 'text-theme-secondary-text'}`}>
+                                    <div className={`text-xs text-center transition-all duration-200 ${dayHasTradeData(day.dayStr) ? 'text-white/90' : 'text-theme-secondary-text'}`}>
                                       {day.tradeCount || 0} trade{(day.tradeCount || 0) !== 1 ? 's' : ''}
                                     </div>
                                     
                                     {/* Win rate - only show if there are trades */}
                                     {(day.tradeCount || 0) > 0 && (
-                                      <div className={`text-xs text-center ${dayHasTradeData(day.dayStr) ? 'text-white/90' : 'text-theme-secondary-text'}`}>
+                                      <div className={`text-xs text-center transition-all duration-200 ${dayHasTradeData(day.dayStr) ? 'text-white/90' : 'text-theme-secondary-text'}`}>
                                         {Math.round(day.winRate || 0)}% win
                                       </div>
                                     )}
@@ -488,50 +507,55 @@ export default function CalendarContent() {
         </Card>
 
             {/* Summary Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-              <Card className="bg-theme-surface border-theme-border">
-                <CardContent className="p-4">
-                  <div className="text-sm text-theme-secondary-text">Monthly P&L</div>
-                  <div className={`text-xl font-bold ${summaryStats.monthlyPnl >= 0 ? 'text-theme-green' : 'text-theme-red'}`}>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
+              <Card className="bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm border border-theme-border/20 rounded-2xl shadow-lg hover:scale-105 transition-all duration-300 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
+                <CardContent className="p-6 text-center relative z-10">
+                  <div className="text-xs font-medium text-theme-secondary-text uppercase tracking-wide mb-2">Monthly P&L</div>
+                  <div className={`text-2xl font-bold ${summaryStats.monthlyPnl >= 0 ? 'text-theme-green' : 'text-theme-red'}`}>
                     ${summaryStats.monthlyPnl.toFixed(2)}
                   </div>
                 </CardContent>
               </Card>
               
-              <Card className="bg-theme-surface border-theme-border">
-                <CardContent className="p-4">
-                  <div className="text-sm text-theme-secondary-text">Trading Days</div>
-                  <div className="text-xl font-bold text-theme-primary-text">{summaryStats.tradingDays}</div>
+              <Card className="bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm border border-theme-border/20 rounded-2xl shadow-lg hover:scale-105 transition-all duration-300 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
+                <CardContent className="p-6 text-center relative z-10">
+                  <div className="text-xs font-medium text-theme-secondary-text uppercase tracking-wide mb-2">Trading Days</div>
+                  <div className="text-2xl font-bold text-theme-primary-text">{summaryStats.tradingDays}</div>
                 </CardContent>
               </Card>
               
-              <Card className="bg-theme-surface border-theme-border">
-                <CardContent className="p-4">
-                  <div className="text-sm text-theme-secondary-text">Total Trades</div>
-                  <div className="text-xl font-bold text-theme-primary-text">{summaryStats.totalTrades}</div>
+              <Card className="bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm border border-theme-border/20 rounded-2xl shadow-lg hover:scale-105 transition-all duration-300 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
+                <CardContent className="p-6 text-center relative z-10">
+                  <div className="text-xs font-medium text-theme-secondary-text uppercase tracking-wide mb-2">Total Trades</div>
+                  <div className="text-2xl font-bold text-theme-primary-text">{summaryStats.totalTrades}</div>
                 </CardContent>
               </Card>
               
-              <Card className="bg-theme-surface border-theme-border">
-                <CardContent className="p-4">
-                  <div className="text-sm text-theme-secondary-text">Avg Win Rate</div>
-                  <div className="text-xl font-bold text-theme-primary-text">{summaryStats.avgWinRate}%</div>
+              <Card className="bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm border border-theme-border/20 rounded-2xl shadow-lg hover:scale-105 transition-all duration-300 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
+                <CardContent className="p-6 text-center relative z-10">
+                  <div className="text-xs font-medium text-theme-secondary-text uppercase tracking-wide mb-2">Avg Win Rate</div>
+                  <div className="text-2xl font-bold text-theme-primary-text">{summaryStats.avgWinRate}%</div>
                 </CardContent>
               </Card>
             </div>
 
             {/* Trades Table */}
-            <div className="mt-6">
-              <Card className="bg-theme-surface border-theme-border">
-                <CardHeader>
-                  <CardTitle>
+            <div className="mt-8">
+              <Card className="bg-gradient-to-br from-theme-surface via-theme-surface to-theme-surface/95 border-theme-border shadow-xl rounded-3xl overflow-hidden relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-theme-tertiary/5 via-transparent to-theme-tertiary/5 opacity-30"></div>
+                <CardHeader className="bg-gradient-to-r from-theme-surface via-theme-surface to-theme-surface/80 border-b border-theme-border/50 relative z-10">
+                  <CardTitle className="text-xl font-bold text-theme-primary-text">
                     {selectedDay 
                       ? `Trades for ${format(new Date(selectedDay), 'MMMM d, yyyy')}`
                       : `All Trades for ${format(currentDate, 'MMMM yyyy')}`
                     }
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="relative z-10">
                   <TradesTable 
                     trades={trades}
                     showCheckboxes={false}

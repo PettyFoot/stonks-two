@@ -163,24 +163,26 @@ export default function CalendarYearView({ year: initialYear, isDemo = false }: 
   return (
     <div className="space-y-6">
       {/* Year Navigation - Centered */}
-      <div className="flex items-center justify-center">
-        <div className="flex items-center space-x-4">
+      <div className="flex items-center justify-center mb-2">
+        <div className="flex items-center space-x-6 bg-white/60 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg border border-theme-border/30">
           <Button
             variant="ghost"
             size="sm"
             onClick={handlePrevYear}
             aria-label="Previous year"
+            className="h-10 w-10 rounded-full hover:bg-theme-tertiary/10 hover:scale-110 transition-all duration-200 shadow-sm hover:shadow-md"
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-5 w-5 text-theme-secondary" />
           </Button>
-          <span className="text-2xl font-bold text-theme-primary-text">{year}</span>
+          <span className="text-3xl font-bold text-theme-primary-text tracking-tight bg-gradient-to-r from-theme-primary-text to-theme-secondary bg-clip-text">{year}</span>
           <Button
             variant="ghost"
             size="sm"
             onClick={handleNextYear}
             aria-label="Next year"
+            className="h-10 w-10 rounded-full hover:bg-theme-tertiary/10 hover:scale-110 transition-all duration-200 shadow-sm hover:shadow-md"
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-5 w-5 text-theme-secondary" />
           </Button>
         </div>
       </div>
@@ -190,16 +192,17 @@ export default function CalendarYearView({ year: initialYear, isDemo = false }: 
         {monthNames.map((monthName, monthIndex) => (
           <Card 
             key={monthIndex}
-            className="bg-theme-surface border-theme-border shadow-sm"
+            className="bg-theme-surface border-theme-border shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 rounded-2xl backdrop-blur-sm relative overflow-hidden group"
           >
-            <CardHeader className="pb-2 bg-theme-surface border-b border-theme-border">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-base text-theme-primary-text">{monthName}, {year}</h3>
+            <CardHeader className="pb-3 bg-gradient-to-r from-theme-surface via-theme-surface to-theme-surface/80 border-b border-theme-border/50 relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="flex items-center justify-between relative z-10">
+                <h3 className="font-bold text-lg text-theme-primary-text tracking-tight">{monthName} <span className="font-normal text-theme-secondary-text text-sm">{year}</span></h3>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleMonthOpen(monthIndex)}
-                  className="h-7 px-2 text-xs border-theme-border hover:bg-theme-surface/50 text-theme-primary-text"
+                  className="h-8 px-3 text-xs border-theme-border/60 hover:bg-gradient-to-r hover:from-theme-surface hover:to-theme-surface/80 hover:border-theme-tertiary/40 text-theme-primary-text hover:text-theme-tertiary transition-all duration-200 hover:scale-105 rounded-xl shadow-sm hover:shadow-md"
                 >
                   Open
                 </Button>
@@ -216,13 +219,14 @@ export default function CalendarYearView({ year: initialYear, isDemo = false }: 
               </div>
 
               {/* Calendar Days */}
-              <div className="grid grid-cols-7 gap-0.5">
+              <div className="grid grid-cols-7 gap-1">
                 {generateMonthCalendar(monthIndex).map((day, index) => (
                   <div
                     key={index}
                     className={`
-                      aspect-square flex items-center justify-center text-xs p-1
-                      ${!day ? 'invisible' : `${getDayBackground(day)} ${dayHasTradeData(day) ? 'cursor-pointer hover:opacity-80' : 'cursor-default'} transition-colors border border-theme-border`}
+                      aspect-square flex items-center justify-center text-xs p-1 relative rounded-lg
+                      ${!day ? 'invisible' : `${getDayBackground(day)} ${dayHasTradeData(day) ? 'cursor-pointer hover:opacity-80 hover:scale-110 hover:z-10 hover:shadow-lg' : 'cursor-default hover:bg-theme-surface/80'} transition-all duration-200 border border-theme-border/30`}
+                      ${day && dayHasTradeData(day) ? 'shadow-sm hover:shadow-md' : ''}
                     `}
                     onClick={() => day && dayHasTradeData(day as Record<string, unknown>) && handleDayClick(day.dateStr)}
                     role={day && dayHasTradeData(day as Record<string, unknown>) ? "button" : undefined}
@@ -236,21 +240,24 @@ export default function CalendarYearView({ year: initialYear, isDemo = false }: 
                     }}
                   >
                     {day && (
-                      <span className={`font-medium ${getDayColor(day)}`}>
+                      <span className={`font-semibold ${getDayColor(day)} transition-all duration-200`}>
                         {day.date}
                       </span>
                     )}
+                    {day && dayHasTradeData(day as Record<string, unknown>) ? (
+                      <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-theme-tertiary opacity-60 animate-pulse"></div>
+                    ) : null}
                   </div>
                 ))}
               </div>
 
               {/* Monthly PnL Total */}
-              <div className="mt-3 pt-2 border-t border-theme-border">
+              <div className="mt-4 pt-3 border-t border-theme-border/30 bg-gradient-to-r from-theme-surface/50 via-theme-surface to-theme-surface/50 rounded-lg -mx-1 px-3">
                 <div className="flex items-center justify-center">
-                  <div className={`text-sm font-bold ${
+                  <div className={`text-base font-bold px-3 py-1.5 rounded-full transition-all duration-200 ${
                     getMonthlyPnL(monthIndex) >= 0 
-                      ? 'text-theme-green' 
-                      : 'text-theme-red'
+                      ? 'text-theme-green bg-theme-green/10 shadow-sm' 
+                      : 'text-theme-red bg-theme-red/10 shadow-sm'
                   }`}>
                     {getMonthlyPnL(monthIndex) >= 0 ? '+' : ''}${getMonthlyPnL(monthIndex).toFixed(2)}
                   </div>
@@ -262,12 +269,17 @@ export default function CalendarYearView({ year: initialYear, isDemo = false }: 
       </div>
 
       {/* Year Summary */}
-      <Card className="bg-theme-surface border-theme-border shadow-sm">
-        <CardContent className="p-6 bg-theme-surface">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <div className="text-sm text-theme-secondary-text">Total P&L</div>
-              <div className={`text-2xl font-bold ${
+      <Card className="bg-gradient-to-br from-theme-surface via-theme-surface to-theme-surface/95 border-theme-border shadow-xl rounded-3xl overflow-hidden relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-theme-tertiary/5 via-transparent to-theme-tertiary/5 opacity-50"></div>
+        <CardContent className="p-8 relative z-10">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-theme-primary-text mb-2">{year} Summary</h2>
+            <div className="w-24 h-1 bg-gradient-to-r from-theme-tertiary to-theme-green mx-auto rounded-full"></div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="text-center p-4 rounded-2xl bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm border border-theme-border/20 hover:scale-105 transition-all duration-300 shadow-lg">
+              <div className="text-xs font-medium text-theme-secondary-text uppercase tracking-wide mb-2">Total P&L</div>
+              <div className={`text-3xl font-bold mb-1 ${
                 Object.values(yearData).reduce((sum, d) => sum + (d?.pnl || 0), 0) >= 0 
                   ? 'text-theme-green' 
                   : 'text-theme-red'
@@ -275,21 +287,21 @@ export default function CalendarYearView({ year: initialYear, isDemo = false }: 
                 ${Number(Object.values(yearData).reduce((sum, d) => sum + (d?.pnl || 0), 0)).toFixed(2)}
               </div>
             </div>
-            <div>
-              <div className="text-sm text-theme-secondary-text">Total Trades</div>
-              <div className="text-2xl font-bold text-theme-primary-text">
+            <div className="text-center p-4 rounded-2xl bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm border border-theme-border/20 hover:scale-105 transition-all duration-300 shadow-lg">
+              <div className="text-xs font-medium text-theme-secondary-text uppercase tracking-wide mb-2">Total Trades</div>
+              <div className="text-3xl font-bold text-theme-primary-text mb-1">
                 {Number(Object.values(yearData).reduce((sum, d) => sum + (d?.tradeCount || 0), 0))}
               </div>
             </div>
-            <div>
-              <div className="text-sm text-theme-secondary-text">Trading Days</div>
-              <div className="text-2xl font-bold text-theme-primary-text">
+            <div className="text-center p-4 rounded-2xl bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm border border-theme-border/20 hover:scale-105 transition-all duration-300 shadow-lg">
+              <div className="text-xs font-medium text-theme-secondary-text uppercase tracking-wide mb-2">Trading Days</div>
+              <div className="text-3xl font-bold text-theme-primary-text mb-1">
                 {Object.values(yearData).filter(d => d && d.tradeCount > 0).length}
               </div>
             </div>
-            <div>
-              <div className="text-sm text-theme-secondary-text">Win Days</div>
-              <div className="text-2xl font-bold text-theme-green">
+            <div className="text-center p-4 rounded-2xl bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm border border-theme-border/20 hover:scale-105 transition-all duration-300 shadow-lg">
+              <div className="text-xs font-medium text-theme-secondary-text uppercase tracking-wide mb-2">Win Days</div>
+              <div className="text-3xl font-bold text-theme-green mb-1">
                 {Object.values(yearData).filter(d => d && d.pnl > 0).length}
               </div>
             </div>
