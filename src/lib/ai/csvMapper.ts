@@ -13,6 +13,7 @@ export interface ColumnMapping {
   targetColumn: string;
   confidence: number;
   reasoning: string;
+  priority?: number; // Higher numbers = higher priority (0-10)
 }
 
 // AI mapping result
@@ -119,38 +120,87 @@ Example response format:
     return (response.mappings as ColumnMapping[]) || [];
   }
 
-  // Heuristic-based mapping as fallback
+  // Heuristic-based mapping as fallback with duplicate prevention
   private heuristicMapping(headers: string[], sampleRows: CustomCsvRow[]): ColumnMapping[] {
-    const mappings: ColumnMapping[] = [];
+    const potentialMappings: ColumnMapping[] = [];
 
+    // First pass: Find all potential mappings
     for (const header of headers) {
       const mapping = this.findBestMatch(header, sampleRows);
       if (mapping) {
-        mappings.push(mapping);
+        potentialMappings.push(mapping);
       }
     }
 
-    return mappings;
+    // Second pass: Resolve conflicts using first-match-wins and priority
+    return this.resolveMappingConflicts(potentialMappings);
+  }
+  
+  // Resolve mapping conflicts using priority and first-match-wins
+  private resolveMappingConflicts(mappings: ColumnMapping[]): ColumnMapping[] {
+    const resolvedMappings: ColumnMapping[] = [];
+    const usedTargets = new Set<string>();
+    
+    // Sort by priority (higher first), then by confidence (higher first), then by source column name
+    mappings.sort((a, b) => {
+      if (a.priority !== b.priority) {
+        return (b.priority || 0) - (a.priority || 0);
+      }
+      if (a.confidence !== b.confidence) {
+        return b.confidence - a.confidence;
+      }
+      return a.sourceColumn.localeCompare(b.sourceColumn);
+    });
+    
+    for (const mapping of mappings) {
+      if (!usedTargets.has(mapping.targetColumn)) {
+        resolvedMappings.push(mapping);
+        usedTargets.add(mapping.targetColumn);
+      } else {
+        // Log skipped duplicate for debugging
+        console.log(`AI Mapper: Skipped duplicate mapping ${mapping.sourceColumn} -> ${mapping.targetColumn} (already mapped)`);
+      }
+    }
+    
+    return resolvedMappings;
   }
 
   private findBestMatch(sourceColumn: string, sampleRows: CustomCsvRow[]): ColumnMapping | null {
     const lowerColumn = sourceColumn.toLowerCase();
     const sampleValues = sampleRows.map(row => row[sourceColumn]).filter(Boolean);
 
-    // Date column mapping
-    if (this.matchesPattern(lowerColumn, ['date', 'time', 'timestamp', 'when', 'day'])) {
-      const confidence = this.validateDateColumn(sampleValues);
-      if (confidence > CONFIDENCE_THRESHOLDS.LOW) {
-        return {
-          sourceColumn,
-          targetColumn: 'Date',
-          confidence,
-          reasoning: `Column name "${sourceColumn}" suggests date field, validated with sample data`
-        };
-      }
+    // Order ID mappings with priority
+    if (this.matchesPattern(lowerColumn, ['tradeid'])) {
+      return {
+        sourceColumn,
+        targetColumn: 'orderId',
+        confidence: 0.9,
+        priority: 10, // Highest priority for TradeID
+        reasoning: `Column name "${sourceColumn}" is primary order identifier`
+      };
+    }
+    
+    if (this.matchesPattern(lowerColumn, ['orderid', 'iborderid'])) {
+      return {
+        sourceColumn,
+        targetColumn: 'orderId',
+        confidence: 0.8,
+        priority: 8, // Lower priority than TradeID
+        reasoning: `Column name "${sourceColumn}" suggests order identifier`
+      };
+    }
+    
+    if (this.matchesPattern(lowerColumn, ['transactionid', 'ibexecid', 'brokerageorderid', 'exchorderid', 'extexecid'])) {
+      return {
+        sourceColumn,
+        targetColumn: 'orderId',
+        confidence: 0.7,
+        priority: 5, // Lower priority - these are secondary IDs
+        reasoning: `Column name "${sourceColumn}" suggests transaction identifier`
+      };
     }
 
-    // Symbol column mapping
+    // Symbol column mapping (high priority)
     if (this.matchesPattern(lowerColumn, ['symbol', 'ticker', 'stock', 'instrument', 'security'])) {
       const confidence = this.validateSymbolColumn(sampleValues);
       if (confidence > CONFIDENCE_THRESHOLDS.LOW) {
@@ -158,38 +208,107 @@ Example response format:
           sourceColumn,
           targetColumn: 'Symbol',
           confidence,
+          priority: 9,
           reasoning: `Column name "${sourceColumn}" suggests stock symbol field`
         };
       }
     }
 
-    // Buy/Sell column mapping
-    if (this.matchesPattern(lowerColumn, ['side', 'buy', 'sell', 'action', 'type', 'direction'])) {
+    // Buy/Sell column mapping (high priority)
+    if (this.matchesPattern(lowerColumn, ['side', 'buy', 'sell', 'action', 'type', 'direction', 'buy/sell'])) {
       const confidence = this.validateSideColumn(sampleValues);
       if (confidence > CONFIDENCE_THRESHOLDS.LOW) {
         return {
           sourceColumn,
           targetColumn: 'Buy/Sell',
           confidence,
+          priority: 8,
           reasoning: `Column name "${sourceColumn}" suggests trade direction field`
         };
       }
     }
 
-    // Shares/Quantity column mapping
-    if (this.matchesPattern(lowerColumn, ['shares', 'quantity', 'qty', 'volume', 'amount', 'size'])) {
+    // Quantity mappings with priority
+    if (this.matchesPattern(lowerColumn, ['quantity', 'qty'])) {
       const confidence = this.validateNumberColumn(sampleValues);
       if (confidence > CONFIDENCE_THRESHOLDS.LOW) {
         return {
           sourceColumn,
           targetColumn: 'Shares',
           confidence,
+          priority: 9, // Higher priority for exact quantity matches
+          reasoning: `Column name "${sourceColumn}" suggests order quantity field`
+        };
+      }
+    }
+    
+    if (this.matchesPattern(lowerColumn, ['shares', 'volume', 'amount', 'size'])) {
+      const confidence = this.validateNumberColumn(sampleValues);
+      if (confidence > CONFIDENCE_THRESHOLDS.LOW) {
+        return {
+          sourceColumn,
+          targetColumn: 'Shares',
+          confidence,
+          priority: 7,
           reasoning: `Column name "${sourceColumn}" suggests quantity field`
         };
       }
     }
 
-    // Price column mapping
+    // Date/Time column mappings
+    if (this.matchesPattern(lowerColumn, ['datetime', 'orderexecutedtime'])) {
+      const confidence = this.validateDateColumn(sampleValues);
+      if (confidence > CONFIDENCE_THRESHOLDS.LOW) {
+        return {
+          sourceColumn,
+          targetColumn: 'Date',
+          confidence,
+          priority: 9,
+          reasoning: `Column name "${sourceColumn}" suggests execution datetime field`
+        };
+      }
+    }
+    
+    if (this.matchesPattern(lowerColumn, ['date', 'tradedate', 'ordertime'])) {
+      const confidence = this.validateDateColumn(sampleValues);
+      if (confidence > CONFIDENCE_THRESHOLDS.LOW) {
+        return {
+          sourceColumn,
+          targetColumn: 'Date',
+          confidence,
+          priority: 8,
+          reasoning: `Column name "${sourceColumn}" suggests date field, validated with sample data`
+        };
+      }
+    }
+    
+    if (this.matchesPattern(lowerColumn, ['time', 'timestamp', 'when', 'day'])) {
+      const confidence = this.validateDateColumn(sampleValues);
+      if (confidence > CONFIDENCE_THRESHOLDS.LOW) {
+        return {
+          sourceColumn,
+          targetColumn: 'Date',
+          confidence,
+          priority: 6,
+          reasoning: `Column name "${sourceColumn}" suggests time field, validated with sample data`
+        };
+      }
+    }
+
+    // Price column mappings with priority
+    if (this.matchesPattern(lowerColumn, ['tradeprice', 'limitprice'])) {
+      const confidence = this.validateNumberColumn(sampleValues);
+      if (confidence > CONFIDENCE_THRESHOLDS.LOW) {
+        return {
+          sourceColumn,
+          targetColumn: 'Price',
+          confidence,
+          priority: 8,
+          reasoning: `Column name "${sourceColumn}" suggests specific price field`
+        };
+      }
+    }
+    
     if (this.matchesPattern(lowerColumn, ['price', 'cost', 'rate', 'value', 'amount'])) {
       const confidence = this.validateNumberColumn(sampleValues);
       if (confidence > CONFIDENCE_THRESHOLDS.LOW) {
@@ -197,30 +316,43 @@ Example response format:
           sourceColumn,
           targetColumn: 'Price',
           confidence,
+          priority: 6,
           reasoning: `Column name "${sourceColumn}" suggests price field`
         };
       }
     }
 
     // Commission column mapping
-    if (this.matchesPattern(lowerColumn, ['commission', 'comm', 'fee', 'charge'])) {
+    if (this.matchesPattern(lowerColumn, ['commission', 'ibcommission', 'comm', 'fee', 'charge'])) {
       const confidence = this.validateNumberColumn(sampleValues);
       if (confidence > CONFIDENCE_THRESHOLDS.LOW) {
         return {
           sourceColumn,
           targetColumn: 'Commission',
           confidence,
+          priority: 7,
           reasoning: `Column name "${sourceColumn}" suggests commission field`
         };
       }
     }
 
-    // Account column mapping
-    if (this.matchesPattern(lowerColumn, ['account', 'acct', 'portfolio', 'fund'])) {
+    // Account column mappings with priority
+    if (this.matchesPattern(lowerColumn, ['clientaccountid', 'accountid'])) {
+      return {
+        sourceColumn,
+        targetColumn: 'Account',
+        confidence: 0.9,
+        priority: 8,
+        reasoning: `Column name "${sourceColumn}" suggests primary account identifier`
+      };
+    }
+    
+    if (this.matchesPattern(lowerColumn, ['account', 'acct', 'portfolio', 'fund', 'accountalias'])) {
       return {
         sourceColumn,
         targetColumn: 'Account',
         confidence: CONFIDENCE_THRESHOLDS.MEDIUM,
+        priority: 6,
         reasoning: `Column name "${sourceColumn}" suggests account field`
       };
     }

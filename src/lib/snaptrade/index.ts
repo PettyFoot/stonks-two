@@ -21,7 +21,6 @@ export {
   getSnapTradeCredentials,
   validateWebhookSignature,
   getSnapTradeBrokerConnections,
-  getBrokerConnection,
   deleteSnapTradeUser,
 } from './auth';
 

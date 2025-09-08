@@ -141,6 +141,65 @@ export const KNOWN_CSV_FORMATS: CsvFormat[] = [
   },
   
   {
+    id: 'interactive-brokers-full',
+    name: 'Interactive Brokers Full Export',
+    description: 'IBKR full transaction export with all order fields using first-match-wins mapping',
+    fingerprint: 'clientaccountid|symbol|tradeid|datetime|transactiontype|buysell|quantity|tradeprice|ibcommission',
+    confidence: 0.95,
+    fieldMappings: {
+      // Account Information (first priority)
+      'ClientAccountID': { tradeVoyagerField: 'accountId', dataType: 'string', required: false, examples: ['U1234567', 'DU567890'] },
+      'AccountAlias': { tradeVoyagerField: 'orderAccount', dataType: 'string', required: false, examples: ['Main', 'Trading'] },
+      
+      // Core Trade Information (highest priority)
+      'Symbol': { tradeVoyagerField: 'symbol', dataType: 'string', required: true, examples: ['AAPL', 'TSLA', 'MSFT'] },
+      'TradeID': { tradeVoyagerField: 'orderId', dataType: 'string', required: false, examples: ['12345', '67890'] },
+      
+      // Timing Information
+      'DateTime': { tradeVoyagerField: 'orderExecutedTime', dataType: 'date', required: false, transformer: 'parseIBDateTime', examples: ['2025-01-15 09:30:00', '20250115;093000'] },
+      'TradeDate': { tradeVoyagerField: 'orderPlacedTime', dataType: 'date', required: false, transformer: 'parseIBDate', examples: ['2025-01-15', '20250115'] },
+      'OrderTime': { tradeVoyagerField: 'orderPlacedTime', dataType: 'date', required: false, transformer: 'parseIBDateTime', examples: ['2025-01-15 09:29:55'] },
+      
+      // Order Details
+      'TransactionType': { tradeVoyagerField: 'orderType', dataType: 'string', required: false, transformer: 'ibOrderTypeMapping', examples: ['MKT', 'LMT', 'MARKET', 'LIMIT'] },
+      'OrderType': { tradeVoyagerField: 'orderType', dataType: 'string', required: false, transformer: 'ibOrderTypeMapping', examples: ['MKT', 'LMT', 'MARKET', 'LIMIT'] },
+      'Buy/Sell': { tradeVoyagerField: 'side', dataType: 'string', required: true, transformer: 'ibkrSideMapping', examples: ['BUY', 'SELL', 'BOT', 'SLD'] },
+      
+      // Quantity and Pricing
+      'Quantity': { tradeVoyagerField: 'orderQuantity', dataType: 'number', required: true, examples: ['100', '50', '200'] },
+      'Multiplier': { tradeVoyagerField: 'orderQuantity', dataType: 'number', required: false, transformer: 'parseMultiplier', examples: ['1', '100'] },
+      'TradePrice': { tradeVoyagerField: 'limitPrice', dataType: 'number', required: false, examples: ['150.25', '25.50'] },
+      'Strike': { tradeVoyagerField: 'stopPrice', dataType: 'number', required: false, examples: ['155.00', '30.00'] },
+      
+      // Financial Information
+      'IBCommission': { tradeVoyagerField: 'commission', dataType: 'number', required: false, transformer: 'parseIBCommission', examples: ['1.00', '2.50'] },
+      
+      // Alternative Order IDs (lower priority - will be ignored if orderId already mapped)
+      'IBOrderID': { tradeVoyagerField: 'parentOrderId', dataType: 'string', required: false, examples: ['ORD123', 'ORD456'] },
+      'TransactionID': { tradeVoyagerField: 'brokerMetadata', dataType: 'string', required: false, examples: ['TXN789', 'TXN012'] },
+      'IBExecID': { tradeVoyagerField: 'brokerMetadata', dataType: 'string', required: false, examples: ['EXEC345', 'EXEC678'] },
+      'RelatedTransactionID': { tradeVoyagerField: 'parentOrderId', dataType: 'string', required: false, examples: ['REL901', 'REL234'] },
+      'BrokerageOrderID': { tradeVoyagerField: 'brokerMetadata', dataType: 'string', required: false, examples: ['BRK567', 'BRK890'] },
+      'OrderReference': { tradeVoyagerField: 'brokerMetadata', dataType: 'string', required: false, examples: ['REF123', 'REF456'] },
+      'ExchOrderID': { tradeVoyagerField: 'brokerMetadata', dataType: 'string', required: false, examples: ['EXC789', 'EXC012'] },
+      'ExtExecID': { tradeVoyagerField: 'brokerMetadata', dataType: 'string', required: false, examples: ['EXT345', 'EXT678'] },
+    },
+    detectionPatterns: {
+      headerPattern: ['ClientAccountID', 'Symbol', 'TradeID', 'Buy/Sell', 'Quantity'],
+      sampleValuePatterns: {
+        'Buy/Sell': /^(BUY|SELL|BOT|SLD|B|S)$/i,
+        'ClientAccountID': /^(U|DU)\d+$/i,
+        'TradeID': /^\d+$/,
+      },
+    },
+    brokerName: 'Interactive Brokers',
+    version: '2.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    usageCount: 0,
+  },
+  
+  {
     id: 'td-ameritrade-history',
     name: 'TD Ameritrade Transaction History',
     description: 'TD Ameritrade/Schwab transaction export',
@@ -722,5 +781,82 @@ export const DATA_TRANSFORMERS = {
       'STOP': 'Stop'
     };
     return typeMap[value.toUpperCase()] || value;
+  },
+  
+  // Interactive Brokers specific transformers
+  parseIBDateTime: (value: string) => {
+    if (!value) return null;
+    try {
+      // Handle IBKR datetime formats like "20250115;093000" or "2025-01-15 09:30:00"
+      if (value.includes(';')) {
+        const [datePart, timePart] = value.split(';');
+        if (datePart.length === 8 && timePart.length === 6) {
+          const year = datePart.substring(0, 4);
+          const month = datePart.substring(4, 6);
+          const day = datePart.substring(6, 8);
+          const hour = timePart.substring(0, 2);
+          const minute = timePart.substring(2, 4);
+          const second = timePart.substring(4, 6);
+          
+          return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
+        }
+      }
+      
+      // Standard datetime formats
+      const date = new Date(value);
+      return isNaN(date.getTime()) ? null : date;
+    } catch {
+      return null;
+    }
+  },
+  
+  parseIBDate: (value: string) => {
+    if (!value) return null;
+    try {
+      // Handle IBKR date formats like "20250115" or "2025-01-15"
+      if (value.length === 8 && /^\d{8}$/.test(value)) {
+        const year = value.substring(0, 4);
+        const month = value.substring(4, 6);
+        const day = value.substring(6, 8);
+        return new Date(`${year}-${month}-${day}`);
+      }
+      
+      // Standard date formats
+      const date = new Date(value);
+      return isNaN(date.getTime()) ? null : date;
+    } catch {
+      return null;
+    }
+  },
+  
+  ibOrderTypeMapping: (value: string) => {
+    if (!value) return 'MARKET';
+    const typeMap: { [key: string]: string } = {
+      'MKT': 'MARKET',
+      'LMT': 'LIMIT',
+      'STP': 'STOP',
+      'MARKET': 'MARKET',
+      'LIMIT': 'LIMIT',
+      'STOP': 'STOP',
+      'STOP LIMIT': 'STOP_LIMIT',
+      'TRAIL': 'TRAILING_STOP',
+      'MOC': 'MARKET_ON_CLOSE',
+      'LOC': 'LIMIT_ON_CLOSE'
+    };
+    return typeMap[value.toUpperCase()] || 'MARKET';
+  },
+  
+  parseMultiplier: (value: string) => {
+    if (!value) return 1;
+    const num = parseFloat(value);
+    return isNaN(num) ? 1 : num;
+  },
+  
+  parseIBCommission: (value: string) => {
+    if (!value) return null;
+    // Remove currency symbols and parse as number
+    const cleaned = value.toString().replace(/[$€£¥]/g, '');
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? null : Math.abs(num); // Commission should be positive
   },
 };

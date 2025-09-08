@@ -1,5 +1,4 @@
 import { getSnapTradeClient, handleSnapTradeError, RateLimitHelper } from './client';
-import { getBrokerConnection } from './auth';
 import { prisma } from '@/lib/prisma';
 import { SnapTradeActivity, SyncStatus, SyncType } from './types';
 import { mapBrokerType } from './mapper';
@@ -174,21 +173,28 @@ export class SnapTradeActivityProcessor {
     let duplicatesSkipped = 0;
 
     try {
-      // Get the broker connection
-      const connection = await getBrokerConnection(connectionId, userId);
-      if (!connection) {
-        throw new Error('Broker connection not found');
+      // Get the user's SnapTrade credentials
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          snapTradeUserId: true,
+          snapTradeUserSecret: true,
+        },
+      });
+      
+      if (!user?.snapTradeUserId || !user?.snapTradeUserSecret) {
+        throw new Error('SnapTrade credentials not found for user');
       }
 
       onProgress?.(10, 'Connecting to SnapTrade API');
       
       await RateLimitHelper.checkRateLimit();
       const client = getSnapTradeClient();
-      const decryptedSecret = connection.snapTradeUserSecret;
+      const decryptedSecret = user.snapTradeUserSecret;
 
       // Get accounts for this connection
       const accountsResponse = await client.accountInformation.listUserAccounts({
-        userId: connection.snapTradeUserId,
+        userId: user.snapTradeUserId,
         userSecret: decryptedSecret,
       });
 
@@ -214,7 +220,7 @@ export class SnapTradeActivityProcessor {
           
           // Get activities for this account
           const activitiesResponse = await client.accountInformation.getAccountActivities({
-            userId: connection.snapTradeUserId,
+            userId: user.snapTradeUserId,
             userSecret: decryptedSecret,
             accountId: account.id,
             startDate: startDate.toISOString().split('T')[0],
@@ -309,15 +315,22 @@ export class SnapTradeActivityProcessor {
     dateTo: Date
   ): Promise<number> {
     try {
-      const connection = await getBrokerConnection(connectionId, userId);
-      if (!connection) return 0;
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          snapTradeUserId: true,
+          snapTradeUserSecret: true,
+        },
+      });
+      
+      if (!user?.snapTradeUserId || !user?.snapTradeUserSecret) return 0;
 
       await RateLimitHelper.checkRateLimit();
       const client = getSnapTradeClient();
-      const decryptedSecret = connection.snapTradeUserSecret;
+      const decryptedSecret = user.snapTradeUserSecret;
 
       const accountsResponse = await client.accountInformation.listUserAccounts({
-        userId: connection.snapTradeUserId,
+        userId: user.snapTradeUserId,
         userSecret: decryptedSecret,
       });
 
@@ -330,7 +343,7 @@ export class SnapTradeActivityProcessor {
         
         await RateLimitHelper.checkRateLimit();
         const activitiesResponse = await client.accountInformation.getAccountActivities({
-          userId: connection.snapTradeUserId,
+          userId: user.snapTradeUserId,
           userSecret: decryptedSecret,
           accountId: sampleAccount.id,
           startDate: dateFrom.toISOString().split('T')[0],

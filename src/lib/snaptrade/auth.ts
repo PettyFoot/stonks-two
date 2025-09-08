@@ -368,24 +368,6 @@ export async function getSnapTradeBrokerConnections(userId: string) {
   }
 }
 
-/**
- * Get a broker connection by ID and verify ownership
- */
-export async function getBrokerConnection(connectionId: string, userId: string) {
-  try {
-    const connection = await prisma.brokerConnection.findFirst({
-      where: {
-        id: connectionId,
-        userId,
-      },
-    });
-
-    return connection;
-  } catch (error) {
-    console.error('Error fetching broker connection:', error);
-    throw new Error('Failed to fetch broker connection');
-  }
-}
 
 /**
  * Delete all broker connections for a user (delete SnapTrade user)

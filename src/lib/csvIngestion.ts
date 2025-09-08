@@ -110,6 +110,53 @@ export class CsvIngestionService {
     this.formatDetector = new CsvFormatDetector();
   }
 
+  // Validate and clean mappings to prevent conflicts
+  private validateMappings(mappings: ColumnMapping[]): {
+    validMappings: ColumnMapping[];
+    conflicts: string[];
+    suggestions: string[];
+  } {
+    const validMappings: ColumnMapping[] = [];
+    const conflicts: string[] = [];
+    const suggestions: string[] = [];
+    const usedTargets = new Map<string, ColumnMapping>();
+    
+    // Sort mappings by priority and confidence
+    const sortedMappings = [...mappings].sort((a, b) => {
+      if (a.priority !== b.priority) {
+        return (b.priority || 0) - (a.priority || 0);
+      }
+      return b.confidence - a.confidence;
+    });
+    
+    for (const mapping of sortedMappings) {
+      const existingMapping = usedTargets.get(mapping.targetColumn);
+      
+      if (existingMapping) {
+        conflicts.push(
+          `Conflict: Both "${existingMapping.sourceColumn}" and "${mapping.sourceColumn}" map to "${mapping.targetColumn}". ` +
+          `Using "${existingMapping.sourceColumn}" (priority: ${existingMapping.priority || 0}, confidence: ${existingMapping.confidence})`
+        );
+        
+        // Special suggestion for order ID conflicts
+        if (mapping.targetColumn === 'orderId') {
+          suggestions.push(
+            `Suggestion: Consider mapping "${mapping.sourceColumn}" to "parentOrderId" or storing in brokerMetadata for relationship tracking`
+          );
+        }
+      } else {
+        validMappings.push(mapping);
+        usedTargets.set(mapping.targetColumn, mapping);
+      }
+    }
+    
+    return {
+      validMappings,
+      conflicts,
+      suggestions
+    };
+  }
+
   async validateCsvFile(fileContent: string): Promise<CsvValidationResult> {
     const fileSize = Buffer.byteLength(fileContent, 'utf8');
     
@@ -665,15 +712,40 @@ export class CsvIngestionService {
         for (const [index, row] of records.entries()) {
           try {
             const mappedData: Record<string, unknown> = {};
+            const mappedFields = new Set<string>(); // Track which target fields have been mapped
+            const skippedMappings: string[] = []; // Track skipped mappings for logging
             
-            // Apply mappings
+            // Apply mappings with first-match-wins logic
             for (const mapping of mappingResult.mappings) {
               if ('csvColumn' in mapping && 'tradeVoyagerField' in mapping) {
-                const value = (row as Record<string, unknown>)[mapping.csvColumn as string];
+                const targetField = mapping.tradeVoyagerField as string;
+                const csvColumn = mapping.csvColumn as string;
+                
+                // Check if target field already mapped (first-match-wins)
+                if (mappedFields.has(targetField)) {
+                  skippedMappings.push(`${csvColumn} -> ${targetField} (already mapped)`);
+                  continue;
+                }
+                
+                const value = (row as Record<string, unknown>)[csvColumn];
                 if (value !== undefined && value !== null && value !== '') {
-                  (mappedData as Record<string, unknown>)[mapping.tradeVoyagerField as string] = value;
+                  // Special handling for brokerMetadata - accumulate multiple values
+                  if (targetField === 'brokerMetadata') {
+                    if (!mappedData.brokerMetadata) {
+                      mappedData.brokerMetadata = {};
+                    }
+                    (mappedData.brokerMetadata as Record<string, unknown>)[csvColumn] = value;
+                  } else {
+                    (mappedData as Record<string, unknown>)[targetField] = value;
+                    mappedFields.add(targetField);
+                  }
                 }
               }
+            }
+            
+            // Log skipped mappings for debugging
+            if (skippedMappings.length > 0 && index === 0) { // Only log for first row to avoid spam
+              console.log(`First-match-wins: Skipped ${skippedMappings.length} duplicate mappings for orders:`, skippedMappings);
             }
             
             // Create order record
@@ -898,27 +970,56 @@ export class CsvIngestionService {
 
   private applyDetectedFormatMapping(row: Record<string, unknown>, format: CsvFormat, accountTags: string[]): NormalizedOrder {
     const normalizedData: Record<string, unknown> = {};
+    const mappedFields = new Set<string>(); // Track which target fields have been mapped
+    const skippedMappings: string[] = []; // Track skipped mappings for logging
     
-    // Apply mappings from detected format
+    // Apply mappings from detected format with first-match-wins logic
     const fieldMappings = format.fieldMappings;
     for (const csvColumn of Object.keys(fieldMappings)) {
       const mapping = fieldMappings[csvColumn];
       const value = row[csvColumn];
+      
+      // Check if target field already mapped (first-match-wins)
+      if (mappedFields.has(mapping.tradeVoyagerField)) {
+        skippedMappings.push(`${csvColumn} -> ${mapping.tradeVoyagerField} (already mapped)`);
+        continue;
+      }
+      
       if (value !== undefined && value !== null && value !== '') {
         let transformedValue = value;
         
         // Apply data transformers if specified
         if (mapping.transformer && DATA_TRANSFORMERS[mapping.transformer as keyof typeof DATA_TRANSFORMERS]) {
-          transformedValue = DATA_TRANSFORMERS[mapping.transformer as keyof typeof DATA_TRANSFORMERS](String(value)) || value;
+          try {
+            transformedValue = DATA_TRANSFORMERS[mapping.transformer as keyof typeof DATA_TRANSFORMERS](String(value)) || value;
+          } catch (error) {
+            console.warn(`Transformer ${mapping.transformer} failed for value ${value}:`, error);
+            transformedValue = value;
+          }
         }
         
         // Type conversion
         switch (mapping.dataType) {
           case 'number':
-            transformedValue = parseFloat(String(transformedValue).replace(/[$,]/g, ''));
+            const numStr = String(transformedValue).replace(/[$,]/g, '');
+            const parsedNum = parseFloat(numStr);
+            if (isNaN(parsedNum)) {
+              console.warn(`Failed to parse number from: ${value}`);
+              continue; // Skip invalid numbers
+            }
+            transformedValue = parsedNum;
             break;
           case 'date':
-            transformedValue = new Date(String(transformedValue));
+            if (transformedValue instanceof Date) {
+              // Already a date from transformer
+            } else {
+              const parsedDate = new Date(String(transformedValue));
+              if (isNaN(parsedDate.getTime())) {
+                console.warn(`Failed to parse date from: ${value}`);
+                continue; // Skip invalid dates
+              }
+              transformedValue = parsedDate;
+            }
             break;
           case 'boolean':
             transformedValue = Boolean(transformedValue);
@@ -927,8 +1028,22 @@ export class CsvIngestionService {
             transformedValue = String(transformedValue);
         }
         
-        normalizedData[mapping.tradeVoyagerField] = transformedValue;
+        // Special handling for brokerMetadata - accumulate multiple values
+        if (mapping.tradeVoyagerField === 'brokerMetadata') {
+          if (!normalizedData.brokerMetadata) {
+            normalizedData.brokerMetadata = {};
+          }
+          (normalizedData.brokerMetadata as Record<string, unknown>)[csvColumn] = transformedValue;
+        } else {
+          normalizedData[mapping.tradeVoyagerField] = transformedValue;
+          mappedFields.add(mapping.tradeVoyagerField);
+        }
       }
+    }
+    
+    // Log skipped mappings for debugging
+    if (skippedMappings.length > 0) {
+      console.log(`First-match-wins: Skipped ${skippedMappings.length} duplicate mappings:`, skippedMappings);
     }
     
     // Handle tags field (convert string to array)
