@@ -15,6 +15,7 @@ export type TimeFramePreset =
   | '1week' 
   | '2weeks' 
   | '1month' 
+  | '2months'
   | '3months' 
   | '6months' 
   | '1year' 
@@ -107,6 +108,11 @@ function calculatePresetDates(preset: TimeFramePreset): { from: string; to: stri
       const monthAgo = new Date(today);
       monthAgo.setDate(monthAgo.getDate() - 30);
       return { from: formatDate(monthAgo), to: formatDate(today) };
+    }
+    case '2months': {
+      const twoMonthsAgo = new Date(today);
+      twoMonthsAgo.setDate(twoMonthsAgo.getDate() - 60);
+      return { from: formatDate(twoMonthsAgo), to: formatDate(today) };
     }
     case '3months': {
       const threeMonthsAgo = new Date(today);

@@ -257,8 +257,18 @@ export default function TradeDistributionChart({
     return calculateTickInterval(normalizedData.length, timeInterval?.tickCount || 8);
   }, [normalizedData, timeInterval]);
 
-  const getBarColor = (value: number) => {
+  const getBarColor = (value: number, category?: string) => {
     if (conditionalColors || useConditionalColors) {
+      // For category-based coloring (like "Winning" vs "Losing")
+      if (category) {
+        if (category.toLowerCase().includes('losing') || category.toLowerCase().includes('loss')) {
+          return negativeColor;
+        }
+        if (category.toLowerCase().includes('winning') || category.toLowerCase().includes('win')) {
+          return positiveColor;
+        }
+      }
+      // Fallback to value-based coloring
       return value >= 0 ? positiveColor : negativeColor;
     }
     return color;
@@ -303,7 +313,7 @@ export default function TradeDistributionChart({
                 const minPercentage = 25;
                 const scaledRange = 100 - minPercentage;
                 const percentage = item.value !== 0 ? minPercentage + (rawPercentage / 100) * scaledRange : 3;
-                const itemColor = getBarColor(item.value);
+                const itemColor = getBarColor(item.value, item.category || item.date);
                 const displayValue = valueFormatter ? valueFormatter(item.value) : 
                   (item.count ? `${item.count}` : item.value.toFixed(2));
                 
@@ -355,7 +365,7 @@ export default function TradeDistributionChart({
               {normalizedData.map((item, index) => {
                 const maxValue = Math.max(...normalizedData.map(d => d.value));
                 const barWidth = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
-                const itemColor = getBarColor(item.value);
+                const itemColor = getBarColor(item.value, item.category || item.date);
                 
                 return (
                   <div key={index} className="flex items-center gap-3">
@@ -499,7 +509,7 @@ export default function TradeDistributionChart({
               label={showValues ? (props: { x: number; y: number; width: number; height: number; value: number }) => <CustomLabel {...props} /> : false}
             >
               {(conditionalColors || useConditionalColors) && normalizedData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={getBarColor(entry.value)} />
+                <Cell key={`cell-${index}`} fill={getBarColor(entry.value, entry.category || entry.date)} />
               ))}
             </Bar>
           </BarChart>

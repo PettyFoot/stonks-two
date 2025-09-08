@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import TopBar from '@/components/TopBar';
 import FilterPanel from '@/components/FilterPanel';
 import TradesTable from '@/components/TradesTable';
@@ -11,6 +11,7 @@ import { useTradesData } from '@/hooks/useTradesData';
 import { useCleanupDemoOnAuth } from '@/hooks/useCleanupDemoOnAuth';
 import { PageTriangleLoader, FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
 import { useAuth } from '@/contexts/AuthContext';
+import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 import { RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import AdSense from '@/components/AdSense';
@@ -20,10 +21,47 @@ export default function Trades() {
   const [columnConfig, setColumnConfig] = useState<ColumnConfiguration[]>([]);
   
   const { isDemo } = useAuth();
+  const { filters } = useGlobalFilters();
   const { data: tradesData, loading, error, refetch } = useTradesData();
   
   // Ensure demo data is cleaned up on auth transitions
   useCleanupDemoOnAuth();
+
+  // Calculate effective date range for display
+  const getEffectiveDateRange = useCallback(() => {
+    // If custom dates are set, use those
+    if (filters.customDateRange?.from && filters.customDateRange?.to) {
+      return {
+        from: filters.customDateRange.from,
+        to: filters.customDateRange.to
+      };
+    }
+    
+    // Otherwise use default 30-day range
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    return {
+      from: thirtyDaysAgo.toISOString().split('T')[0],
+      to: today.toISOString().split('T')[0]
+    };
+  }, [filters.customDateRange]);
+
+  // Format date range for display
+  const formatDateRange = () => {
+    const range = getEffectiveDateRange();
+    const fromDate = new Date(range.from);
+    const toDate = new Date(range.to);
+    
+    const options: Intl.DateTimeFormatOptions = { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    };
+    
+    return `${fromDate.toLocaleDateString('en-US', options)} - ${toDate.toLocaleDateString('en-US', options)}`;
+  };
 
   console.log('=== TRADES PAGE RENDER ===');
   console.log('Demo mode:', isDemo);
@@ -110,7 +148,12 @@ export default function Trades() {
         {/* Trades Header */}
         <div className="mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3 sm:gap-4">
-            <h2 className="text-base sm:text-lg font-semibold text-primary">Trades</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
+              <h2 className="text-base sm:text-lg font-semibold text-primary">Trades</h2>
+              <div className="text-sm text-muted font-medium">
+                Current Period: {formatDateRange()}
+              </div>
+            </div>
             
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-4">

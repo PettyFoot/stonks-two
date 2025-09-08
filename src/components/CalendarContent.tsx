@@ -311,11 +311,10 @@ export default function CalendarContent() {
     <div className="flex flex-col h-full">
       <TopBar 
         title="Calendar" 
-        subtitle={view === 'month' ? format(currentDate, 'MMMM yyyy') : ''}
         showTimeRangeFilters={false}
       />
       
-      <FilterPanel />
+      <FilterPanel showAdvanced={true} />
       
       <div className="flex-1 overflow-auto p-6">
         {/* Tab Navigation */}

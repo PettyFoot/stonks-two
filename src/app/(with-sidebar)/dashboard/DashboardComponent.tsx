@@ -23,6 +23,7 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 import { useCleanupDemoOnAuth } from '@/hooks/useCleanupDemoOnAuth';
 import { CHART_HEIGHTS } from '@/constants/chartHeights';
+import CausticsWrapper from '@/components/backgrounds/CausticsWrapper';
 
 // Helper formatters
 const formatDuration = (seconds: number): string => {
@@ -94,7 +95,7 @@ export default function DashboardComponent() {
     return (
       <div className="flex flex-col h-full">
         <TopBar title="Dashboard" showTimeRangeFilters={false} />
-        <FilterPanel />
+        <FilterPanel showAdvanced={true} />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-md">
             {error ? (
@@ -171,13 +172,11 @@ export default function DashboardComponent() {
     { 
       label: 'Winning', 
       value: metrics.avgHoldTimeWinning || 0, 
-      color: 'var(--theme-green)',
       displayValue: formatDuration(metrics.avgHoldTimeWinning || 0)
     },
     { 
       label: 'Losing', 
       value: metrics.avgHoldTimeLosing || 0, 
-      color: 'var(--theme-red)',
       displayValue: formatDuration(metrics.avgHoldTimeLosing || 0)
     }
   ];
@@ -187,13 +186,11 @@ export default function DashboardComponent() {
     { 
       label: 'Winning', 
       value: metrics.avgWinningTrade || 0, 
-      color: 'var(--theme-green)',
       displayValue: formatCurrency(metrics.avgWinningTrade || 0)
     },
     { 
       label: 'Losing', 
       value: Math.abs(metrics.avgLosingTrade || 0), 
-      color: 'var(--theme-red)',
       displayValue: formatCurrency(metrics.avgLosingTrade || 0)
     }
   ];
@@ -218,23 +215,29 @@ export default function DashboardComponent() {
   ];
 
   return (
-    <div className="flex flex-col h-full">
+    <CausticsWrapper variant="pool" className="flex flex-col h-full">
       <TopBar 
         title="Dashboard" 
-        subtitle={getDateRangeDisplay}
         showEditLayout={false}
         showTimeRangeFilters={false}
       />
       
-      <FilterPanel />
+      <FilterPanel showAdvanced={true} />
       
       <div className="flex-1 overflow-auto p-3 sm:p-6">
+        {/* Dashboard Header with Current Period */}
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
+            <h2 className="text-base sm:text-lg font-semibold text-primary">Dashboard</h2>
+            <div className="text-sm text-muted font-medium">
+              Current Period: {getDateRangeDisplay}
+            </div>
+          </div>
+        </div>
+        
         <WelcomeBackBanner />
         {/* Daily Calendar Cards */}
         <div className="mb-4 sm:mb-6">
-          <h2 className="text-base sm:text-lg font-semibold text-primary mb-3 sm:mb-4">
-            {getDateRangeDisplay}
-          </h2>
           <KPICards days={analytics.dayData || []} />
         </div>
 
@@ -428,6 +431,6 @@ export default function DashboardComponent() {
           </div>
         </div>
       </div>
-    </div>
+    </CausticsWrapper>
   );
 }

@@ -110,7 +110,10 @@ export function TriangleBackground({ className = '' }: TriangleBackgroundProps) 
         getColor(fragCoord + vec2(0.0, 0.5))
       );
       
-      gl_FragColor = vec4(color, 1.0);
+      // Animate opacity from 0.95 (95% opaque) to 0.05 (5% opaque)
+      float opacity = 0.5 + 0.45 * sin(u_time * 0.5);
+      
+      gl_FragColor = vec4(color, opacity);
     }
   `
 

@@ -35,6 +35,7 @@ export default function FilterPanel({
     clearAdvancedFilters, 
     hasAdvancedFilters,
     hasCustomTimeFilter,
+    hasActiveFilters,
     setTimeRange,
     setTimeFramePreset,
     setCustomDateRange 
@@ -229,6 +230,7 @@ export default function FilterPanel({
               <SelectItem value="1week">1 Week</SelectItem>
               <SelectItem value="2weeks">2 Weeks</SelectItem>
               <SelectItem value="1month">1 Month</SelectItem>
+              <SelectItem value="2months">2 Months</SelectItem>
               <SelectItem value="3months">3 Months</SelectItem>
               <SelectItem value="6months">6 Months</SelectItem>
               <SelectItem value="1year">1 Year</SelectItem>
@@ -287,13 +289,15 @@ export default function FilterPanel({
           </Button>
         )}
 
-        {/* Apply Button */}
-        <Button 
-          className="h-8 bg-positive hover:bg-positive text-white"
-          onClick={() => isMobile && setIsExpanded(false)}
-        >
-          ✓ Apply
-        </Button>
+        {/* Apply Button - only show if there are active filters */}
+        {hasActiveFilters && (
+          <Button 
+            className="h-8 bg-positive hover:bg-positive text-white"
+            onClick={() => isMobile && setIsExpanded(false)}
+          >
+            ✓ Apply
+          </Button>
+        )}
         </div>
       </div>
 
