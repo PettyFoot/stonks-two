@@ -178,7 +178,6 @@ const EquityChart = React.memo(function EquityChart({
               tick={{ fontSize: 12, fill: 'var(--theme-primary-text)' }}
               tickFormatter={CHART_FORMATTERS.currency.formatAxisValue}
               domain={['dataMin', 'dataMax']}
-              includeZero={true}
             />
             {showTooltip && (
               <Tooltip 
