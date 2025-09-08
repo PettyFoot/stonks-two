@@ -110,7 +110,8 @@
       "Bash(ls:*)",
       "Read(/c:\\Users\\lcorr\\OneDrive\\Pictures\\CC/**)",
       "Read(//c/Users/lcorr/OneDrive/Pictures/CC/**)",
-      "WebFetch(domain:docs.snaptrade.com)"
+      "WebFetch(domain:docs.snaptrade.com)",
+      "WebFetch(domain:www.alphavantage.co)"
     ],
     "deny": [],
     "ask": []

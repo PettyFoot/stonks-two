@@ -642,60 +642,149 @@ export default function ExecutionsTable({
     }
   };
   
-  // Render expanded row details for mobile
+  // Render expanded row details for mobile - show ALL columns with better organization
   const renderExpandedDetails = (execution: ExecutionOrder) => {
-    const hiddenColumns = DEFAULT_COLUMNS.filter(col => 
-      col.visible && !visibleColumnsData.find(vc => vc?.id === col.id)
+    // On mobile, show ALL columns that aren't already visible in the main row
+    const allColumns = DEFAULT_COLUMNS.filter(col => 
+      !visibleColumnsData.find(vc => vc?.id === col.id)
     );
     
-    if (hiddenColumns.length === 0) return null;
-    
     return (
-      <TableRow>
+      <TableRow className="bg-theme-surface25">
         <TableCell colSpan={visibleColumnsData.length + (isMobile ? 1 : 0) + (showActions ? 1 : 0)}>
-          <div className="px-4 py-3 bg-theme-surface50 rounded-lg">
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              {hiddenColumns.map(col => (
-                <div key={col.id}>
-                  <span className="text-theme-secondary-text font-medium">{col.label}:</span>
-                  <span className="ml-2 text-theme-primary-text">
-                    {col.id === 'id' || col.id === 'userId' || col.id === 'tradeId' ? (
-                      <span className="font-mono" title={(execution as ExecutionOrder & Record<string, unknown>)[col.id] as string}>
-                        <div className="overflow-hidden text-ellipsis whitespace-nowrap max-w-[120px]">
-                          {(execution as ExecutionOrder & Record<string, unknown>)[col.id] as string || '-'}
-                        </div>
-                      </span>
-                    ) : col.id === 'orderId' ? (
-                      execution.orderId || '-'
-                    ) : col.id === 'orderType' || col.id === 'orderStatus' || col.id === 'brokerType' ? (
-                      formatEnumValue((execution as ExecutionOrder & Record<string, unknown>)[col.id] as string)
-                    ) : col.id === 'side' ? (
-                      <span className={cn(
-                        'font-medium',
-                        execution.side === 'BUY' ? 'text-theme-green' : 'text-theme-red'
-                      )}>
-                        {execution.side || '-'}
-                      </span>
-                    ) : col.id === 'orderQuantity' ? (
-                      execution.orderQuantity.toLocaleString()
-                    ) : col.id === 'costBasis' ? (
-                      (() => {
-                        const costBasis = (execution.orderQuantity || 0) * (Number(execution.limitPrice) || 0);
-                        return costBasis > 0 ? formatPrice(costBasis) : '-';
-                      })()
-                    ) : col.id === 'limitPrice' || col.id === 'stopPrice' ? (
-                      formatPrice((execution as ExecutionOrder & Record<string, unknown>)[col.id])
-                    ) : col.id === 'orderPlacedTime' || col.id === 'orderExecutedTime' || col.id === 'orderCancelledTime' ? (
-                      formatTime((execution as ExecutionOrder & Record<string, unknown>)[col.id] as Date)
-                    ) : col.id === 'tags' ? (
-                      execution.tags?.join(', ') || '-'
-                    ) : (
-                      String((execution as ExecutionOrder & Record<string, unknown>)[col.id] || '-')
-                    )}
-                  </span>
-                </div>
-              ))}
+          <div className="px-3 py-4 space-y-4">
+            {/* Order Information Section */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold text-theme-primary-text uppercase tracking-wide border-b border-theme-border pb-1">
+                Order Information
+              </h4>
+              <div className="space-y-2 text-sm">
+                {execution.orderId && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-secondary-text font-medium min-w-0 flex-shrink-0">Order ID:</span>
+                    <span className="font-mono text-theme-primary-text text-right break-all ml-2">{execution.orderId}</span>
+                  </div>
+                )}
+                {execution.orderType && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-secondary-text font-medium">Order Type:</span>
+                    <span className="text-theme-primary-text ml-2">{formatEnumValue(execution.orderType)}</span>
+                  </div>
+                )}
+                {execution.timeInForce && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-secondary-text font-medium">Time In Force:</span>
+                    <span className="text-theme-primary-text ml-2">{execution.timeInForce}</span>
+                  </div>
+                )}
+                {execution.orderRoute && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-secondary-text font-medium">Route:</span>
+                    <span className="text-theme-primary-text ml-2">{execution.orderRoute}</span>
+                  </div>
+                )}
+                {execution.brokerType && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-secondary-text font-medium">Broker:</span>
+                    <span className="text-theme-primary-text ml-2">{formatEnumValue(execution.brokerType)}</span>
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Pricing Section */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold text-theme-primary-text uppercase tracking-wide border-b border-theme-border pb-1">
+                Pricing Details
+              </h4>
+              <div className="space-y-2 text-sm">
+                {execution.limitPrice && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-secondary-text font-medium">Limit Price:</span>
+                    <span className="text-theme-primary-text font-medium ml-2">{formatPrice(execution.limitPrice)}</span>
+                  </div>
+                )}
+                {execution.stopPrice && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-secondary-text font-medium">Stop Price:</span>
+                    <span className="text-theme-primary-text font-medium ml-2">{formatPrice(execution.stopPrice)}</span>
+                  </div>
+                )}
+                {execution.orderQuantity && execution.limitPrice && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-secondary-text font-medium">Cost Basis:</span>
+                    <span className="text-theme-primary-text font-semibold ml-2">
+                      {formatPrice((execution.orderQuantity || 0) * (Number(execution.limitPrice) || 0))}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Timing Section */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold text-theme-primary-text uppercase tracking-wide border-b border-theme-border pb-1">
+                Order Timeline
+              </h4>
+              <div className="space-y-2 text-sm">
+                {execution.orderPlacedTime && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-secondary-text font-medium">Placed:</span>
+                    <span className="text-theme-primary-text font-mono ml-2">{formatTime(execution.orderPlacedTime)}</span>
+                  </div>
+                )}
+                {execution.orderExecutedTime && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-secondary-text font-medium">Executed:</span>
+                    <span className="text-theme-primary-text font-mono ml-2">{formatTime(execution.orderExecutedTime)}</span>
+                  </div>
+                )}
+                {execution.orderCancelledTime && (
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-secondary-text font-medium">Cancelled:</span>
+                    <span className="text-theme-primary-text font-mono ml-2">{formatTime(execution.orderCancelledTime)}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Additional Details Section */}
+            {(execution.id || execution.tradeId || execution.tags?.length) && (
+              <div className="space-y-2">
+                <h4 className="text-xs font-semibold text-theme-primary-text uppercase tracking-wide border-b border-theme-border pb-1">
+                  Additional Details
+                </h4>
+                <div className="space-y-2 text-sm">
+                  {execution.id && (
+                    <div className="flex justify-between items-start">
+                      <span className="text-theme-secondary-text font-medium min-w-0 flex-shrink-0">Execution ID:</span>
+                      <span className="font-mono text-theme-primary-text text-right break-all ml-2 text-xs">{execution.id}</span>
+                    </div>
+                  )}
+                  {execution.tradeId && (
+                    <div className="flex justify-between items-start">
+                      <span className="text-theme-secondary-text font-medium min-w-0 flex-shrink-0">Trade ID:</span>
+                      <span className="font-mono text-theme-primary-text text-right break-all ml-2 text-xs">{execution.tradeId}</span>
+                    </div>
+                  )}
+                  {execution.tags?.length && (
+                    <div className="flex justify-between items-start">
+                      <span className="text-theme-secondary-text font-medium">Tags:</span>
+                      <div className="ml-2 flex flex-wrap gap-1 justify-end">
+                        {execution.tags.map((tag) => (
+                          <span 
+                            key={tag}
+                            className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-theme-surface100 text-theme-primary-text border border-theme-border"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </TableCell>
       </TableRow>
@@ -734,7 +823,7 @@ export default function ExecutionsTable({
           <Table className="w-full">
             <TableHeader>
               <TableRow className="hover:bg-transparent border-b border-theme-border">
-                {isMobile && <TableHead className="w-8"></TableHead>}
+                {isMobile && <TableHead className="w-10"></TableHead>}
                 {visibleColumnsData.map((column) => column && (
                   <TableHead key={column.id} className="text-xs font-medium text-theme-secondary-text uppercase">
                     {column.label}
@@ -746,7 +835,7 @@ export default function ExecutionsTable({
             <TableBody>
               {[...Array(5)].map((_, i) => (
                 <TableRow key={i}>
-                  {isMobile && <TableCell className="w-8"></TableCell>}
+                  {isMobile && <TableCell className="w-10"></TableCell>}
                   {visibleColumnsData.map((column) => column && (
                     <TableCell key={column.id}>
                       <div className="h-4 bg-theme-surface200 rounded animate-pulse"></div>
@@ -849,7 +938,7 @@ export default function ExecutionsTable({
           <TableHeader>
             <TableRow className="hover:bg-transparent border-b border-theme-border">
               {isMobile && (
-                <TableHead className="w-8"></TableHead>
+                <TableHead className="w-10"></TableHead>
               )}
               {visibleColumnsData.map((column) => column && (
                 <TableHead 
@@ -891,22 +980,34 @@ export default function ExecutionsTable({
             {sortedExecutions.map((execution) => (
               <React.Fragment key={execution.id}>
                 <TableRow 
-                  className="hover:bg-theme-surface50 border-b border-theme-border cursor-pointer"
-                  onClick={() => !isMobile && onExecutionSelect?.(execution)}
+                  className={cn(
+                    "border-b border-theme-border cursor-pointer transition-colors",
+                    isMobile 
+                      ? "hover:bg-theme-surface50 active:bg-theme-surface100" 
+                      : "hover:bg-theme-surface50"
+                  )}
+                  onClick={() => {
+                    if (isMobile) {
+                      toggleRowExpansion(execution.id);
+                    } else {
+                      onExecutionSelect?.(execution);
+                    }
+                  }}
                 >
                   {isMobile && (
-                    <TableCell className="w-8">
+                    <TableCell className="w-10">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleRowExpansion(execution.id);
                         }}
-                        className="p-1"
+                        className="p-2 -m-1 rounded-md hover:bg-theme-surface100 active:bg-theme-surface200 transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center"
+                        aria-label={expandedRows.includes(execution.id) ? "Collapse details" : "Expand details"}
                       >
                         <ChevronRight 
                           className={cn(
-                            "h-4 w-4 transition-transform",
-                            expandedRows.includes(execution.id) && "rotate-90"
+                            "h-5 w-5 text-theme-secondary-text transition-all duration-200 ease-in-out",
+                            expandedRows.includes(execution.id) && "rotate-90 text-theme-primary-text"
                           )}
                         />
                       </button>
