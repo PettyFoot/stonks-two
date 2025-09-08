@@ -140,6 +140,22 @@ export default function CalendarYearView({ year: initialYear, isDemo = false }: 
     return 'bg-theme-surface';
   };
 
+  const getMonthlyPnL = (monthIndex: number) => {
+    const monthStart = new Date(year, monthIndex, 1);
+    const monthEnd = new Date(year, monthIndex + 1, 0); // Last day of month
+    
+    let monthlyTotal = 0;
+    for (let day = 1; day <= monthEnd.getDate(); day++) {
+      const dateStr = format(new Date(year, monthIndex, day), 'yyyy-MM-dd');
+      const dayData = yearData[dateStr];
+      if (dayData) {
+        monthlyTotal += dayData.pnl || 0;
+      }
+    }
+    
+    return monthlyTotal;
+  };
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-64">Loading year view...</div>;
   }
@@ -191,7 +207,7 @@ export default function CalendarYearView({ year: initialYear, isDemo = false }: 
             </CardHeader>
             <CardContent className="p-3 bg-theme-surface">
               {/* Days of Week Header */}
-              <div className="grid grid-cols-7 gap-1 mb-2">
+              <div className="grid grid-cols-7 gap-0.5 mb-2">
                 {daysOfWeek.map(day => (
                   <div key={day} className="text-center text-xs font-medium text-theme-secondary-text py-1">
                     {day}
@@ -200,7 +216,7 @@ export default function CalendarYearView({ year: initialYear, isDemo = false }: 
               </div>
 
               {/* Calendar Days */}
-              <div className="grid grid-cols-7 gap-1">
+              <div className="grid grid-cols-7 gap-0.5">
                 {generateMonthCalendar(monthIndex).map((day, index) => (
                   <div
                     key={index}
@@ -226,6 +242,19 @@ export default function CalendarYearView({ year: initialYear, isDemo = false }: 
                     )}
                   </div>
                 ))}
+              </div>
+
+              {/* Monthly PnL Total */}
+              <div className="mt-3 pt-2 border-t border-theme-border">
+                <div className="flex items-center justify-center">
+                  <div className={`text-sm font-bold ${
+                    getMonthlyPnL(monthIndex) >= 0 
+                      ? 'text-theme-green' 
+                      : 'text-theme-red'
+                  }`}>
+                    {getMonthlyPnL(monthIndex) >= 0 ? '+' : ''}${getMonthlyPnL(monthIndex).toFixed(2)}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

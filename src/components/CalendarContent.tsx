@@ -400,7 +400,7 @@ export default function CalendarContent() {
                       return (
                         <div
                           key={index}
-                          className="hidden lg:flex min-h-[100px] border border-theme-border rounded-lg p-2 bg-theme-surface/50 text-center flex-col justify-center"
+                          className="hidden lg:flex md:min-h-[120px] lg:min-h-[140px] border border-theme-border rounded-lg p-2 bg-theme-surface/50 text-center flex-col justify-center"
                         >
                           <div className="text-sm font-bold mb-2 text-theme-primary-text">
                             Week {day.weekNumber}
@@ -428,7 +428,7 @@ export default function CalendarContent() {
                           onClick={() => day && !day.isPrevMonth && !day.isNextMonth && handleDayClick(day.dayStr)}
                           disabled={!day || day.isPrevMonth || day.isNextMonth}
                           className={`
-                            min-h-[80px] lg:min-h-[100px] border border-theme-border rounded-lg p-1 lg:p-2 text-left transition-colors
+                            min-h-[80px] md:min-h-[120px] lg:min-h-[140px] border border-theme-border rounded-lg p-1 lg:p-2 text-left transition-colors
                             ${!day ? 'bg-theme-surface/20 cursor-default' : 
                               day.isPrevMonth || day.isNextMonth ? 
                                 'bg-theme-surface/10 cursor-default opacity-50' :
@@ -444,9 +444,36 @@ export default function CalendarContent() {
                           aria-label={day ? `${day.date} - ${day.tradeCount || 0} trades${dayHasTradeData(day.dayStr) && !day.isPrevMonth && !day.isNextMonth ? ' (clickable)' : ''}` : undefined}
                         >
                           {day && (
-                            <div className="flex items-center justify-center h-full">
-                              <div className={`text-lg font-medium ${day.isPrevMonth || day.isNextMonth ? 'text-theme-secondary-text opacity-75' : dayHasTradeData(day.dayStr) ? 'text-white' : 'text-theme-primary-text'}`}>
-                                {day.date}
+                            <div className="h-full flex flex-col relative">
+                              {/* Date number - always visible in top left */}
+                              <div className="absolute top-0 left-0">
+                                <div className={`text-lg font-medium ${day.isPrevMonth || day.isNextMonth ? 'text-theme-secondary-text opacity-75' : dayHasTradeData(day.dayStr) ? 'text-white' : 'text-theme-primary-text'}`}>
+                                  {day.date}
+                                </div>
+                              </div>
+                              
+                              {/* Trade statistics - centered in the cell, visible on tablet and larger screens */}
+                              <div className="hidden md:flex flex-col flex-1 justify-center items-center space-y-1">
+                                {day && dayHasTradeData(day.dayStr) && !day.isPrevMonth && !day.isNextMonth && (
+                                  <>
+                                    {/* PnL */}
+                                    <div className={`text-sm font-semibold text-center ${dayHasTradeData(day.dayStr) ? 'text-white' : 'text-theme-primary-text'}`}>
+                                      ${Number(day.pnl || 0).toFixed(2)}
+                                    </div>
+                                    
+                                    {/* Trade count */}
+                                    <div className={`text-xs text-center ${dayHasTradeData(day.dayStr) ? 'text-white/90' : 'text-theme-secondary-text'}`}>
+                                      {day.tradeCount || 0} trade{(day.tradeCount || 0) !== 1 ? 's' : ''}
+                                    </div>
+                                    
+                                    {/* Win rate - only show if there are trades */}
+                                    {(day.tradeCount || 0) > 0 && (
+                                      <div className={`text-xs text-center ${dayHasTradeData(day.dayStr) ? 'text-white/90' : 'text-theme-secondary-text'}`}>
+                                        {Math.round(day.winRate || 0)}% win
+                                      </div>
+                                    )}
+                                  </>
+                                )}
                               </div>
                             </div>
                           )}

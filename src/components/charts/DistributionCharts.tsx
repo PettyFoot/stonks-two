@@ -46,8 +46,18 @@ export default function DistributionCharts({
       </CardHeader>
       <CardContent className="overflow-y-auto overflow-x-hidden flex items-center" style={{ height: `calc(100% - 60px)` }}>
         <div className="space-y-3 w-full">
+          {/* Column Headers */}
+          <div className="flex items-center gap-2">
+            <div className="flex-shrink-0 w-12"></div>
+            <div className="flex-1 min-w-0"></div>
+            <div className="flex-shrink-0 text-right">
+              <div className="text-xs font-medium text-positive">Value</div>
+              <div className="text-xs text-muted">Win%</div>
+            </div>
+          </div>
+          
           {data.map((item, index) => (
-            <div key={index} className={`flex items-center gap-2 ${index === 0 ? 'mt-6' : ''}`}>
+            <div key={index} className="flex items-center gap-2">
               {/* Range Label */}
               <div className="flex-shrink-0 w-12 text-xs text-muted">
                 {item.range || item.category}
