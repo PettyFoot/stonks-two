@@ -503,7 +503,7 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
             </p>
             <Button
               onClick={() => setIsConnectModalOpen(true)}
-              className="bg-theme-tertiary hover:bg-theme-tertiary/90 text-white"
+              className="bg-theme-green hover:bg-theme-tertiary/90 text-white"
             >
               <Plus className="h-4 w-4 mr-2" />
               Connect Your First Broker

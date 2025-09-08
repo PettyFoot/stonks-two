@@ -119,7 +119,7 @@ export function OverlayTriangleLoader({ text }: { text?: string }) {
 // Full-page triangle loader that fills the entire content area
 export function FullPageTriangleLoader({ text = 'Loading...' }: { text?: string }) {
   return (
-    <div className="absolute inset-0 bg-black overflow-hidden">
+    <div className="absolute inset-0 overflow-hidden">
       <TriangleBackground />
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">

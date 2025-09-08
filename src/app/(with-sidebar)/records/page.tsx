@@ -166,8 +166,17 @@ function RecordsContent() {
   // Show loading state
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50">
-        <FullPageTriangleLoader text="Loading records..." />
+      <div className="relative h-screen">
+        <FullPageTriangleLoader />
+      </div>
+    );
+  }
+
+  // Show loading state for trades when no records data
+  if (!recordsData && tradesLoading) {
+    return (
+      <div className="relative h-screen">
+        <FullPageTriangleLoader text="Loading trades..." />
       </div>
     );
   }
@@ -200,17 +209,11 @@ function RecordsContent() {
               }
             </p>
           </div>
-          {tradesLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <InlineTriangleLoader size="md" />
-            </div>
-          ) : (
-            <TradesTable 
-              trades={tradesData?.trades || []}
-              showCheckboxes={false}
-              showPagination={true}
-            />
-          )}
+          <TradesTable 
+            trades={tradesData?.trades || []}
+            showCheckboxes={false}
+            showPagination={true}
+          />
         </div>
       </div>
     );
@@ -360,11 +363,8 @@ function RecordsContent() {
 export default function Records() {
   return (
     <Suspense fallback={
-      <div className="flex flex-col h-full">
-        <TopBar title="Records" showTimeRangeFilters={false} />
-        <div className="flex-1 flex items-center justify-center">
-          <InlineTriangleLoader size="md" />
-        </div>
+      <div className="relative h-screen">
+        <FullPageTriangleLoader text="Loading records..." />
       </div>
     }>
       <RecordsContent />

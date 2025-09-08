@@ -178,6 +178,15 @@ export default function Reports() {
     return { min, max, range, ticks };
   }, [tradeExpectation.expectation, isMobile]);
 
+  // Show loading state at top level
+  if (loading || detailedLoading) {
+    return (
+      <div className="relative h-screen">
+        <FullPageTriangleLoader text="Loading reports..." />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full">
       <TopBar 
@@ -222,13 +231,6 @@ export default function Reports() {
 
           {/* Overview Tab - Original 4 Charts */}
           <TabsContent value="overview" className="space-y-6">
-            {/* Loading state */}
-            {loading && (
-              <div className="relative h-screen">
-                <FullPageTriangleLoader text="Loading reports data..." />
-              </div>
-            )}
-            
             {/* Error state */}
             {error && (
               <div className="flex items-center justify-center h-64">
@@ -283,13 +285,6 @@ export default function Reports() {
 
           {/* Detailed Tab - Contains Statistics and Enhanced Analysis */}
           <TabsContent value="detailed" className="space-y-6">
-            {/* Loading state for detailed data */}
-            {detailedLoading && (
-              <div className="relative h-screen">
-                <FullPageTriangleLoader text="Loading detailed analytics..." />
-              </div>
-            )}
-            
             {/* Error state for detailed data */}
             {detailedError && !detailedLoading && (
               <div className="flex items-center justify-center h-64">

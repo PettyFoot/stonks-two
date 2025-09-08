@@ -8,6 +8,7 @@ import ColumnSettingsModal from '@/components/ColumnSettingsModal';
 import { Button } from '@/components/ui/button';
 import { Trade, ColumnConfiguration } from '@/types';
 import { useTradesData } from '@/hooks/useTradesData';
+import { useCleanupDemoOnAuth } from '@/hooks/useCleanupDemoOnAuth';
 import { PageTriangleLoader, FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
 import { useAuth } from '@/contexts/AuthContext';
 import { RefreshCw } from 'lucide-react';
@@ -20,6 +21,9 @@ export default function Trades() {
   
   const { isDemo } = useAuth();
   const { data: tradesData, loading, error, refetch } = useTradesData();
+  
+  // Ensure demo data is cleaned up on auth transitions
+  useCleanupDemoOnAuth();
 
   console.log('=== TRADES PAGE RENDER ===');
   console.log('Demo mode:', isDemo);
@@ -75,7 +79,7 @@ export default function Trades() {
   // Show loading state
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50">
+      <div className="relative h-screen">
         <FullPageTriangleLoader text="Loading trades..." />
       </div>
     );

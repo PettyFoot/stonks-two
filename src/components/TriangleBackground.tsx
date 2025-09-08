@@ -207,7 +207,7 @@ export function TriangleBackground({ className = '' }: TriangleBackgroundProps) 
       }
 
       // Clear and use program
-      webgl.clearColor(0, 0, 0, 1)
+      webgl.clearColor(0, 0, 0, 0)
       webgl.clear(webgl.COLOR_BUFFER_BIT)
       webgl.useProgram(program)
 

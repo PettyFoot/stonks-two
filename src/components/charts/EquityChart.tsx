@@ -178,6 +178,7 @@ const EquityChart = React.memo(function EquityChart({
               tick={{ fontSize: 12, fill: 'var(--theme-primary-text)' }}
               tickFormatter={CHART_FORMATTERS.currency.formatAxisValue}
               domain={['dataMin', 'dataMax']}
+              includeZero={true}
             />
             {showTooltip && (
               <Tooltip 
@@ -193,7 +194,7 @@ const EquityChart = React.memo(function EquityChart({
                 }}
               />
             )}
-            <ReferenceLine y={0} stroke="#f3f3f3" strokeDasharray="2 2" />
+            <ReferenceLine y={0} stroke="#4b5563" strokeWidth={1.5} label={{ value: "$0", position: "left", style: { fontSize: 11, fill: "#4b5563", fontWeight: "500" } }} />
             <Line 
               type="linear" 
               dataKey="value" 

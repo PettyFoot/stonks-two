@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useUser } from '@auth0/nextjs-auth0/client';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +34,7 @@ interface UserProfile {
 
 export default function ProfileTab() {
   const { user, isLoading } = useUser();
+  const { data: userProfile, loading: profileLoading } = useUserProfile();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [profile, setProfile] = useState<UserProfile>({
@@ -80,7 +82,7 @@ export default function ProfileTab() {
     setIsEditing(false);
   };
 
-  if (isLoading) {
+  if (isLoading || profileLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -128,7 +130,7 @@ export default function ProfileTab() {
                 </div>
                 <p className="text-sm text-muted-foreground">{user?.email}</p>
                 <p className="text-xs text-muted-foreground">
-                  Member since {new Date(user?.updated_at || Date.now()).toLocaleDateString()}
+                  Member since {userProfile?.profile?.createdAt ? new Date(userProfile.profile.createdAt).toLocaleDateString() : 'Unknown'}
                 </p>
               </div>
             </div>
@@ -280,11 +282,11 @@ export default function ProfileTab() {
                 Account Created
               </Label>
               <p className="text-sm font-medium mt-1">
-                {new Date(user?.updated_at || Date.now()).toLocaleDateString('en-US', {
+                {userProfile?.profile?.createdAt ? new Date(userProfile.profile.createdAt).toLocaleDateString('en-US', {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric'
-                })}
+                }) : 'Unknown'}
               </p>
             </div>
             <div>
@@ -292,11 +294,11 @@ export default function ProfileTab() {
                 Last Login
               </Label>
               <p className="text-sm font-medium mt-1">
-                {new Date().toLocaleDateString('en-US', {
+                {userProfile?.profile?.updatedAt ? new Date(userProfile.profile.updatedAt).toLocaleDateString('en-US', {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric'
-                })}
+                }) : 'Unknown'}
               </p>
             </div>
             <div>

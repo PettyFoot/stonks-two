@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Trade, TradeFilters } from '@/types';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { DemoCleanup } from '@/lib/demo/demoCleanup';
 
 interface TradesData {
   trades: Trade[];
@@ -49,18 +50,43 @@ export function useTradesData(
     setPreviousDemo(isDemo);
   }, [isDemo, user, authLoading, previousDemo]);
 
-  // Validate data matches current user context
+  // Validate data matches current user context and clear stale demo data
   useEffect(() => {
-    if (data && user && !isDemo) {
+    if (data && user && !isDemo && !authLoading) {
       // If we have data but the user is no longer demo, ensure this isn't stale demo data
       const currentUserId = user.id;
+      
+      // Critical check: if authenticated user has demo user ID, something is wrong
       if (currentUserId === 'demo-user-001') {
-        console.warn('useTradesData: Detected stale demo data for authenticated user, clearing');
+        console.error('useTradesData: CRITICAL - Authenticated user has demo user ID, clearing all data and demo state');
         setData(null);
         setError(null);
+        
+        // Force comprehensive cleanup
+        DemoCleanup.clearAllDemoData().catch(error => {
+          console.warn('Error during emergency demo cleanup in useTradesData:', error);
+        });
+        return;
+      }
+      
+      // Check if we have demo data in localStorage while authenticated
+      if (typeof window !== 'undefined') {
+        const hasDemoMode = localStorage.getItem('demo-mode') === 'true';
+        const hasOtherDemoData = DemoCleanup.hasDemoData();
+        
+        if (hasDemoMode || hasOtherDemoData) {
+          console.warn('useTradesData: Detected stale demo data for authenticated user, clearing');
+          setData(null);
+          setError(null);
+          
+          // Clear the demo data
+          DemoCleanup.clearAllDemoData().catch(error => {
+            console.warn('Error clearing stale demo data in useTradesData:', error);
+          });
+        }
       }
     }
-  }, [data, user, isDemo]);
+  }, [data, user, isDemo, authLoading]);
 
   useEffect(() => {
     // Don't fetch data until auth state is resolved

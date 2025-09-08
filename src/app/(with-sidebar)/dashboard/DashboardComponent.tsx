@@ -21,6 +21,7 @@ import AdSense from '@/components/AdSense';
 import WelcomeBackBanner from '@/components/WelcomeBackBanner';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
+import { useCleanupDemoOnAuth } from '@/hooks/useCleanupDemoOnAuth';
 import { CHART_HEIGHTS } from '@/constants/chartHeights';
 
 // Helper formatters
@@ -47,6 +48,9 @@ export default function DashboardComponent() {
   const router = useRouter();
   const { data: analytics, loading, error } = useDashboardData();
   const { filters, toFilterOptions } = useGlobalFilters();
+  
+  // Ensure demo data is cleaned up on auth transitions
+  useCleanupDemoOnAuth();
 
   // Format the filter date range for display
   const getDateRangeDisplay = useMemo(() => {
@@ -243,6 +247,7 @@ export default function DashboardComponent() {
               data={performanceData}
               title="Cumulative P&L"
               height={CHART_HEIGHTS.LG}
+              useConditionalColors={true}
             />
           </div>
 

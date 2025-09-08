@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useUser } from '@auth0/nextjs-auth0/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -42,8 +43,12 @@ const navigation = [
 
 export default function MobileNav() {
   const pathname = usePathname();
-  const { user } = useUser();
+  const { user: auth0User } = useUser();
+  const { user: contextUser, isDemo, logout } = useAuth();
   const [open, setOpen] = React.useState(false);
+  
+  // Use the context user (which handles both Auth0 and demo users)
+  const user = contextUser;
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -103,7 +108,10 @@ export default function MobileNav() {
               <>
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={user.picture || ''} alt={user.name || ''} />
-                  <AvatarFallback className="bg-positive text-white">
+                  <AvatarFallback className={cn(
+                    "text-white",
+                    isDemo ? "bg-orange-500" : "bg-positive"
+                  )}>
                     {user.name?.charAt(0) || user.email?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
@@ -111,15 +119,17 @@ export default function MobileNav() {
                   <p className="text-sm font-medium text-white truncate">
                     {user.name || user.email || 'User'}
                   </p>
-                  <p className="text-xs text-secondary">Plan: Free</p>
+                  <p className="text-xs text-secondary">
+                    {isDemo ? 'Demo Mode' : 'Plan: Free'}
+                  </p>
                 </div>
-                <Link 
-                  href="/api/auth/logout" 
+                <button
+                  onClick={logout}
                   className="text-secondary hover:text-white transition-colors"
-                  title="Logout"
+                  title={isDemo ? "Exit Demo Mode" : "Logout"}
                 >
                   <LogOut className="h-4 w-4" />
-                </Link>
+                </button>
               </>
             ) : (
               <>

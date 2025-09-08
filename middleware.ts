@@ -126,11 +126,28 @@ export default async function middleware(request: NextRequest, event: NextFetchE
   
   // Apply Auth0 protection for non-demo routes
   try {
-    return await withMiddlewareAuthRequired()(request, event);
+    const response = await withMiddlewareAuthRequired()(request, event);
+    
+    // For authenticated users, add headers to prevent caching of any potential demo data
+    if (response && response.headers) {
+      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+    }
+    
+    return response;
   } catch (error) {
-    // If Auth0 middleware fails, redirect to login
+    // If Auth0 middleware fails, redirect to login with cleanup headers
     console.log(`Auth0 middleware failed for ${pathname}, redirecting to login`);
-    return NextResponse.redirect(new URL('/login', request.url));
+    const redirectResponse = NextResponse.redirect(new URL('/login', request.url));
+    
+    // Add headers to clear any cached demo data
+    redirectResponse.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    redirectResponse.headers.set('Pragma', 'no-cache');
+    redirectResponse.headers.set('Expires', '0');
+    redirectResponse.headers.set('Clear-Site-Data', '"cache", "storage"');
+    
+    return redirectResponse;
   }
 }
 

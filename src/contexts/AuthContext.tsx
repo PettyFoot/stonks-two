@@ -3,7 +3,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useUser as useAuth0User } from '@auth0/nextjs-auth0/client';
 import type { UserProfile } from '@auth0/nextjs-auth0/client';
-import { MarketDataCache } from '@/lib/marketData/cache';
 import { DemoCleanup } from '@/lib/demo/demoCleanup';
 
 interface DemoUser {
@@ -109,14 +108,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Additional validation: ensure we don't have conflicting states
   useEffect(() => {
     if (auth0User && user?.id === 'demo-user-001') {
-      console.error('Critical: Detected demo user ID with Auth0 user present - clearing demo session');
+      console.error('CRITICAL: Detected demo user ID with Auth0 user present - clearing demo session');
       setDemoSession(null);
       // Force a comprehensive cleanup
       DemoCleanup.clearAllDemoData().catch(error => {
         console.warn('Error during emergency demo cleanup:', error);
       });
     }
-  }, [auth0User, user?.id]);
+    
+    // Additional check: if we have an authenticated user but demo data exists
+    if (auth0User && !isDemo && typeof window !== 'undefined') {
+      const hasDemoMode = localStorage.getItem('demo-mode') === 'true';
+      const hasOtherDemoData = DemoCleanup.hasDemoData();
+      
+      if (hasDemoMode || hasOtherDemoData) {
+        console.warn('AuthContext: Detected demo data for authenticated user, clearing');
+        DemoCleanup.clearAllDemoData().catch(error => {
+          console.warn('Error clearing demo data for authenticated user:', error);
+        });
+      }
+    }
+  }, [auth0User, user?.id, isDemo]);
   
   // Clear demo data when transitioning from demo to authenticated user
   useEffect(() => {
@@ -125,16 +137,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // If we transitioned from demo to authenticated user, clear demo data
     if (previousAuthState.wasDemo && !currentIsDemo && currentUserId && currentUserId !== 'demo-user-001') {
-      console.log('Detected transition from demo to authenticated user - clearing all demo data');
+      console.log('AuthContext: Detected transition from demo to authenticated user - clearing all demo data');
       
       // Use comprehensive demo cleanup
       DemoCleanup.clearAllDemoData()
         .then(() => {
-          console.log('Demo data cleared successfully after authentication transition');
+          console.log('AuthContext: Demo data cleared successfully after authentication transition');
+          
+          // Force a small delay and page refresh to ensure clean state
+          setTimeout(() => {
+            if (typeof window !== 'undefined' && window.location.pathname === '/dashboard') {
+              console.log('AuthContext: Refreshing dashboard to ensure clean state');
+              window.location.reload();
+            }
+          }, 500);
         })
         .catch(error => {
-          console.warn('Error clearing demo data after authentication transition:', error);
+          console.warn('AuthContext: Error clearing demo data after authentication transition:', error);
         });
+    }
+    
+    // Also check for persistent demo data in authenticated state
+    if (!currentIsDemo && currentUserId && currentUserId !== 'demo-user-001' && auth0User) {
+      // Small delay to ensure auth state is fully settled
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          const hasDemoMode = localStorage.getItem('demo-mode') === 'true';
+          const hasOtherDemoData = DemoCleanup.hasDemoData();
+          
+          if (hasDemoMode || hasOtherDemoData) {
+            console.warn('AuthContext: Found persistent demo data for authenticated user, performing cleanup');
+            DemoCleanup.clearAllDemoData().catch(error => {
+              console.warn('Error clearing persistent demo data:', error);
+            });
+          }
+        }
+      }, 1000);
     }
     
     // Update previous auth state
@@ -142,7 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       wasDemo: currentIsDemo, 
       userId: typeof currentUserId === 'string' ? currentUserId : null 
     });
-  }, [user?.id, isDemo, previousAuthState.wasDemo]);
+  }, [user?.id, isDemo, previousAuthState.wasDemo, auth0User]);
   
   const isLoading = auth0Loading || isCheckingDemo;
   const error = auth0Error || sessionError;

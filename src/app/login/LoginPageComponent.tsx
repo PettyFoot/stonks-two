@@ -6,10 +6,9 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, Shield, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 import Footer from '@/components/Footer';
 import { InlineTriangleLoader } from '@/components/ui/TriangleLoader';
-import { MarketDataCache } from '@/lib/marketData/cache';
 import { WebGLCausticsBackground } from '@/components/backgrounds';
 import { DemoCleanup } from '@/lib/demo/demoCleanup';
 
@@ -31,8 +30,31 @@ export default function LoginPageComponent() {
 
   const clearDemoData = async () => {
     try {
+      console.log('Starting comprehensive demo data cleanup before login...');
+      
+      // Use the comprehensive cleanup method
       await DemoCleanup.clearAllDemoData();
-      console.log('Demo data cleared before login');
+      
+      // Additional cleanup - force clear specific demo-related items
+      if (typeof window !== 'undefined') {
+        // Clear demo mode flag specifically
+        localStorage.removeItem('demo-mode');
+        
+        // Clear any demo session cookies by calling the server endpoint
+        await fetch('/api/demo/logout', { 
+          method: 'POST',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        }).catch(err => console.warn('Error clearing server-side demo session:', err));
+        
+        // Add a small delay to ensure cleanup completes
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      console.log('Demo data cleanup completed before login');
     } catch (error) {
       console.warn('Error clearing demo data before login:', error);
     }
