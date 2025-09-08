@@ -12,11 +12,22 @@ export class AlphaVantageProvider implements MarketDataProvider {
   private lastRequestTime = 0;
   
   constructor() {
-    this.apiKey = process.env.ALPHA_VANTAGE_API_KEY || 'demo';
+    this.apiKey = process.env.ALPHA_VANTAGE_FREE_API_KEY || 'demo';
   }
   
   isAvailable(): boolean {
-    return !!this.apiKey && this.apiKey !== 'demo';
+    const available = !!this.apiKey && this.apiKey !== 'demo';
+    console.log(`🔑 Alpha Vantage availability check: ${available ? 'AVAILABLE' : 'NOT AVAILABLE'}`);
+    if (!available) {
+      if (!this.apiKey) {
+        console.log(`❌ No API key found`);
+      } else if (this.apiKey === 'demo') {
+        console.log(`❌ API key is set to 'demo'`);
+      }
+    } else {
+      console.log(`✅ API key exists and is not 'demo'`);
+    }
+    return available;
   }
   
   /**
@@ -31,50 +42,119 @@ export class AlphaVantageProvider implements MarketDataProvider {
       // Rate limiting: max 5 requests per minute
       await this.enforceRateLimit();
       
-      // Convert interval to Alpha Vantage format
-      const avInterval = this.convertInterval(timeWindow.interval);
+      // Determine if we need daily or intraday data
+      const isDailyInterval = timeWindow.interval === '1d';
       
-      // Build API URL
-      const params = new URLSearchParams({
-        function: 'TIME_SERIES_INTRADAY',
-        symbol: symbol.toUpperCase(),
-        interval: avInterval,
-        apikey: this.apiKey,
-        outputsize: 'full', // Get full data, not just last 100 points
-        datatype: 'json'
-      });
+      let params: URLSearchParams;
+      let timeSeriesKey: string;
+      
+      if (isDailyInterval) {
+        // Use TIME_SERIES_DAILY for daily data
+        params = new URLSearchParams({
+          function: 'TIME_SERIES_DAILY',
+          symbol: symbol.toUpperCase(),
+          apikey: this.apiKey,
+          outputsize: 'full', // Get full historical data
+          datatype: 'json'
+        });
+        timeSeriesKey = 'Time Series (Daily)';
+      } else {
+        // Use TIME_SERIES_INTRADAY for intraday data
+        const avInterval = this.convertInterval(timeWindow.interval);
+        
+        params = new URLSearchParams({
+          function: 'TIME_SERIES_INTRADAY',
+          symbol: symbol.toUpperCase(),
+          interval: avInterval,
+          apikey: this.apiKey,
+          outputsize: 'full',
+          extended_hours: 'true', // Include pre-market and after-hours
+          datatype: 'json'
+        });
+        
+        // For historical dates (older than current month), use month parameter
+        const currentDate = new Date();
+        const requestDate = new Date(timeWindow.start);
+        const isHistorical = requestDate.getMonth() !== currentDate.getMonth() || 
+                           requestDate.getFullYear() !== currentDate.getFullYear();
+        
+        if (isHistorical) {
+          const monthParam = `${requestDate.getFullYear()}-${String(requestDate.getMonth() + 1).padStart(2, '0')}`;
+          params.set('month', monthParam);
+          console.log(`Using historical month parameter: ${monthParam}`);
+        }
+        
+        timeSeriesKey = `Time Series (${avInterval})`;
+      }
       
       const url = `https://www.alphavantage.co/query?${params.toString()}`;
       
-      console.log(`Alpha Vantage API call for ${symbol} (${avInterval})`);
+      console.log(`🔗 Alpha Vantage API call for ${symbol} (${isDailyInterval ? 'daily' : timeWindow.interval})`);
+      console.log(`📡 API URL: ${url}`);
+      console.log(`🔑 API Key available: ${this.apiKey !== 'demo' ? 'YES' : 'NO'}`);
       
       const response = await fetch(url);
       
+      console.log(`📊 Response status: ${response.status} ${response.statusText}`);
+      console.log(`📋 Response headers:`, Object.fromEntries(response.headers.entries()));
+      
       if (!response.ok) {
-        throw new Error(`Alpha Vantage API error: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error(`❌ Alpha Vantage HTTP error response:`, errorText);
+        throw new Error(`Alpha Vantage API HTTP error: ${response.status} ${response.statusText} - ${errorText}`);
       }
       
-      const data = await response.json();
+      const responseText = await response.text();
+      console.log(`📄 Raw response (first 500 chars):`, responseText.substring(0, 500));
       
-      // Check for API errors
+      let data;
+      try {
+        data = JSON.parse(responseText);
+        console.log(`📦 Parsed JSON keys:`, Object.keys(data));
+      } catch (parseError) {
+        console.error(`❌ Failed to parse JSON response:`, parseError);
+        console.error(`📄 Full response text:`, responseText);
+        throw new Error(`Alpha Vantage API returned invalid JSON: ${parseError instanceof Error ? parseError.message : 'Unknown parse error'}`);
+      }
+      
+      // Check for API errors with detailed logging
       if (data['Error Message']) {
+        console.error(`❌ Alpha Vantage Error Message:`, data['Error Message']);
         throw new Error(`Alpha Vantage error: ${data['Error Message']}`);
       }
       
       if (data['Note']) {
+        console.error(`❌ Alpha Vantage Rate Limit Note:`, data['Note']);
         throw new Error(`Alpha Vantage rate limit: ${data['Note']}`);
       }
       
       if (data['Information']) {
+        console.error(`❌ Alpha Vantage Information Message:`, data['Information']);
         throw new Error(`Alpha Vantage info: ${data['Information']}`);
       }
       
+      // Check for empty or invalid response structure
+      if (!data || typeof data !== 'object') {
+        console.error(`❌ Alpha Vantage returned invalid data structure:`, data);
+        throw new Error('Alpha Vantage returned invalid data structure');
+      }
+      
       // Extract time series data
-      const timeSeriesKey = `Time Series (${avInterval})`;
       const timeSeries = data[timeSeriesKey];
       
+      console.log(`🔍 Looking for time series key: "${timeSeriesKey}"`);
+      console.log(`📊 Available data keys:`, Object.keys(data));
+      
       if (!timeSeries) {
-        throw new Error(`No time series data found for ${symbol}. Available keys: ${Object.keys(data).join(', ')}`);
+        console.error(`❌ No time series data found for key: "${timeSeriesKey}"`);
+        console.error(`📊 Full response data:`, JSON.stringify(data, null, 2));
+        throw new Error(`No time series data found for ${symbol}. Expected key: "${timeSeriesKey}". Available keys: ${Object.keys(data).join(', ')}`);
+      }
+      
+      console.log(`✅ Found time series data with ${Object.keys(timeSeries).length} entries`);
+      if (Object.keys(timeSeries).length > 0) {
+        const firstKey = Object.keys(timeSeries)[0];
+        console.log(`📅 First data point: ${firstKey}`, timeSeries[firstKey]);
       }
       
       // Convert to our format and filter by time window
@@ -104,11 +184,13 @@ export class AlphaVantageProvider implements MarketDataProvider {
       if (ohlcData.length > 0) {
         const firstCandle = new Date(ohlcData[0].timestamp);
         const lastCandle = new Date(ohlcData[ohlcData.length - 1].timestamp);
-        const timeSpan = (lastCandle.getTime() - firstCandle.getTime()) / (1000 * 60 * 60);
+        const timeSpan = isDailyInterval 
+          ? (lastCandle.getTime() - firstCandle.getTime()) / (1000 * 60 * 60 * 24) // days
+          : (lastCandle.getTime() - firstCandle.getTime()) / (1000 * 60 * 60); // hours
         
         console.log(`Alpha Vantage data for ${symbol}:`);
-        console.log(`  - ${ohlcData.length} candles from ${firstCandle.toLocaleTimeString()} to ${lastCandle.toLocaleTimeString()}`);
-        console.log(`  - Time span: ${timeSpan.toFixed(2)} hours`);
+        console.log(`  - ${ohlcData.length} candles from ${firstCandle.toLocaleDateString()} to ${lastCandle.toLocaleDateString()}`);
+        console.log(`  - Time span: ${timeSpan.toFixed(2)} ${isDailyInterval ? 'days' : 'hours'}`);
         console.log(`  - Requested window: ${timeWindow.start.toLocaleString()} to ${timeWindow.end.toLocaleString()}`);
       }
       
@@ -145,9 +227,14 @@ export class AlphaVantageProvider implements MarketDataProvider {
       '1h': '60min'
     };
     
+    // Daily intervals are handled separately in fetchOHLC method
+    if (interval === '1d') {
+      throw new Error('Daily interval should be handled by TIME_SERIES_DAILY endpoint');
+    }
+    
     const mapped = intervalMap[interval];
     if (!mapped) {
-      throw new Error(`Interval ${interval} not supported by Alpha Vantage. Supported: ${Object.keys(intervalMap).join(', ')}`);
+      throw new Error(`Interval ${interval} not supported by Alpha Vantage. Supported: ${Object.keys(intervalMap).join(', ')}, 1d`);
     }
     
     return mapped;
@@ -160,15 +247,22 @@ export class AlphaVantageProvider implements MarketDataProvider {
     const now = Date.now();
     const timeSinceLastRequest = now - this.lastRequestTime;
     
+    console.log(`⏱️  Rate limit check: ${timeSinceLastRequest}ms since last request (need 12000ms minimum)`);
+    console.log(`📊 Request count: ${this.requestCount}`);
+    
     // If less than 12 seconds since last request, wait
     if (timeSinceLastRequest < 12000) {
       const waitTime = 12000 - timeSinceLastRequest;
-      console.log(`Alpha Vantage rate limiting: waiting ${waitTime}ms`);
+      console.log(`⏳ Alpha Vantage rate limiting: waiting ${waitTime}ms (${(waitTime/1000).toFixed(1)}s)`);
       await new Promise(resolve => setTimeout(resolve, waitTime));
+      console.log(`✅ Rate limit wait completed`);
+    } else {
+      console.log(`✅ No rate limit wait needed`);
     }
     
     this.lastRequestTime = Date.now();
     this.requestCount++;
+    console.log(`📈 Updated request count: ${this.requestCount}`);
   }
   
   /**
@@ -198,7 +292,10 @@ export class AlphaVantageProvider implements MarketDataProvider {
    */
   async testConnection(): Promise<boolean> {
     try {
+      console.log(`🧪 Testing Alpha Vantage connection...`);
+      
       if (!this.isAvailable()) {
+        console.log(`❌ Connection test failed: API key not available`);
         return false;
       }
       
@@ -209,17 +306,36 @@ export class AlphaVantageProvider implements MarketDataProvider {
         apikey: this.apiKey
       });
       
-      const response = await fetch(`https://www.alphavantage.co/query?${params.toString()}`);
+      const testUrl = `https://www.alphavantage.co/query?${params.toString()}`;
+      console.log(`🔗 Test URL: ${testUrl}`);
+      
+      const response = await fetch(testUrl);
+      console.log(`📊 Test response status: ${response.status} ${response.statusText}`);
       
       if (!response.ok) {
+        console.log(`❌ Connection test failed: HTTP ${response.status}`);
         return false;
       }
       
       const data = await response.json();
-      return !data['Error Message'] && !data['Note'] && !!data['Global Quote'];
+      console.log(`📦 Test response keys:`, Object.keys(data));
+      
+      if (data['Error Message']) {
+        console.log(`❌ Connection test failed: ${data['Error Message']}`);
+        return false;
+      }
+      
+      if (data['Note']) {
+        console.log(`❌ Connection test failed (rate limit): ${data['Note']}`);
+        return false;
+      }
+      
+      const success = !!data['Global Quote'];
+      console.log(`${success ? '✅' : '❌'} Connection test ${success ? 'PASSED' : 'FAILED'}`);
+      return success;
       
     } catch (error) {
-      console.error('Alpha Vantage connection test failed:', error);
+      console.error('❌ Alpha Vantage connection test failed:', error);
       return false;
     }
   }

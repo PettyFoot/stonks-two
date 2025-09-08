@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users } from 'lucide-react';
@@ -13,7 +12,6 @@ import { WebGLCausticsBackground } from '@/components/backgrounds';
 import { DemoCleanup } from '@/lib/demo/demoCleanup';
 
 export default function LoginPageComponent() {
-  const router = useRouter();
   const [isStartingDemo, setIsStartingDemo] = useState(false);
   
   // Clear demo data on component mount to ensure clean state
@@ -94,7 +92,7 @@ export default function LoginPageComponent() {
   return (
     <>
       {/* Login Section - Full Screen */}
-      <div className="h-screen w-full relative overflow-hidden">
+      <div className="min-h-screen w-full relative overflow-hidden">
         <WebGLCausticsBackground 
           intensity={0.7}
           speed={0.8}
@@ -103,32 +101,32 @@ export default function LoginPageComponent() {
           fallbackToCSS={true}
         />
         
-        <div className="absolute inset-0 flex items-center justify-center z-30 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-          <div className="max-w-7xl w-full flex flex-col items-center py-4 sm:py-0">
+        <div className="absolute inset-0 flex items-start justify-center z-30 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+          <div className="max-w-7xl w-full flex flex-col items-center py-8 min-h-full">
             {/* Triangle Apex - Header/Logo Section */}
-            <header className="text-center space-y-4 mb-8 sm:mb-16 max-w-2xl">
+            <header className="text-center space-y-4 mb-6 sm:mb-12 max-w-2xl flex-shrink-0">
               <div className="flex flex-col items-center justify-center space-y-4 mb-4 sm:mb-6">
                 <Image 
                   src="/trade-voyager-logo.png" 
                   alt="Trade Voyager Analytics - Professional Trading Analytics Platform Logo" 
-                  width={200} 
-                  height={200} 
-                  className="rounded-lg sm:w-[250px] sm:h-[250px]"
+                  width={150} 
+                  height={150} 
+                  className="rounded-lg sm:w-[180px] sm:h-[180px] lg:w-[200px] lg:h-[200px] max-w-[150px] max-h-[150px] sm:max-w-[180px] sm:max-h-[180px] lg:max-w-[200px] lg:max-h-[200px]"
                   priority
                 />
-                <span className="text-2xl sm:text-3xl lg:text-4xl font-oswald text-[var(--theme-secondary-text)]">Trade Voyager Analytics</span>
+                <span className="text-xl sm:text-2xl lg:text-3xl font-oswald text-[var(--theme-secondary-text)]">Trade Voyager Analytics</span>
               </div>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-oswald text-[var(--theme-primary-text)] leading-tight">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-oswald text-[var(--theme-primary-text)] leading-tight">
                 Trading<br />
                 <span className="text-[var(--theme-tertiary)]">Analytics Platform</span>
               </h1>
-              <p className="text-base sm:text-lg lg:text-xl text-[var(--theme-primary-text)] max-w-2xl mx-auto">
+              <p className="text-sm sm:text-base lg:text-lg text-[var(--theme-primary-text)] max-w-2xl mx-auto">
                 Track, analyze, and improve your trading performance with comprehensive analytics and insights.
               </p>
             </header>
 
             {/* Main Content - Stacked Layout */}
-            <div className="w-full flex flex-col items-center gap-8 max-w-md">
+            <div className="w-full flex flex-col items-center gap-6 sm:gap-8 max-w-md flex-shrink-0">
               
               {/* Sign-in Form - Top */}
               <section className="w-full" aria-labelledby="signin-heading">

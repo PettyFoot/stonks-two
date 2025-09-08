@@ -72,14 +72,6 @@ export async function GET(request: Request) {
       console.log(`Successfully fetched ${response.ohlc.length} candles from ${response.source}`);
     } else {
       console.error(`Market data fetch failed: ${response.error}`);
-      
-      // If all providers failed, generate demo data as fallback
-      console.log(`Generating demo data as fallback for ${symbol} on ${date}`);
-      const demoResponse = generateDemoData(symbol, date, interval);
-      return NextResponse.json({
-        ...demoResponse,
-        error: `Real data unavailable: ${response.error}. Showing demo data.`
-      });
     }
     
     return NextResponse.json(response);
@@ -90,7 +82,7 @@ export async function GET(request: Request) {
       { 
         error: error instanceof Error ? error.message : 'Failed to fetch market data',
         success: false,
-        source: 'error',
+        source: 'alpha_vantage',
         symbol: '',
         date: '',
         interval: '',

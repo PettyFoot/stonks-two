@@ -30,6 +30,15 @@ interface TradeCandlestickChartProps {
 
 type TimeInterval = '1m' | '5m' | '15m' | '1h' | '1d';
 
+// Helper function to get display name for data source
+function getSourceDisplayName(source: string): string {
+  switch (source) {
+    case 'alpha_vantage': return 'Alpha Vantage';
+    case 'mock': return 'Demo Data';
+    default: return source;
+  }
+}
+
 export default function TradeCandlestickChart({
   symbol,
   executions,
@@ -70,10 +79,8 @@ export default function TradeCandlestickChart({
       const now = new Date();
       const daysDiff = (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24);
       
-      if (daysDiff > 365) {
-        errors.push('Chart date is more than 1 year old - market data may not be available');
-      } else if (daysDiff > 60 && timeInterval !== '1d') {
-        errors.push(`Intraday data (${timeInterval}) is only available for the last 60 days`);
+      if (daysDiff > 365 * 20) {
+        errors.push('Chart date is more than 20 years old - market data may not be available');
       }
       
       if (date.getTime() > now.getTime()) {
@@ -157,7 +164,7 @@ export default function TradeCandlestickChart({
                 MarketDataCache.clearSymbol(symbol);
               } else {
                 setMarketData(cached);
-                setDataSource(`${cached.source} (cached)`);
+                setDataSource(`${getSourceDisplayName(cached.source)} (cached)`);
                 
                 // Notify parent component of cached market data
                 if (onMarketDataUpdate) {
@@ -169,7 +176,7 @@ export default function TradeCandlestickChart({
               }
             } else {
               setMarketData(cached);
-              setDataSource(`${cached.source} (cached)`);
+              setDataSource(`${getSourceDisplayName(cached.source)} (cached)`);
               
               // Notify parent component of cached market data
               if (onMarketDataUpdate) {
@@ -240,7 +247,7 @@ export default function TradeCandlestickChart({
           }
           
           setMarketData(data);
-          setDataSource(data.cached ? `${data.source} (cached)` : data.source);
+          setDataSource(data.cached ? `${getSourceDisplayName(data.source)} (cached)` : getSourceDisplayName(data.source));
           
           // Notify parent component of market data update
           if (onMarketDataUpdate) {
@@ -302,43 +309,18 @@ export default function TradeCandlestickChart({
         maxTimestamp: new Date(maxTimestamp).toLocaleString()
       });
       
-      // Choose range based on data availability
-      if (dataSpanHours < 3) {
-        // Sparse data: show actual data range + 30 min padding
-        const padding = 30 * 60 * 1000; // 30 minutes in milliseconds
-        const range = {
-          min: minTimestamp - padding,
-          max: maxTimestamp + padding
-        };
-        console.log(`📏 Using sparse data range: ${new Date(range.min).toLocaleString()} to ${new Date(range.max).toLocaleString()}`);
-        return range;
-      } else if (dataSpanHours < 7) {
-        // Partial day: show regular trading hours for the ACTUAL data date
-        const rangeStart = new Date(actualTradingDate);
-        rangeStart.setHours(9, 30, 0, 0); // 9:30 AM
-        const rangeEnd = new Date(actualTradingDate);
-        rangeEnd.setHours(16, 0, 0, 0); // 4:00 PM
-        
-        const range = {
-          min: rangeStart.getTime(),
-          max: rangeEnd.getTime()
-        };
-        console.log(`📏 Using regular hours range: ${new Date(range.min).toLocaleString()} to ${new Date(range.max).toLocaleString()}`);
-        return range;
-      } else {
-        // Full day: show extended hours for the ACTUAL data date
-        const rangeStart = new Date(actualTradingDate);
-        rangeStart.setHours(4, 0, 0, 0); // 4:00 AM
-        const rangeEnd = new Date(actualTradingDate);
-        rangeEnd.setHours(20, 0, 0, 0); // 8:00 PM
-        
-        const range = {
-          min: rangeStart.getTime(),
-          max: rangeEnd.getTime()
-        };
-        console.log(`📏 Using extended hours range: ${new Date(range.min).toLocaleString()} to ${new Date(range.max).toLocaleString()}`);
-        return range;
-      }
+      // Choose range based on data availability - always show extended hours starting at 4:00 AM
+      const rangeStart = new Date(actualTradingDate);
+      rangeStart.setHours(4, 0, 0, 0); // 4:00 AM
+      const rangeEnd = new Date(actualTradingDate);
+      rangeEnd.setHours(20, 0, 0, 0); // 8:00 PM
+      
+      const range = {
+        min: rangeStart.getTime(),
+        max: rangeEnd.getTime()
+      };
+      console.log(`📏 Using extended hours range: ${new Date(range.min).toLocaleString()} to ${new Date(range.max).toLocaleString()}`);
+      return range;
     } else {
       // Fallback to requested chart date (regular hours since we don't know data availability)
       const fallbackStart = new Date(chartDate);
@@ -367,21 +349,19 @@ export default function TradeCandlestickChart({
       max: Math.max(...marketData.ohlc.map(c => c.high))
     };
     
-    // Filter executions that are within visible time and price ranges
+    // Filter executions to only show ones that occurred on the same date as the chart
     const visibleExecutions = executions.filter(execution => {
       const executionTime = execution.orderExecutedTime ? new Date(execution.orderExecutedTime).getTime() : null;
       const executionPrice = Number(execution.limitPrice) || 0;
       
-      // MORE LENIENT TIME FILTERING: Check if execution is on the same date as chart
-      // OR if execution time falls within the chart's time range
+      // STRICT DATE FILTERING: Only show executions on the exact same date as chart
       let withinTimeRange = false;
       if (executionTime) {
         const executionDate = new Date(executionTime).toDateString();
         const chartDateObj = new Date(chartDate).toDateString();
         
-        // Allow executions if they're on the same date OR within the time range
-        withinTimeRange = (executionDate === chartDateObj) || 
-          (executionTime >= xAxisRange.min && executionTime <= xAxisRange.max);
+        // Only allow executions that are on the exact same date as the chart
+        withinTimeRange = (executionDate === chartDateObj);
       }
       
       // Check if execution price is within chart's price range (with 10% padding for safety)
@@ -502,21 +482,23 @@ export default function TradeCandlestickChart({
     },
     xaxis: {
       type: 'datetime',
-      min: xAxisRange.min,  // 4:00 AM (pre-market start) based on actual data date
-      max: xAxisRange.max,  // 8:00 PM (after-hours end) based on actual data date
+      tooltip: {
+        enabled: false
+      },
       labels: {
         style: {
           colors: 'var(--theme-primary-text)'
         },
+        datetimeUTC: false,
         datetimeFormatter: {
           hour: 'HH:mm'
         }
       },
       axisBorder: {
-        color: 'var(--theme-chart-axis)'
+        color: 'var(--theme-primary-text)'
       },
       axisTicks: {
-        color: 'var(--theme-chart-axis)'
+        color: 'var(--theme-primary-text)'
       }
     },
     yaxis: {
@@ -530,7 +512,10 @@ export default function TradeCandlestickChart({
         formatter: (value) => `$${value.toFixed(2)}`
       },
       axisBorder: {
-        color: 'var(--theme-chart-axis)'
+        color: 'var(--theme-primary-text)'
+      },
+      axisTicks: {
+        color: 'var(--theme-primary-text)'
       }
     },
     grid: {
@@ -634,18 +619,20 @@ export default function TradeCandlestickChart({
       <CardContent>
         {error && marketData && !marketData.success && (
           <div className="text-center py-8">
-            <p className="text-muted-foreground text-lg">Chart data not available</p>
+            <p className="text-muted-foreground text-lg">Sorry, no trade data available for this symbol on this day</p>
             <p className="text-sm text-muted mt-2">Unable to fetch market data for {symbol} on {chartDate}</p>
-            <p className="text-xs text-red-500 mt-1">{error}</p>
+            <Button
+              onClick={() => window.location.href = '/contact'}
+              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+            >
+              Contact Support
+            </Button>
+            {error && (
+              <p className="text-xs text-red-500 mt-3">{error}</p>
+            )}
             {marketData.error && (
               <p className="text-xs text-orange-500 mt-1">API Error: {marketData.error}</p>
             )}
-            <div className="mt-4 text-xs text-muted space-y-1">
-              <p>Troubleshooting tips:</p>
-              <p>• Check if the symbol '{symbol}' is valid</p>
-              <p>• Ensure the date {chartDate} is within the last 60 days for intraday data</p>
-              <p>• Try refreshing the page or clearing the cache</p>
-            </div>
           </div>
         )}
         
@@ -666,53 +653,57 @@ export default function TradeCandlestickChart({
               height={height}
             />
             
-            {/* Execution markers legend */}
-            {executions.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <h4 className="text-sm font-medium text-primary">Executions:</h4>
-                <div className="flex flex-wrap gap-2">
-                  {executions.map(execution => (
-                    <Button
-                      key={execution.id}
-                      variant={selectedExecution === execution.id ? "default" : "outline"}
-                      size="sm"
-                      className={`text-xs h-7 ${
-                        execution.side === 'BUY' 
-                          ? 'border-[var(--theme-green)] text-[var(--theme-green)] hover:bg-[var(--theme-green)]/10' 
-                          : 'border-[var(--theme-red)] text-[var(--theme-red)] hover:bg-[var(--theme-red)]/10'
-                      }`}
-                      onClick={() => handleExecutionClick(execution)}
-                    >
-                      {execution.side} {execution.orderQuantity}@${(Number(execution.limitPrice) || 0).toFixed(2)}
-                    </Button>
-                  ))}
+            {/* Execution markers legend - only show executions that match the chart date */}
+            {(() => {
+              // Filter executions to only show ones that occurred on the same date as the chart
+              const visibleExecutions = executions.filter(execution => {
+                const executionTime = execution.orderExecutedTime ? new Date(execution.orderExecutedTime).getTime() : null;
+                
+                if (executionTime) {
+                  const executionDate = new Date(executionTime).toDateString();
+                  const chartDateObj = new Date(chartDate).toDateString();
+                  
+                  // Only allow executions that are on the exact same date as the chart
+                  return executionDate === chartDateObj;
+                }
+                
+                return false;
+              });
+
+              return visibleExecutions.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <h4 className="text-sm font-medium text-primary">Executions:</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {visibleExecutions.map(execution => (
+                      <Button
+                        key={execution.id}
+                        variant={selectedExecution === execution.id ? "default" : "outline"}
+                        size="sm"
+                        className={`text-xs h-7 ${
+                          execution.side === 'BUY' 
+                            ? 'border-[var(--theme-green)] text-[var(--theme-green)] hover:bg-[var(--theme-green)]/10' 
+                            : 'border-[var(--theme-red)] text-[var(--theme-red)] hover:bg-[var(--theme-red)]/10'
+                        }`}
+                        onClick={() => handleExecutionClick(execution)}
+                      >
+                        {execution.side} {execution.orderQuantity}@${(Number(execution.limitPrice) || 0).toFixed(2)}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
-        ) : (
+        ) : !(error && marketData && !marketData.success) && (
           <div className="text-center py-8">
-            <p className="text-muted-foreground text-lg">Chart data not available</p>
+            <p className="text-muted-foreground text-lg">Sorry, no trade data available for this symbol on this day</p>
             <p className="text-sm text-muted mt-2">Unable to fetch market data for {symbol} on {chartDate}</p>
-            <div className="mt-4 text-xs text-muted space-y-1">
-              <p>This could be due to:</p>
-              <p>• Market data for {symbol} is not available</p>
-              <p>• Date {chartDate} is outside the available data range</p>
-              <p>• Symbol '{symbol}' may not be recognized by market data providers</p>
-            </div>
-            {executions.length > 0 && (
-              <div className="mt-4 p-3 bg-blue-50 rounded text-left">
-                <p className="text-xs font-medium text-blue-900 mb-2">Execution Summary:</p>
-                {executions.slice(0, 3).map(exec => (
-                  <p key={exec.id} className="text-xs text-blue-800">
-                    {exec.side} {exec.orderQuantity} shares @ ${((Number(exec.limitPrice) / 100) || 0).toFixed(2)}
-                  </p>
-                ))}
-                {executions.length > 3 && (
-                  <p className="text-xs text-blue-600 mt-1">... and {executions.length - 3} more</p>
-                )}
-              </div>
-            )}
+            <Button
+              onClick={() => window.location.href = '/contact'}
+              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+            >
+              Contact Support
+            </Button>
           </div>
         )}
       </CardContent>

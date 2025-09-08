@@ -85,9 +85,15 @@
 /* Axis styles */
 .apexcharts-xaxis-label,
 .apexcharts-yaxis-label {
-  fill: var(--theme-secondary-text) !important;
+  fill: var(--theme-primary-text) !important;
   font-family: inherit !important;
   font-size: 11px !important;
+}
+
+/* Axis tick marks (the actual tick lines) */
+.apexcharts-xaxis-tick,
+.apexcharts-yaxis-tick {
+  stroke: var(--theme-primary-text) !important;
 }
 
 /* Legend styles */

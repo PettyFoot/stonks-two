@@ -2,19 +2,18 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, TrendingUp, Shield, Users, ArrowRight, Play, ChevronDown, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { useRouter } from 'next/navigation';
 import { SoftwareApplicationStructuredData } from '@/components/SEO';
 import { TradingFAQStructuredData } from '@/components/SEO/FAQStructuredData';
 import { OptimizedLogo } from '@/components/OptimizedImage';
 import Footer from '@/components/Footer';
-import { LoadingFallback, usePerformanceMonitor } from '@/components/Performance/LoadingOptimizer';
+import { usePerformanceMonitor } from '@/components/Performance/LoadingOptimizer';
 import { InlineTriangleLoader, PageTriangleLoader } from '@/components/ui/TriangleLoader';
 import { DemoCleanup } from '@/lib/demo/demoCleanup';
+import { WebGLCausticsBackground } from '@/components/backgrounds';
 
 export default function LandingPageComponent() {
   const { user, isLoading } = useUser();
@@ -97,12 +96,12 @@ export default function LandingPageComponent() {
       
       {/* Hero Section - Full Screen */}
       <div className="h-screen w-full relative overflow-hidden flex flex-col">
-        <iframe 
-          className="absolute inset-0 w-full h-full object-cover -z-10"
-          src="https://www.shadertoy.com/embed/3cjcWD?gui=false&t=10&paused=false&muted=true" 
-          frameBorder="0"
-          allowFullScreen
-          style={{ pointerEvents: 'none' }}
+        <WebGLCausticsBackground 
+          intensity={0.7}
+          speed={0.8}
+          color={[0.8, 0.95, 1.0]}
+          backgroundColor={[0.05, 0.15, 0.3]}
+          fallbackToCSS={true}
         />
         
         {/* Navigation - Relative positioned at top */}

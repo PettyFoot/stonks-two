@@ -14,7 +14,7 @@ export interface MarketDataResponse {
   ohlc: OHLCData[];
   success: boolean;
   error?: string;
-  source: 'yahoo' | 'mock';  // Track data source
+  source: 'alpha_vantage' | 'mock';  // Track data source
   cached?: boolean;          // Whether data came from cache
 }
 

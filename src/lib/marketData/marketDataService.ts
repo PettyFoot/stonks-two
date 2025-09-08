@@ -1,6 +1,5 @@
 import { MarketDataProvider, MarketDataResponse, TimeWindow, TradeContext, MarketDataConfig, CacheEntry } from './types';
 import { TimeInterval } from '../timeIntervals';
-import { YahooFinanceProvider } from './providers/yahooProvider';
 import { AlphaVantageProvider } from './providers/alphaVantageProvider';
 import { DemoProvider } from './providers/demoProvider';
 import { TimeWindowCalculator } from './timeWindowCalculator';
@@ -18,7 +17,7 @@ export class MarketDataService {
     this.config = {
       cacheEnabled: true,
       cacheExpiryHours: 24,
-      fallbackToMock: true,
+      fallbackToMock: false,
       preferredInterval: '5m',
       maxRetries: 2,
       ...config
@@ -32,19 +31,16 @@ export class MarketDataService {
    * Initialize data providers in order of preference
    */
   private initializeProviders() {
-    // Try Yahoo Finance first (free, no API key needed)
-    this.providers.push(new YahooFinanceProvider());
-    
-    // Fallback to Alpha Vantage if API key is available
+    // Use Alpha Vantage as the only real data provider
     const alphaVantage = new AlphaVantageProvider();
     if (alphaVantage.isAvailable()) {
       this.providers.push(alphaVantage);
-      console.log('Alpha Vantage provider initialized as fallback');
+      console.log('Alpha Vantage provider initialized (20+ years of historical data)');
     } else {
       console.log('Alpha Vantage provider not available (no API key)');
     }
     
-    // Final fallback to demo data (always available)
+    // Final fallback to demo data (if enabled)
     if (this.config.fallbackToMock) {
       this.providers.push(new DemoProvider());
     }
@@ -96,7 +92,7 @@ export class MarketDataService {
               interval: timeWindow.interval,
               ohlc: ohlcData,
               success: true,
-              source: provider.name.toLowerCase().includes('yahoo') ? 'yahoo' as const : 'mock' as const,
+              source: provider.name.toLowerCase().includes('alpha') ? 'alpha_vantage' as const : 'mock' as const,
               cached: false
             };
             
@@ -129,7 +125,7 @@ export class MarketDataService {
         ohlc: [],
         success: false,
         error: error instanceof Error ? error.message : 'Market data not available',
-        source: 'mock',
+        source: 'alpha_vantage',
         cached: false
       };
     }
