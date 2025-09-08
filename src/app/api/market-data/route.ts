@@ -12,6 +12,7 @@ export async function GET(request: Request) {
     const date = searchParams.get('date');
     const interval = searchParams.get('interval') || '5m';
     const demo = searchParams.get('demo') === 'true';
+    const shared = searchParams.get('shared') === 'true';
     
     if (!symbol) {
       return NextResponse.json(
@@ -36,8 +37,8 @@ export async function GET(request: Request) {
       );
     }
     
-    // Check authentication for non-demo requests
-    if (!demo) {
+    // Check authentication for non-demo and non-shared requests
+    if (!demo && !shared) {
       const user = await getCurrentUser();
       if (!user) {
         return NextResponse.json(

@@ -25,6 +25,7 @@ interface TradeCandlestickChartProps {
   height?: number;
   onExecutionSelect?: (execution: ExecutionOrder) => void;
   onMarketDataUpdate?: (marketData: MarketDataResponse) => void;
+  isShared?: boolean;
 }
 
 type TimeInterval = '1m' | '5m' | '15m' | '1h' | '1d';
@@ -36,7 +37,8 @@ export default function TradeCandlestickChart({
   tradeTime,
   height = 400,
   onExecutionSelect,
-  onMarketDataUpdate
+  onMarketDataUpdate,
+  isShared = false
 }: TradeCandlestickChartProps) {
   const [marketData, setMarketData] = useState<MarketDataResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -190,6 +192,11 @@ export default function TradeCandlestickChart({
           date: chartDate,
           interval: timeInterval
         });
+        
+        // Add shared parameter if this is a shared view
+        if (isShared) {
+          params.set('shared', 'true');
+        }
         
         const response = await fetch(`/api/market-data?${params.toString()}`);
         

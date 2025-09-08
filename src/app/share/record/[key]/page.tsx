@@ -252,6 +252,7 @@ export default function SharedTradePage() {
                 tradeDate={isRecordsShare ? trade.date : formatDate(trade.date)}
                 height={400}
                 onExecutionSelect={() => {}} // No interaction in shared view
+                isShared={true}
               />
             </CardContent>
           </Card>
