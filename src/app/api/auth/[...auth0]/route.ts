@@ -1,4 +1,4 @@
-import { handleAuth, handleLogin, handleLogout, handleCallback } from '@auth0/nextjs-auth0';
+import { handleAuth, handleLogin, handleLogout, handleCallback, Session } from '@auth0/nextjs-auth0';
 import { NextRequest } from 'next/server';
 import { clearDemoSession } from '@/lib/demo/demoSession';
 
@@ -24,7 +24,7 @@ export const GET = handleAuth({
     returnTo: '/onboarding'
   }),
   callback: handleCallback({
-    afterCallback: async (req: NextRequest, session: any, state: any) => {
+    afterCallback: async (req: NextRequest, session: Session) => {
       console.log('Auth0 callback: User authenticated, clearing any demo data');
       
       // Clear demo session directly (more reliable than API calls)

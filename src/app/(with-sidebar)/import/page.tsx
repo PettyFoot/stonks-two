@@ -12,14 +12,12 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   FileText, 
-  Brain,
   Shield,
   TrendingUp,
   Building2,
-  Upload,
-  Workflow
+  Upload
 } from 'lucide-react';
-import { PageTriangleLoader, FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
+import { FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
 import Link from 'next/link';
 
 interface ColumnMapping {

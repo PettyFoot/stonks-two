@@ -7,17 +7,17 @@ import { Button } from '@/components/ui/button';
 import { Info, Sparkles, Clock, X } from 'lucide-react';
 
 export function DemoModeBanner() {
-  const { isDemo, user, upgradeUrl, extendSession } = useAuth();
+  const { isDemo, expiresAt, upgradeUrl, extendSession } = useAuth();
   const pathname = usePathname();
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [isMinimized, setIsMinimized] = useState(false);
   const [isExpiringSoon, setIsExpiringSoon] = useState(false);
 
   useEffect(() => {
-    if (!isDemo || !user?.expiresAt) return;
+    if (!isDemo || !expiresAt) return;
 
     const updateTimer = () => {
-      const remaining = new Date(user.expiresAt as string).getTime() - Date.now();
+      const remaining = new Date(expiresAt).getTime() - Date.now();
       if (remaining <= 0) {
         // Session expired - redirect to login
         window.location.href = '/login?expired=true';
@@ -35,7 +35,7 @@ export function DemoModeBanner() {
     const interval = setInterval(updateTimer, 1000);
 
     return () => clearInterval(interval);
-  }, [isDemo, user]);
+  }, [isDemo, expiresAt]);
 
   const handleExtendSession = async () => {
     try {

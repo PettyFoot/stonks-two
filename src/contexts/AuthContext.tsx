@@ -21,6 +21,7 @@ interface AuthContextValue {
   user: UserData | null;
   isLoading: boolean;
   isDemo: boolean;
+  expiresAt: string | null;
   canUpload: boolean;
   canEdit: boolean;
   canDelete: boolean;
@@ -74,6 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     : null;
   const isLoading = authState.type === 'loading';
   const isDemo = authState.type === 'demo';
+  const expiresAt = authState.type === 'demo' ? authState.expiresAt : null;
 
   // Permissions (demo users have limited permissions)
   const canUpload = authState.type === 'authenticated';
@@ -126,6 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     isLoading,
     isDemo,
+    expiresAt,
     canUpload,
     canEdit,
     canDelete,

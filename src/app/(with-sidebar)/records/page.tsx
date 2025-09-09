@@ -7,18 +7,16 @@ import FilterPanel from '@/components/FilterPanel';
 import ExecutionsTable from '@/components/ExecutionsTable';
 import StatsGrid from '@/components/StatsGrid';
 import TradesTable from '@/components/TradesTable';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Lock } from 'lucide-react';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useRecordsData } from '@/hooks/useRecordsData';
 import { useTradesData } from '@/hooks/useTradesData';
-import { useAuth } from '@/contexts/AuthContext';
 import TradeCandlestickChart from '@/components/charts/TradeCandlestickChart';
 import AdSense from '@/components/AdSense';
 import ShareButton from '@/components/ShareButton';
-import { InlineTriangleLoader, FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
+import { FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
 import { calculateTradeMetrics } from '@/lib/tradeMetrics';
 import { MarketDataResponse } from '@/lib/marketData/types';
 
@@ -30,7 +28,7 @@ function RecordsContent() {
   // const { isDemo } = useAuth(); // Currently not used but may be needed for demo features
   
   // Use real records data instead of mock data
-  const { data: recordsData, loading, error, refetch } = useRecordsData(selectedDate, selectedTradeId);
+  const { data: recordsData, loading, error } = useRecordsData(selectedDate, selectedTradeId);
   
   // Get trades data for the default view when no specific trade is selected
   const { data: tradesData, loading: tradesLoading } = useTradesData();
