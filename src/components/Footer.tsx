@@ -9,7 +9,7 @@ export default function Footer() {
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           {/* Company Info */}
           <div className="md:col-span-2">
-            <div className="flex items-center space-x-3 mb-4">
+            <Link href="/" className="flex items-center space-x-3 mb-4 hover:opacity-80 transition-opacity cursor-pointer">
               <Image 
                 src="/trade-voyager-logo.png" 
                 alt="Trade Voyager Analytics - Trading Analytics Platform Footer Logo" 
@@ -20,7 +20,7 @@ export default function Footer() {
                 sizes="64px"
               />
               <span className="text-xl font-bold text-[var(--theme-primary-text)]">Trade Voyager Analytics</span>
-            </div>
+            </Link>
             <p className="text-gray-600 mb-4 max-w-md">
               Professional trade analytics platform for serious traders. 
               Advanced trade analytics, real-time performance tracking, and comprehensive trading insights.

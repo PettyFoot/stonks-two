@@ -114,15 +114,10 @@ export default function LoginPageComponent() {
                   className="rounded-lg sm:w-[180px] sm:h-[180px] lg:w-[200px] lg:h-[200px] max-w-[150px] max-h-[150px] sm:max-w-[180px] sm:max-h-[180px] lg:max-w-[200px] lg:max-h-[200px]"
                   priority
                 />
-                <span className="text-xl sm:text-2xl lg:text-3xl font-oswald text-[var(--theme-secondary-text)]">Trade Voyager Analytics</span>
               </div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-oswald text-[var(--theme-primary-text)] leading-tight">
-                Trading<br />
-                <span className="text-[var(--theme-tertiary)]">Analytics Platform</span>
+                
               </h1>
-              <p className="text-sm sm:text-base lg:text-lg text-[var(--theme-primary-text)] max-w-2xl mx-auto">
-                Track, analyze, and improve your trading performance with comprehensive analytics and insights.
-              </p>
             </header>
 
             {/* Main Content - Stacked Layout */}
