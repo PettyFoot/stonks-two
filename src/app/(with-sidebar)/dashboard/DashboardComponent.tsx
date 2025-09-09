@@ -13,7 +13,7 @@ import TradeDistributionChart from '@/components/charts/TradeDistributionChart';
 import GaugeChart from '@/components/charts/GaugeChart';
 import LargestGainLossGauge from '@/components/charts/LargestGainLossGauge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PageTriangleLoader, FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
+import { FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
 import { Upload, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -21,7 +21,6 @@ import AdSense from '@/components/AdSense';
 import WelcomeBackBanner from '@/components/WelcomeBackBanner';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
-import { useCleanupDemoOnAuth } from '@/hooks/useCleanupDemoOnAuth';
 import { CHART_HEIGHTS } from '@/constants/chartHeights';
 
 // Helper formatters
@@ -44,13 +43,18 @@ const formatCurrency = (value: number): string => {
 };
 
 export default function DashboardComponent() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, authState } = useAuth();
   const router = useRouter();
   const { data: analytics, loading, error } = useDashboardData();
   const { filters, toFilterOptions } = useGlobalFilters();
-  
-  // Ensure demo data is cleaned up on auth transitions
-  useCleanupDemoOnAuth();
+
+  // Simple redirect logic - only redirect if we know for certain the user is unauthenticated
+  useEffect(() => {
+    if (authState.type === 'unauthenticated') {
+      console.log('Dashboard: Redirecting unauthenticated user to login');
+      router.push('/login');
+    }
+  }, [authState.type, router]);
 
   // Format the filter date range for display
   const getDateRangeDisplay = useMemo(() => {
@@ -65,21 +69,7 @@ export default function DashboardComponent() {
     return filters.timeRange?.label || '30 Days';
   }, [filters, toFilterOptions]);
 
-  // Redirect if not authenticated
-  useEffect(() => {
-    // Check if demo mode is indicated in localStorage
-    const isDemoMode = typeof window !== 'undefined' && 
-      localStorage.getItem('demo-mode') === 'true';
-    
-    // Don't redirect if:
-    // 1. Still loading authentication
-    // 2. Demo mode is indicated in localStorage (auth context will catch up)
-    // 3. User is already authenticated
-    if (!isLoading && !user && !isDemoMode) {
-      router.push('/login');
-    }
-  }, [user, isLoading, router]);
-
+  // Show loading while auth state is being determined
   if (isLoading || loading) {
     return (
       <div className="relative h-screen">
@@ -88,7 +78,14 @@ export default function DashboardComponent() {
     );
   }
 
-  if (!user) return null;
+  // Show loading if we're not authenticated and not unauthenticated (waiting for redirect)
+  if (!user && authState.type !== 'unauthenticated') {
+    return (
+      <div className="relative h-screen">
+        <FullPageTriangleLoader />
+      </div>
+    );
+  }
 
   if (error || !analytics) {
     return (

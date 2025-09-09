@@ -270,29 +270,40 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
     setTestingHoldings(true);
     
     try {
-      console.log('Testing SnapTrade getUserHoldings API...');
+      console.log('=== Starting SnapTrade Integration Test ===');
+      console.log('Testing complete flow: accounts -> activities -> orders table');
       
-      const response = await fetch('/api/snaptrade/holdings');
+      const response = await fetch('/api/snaptrade/test-activities');
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch holdings');
+        throw new Error(errorData.error || 'Failed to test SnapTrade integration');
       }
 
-      const holdingsData = await response.json();
+      const testResult = await response.json();
       
-      console.log('SnapTrade Holdings API Response:', holdingsData);
-      console.log('Full holdings data for analysis:', JSON.stringify(holdingsData, null, 2));
+      console.log('=== INTEGRATION TEST RESULTS ===');
+      console.log('Test Parameters:', testResult.testParameters);
+      console.log('Account Used:', testResult.account);
+      console.log('Raw Activities from SnapTrade:', testResult.rawActivities);
+      console.log('Processing Result:', testResult.processingResult);
+      console.log('Orders Created in Database:', testResult.ordersInDatabase);
+      console.log('Summary:', testResult.summary);
+      console.log('=== END INTEGRATION TEST ===');
       
-      if (holdingsData.success) {
-        toast.success(`Holdings fetched successfully! Check console for details. Found ${holdingsData.holdingsData.length} accounts.`);
+      if (testResult.success) {
+        const summary = testResult.summary;
+        toast.success(
+          `Integration test completed! Found ${summary.activitiesFromAPI} activities, ` +
+          `created ${summary.ordersProcessed} orders. Check console for full details.`
+        );
       } else {
-        toast.error('Failed to fetch holdings data');
+        toast.error('Integration test failed');
       }
       
     } catch (error) {
-      console.error('Error testing holdings API:', error);
-      toast.error(`Holdings API test failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Error testing SnapTrade integration:', error);
+      toast.error(`Integration test failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setTestingHoldings(false);
     }
@@ -430,14 +441,14 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
       </div>
 
       {/* Connection Status Summary */}
-      {connections.length > 0 && (
+      {connections.filter(connection => connection.brokerName !== 'Connection-1').length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="bg-surface border-default">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Building2 className="h-5 w-5 text-theme-tertiary" />
                 <span className="text-xl font-bold text-theme-primary-text">
-                  {connections.length}
+                  {connections.filter(connection => connection.brokerName !== 'Connection-1').length}
                 </span>
               </div>
               <p className="text-sm text-theme-secondary-text">
@@ -451,7 +462,7 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
               <div className="flex items-center justify-center gap-2 mb-2">
                 <CheckCircle className="h-5 w-5 text-theme-green" />
                 <span className="text-xl font-bold text-theme-primary-text">
-                  {connections.filter(c => c.status === 'ACTIVE').length}
+                  {connections.filter(c => c.status === 'ACTIVE' && c.brokerName !== 'Connection-1').length}
                 </span>
               </div>
               <p className="text-sm text-theme-secondary-text">
@@ -465,7 +476,7 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Clock className="h-5 w-5 text-theme-tertiary" />
                 <span className="text-xl font-bold text-theme-primary-text">
-                  {connections.filter(c => c.autoSyncEnabled).length}
+                  {connections.filter(c => c.autoSyncEnabled && c.brokerName !== 'Connection-1').length}
                 </span>
               </div>
               <p className="text-sm text-theme-secondary-text">
@@ -477,9 +488,9 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
       )}
 
       {/* Connections List */}
-      {connections.length > 0 && (
+      {connections.filter(connection => connection.brokerName !== 'Connection-1').length > 0 && (
         <div className="grid gap-6">
-          {connections.map((connection) => (
+          {connections.filter(connection => connection.brokerName !== 'Connection-1').map((connection) => (
             <BrokerConnectionCard
               key={connection.id}
               connection={connection}
@@ -498,7 +509,7 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
         <CardContent className="p-8 text-center">
           <Building2 className="h-12 w-12 text-theme-tertiary mx-auto mb-4" />
           <h3 className="font-semibold text-theme-tertiary mb-2">
-            {connections.length === 0 ? 'No Broker Connections' : `${connections.length} Connection${connections.length === 1 ? '' : 's'}`}
+            {connections.filter(connection => connection.brokerName !== 'Connection-1').length === 0 ? 'No Broker Connections' : `${connections.filter(connection => connection.brokerName !== 'Connection-1').length} Connection${connections.filter(connection => connection.brokerName !== 'Connection-1').length === 1 ? '' : 's'}`}
           </h3>
           <p className="text-sm text-theme-tertiary mb-4">
             Connect your broker to automatically sync your trades and get real-time updates.
@@ -508,7 +519,7 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
             className="bg-theme-green hover:bg-theme-tertiary/90 text-white"
           >
             <Plus className="h-4 w-4 mr-2" />
-            {connections.length === 0 ? 'Connect Your First Broker' : 'Connect Another Broker'}
+            {connections.filter(connection => connection.brokerName !== 'Connection-1').length === 0 ? 'Connect Your First Broker' : 'Connect Another Broker'}
           </Button>
         </CardContent>
       </Card>

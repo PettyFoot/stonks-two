@@ -44,6 +44,12 @@ export async function GET(request: Request) {
   const userId = user.id;
   console.log('Using userId:', userId);
 
+  // Simple validation: ensure we have a valid user
+  if (!userId) {
+    console.error('No userId found');
+    return NextResponse.json({ error: 'Invalid user state' }, { status: 401 });
+  }
+
   // Build where clause for filters
   try {
     const where: Prisma.TradeWhereInput = {

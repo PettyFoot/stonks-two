@@ -30,23 +30,19 @@ export default function Pricing() {
 
   const plans = [
     {
-      name: "Free Demo",
+      name: "Free",
       price: "$0",
       period: "forever",
-      description: "Perfect for trying out our platform",
+      description: "powerful analytics for everyone",
       badge: "Popular",
       badgeVariant: "secondary" as const,
       features: [
-        "Sample trading data",
         "Full platform access",
         "All analytics features",
-        "No time limit",
         "No credit card required"
       ],
       limitations: [
-        "Cannot upload real data",
-        "Cannot connect brokers",
-        "Read-only experience"
+        "Not all brokers available"
       ],
       cta: "Try Demo",
       ctaLink: "/demo",
@@ -54,7 +50,7 @@ export default function Pricing() {
     },
     {
       name: "Professional",
-      price: "$19",
+      price: "$10",
       period: "month",
       description: "For serious traders who want to improve their performance",
       badge: "Best Value",
@@ -63,49 +59,23 @@ export default function Pricing() {
         "Unlimited trade tracking",
         "All broker integrations",
         "Advanced analytics",
-        "Custom reports",
-        "Data export",
-        "Email support",
-        "Mobile-responsive design",
-        "Bank-level security"
+        "Data export"
       ],
       limitations: [],
       cta: "Start Free Trial",
       ctaLink: "/login",
       highlight: true
-    },
-    {
-      name: "Enterprise",
-      price: "Custom",
-      period: "",
-      description: "For trading firms and professional teams",
-      badge: "Contact Sales",
-      badgeVariant: "outline" as const,
-      features: [
-        "Everything in Professional",
-        "Multiple user accounts",
-        "Team collaboration",
-        "Custom integrations",
-        "Dedicated support",
-        "SLA guarantee",
-        "White-label options",
-        "API access"
-      ],
-      limitations: [],
-      cta: "Contact Sales",
-      ctaLink: "/contact",
-      highlight: false
     }
   ];
 
   const faqs = [
     {
       question: "Is there a free trial?",
-      answer: "Yes! You can try our free demo with sample data to explore all features. For the Professional plan, we offer a 14-day free trial with full access."
+      answer: "There is no typical free trial because its just free. For professional plan we offer a 14 day free trial with full access to all broker integrations."
     },
     {
       question: "Which brokers do you support?",
-      answer: "We support Interactive Brokers, TD Ameritrade, and CSV import from any broker. We're constantly adding support for more brokers."
+      answer: "we support seamless broker integrations with most us brokers. we also offer csv upload support for most us brokers. if we don't currently offer support of your broker contact support and we will set it up."
     },
     {
       question: "Is my trading data secure?",
@@ -167,13 +137,9 @@ export default function Pricing() {
           Simple, Transparent Pricing
         </h1>
         <p className="text-xl text-[var(--theme-primary-text)] mb-8 max-w-3xl mx-auto">
-          Start with our <Link href="/demo" className="text-[var(--theme-tertiary)] hover:underline">free demo</Link>, upgrade to Professional when you're ready, 
-          or contact us for Enterprise solutions. See all <Link href="/features" className="text-[var(--theme-tertiary)] hover:underline">platform features</Link> in detail.
+          Get ready to start harness the power of advanced trade analytics. Start with <strong>no cost</strong> and all of the tools. Upgrade for more seamless broker integration and delve deeper into advanced analytics. See all <Link href="/features" className="text-[var(--theme-tertiary)] hover:underline">platform features</Link> in detail.
         </p>
         <div className="flex justify-center items-center space-x-4 text-[var(--theme-primary-text)]">
-          <Shield className="h-5 w-5" />
-          <span>14-day free trial</span>
-          <span>•</span>
           <span>No setup fees</span>
           <span>•</span>
           <span>Cancel anytime</span>
@@ -182,7 +148,7 @@ export default function Pricing() {
 
       {/* Pricing Cards */}
       <section className="max-w-7xl mx-auto px-6 py-16">
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {plans.map((plan, index) => (
             <Card 
               key={index} 

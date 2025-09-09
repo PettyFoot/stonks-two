@@ -1,5 +1,6 @@
 import { handleAuth, handleLogin, handleLogout, handleCallback } from '@auth0/nextjs-auth0';
 import { NextRequest } from 'next/server';
+import { clearDemoSession } from '@/lib/demo/demoSession';
 
 const baseURL = process.env.AUTH0_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3002';
 
@@ -13,7 +14,6 @@ export const GET = handleAuth({
   }),
   logout: handleLogout({
     returnTo: baseURL
-    // Removed federated: true to only clear Auth0 session, not Google session
   }),
   signup: handleLogin({
     authorizationParams: {
@@ -27,16 +27,10 @@ export const GET = handleAuth({
     afterCallback: async (req: NextRequest, session: any, state: any) => {
       console.log('Auth0 callback: User authenticated, clearing any demo data');
       
-      // Clear demo session server-side
+      // Clear demo session directly (more reliable than API calls)
       try {
-        await fetch(`${baseURL}/api/demo/logout`, {
-          method: 'POST',
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          }
-        });
+        await clearDemoSession();
+        console.log('Demo session cleared successfully during auth callback');
       } catch (error) {
         console.warn('Error clearing demo session during auth callback:', error);
       }

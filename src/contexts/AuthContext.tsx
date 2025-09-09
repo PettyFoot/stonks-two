@@ -1,30 +1,25 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useUser as useAuth0User } from '@auth0/nextjs-auth0/client';
-import type { UserProfile } from '@auth0/nextjs-auth0/client';
-import { DemoCleanup } from '@/lib/demo/demoCleanup';
 
-interface DemoUser {
-  isDemo: true;
+// Auth state types
+type AuthState = 
+  | { type: 'loading' }
+  | { type: 'demo'; sessionId: string; expiresAt: string; user: UserData }
+  | { type: 'authenticated'; user: UserData }
+  | { type: 'unauthenticated' };
+
+interface UserData {
   id: string;
   name: string;
   email: string;
-  picture?: string;
-  sessionId: string;
-  expiresAt: string;
+  picture?: string | null;
 }
-
-interface AuthUser extends UserProfile {
-  isDemo: false;
-}
-
-export type User = DemoUser | AuthUser;
 
 interface AuthContextValue {
-  user: User | null;
+  authState: AuthState;
+  user: UserData | null;
   isLoading: boolean;
-  error?: Error;
   isDemo: boolean;
   canUpload: boolean;
   canEdit: boolean;
@@ -33,231 +28,125 @@ interface AuthContextValue {
   upgradeUrl: string;
   logout: () => Promise<void>;
   extendSession: () => Promise<void>;
+  refetch: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { 
-    user: auth0User, 
-    isLoading: auth0Loading, 
-    error: auth0Error 
-  } = useAuth0User();
-  
-  const [demoSession, setDemoSession] = useState<DemoUser | null>(null);
-  const [isCheckingDemo, setIsCheckingDemo] = useState(true);
-  const [sessionError, setSessionError] = useState<Error | undefined>(undefined);
-  const [previousAuthState, setPreviousAuthState] = useState<{ wasDemo: boolean; userId: string | null }>({ 
-    wasDemo: false, 
-    userId: null 
-  });
+  const [authState, setAuthState] = useState<AuthState>({ type: 'loading' });
 
-  // Check for demo session on mount and when Auth0 user changes
-  useEffect(() => {
-    async function checkDemoSession() {
-      try {
-        setIsCheckingDemo(true);
-        const response = await fetch('/api/demo/session');
-        
-        if (response.ok) {
-          const session = await response.json();
-          
-          if (session.isDemo) {
-            setDemoSession({
-              isDemo: true,
-              id: session.user.id,
-              name: session.user.name,
-              email: session.user.email,
-              picture: session.user.picture,
-              sessionId: session.sessionId,
-              expiresAt: session.expiresAt,
-            });
-          } else {
-            setDemoSession(null);
-          }
-        } else {
-          setDemoSession(null);
-        }
-      } catch (error) {
-        console.error('Error checking demo session:', error);
-        setSessionError(error as Error);
-        setDemoSession(null);
-      } finally {
-        setIsCheckingDemo(false);
-      }
-    }
-
-    // Only check for demo session if there's no Auth0 user
-    if (!auth0User && !auth0Loading) {
-      checkDemoSession();
-    } else {
-      setIsCheckingDemo(false);
+  const fetchAuthState = async () => {
+    try {
+      setAuthState({ type: 'loading' });
+      const response = await fetch('/api/auth/session');
+      const data = await response.json();
       
-      setDemoSession(null);
-    }
-  }, [auth0User, auth0Loading]);
-
-  // Determine the current user
-  const user: User | null = auth0User 
-    ? { isDemo: false, ...auth0User }
-    : demoSession;
-
-  // Simply check if user is the demo user account
-  const isDemo = user?.id === 'demo-user-001';
-  
-  // Additional validation: ensure we don't have conflicting states
-  useEffect(() => {
-    if (auth0User && user?.id === 'demo-user-001') {
-      console.error('CRITICAL: Detected demo user ID with Auth0 user present - clearing demo session');
-      setDemoSession(null);
-      // Force a comprehensive cleanup
-      DemoCleanup.clearAllDemoData().catch(error => {
-        console.warn('Error during emergency demo cleanup:', error);
-      });
-    }
-    
-    // Additional check: if we have an authenticated user but demo data exists
-    if (auth0User && !isDemo && typeof window !== 'undefined') {
-      const hasDemoMode = localStorage.getItem('demo-mode') === 'true';
-      const hasOtherDemoData = DemoCleanup.hasDemoData();
-      
-      if (hasDemoMode || hasOtherDemoData) {
-        console.warn('AuthContext: Detected demo data for authenticated user, clearing');
-        DemoCleanup.clearAllDemoData().catch(error => {
-          console.warn('Error clearing demo data for authenticated user:', error);
+      if (data.type === 'authenticated') {
+        setAuthState({
+          type: 'authenticated',
+          user: data.user
         });
-      }
-    }
-  }, [auth0User, user?.id, isDemo]);
-  
-  // Clear demo data when transitioning from demo to authenticated user
-  useEffect(() => {
-    const currentUserId = user?.id || null;
-    const currentIsDemo = isDemo;
-    
-    // If we transitioned from demo to authenticated user, clear demo data
-    if (previousAuthState.wasDemo && !currentIsDemo && currentUserId && currentUserId !== 'demo-user-001') {
-      console.log('AuthContext: Detected transition from demo to authenticated user - clearing all demo data');
-      
-      // Use comprehensive demo cleanup
-      DemoCleanup.clearAllDemoData()
-        .then(() => {
-          console.log('AuthContext: Demo data cleared successfully after authentication transition');
-          
-          // Force a small delay and page refresh to ensure clean state
-          setTimeout(() => {
-            if (typeof window !== 'undefined' && window.location.pathname === '/dashboard') {
-              console.log('AuthContext: Refreshing dashboard to ensure clean state');
-              window.location.reload();
-            }
-          }, 500);
-        })
-        .catch(error => {
-          console.warn('AuthContext: Error clearing demo data after authentication transition:', error);
+      } else if (data.type === 'demo') {
+        setAuthState({
+          type: 'demo',
+          sessionId: data.sessionId,
+          expiresAt: data.expiresAt,
+          user: data.user
         });
+      } else {
+        setAuthState({ type: 'unauthenticated' });
+      }
+    } catch (error) {
+      console.error('Error fetching auth state:', error);
+      setAuthState({ type: 'unauthenticated' });
     }
-    
-    // Also check for persistent demo data in authenticated state
-    if (!currentIsDemo && currentUserId && currentUserId !== 'demo-user-001' && auth0User) {
-      // Small delay to ensure auth state is fully settled
-      setTimeout(() => {
-        if (typeof window !== 'undefined') {
-          const hasDemoMode = localStorage.getItem('demo-mode') === 'true';
-          const hasOtherDemoData = DemoCleanup.hasDemoData();
-          
-          if (hasDemoMode || hasOtherDemoData) {
-            console.warn('AuthContext: Found persistent demo data for authenticated user, performing cleanup');
-            DemoCleanup.clearAllDemoData().catch(error => {
-              console.warn('Error clearing persistent demo data:', error);
-            });
-          }
-        }
-      }, 1000);
-    }
-    
-    // Update previous auth state
-    setPreviousAuthState({ 
-      wasDemo: currentIsDemo, 
-      userId: typeof currentUserId === 'string' ? currentUserId : null 
-    });
-  }, [user?.id, isDemo, previousAuthState.wasDemo, auth0User]);
-  
-  const isLoading = auth0Loading || isCheckingDemo;
-  const error = auth0Error || sessionError;
+  };
+
+  // Fetch auth state on mount
+  useEffect(() => {
+    fetchAuthState();
+  }, []);
+
+  // Derived values for easy consumption
+  const user = authState.type === 'demo' || authState.type === 'authenticated' 
+    ? authState.user 
+    : null;
+  const isLoading = authState.type === 'loading';
+  const isDemo = authState.type === 'demo';
+
+  // Permissions (demo users have limited permissions)
+  const canUpload = authState.type === 'authenticated';
+  const canEdit = true; // Both demo and auth users can edit
+  const canDelete = authState.type === 'authenticated';
+  const canExport = true; // Both demo and auth users can export
+  const upgradeUrl = isDemo ? '/api/auth/login' : '/pricing';
 
   const logout = async () => {
-    if (isDemo) {
-      try {
-        // Use comprehensive demo cleanup
-        await DemoCleanup.clearOnDemoLogout();
-        setDemoSession(null);
-        window.location.href = '/';
-      } catch (error) {
-        console.error('Error logging out of demo:', error);
-        // Fallback cleanup
-        await DemoCleanup.clearAllDemoData();
-        window.location.href = '/';
+    try {
+      if (isDemo) {
+        // Clear demo session
+        await fetch('/api/demo/logout', { method: 'POST' });
+      } else {
+        // Auth0 logout
+        window.location.href = '/api/auth/logout';
+        return;
       }
-    } else {
-      window.location.href = '/api/auth/logout';
+      
+      // Redirect to home after demo logout
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Force redirect even on error
+      window.location.href = '/';
     }
   };
 
   const extendSession = async () => {
     if (!isDemo) return;
-
+    
     try {
       const response = await fetch('/api/demo/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'extend' }),
+        body: JSON.stringify({ action: 'extend' })
       });
-
+      
       if (response.ok) {
-        const data = await response.json();
-        if (demoSession) {
-          setDemoSession({
-            ...demoSession,
-            expiresAt: data.expiresAt,
-          });
-        }
+        // Refetch auth state to get updated expiration
+        await fetchAuthState();
       }
     } catch (error) {
-      console.error('Error extending demo session:', error);
+      console.error('Error extending session:', error);
     }
   };
 
-  const value: AuthContextValue = {
+  const contextValue: AuthContextValue = {
+    authState,
     user,
     isLoading,
-    error,
     isDemo,
-    canUpload: !isDemo,
-    canEdit: !isDemo,
-    canDelete: !isDemo,
-    canExport: !isDemo,
-    upgradeUrl: isDemo ? '/api/auth/signup?upgrade=demo' : '/pricing',
+    canUpload,
+    canEdit,
+    canDelete,
+    canExport,
+    upgradeUrl,
     logout,
     extendSession,
+    refetch: fetchAuthState
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-export function useAuth() {
+export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
-
-// Backward compatibility hook - this maintains compatibility with existing useUser calls
-export function useUser() {
-  const { user, isLoading, error } = useAuth();
-  return { user, isLoading, error };
 }

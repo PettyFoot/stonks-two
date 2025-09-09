@@ -9,52 +9,32 @@ import { Users } from 'lucide-react';
 import Footer from '@/components/Footer';
 import { InlineTriangleLoader } from '@/components/ui/TriangleLoader';
 import { WebGLCausticsBackground } from '@/components/backgrounds';
-import { DemoCleanup } from '@/lib/demo/demoCleanup';
 
 export default function LoginPageComponent() {
   const [isStartingDemo, setIsStartingDemo] = useState(false);
   
-  // Clear demo data on component mount to ensure clean state
-  useEffect(() => {
-    const clearDemoDataOnMount = async () => {
-      if (DemoCleanup.hasDemoData()) {
-        console.log('Login page: Clearing demo data on mount');
-        await DemoCleanup.clearAllDemoData();
-      }
-    };
-    
-    clearDemoDataOnMount();
-  }, []);
+  // Demo data is only cleared when user explicitly clicks Sign In or Create Account buttons
 
   const clearDemoData = async () => {
     try {
-      console.log('Starting comprehensive demo data cleanup before login...');
+      console.log('Clearing demo data before login...');
       
-      // Use the comprehensive cleanup method
-      await DemoCleanup.clearAllDemoData();
-      
-      // Additional cleanup - force clear specific demo-related items
+      // Clear demo session cookies client-side
       if (typeof window !== 'undefined') {
-        // Clear demo mode flag specifically
-        localStorage.removeItem('demo-mode');
-        
-        // Clear any demo session cookies by calling the server endpoint
-        await fetch('/api/demo/logout', { 
-          method: 'POST',
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          }
-        }).catch(err => console.warn('Error clearing server-side demo session:', err));
-        
-        // Add a small delay to ensure cleanup completes
-        await new Promise(resolve => setTimeout(resolve, 100));
+        document.cookie = 'demo-session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = `demo-session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
+        document.cookie = `demo-session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname};`;
       }
       
-      console.log('Demo data cleanup completed before login');
+      // Call server-side cleanup
+      fetch('/api/demo/logout', { 
+        method: 'POST',
+        headers: { 'Cache-Control': 'no-cache' }
+      }).catch(err => console.warn('Server cleanup warning:', err));
+      
+      console.log('Demo data cleared before login');
     } catch (error) {
-      console.warn('Error clearing demo data before login:', error);
+      console.warn('Error clearing demo data:', error);
     }
   };
 
@@ -69,12 +49,6 @@ export default function LoginPageComponent() {
       
       if (response.ok) {
         const data = await response.json();
-        
-        // Set demo mode in localStorage immediately
-        if (data.setDemoMode) {
-          localStorage.setItem('demo-mode', 'true');
-          console.log('Set demo mode in localStorage before navigation');
-        }
         
         // Add a small delay to ensure cookies are set, then use hard navigation
         await new Promise(resolve => setTimeout(resolve, 100));

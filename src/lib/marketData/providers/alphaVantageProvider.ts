@@ -92,6 +92,7 @@ export class AlphaVantageProvider implements MarketDataProvider {
       console.log(`🔗 Alpha Vantage API call for ${symbol} (${isDailyInterval ? 'daily' : timeWindow.interval})`);
       console.log(`📡 API URL: ${url}`);
       console.log(`🔑 API Key available: ${this.apiKey !== 'demo' ? 'YES' : 'NO'}`);
+      console.log(`📅 Date range requested: ${timeWindow.start.toISOString()} to ${timeWindow.end.toISOString()}`);
       
       const response = await fetch(url);
       
@@ -125,11 +126,19 @@ export class AlphaVantageProvider implements MarketDataProvider {
       
       if (data['Note']) {
         console.error(`❌ Alpha Vantage Rate Limit Note:`, data['Note']);
+        // Check if this is the specific 5 requests per minute limit
+        if (data['Note'].includes('5 calls per minute') || data['Note'].includes('5 requests per minute')) {
+          throw new Error(`ALPHA_VANTAGE_RATE_LIMIT_5_PER_MINUTE: ${data['Note']}`);
+        }
         throw new Error(`Alpha Vantage rate limit: ${data['Note']}`);
       }
       
       if (data['Information']) {
         console.error(`❌ Alpha Vantage Information Message:`, data['Information']);
+        // Check if this is the daily limit message
+        if (data['Information'].includes('25 requests per day') || data['Information'].includes('daily rate limit')) {
+          throw new Error(`ALPHA_VANTAGE_DAILY_LIMIT: Daily limit of 25 requests exceeded. Please try again tomorrow or upgrade to a premium plan.`);
+        }
         throw new Error(`Alpha Vantage info: ${data['Information']}`);
       }
       
@@ -197,21 +206,29 @@ export class AlphaVantageProvider implements MarketDataProvider {
       return ohlcData;
       
     } catch (error) {
-      console.error(`Alpha Vantage error for ${symbol}:`, error);
+      console.error(`❌ Alpha Vantage error for ${symbol}:`, error);
+      console.error(`📅 Requested date range: ${timeWindow.start.toISOString()} to ${timeWindow.end.toISOString()}`);
+      console.error(`⚙️ Interval: ${timeWindow.interval}`);
       
       if (error instanceof Error) {
+        if (error.message.includes('ALPHA_VANTAGE_RATE_LIMIT_5_PER_MINUTE')) {
+          throw new Error('ALPHA_VANTAGE_RATE_LIMIT_5_PER_MINUTE: Alpha Vantage rate limit exceeded (5 requests/minute). Please wait and try again.');
+        }
         if (error.message.includes('rate limit')) {
-          throw new Error('Alpha Vantage rate limit exceeded. Please wait and try again.');
+          throw new Error('ALPHA_VANTAGE_RATE_LIMIT_5_PER_MINUTE: Alpha Vantage rate limit exceeded (5 requests/minute). Please wait and try again.');
         }
         if (error.message.includes('Invalid API call')) {
-          throw new Error(`Symbol ${symbol} not found or invalid.`);
+          throw new Error(`Symbol ${symbol} not found or invalid API parameters.`);
         }
         if (error.message.includes('premium')) {
-          throw new Error('Alpha Vantage premium feature required for this request.');
+          throw new Error('Alpha Vantage premium subscription required for this feature.');
+        }
+        if (error.message.includes('No time series data')) {
+          throw new Error(`No market data available for ${symbol} on the requested date. This could be a non-trading day or the data might not be available yet.`);
         }
       }
       
-      throw new Error(`Alpha Vantage unavailable: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Alpha Vantage API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
   

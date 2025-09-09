@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Info, Sparkles, Clock, X } from 'lucide-react';
-import { DemoCleanup } from '@/lib/demo/demoCleanup';
 
 export function DemoModeBanner() {
   const { isDemo, user, upgradeUrl, extendSession } = useAuth();
@@ -20,15 +19,8 @@ export function DemoModeBanner() {
     const updateTimer = () => {
       const remaining = new Date(user.expiresAt as string).getTime() - Date.now();
       if (remaining <= 0) {
-        // Clear demo session and all demo data, then redirect to login
-        DemoCleanup.clearOnDemoLogout()
-          .then(() => {
-            window.location.href = '/login?expired=true';
-          })
-          .catch(() => {
-            // Fallback: ensure cleanup happens even if server call fails
-            DemoCleanup.clearAndRedirect('/login?expired=true');
-          });
+        // Session expired - redirect to login
+        window.location.href = '/login?expired=true';
         return;
       }
       const minutes = Math.floor(remaining / 60000);

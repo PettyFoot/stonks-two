@@ -8,7 +8,6 @@ import ColumnSettingsModal from '@/components/ColumnSettingsModal';
 import { Button } from '@/components/ui/button';
 import { Trade, ColumnConfiguration } from '@/types';
 import { useTradesData } from '@/hooks/useTradesData';
-import { useCleanupDemoOnAuth } from '@/hooks/useCleanupDemoOnAuth';
 import { PageTriangleLoader, FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
@@ -24,8 +23,6 @@ export default function Trades() {
   const { filters } = useGlobalFilters();
   const { data: tradesData, loading, error, refetch } = useTradesData();
   
-  // Ensure demo data is cleaned up on auth transitions
-  useCleanupDemoOnAuth();
 
   // Calculate effective date range for display
   const getEffectiveDateRange = useCallback(() => {

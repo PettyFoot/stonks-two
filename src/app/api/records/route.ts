@@ -219,6 +219,7 @@ export async function GET(request: Request) {
             month: 'short', 
             year: 'numeric' 
           }),
+          isoDate: trade.date.toISOString().split('T')[0], // YYYY-MM-DD format for APIs
           time: trade.openTime ? trade.openTime.toLocaleTimeString('en-US', {
             hour: '2-digit',
             minute: '2-digit'
@@ -388,6 +389,7 @@ export async function POST(request: Request) {
           month: 'short', 
           year: 'numeric' 
         }),
+        isoDate: trade.date.toISOString().split('T')[0], // YYYY-MM-DD format for APIs
         time: trade.openTime ? trade.openTime.toLocaleTimeString('en-US', {
           hour: '2-digit',
           minute: '2-digit'

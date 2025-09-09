@@ -3,19 +3,15 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { 
   BarChart3, 
   TrendingUp, 
-  Target, 
-  PieChart,
   FileText,
   Calendar,
-  Search,
   Database,
-  LineChart,
   ArrowRight,
-  Check
+  Check,
+  Share2
 } from 'lucide-react';
 import Footer from '@/components/Footer';
 import { generateMetadata as generateSEOMetadata } from '@/lib/seo';
@@ -61,34 +57,14 @@ export default function Features() {
       description: "Connect with major brokers for seamless data import and automated trade tracking.",
       features: ["Interactive Brokers", "TD Ameritrade", "CSV import", "API connectivity"]
     },
+    {
+      icon: <Share2 className="h-8 w-8" />,
+      title: "Trade Records & Sharing",
+      description: "View detailed trade records with entry/exit markers, individual executions, and profitability metrics. Share records via secure links.",
+      features: ["Entry and exit markers", "Individual executions", "Profitability metrics", "Secure link sharing (14-day expiry)"]
+    },
   ];
 
-  const advancedFeatures = [
-    {
-      icon: <LineChart className="h-6 w-6" />,
-      title: "Risk Management",
-      description: "Advanced risk metrics and position sizing analysis",
-      badge: "Pro"
-    },
-    {
-      icon: <PieChart className="h-6 w-6" />,
-      title: "Portfolio Analytics",
-      description: "Multi-strategy portfolio performance tracking",
-      badge: "Pro"
-    },
-    {
-      icon: <Search className="h-6 w-6" />,
-      title: "Pattern Recognition",
-      description: "Identify successful trading patterns and strategies",
-      badge: "Pro"
-    },
-    {
-      icon: <Target className="h-6 w-6" />,
-      title: "Goal Tracking",
-      description: "Set and monitor trading performance goals",
-      badge: "Coming Soon"
-    }
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[var(--theme-primary)] via-[var(--theme-surface)] to-[var(--theme-primary)]">
@@ -177,32 +153,6 @@ export default function Features() {
         </div>
       </section>
 
-      {/* Advanced Features */}
-      <section className="max-w-7xl mx-auto px-6 py-16">
-        <h2 className="text-4xl font-bold text-[var(--theme-primary-text)] mb-12 text-center">
-          Advanced Analytics
-        </h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {advancedFeatures.map((feature, index) => (
-            <Card key={index} className="bg-white/90 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="p-2 bg-[var(--theme-tertiary)]/10 rounded-lg text-[var(--theme-tertiary)]">
-                    {feature.icon}
-                  </div>
-                  <Badge variant={feature.badge === "Pro" ? "default" : "secondary"}>
-                    {feature.badge}
-                  </Badge>
-                </div>
-                <CardTitle className="text-lg text-[var(--theme-primary-text)]">
-                  {feature.title}
-                </CardTitle>
-                <p className="text-sm text-gray-600">{feature.description}</p>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-      </section>
 
       {/* CTA Section */}
       <section className="max-w-7xl mx-auto px-6 py-16 text-center">

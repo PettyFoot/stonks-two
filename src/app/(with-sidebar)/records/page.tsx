@@ -262,9 +262,9 @@ function RecordsContent() {
 
         <div className="space-y-6">
           {/* Row 1: Chart (left) + Stats (right) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
             {/* Chart - Takes up ~8 columns on desktop */}
-            <div className="lg:col-span-8">
+            <div className="xl:col-span-8">
               {mostActiveSymbol ? (
                 <TradeCandlestickChart
                   symbol={mostActiveSymbol}
@@ -296,7 +296,7 @@ function RecordsContent() {
             </div>
 
             {/* Stats - Takes up ~4 columns on desktop */}
-            <div className="lg:col-span-4">
+            <div className="xl:col-span-4">
               <Card className="bg-surface border-default h-full">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base font-medium text-primary">Stats</CardTitle>

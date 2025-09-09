@@ -37,15 +37,10 @@ export default function SettingsComponent() {
 
   // Redirect if not authenticated
   useEffect(() => {
-    // Check if demo mode is indicated in localStorage
-    const isDemoMode = typeof window !== 'undefined' && 
-      localStorage.getItem('demo-mode') === 'true';
-    
     // Don't redirect if:
     // 1. Still loading authentication
-    // 2. Demo mode is indicated in localStorage (auth context will catch up)
-    // 3. User is already authenticated
-    if (!isLoading && !user && !isDemoMode) {
+    // 2. User is already authenticated (including demo users)
+    if (!isLoading && !user) {
       router.push('/login');
     }
   }, [user, isLoading, router]);

@@ -12,7 +12,6 @@ import { OptimizedLogo } from '@/components/OptimizedImage';
 import Footer from '@/components/Footer';
 import { usePerformanceMonitor } from '@/components/Performance/LoadingOptimizer';
 import { InlineTriangleLoader, PageTriangleLoader } from '@/components/ui/TriangleLoader';
-import { DemoCleanup } from '@/lib/demo/demoCleanup';
 import { WebGLCausticsBackground } from '@/components/backgrounds';
 
 export default function LandingPageComponent() {
@@ -24,17 +23,6 @@ export default function LandingPageComponent() {
   // Monitor Core Web Vitals
   usePerformanceMonitor();
 
-  // Clear demo data on component mount to ensure clean state
-  useEffect(() => {
-    const clearDemoDataOnMount = async () => {
-      if (DemoCleanup.hasDemoData()) {
-        console.log('Landing page: Clearing demo data on mount');
-        await DemoCleanup.clearAllDemoData();
-      }
-    };
-    
-    clearDemoDataOnMount();
-  }, []);
 
   useEffect(() => {
     if (!isLoading && user) {

@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { Trade, TradeFilters } from '@/types';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { DemoCleanup } from '@/lib/demo/demoCleanup';
 
 interface TradesData {
   trades: Trade[];
@@ -58,35 +57,15 @@ export function useTradesData(
       
       // Critical check: if authenticated user has demo user ID, something is wrong
       if (currentUserId === 'demo-user-001') {
-        console.error('useTradesData: CRITICAL - Authenticated user has demo user ID, clearing all data and demo state');
+        console.error('useTradesData: CRITICAL - Authenticated user has demo user ID, clearing data');
         setData(null);
         setError(null);
-        
-        // Force comprehensive cleanup
-        DemoCleanup.clearAllDemoData().catch(error => {
-          console.warn('Error during emergency demo cleanup in useTradesData:', error);
-        });
         return;
       }
       
-      // Check if we have demo data in localStorage while authenticated
-      if (typeof window !== 'undefined') {
-        const hasDemoMode = localStorage.getItem('demo-mode') === 'true';
-        const hasOtherDemoData = DemoCleanup.hasDemoData();
-        
-        if (hasDemoMode || hasOtherDemoData) {
-          console.warn('useTradesData: Detected stale demo data for authenticated user, clearing');
-          setData(null);
-          setError(null);
-          
-          // Clear the demo data
-          DemoCleanup.clearAllDemoData().catch(error => {
-            console.warn('Error clearing stale demo data in useTradesData:', error);
-          });
-        }
-      }
     }
   }, [data, user, isDemo, authLoading]);
+
 
   useEffect(() => {
     // Don't fetch data until auth state is resolved
@@ -144,14 +123,6 @@ export function useTradesData(
           console.log('Filtered API response status:', response.status);
 
           if (!response.ok) {
-            // If it's a 401 error and we haven't exceeded max retries, retry after delay
-            if (response.status === 401 && retryCount < maxRetries) {
-              console.log(`Trades filtered API authentication failed, retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/${maxRetries + 1})`);
-              setTimeout(() => {
-                fetchData(retryCount + 1);
-              }, retryDelay);
-              return;
-            }
             throw new Error('Failed to fetch filtered trades data');
           }
           
@@ -181,14 +152,6 @@ export function useTradesData(
           console.log('Simple API response status:', response.status);
           
           if (!response.ok) {
-            // If it's a 401 error and we haven't exceeded max retries, retry after delay
-            if (response.status === 401 && retryCount < maxRetries) {
-              console.log(`Trades API authentication failed, retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/${maxRetries + 1})`);
-              setTimeout(() => {
-                fetchData(retryCount + 1);
-              }, retryDelay);
-              return;
-            }
             throw new Error('Failed to fetch trades data');
           }
           const result = await response.json();
@@ -220,7 +183,7 @@ export function useTradesData(
     }
 
     fetchData();
-  }, [toFilterOptions, isDemo, shouldUseComplexFiltering, page, limit, authLoading]);
+  }, [toFilterOptions, isDemo, shouldUseComplexFiltering, page, limit, authLoading, user?.id]);
 
   // Simple fix for demo mode race condition: refetch when demo mode becomes available
   useEffect(() => {
