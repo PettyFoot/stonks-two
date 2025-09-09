@@ -29,6 +29,14 @@ export default function CalendarYearView({ year: initialYear, isDemo = false }: 
   const [year, setYear] = useState(initialYear);
   const [yearData, setYearData] = useState<Record<string, DayData>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1280);
+
+  // Track window width for responsive grid
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     setYear(initialYear);
@@ -187,8 +195,16 @@ export default function CalendarYearView({ year: initialYear, isDemo = false }: 
         </div>
       </div>
 
-      {/* Months Grid - 3x4 layout */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Months Grid - Responsive layout: 1 col mobile, 2 cols at md-1300px, 3 cols above 1300px */}
+      <div 
+        className="grid gap-6"
+        style={{
+          gridTemplateColumns: 
+            windowWidth < 768 ? 'repeat(1, minmax(0, 1fr))' :
+            windowWidth > 1300 ? 'repeat(3, minmax(0, 1fr))' :
+            'repeat(2, minmax(0, 1fr))'
+        }}
+      >
         {monthNames.map((monthName, monthIndex) => (
           <Card 
             key={monthIndex}

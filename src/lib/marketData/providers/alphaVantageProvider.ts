@@ -211,6 +211,9 @@ export class AlphaVantageProvider implements MarketDataProvider {
       console.error(`⚙️ Interval: ${timeWindow.interval}`);
       
       if (error instanceof Error) {
+        if (error.message.includes('ALPHA_VANTAGE_DAILY_LIMIT')) {
+          throw new Error('ALPHA_VANTAGE_DAILY_LIMIT: Daily limit of 25 requests exceeded. Please try again tomorrow or upgrade to a premium plan.');
+        }
         if (error.message.includes('ALPHA_VANTAGE_RATE_LIMIT_5_PER_MINUTE')) {
           throw new Error('ALPHA_VANTAGE_RATE_LIMIT_5_PER_MINUTE: Alpha Vantage rate limit exceeded (5 requests/minute). Please wait and try again.');
         }

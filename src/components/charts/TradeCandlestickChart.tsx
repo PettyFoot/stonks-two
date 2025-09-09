@@ -116,12 +116,26 @@ export default function TradeCandlestickChart({
         return;
       }
       
-      // Prevent retries within 60 seconds of a rate limit error
+      // Prevent retries during rate limit cooldown
       const timeSinceLastRateLimit = Date.now() - lastRateLimitError;
-      if (lastRateLimitError > 0 && timeSinceLastRateLimit < 60000) {
-        console.log(`🚫 Rate limit cooldown active, waiting ${Math.ceil((60000 - timeSinceLastRateLimit) / 1000)}s more`);
-        setError(`Rate limit active. Please wait ${Math.ceil((60000 - timeSinceLastRateLimit) / 1000)} seconds before retrying.`);
-        return;
+      if (lastRateLimitError > 0) {
+        // Check if this might be a daily limit (if we're still within 23 hours of the error)
+        const isDailyLimit = timeSinceLastRateLimit < 23 * 60 * 60 * 1000; // 23 hours
+        const cooldownTime = isDailyLimit ? 24 * 60 * 60 * 1000 : 60000; // 24 hours or 60 seconds
+        
+        if (timeSinceLastRateLimit < cooldownTime) {
+          const remainingTime = cooldownTime - timeSinceLastRateLimit;
+          if (isDailyLimit) {
+            const hoursLeft = Math.ceil(remainingTime / (1000 * 60 * 60));
+            console.log(`🚫 Daily limit cooldown active, ${hoursLeft}h remaining`);
+            setError(`Daily API limit reached. Please try again in ${hoursLeft} hours or upgrade your plan.`);
+          } else {
+            const secondsLeft = Math.ceil(remainingTime / 1000);
+            console.log(`🚫 Rate limit cooldown active, waiting ${secondsLeft}s more`);
+            setError(`Rate limit active. Please wait ${secondsLeft} seconds before retrying.`);
+          }
+          return;
+        }
       }
       
       // Cancel any existing request
@@ -331,8 +345,14 @@ export default function TradeCandlestickChart({
         
         // Track rate limit errors to prevent rapid retries
         if (errorMsg.includes('ALPHA_VANTAGE_RATE_LIMIT') || errorMsg.includes('rate limit')) {
-          setLastRateLimitError(Date.now());
-          console.log('🚫 Rate limit error detected, starting 60-second cooldown');
+          // For daily limits, set a longer cooldown (24 hours)
+          if (errorMsg.includes('ALPHA_VANTAGE_DAILY_LIMIT')) {
+            setLastRateLimitError(Date.now());
+            console.log('🚫 Daily limit error detected, requests blocked until tomorrow');
+          } else {
+            setLastRateLimitError(Date.now());
+            console.log('🚫 Rate limit error detected, starting 60-second cooldown');
+          }
         }
         
         setError(errorMsg);
@@ -789,8 +809,28 @@ export default function TradeCandlestickChart({
             <p className="text-muted-foreground text-lg">Sorry, no trade data available for this symbol on this day</p>
             <p className="text-sm text-muted mt-2">Unable to fetch market data for {symbol} on {chartDate}</p>
             
-            {/* Check if this is the specific Alpha Vantage 5 requests/minute rate limit error */}
-            {(error?.includes('ALPHA_VANTAGE_RATE_LIMIT_5_PER_MINUTE') || 
+            {/* Check if this is a rate limit error */}
+            {(error?.includes('ALPHA_VANTAGE_DAILY_LIMIT') || 
+              marketData.error?.includes('ALPHA_VANTAGE_DAILY_LIMIT')) ? (
+              <div className="mt-4 space-y-3">
+                <p className="text-sm text-red-600">Daily API limit of 25 requests exceeded. The limit resets at midnight UTC.</p>
+                <div className="flex gap-3 justify-center">
+                  <Button
+                    onClick={() => window.location.href = '/settings'}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+                  >
+                    Upgrade Plan
+                  </Button>
+                  <Button
+                    onClick={() => window.location.href = '/contact'}
+                    variant="outline"
+                    className="px-6 py-2"
+                  >
+                    Contact Support
+                  </Button>
+                </div>
+              </div>
+            ) : (error?.includes('ALPHA_VANTAGE_RATE_LIMIT_5_PER_MINUTE') || 
               marketData.error?.includes('ALPHA_VANTAGE_RATE_LIMIT_5_PER_MINUTE') ||
               error?.includes('rate limit exceeded (5 requests/minute)') ||
               marketData.error?.includes('rate limit exceeded (5 requests/minute)')) ? (

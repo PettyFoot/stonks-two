@@ -353,7 +353,7 @@ export default function CalendarContent() {
                   <h1 className="text-3xl font-bold text-theme-primary-text tracking-tight bg-gradient-to-r from-theme-primary-text to-theme-secondary bg-clip-text">
                     {format(currentDate, 'MMMM')}
                   </h1>
-                  <div className="text-xl font-semibold text-theme-secondary-text mt-1">
+                  <div className="text-xl font-normal text-theme-secondary-text mt-1">
                     {format(currentDate, 'yyyy')}
                   </div>
                 </div>
@@ -385,16 +385,16 @@ export default function CalendarContent() {
         <Card className="bg-gradient-to-br from-theme-surface via-theme-surface to-theme-surface/95 border-theme-border shadow-xl rounded-3xl overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-r from-theme-tertiary/5 via-transparent to-theme-tertiary/5 opacity-30"></div>
           <CardHeader className="pb-4 bg-gradient-to-r from-theme-surface via-theme-surface to-theme-surface/80 border-b border-theme-border/50 relative z-10">
-            <CardTitle className="flex items-center text-xl font-bold text-theme-primary-text">
+            <CardTitle className="flex items-center text-xl text-theme-primary-text">
               <Calendar className="h-6 w-6 mr-3 text-theme-tertiary" />
-              Trading Calendar
+              <span className="font-bold">{format(currentDate, 'MMMM')}</span>{' '}<span className="font-normal">{format(currentDate, 'yyyy')}</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6 relative z-10">
+          <CardContent className="p-3 md:p-6 relative z-10">
             {/* Days of Week Header */}
-            <div className="grid grid-cols-7 lg:grid-cols-8 gap-2 mb-4">
+            <div className="grid grid-cols-7 lg:grid-cols-8 gap-1 md:gap-2 mb-4">
               {daysOfWeek.map(day => (
-                <div key={day} className="p-3 text-center text-sm font-bold text-theme-primary-text bg-gradient-to-b from-theme-surface to-theme-surface/80 rounded-lg shadow-sm border border-theme-border/30">
+                <div key={day} className="p-2 md:p-3 text-center text-xs font-bold text-theme-primary-text flex items-center justify-center min-h-[40px]">
                   {day}
                 </div>
               ))}
@@ -404,7 +404,7 @@ export default function CalendarContent() {
             </div>
 
                 {/* Calendar Days */}
-                <div className="grid grid-cols-7 lg:grid-cols-8 gap-2">
+                <div className="grid grid-cols-7 lg:grid-cols-8 gap-1 md:gap-2">
                   {generateCalendarDays().map((day, index) => {
                     if (isWeekTotal(day)) {
                       // Weekly total cell - hidden on mobile
@@ -442,7 +442,7 @@ export default function CalendarContent() {
                           onClick={() => day && !day.isPrevMonth && !day.isNextMonth && handleDayClick(day.dayStr)}
                           disabled={!day || day.isPrevMonth || day.isNextMonth}
                           className={`
-                            min-h-[80px] md:min-h-[120px] lg:min-h-[140px] border border-theme-border/30 rounded-2xl p-2 lg:p-3 text-left transition-all duration-300 relative shadow-sm
+                            min-h-[80px] md:min-h-[120px] lg:min-h-[140px] border border-theme-border/30 rounded-lg md:rounded-2xl p-2 lg:p-3 text-left transition-all duration-300 relative shadow-sm
                             ${!day ? 'bg-theme-surface/20 cursor-default' : 
                               day.isPrevMonth || day.isNextMonth ? 
                                 'bg-theme-surface/10 cursor-default opacity-50 hover:opacity-60' :
@@ -459,8 +459,8 @@ export default function CalendarContent() {
                         >
                           {day && (
                             <div className="h-full flex flex-col relative">
-                              {/* Date number - always visible in top left */}
-                              <div className="absolute top-0 left-0">
+                              {/* Date number - centered on mobile, top-left on larger screens */}
+                              <div className="md:absolute md:top-0 md:left-0 flex md:block justify-center md:justify-start">
                                 <div className={`text-lg font-bold ${day.isPrevMonth || day.isNextMonth ? 'text-theme-secondary-text opacity-75' : dayHasTradeData(day.dayStr) ? 'text-white' : 'text-theme-primary-text'} transition-all duration-200`}>
                                   {day.date}
                                 </div>

@@ -241,7 +241,7 @@ export default function DashboardComponent() {
         <div className="grid grid-cols-1 lg:grid-cols-6 gap-3 sm:gap-4 lg:gap-6">
           {/* Row 1: Main P&L Chart and Key Metrics */}
           {/* Cumulative P&L - Reduced Width */}
-          <div className="col-span-1 lg:col-span-4 lg:row-span-2">
+          <div className="col-span-1 lg:col-span-6 xl2:col-span-4 xl2:row-span-2">
             <EquityChart 
               data={performanceData}
               title="Cumulative P&L"
@@ -251,7 +251,7 @@ export default function DashboardComponent() {
           </div>
 
           {/* Winning vs Losing Trades - Pie Chart */}
-          <div className="col-span-1 lg:col-span-1 flex flex-col justify-center">
+          <div className="col-span-1 lg:col-span-6 xl2:col-span-1 flex flex-col justify-center">
             <CustomPieChart 
               data={winLossData}
               title="Winning vs Losing Trades"
@@ -260,7 +260,7 @@ export default function DashboardComponent() {
           </div>
 
           {/* Largest Gain vs Largest Loss Gauge */}
-          <div className="col-span-1 lg:col-span-1 flex flex-col justify-center">
+          <div className="col-span-1 lg:col-span-6 xl2:col-span-1 flex flex-col justify-center">
             <LargestGainLossGauge
               title="Largest Gain vs Largest Loss"
               largestGain={metrics.largestGain}
@@ -271,7 +271,7 @@ export default function DashboardComponent() {
 
           {/* Second Row - Fill gap under Cumulative P&L */}
           {/* Max Consecutive Wins */}
-          <div className="col-span-1 lg:col-span-1 flex flex-col justify-center">
+          <div className="col-span-1 lg:col-span-6 xl2:col-span-1 flex flex-col justify-center">
             <Card className="bg-surface border-default overflow-hidden" style={{ height: CHART_HEIGHTS.SM }}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-primary">Max Consecutive Wins</CardTitle>
@@ -288,7 +288,7 @@ export default function DashboardComponent() {
           </div>
 
           {/* Max Consecutive Losses */}
-          <div className="col-span-1 lg:col-span-1 flex flex-col justify-center">
+          <div className="col-span-1 lg:col-span-6 xl2:col-span-1 flex flex-col justify-center">
             <Card className="bg-surface border-default overflow-hidden" style={{ height: CHART_HEIGHTS.SM }}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-primary">Max Consecutive Losses</CardTitle>
