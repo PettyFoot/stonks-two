@@ -111,7 +111,7 @@ export default function TradeCandlestickChart({
           ohlc: [],
           success: false,
           error: validationErrors.join('; '),
-          source: 'yahoo' as const,
+          source: 'alpha_vantage' as const,
           cached: false
         });
         setIsLoading(false);
@@ -275,7 +275,7 @@ export default function TradeCandlestickChart({
           ohlc: [],
           success: false,
           error: errorMsg,
-          source: 'yahoo' as const,
+          source: 'alpha_vantage' as const,
           cached: false
         });
         setDataSource('error');
