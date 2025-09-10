@@ -17,7 +17,7 @@ export async function GET() {
       .png()
       .toBuffer();
     
-    return new NextResponse(resizedLogo, {
+    return new NextResponse(resizedLogo as BodyInit, {
       headers: {
         'Content-Type': 'image/png',
         'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
