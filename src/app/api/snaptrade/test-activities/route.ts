@@ -4,6 +4,7 @@ import { getSnapTradeClient, handleSnapTradeError, RateLimitHelper } from '@/lib
 import { getSnapTradeCredentials } from '@/lib/snaptrade/auth';
 import { SnapTradeActivityProcessor } from '@/lib/snaptrade/activityProcessor';
 import { prisma } from '@/lib/prisma';
+import { AccountUniversalActivity } from 'snaptrade-typescript-sdk';
 
 // GET - Test SnapTrade integration with hardcoded parameters
 export async function GET(request: NextRequest) {
@@ -76,18 +77,18 @@ export async function GET(request: NextRequest) {
     console.log('Raw SnapTrade API Response:', JSON.stringify(activitiesResponse.data, null, 2));
 
     const activitiesData = activitiesResponse.data;
-    const activities = (activitiesData && 'data' in activitiesData) 
+    const activities: AccountUniversalActivity[] = (activitiesData && 'data' in activitiesData) 
       ? (activitiesData.data || []) 
       : [];
 
     console.log(`Step 3: Found ${activities.length} activities`);
     console.log('Activities details:');
-    activities.forEach((activity: any, index: number) => {
+    activities.forEach((activity, index: number) => {
       console.log(`Activity ${index + 1}:`, {
         id: activity.id,
         type: activity.type,
         symbol: activity.symbol?.symbol,
-        quantity: activity.quantity,
+        units: activity.units, // Note: AccountUniversalActivity uses 'units' not 'quantity'
         price: activity.price,
         trade_date: activity.trade_date,
         institution: activity.institution

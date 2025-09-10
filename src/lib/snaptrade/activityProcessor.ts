@@ -4,6 +4,7 @@ import { SnapTradeActivity, SyncStatus, SyncType } from './types';
 import { mapBrokerType } from './mapper';
 import { DatePrecision, OrderSide, OrderType, OrderStatus, TimeInForce } from '@prisma/client';
 import { createHash } from 'crypto';
+import { AccountUniversalActivity } from 'snaptrade-typescript-sdk';
 
 export interface ActivityProcessorOptions {
   dateFrom?: Date;
@@ -17,6 +18,50 @@ export interface ProcessResult {
   duplicatesSkipped: number;
   errors: string[];
   success: boolean;
+}
+
+/**
+ * Convert AccountUniversalActivity to SnapTradeActivity format
+ */
+function adaptAccountActivity(activity: AccountUniversalActivity, accountInfo: { id: string; name: string; number?: string }): SnapTradeActivity {
+  return {
+    id: activity.id || '',
+    account: {
+      id: accountInfo.id,
+      number: accountInfo.number || '',
+      name: accountInfo.name,
+    },
+    symbol: {
+      id: activity.symbol?.id || '',
+      symbol: activity.symbol?.symbol || '',
+      description: activity.symbol?.description || '',
+      currency: {
+        id: activity.symbol?.currency?.id || '',
+        code: activity.symbol?.currency?.code || '',
+        name: activity.symbol?.currency?.name || '',
+      },
+      exchange: {
+        id: activity.symbol?.exchange?.id || '',
+        code: activity.symbol?.exchange?.code || '',
+        name: activity.symbol?.exchange?.name || '',
+      },
+    },
+    trade_date: activity.trade_date || '',
+    settlement_date: activity.settlement_date || '',
+    type: activity.type || '',
+    description: activity.description || '',
+    quantity: activity.units || 0,
+    price: activity.price || 0,
+    currency: {
+      id: activity.currency?.id || '',
+      code: activity.currency?.code || '',
+      name: activity.currency?.name || '',
+    },
+    institution: activity.institution || '',
+    option_type: activity.option_type,
+    option_strike_price: activity.option_symbol?.strike_price,
+    option_expiration_date: activity.option_symbol?.expiration_date,
+  } as SnapTradeActivity;
 }
 
 /**
@@ -228,9 +273,14 @@ export class SnapTradeActivityProcessor {
           });
 
           const activitiesData = activitiesResponse.data;
-          const activities: SnapTradeActivity[] = (activitiesData && 'data' in activitiesData) 
+          const rawActivities: AccountUniversalActivity[] = (activitiesData && 'data' in activitiesData) 
             ? (activitiesData.data || []) 
             : [];
+
+          // Convert AccountUniversalActivity to SnapTradeActivity format
+          const activities: SnapTradeActivity[] = rawActivities.map(activity => 
+            adaptAccountActivity(activity, { id: account.id, name: account.name || '', number: account.number })
+          );
 
           // Filter for trade activities only (BUY/SELL)
           const tradeActivities = activities.filter(activity => 
