@@ -19,6 +19,21 @@ export async function GET(request: NextRequest) {
 
     console.log('=== Starting SnapTrade Integration Test ===');
 
+    // Get the actual database user ID from Auth0 ID
+    const dbUser = await prisma.user.findUnique({
+      where: { auth0Id: session.user.sub },
+      select: { id: true, email: true }
+    });
+
+    if (!dbUser) {
+      return NextResponse.json(
+        { error: 'User not found in database. Please ensure you are logged in properly.' },
+        { status: 404 }
+      );
+    }
+
+    console.log(`Found database user: ${dbUser.id} (${dbUser.email})`);
+
     // Get user's SnapTrade credentials
     const credentials = await getSnapTradeCredentials(session.user.sub);
     if (!credentials) {
@@ -106,8 +121,8 @@ export async function GET(request: NextRequest) {
         name: testAccount.name || 'Unknown Account',
         number: testAccount.number 
       },
-      session.user.sub, // userId
-      session.user.sub, // connectionId (using userId)
+      dbUser.id, // Use the proper database user ID
+      dbUser.id, // connectionId (using database user ID)
       (progress, message) => {
         console.log(`Test processing progress: ${progress}% - ${message}`);
       }

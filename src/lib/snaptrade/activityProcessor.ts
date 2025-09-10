@@ -379,6 +379,7 @@ export class SnapTradeActivityProcessor {
     let duplicatesSkipped = 0;
 
     try {
+      console.log(`Test processing for user ID: ${userId} (database CUID)`);
       onProgress?.(10, 'Converting activities to internal format');
 
       // Convert AccountUniversalActivity to SnapTradeActivity format
