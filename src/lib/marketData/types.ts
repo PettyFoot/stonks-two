@@ -14,7 +14,7 @@ export interface MarketDataResponse {
   ohlc: OHLCData[];
   success: boolean;
   error?: string;
-  source: 'alpha_vantage' | 'mock';  // Track data source
+  source: 'alpha_vantage' | 'polygon';  // Track data source
   cached?: boolean;          // Whether data came from cache
 }
 
@@ -59,4 +59,34 @@ export interface MarketDataConfig {
   fallbackToMock: boolean;
   preferredInterval: '1m' | '5m' | '15m' | '1h';
   maxRetries: number;
+}
+
+// API Usage Tracking Types
+export interface ApiUsageRecord {
+  id: string;
+  userId: string;
+  apiProvider: string;
+  endpoint: string;
+  method: string;
+  timestamp: Date;
+  countedForLimit: boolean;
+  subscriptionTier: string;
+  responseStatusCode?: number;
+  responseTimeMs?: number;
+  errorMessage?: string;
+}
+
+export interface RateLimitInfo {
+  allowed: boolean;
+  callsMade: number;
+  callsRemaining: number | null;
+  resetAt: Date;
+  subscriptionTier: 'FREE' | 'PREMIUM';
+}
+
+export interface ApiUsageTrackingOptions {
+  provider: string;
+  endpoint: string;
+  method?: string;
+  requestParams?: Record<string, any>;
 }

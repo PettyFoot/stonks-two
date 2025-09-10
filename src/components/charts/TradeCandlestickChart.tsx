@@ -34,7 +34,7 @@ type TimeInterval = '1m' | '5m' | '15m' | '1h' | '1d';
 function getSourceDisplayName(source: string): string {
   switch (source) {
     case 'alpha_vantage': return 'Alpha Vantage';
-    case 'mock': return 'Demo Data';
+    case 'polygon': return 'Polygon.io';
     default: return source;
   }
 }
@@ -344,14 +344,18 @@ export default function TradeCandlestickChart({
         const errorMsg = err instanceof Error ? err.message : 'Failed to load chart data';
         
         // Track rate limit errors to prevent rapid retries
-        if (errorMsg.includes('ALPHA_VANTAGE_RATE_LIMIT') || errorMsg.includes('rate limit')) {
+        if (errorMsg.includes('ALPHA_VANTAGE_RATE_LIMIT') || 
+            errorMsg.includes('POLYGON_RATE_LIMIT') || 
+            errorMsg.includes('rate limit') ||
+            errorMsg.includes('Rate limit exceeded')) {
+          
           // For daily limits, set a longer cooldown (24 hours)
-          if (errorMsg.includes('ALPHA_VANTAGE_DAILY_LIMIT')) {
+          if (errorMsg.includes('ALPHA_VANTAGE_DAILY_LIMIT') || errorMsg.includes('daily limit')) {
             setLastRateLimitError(Date.now());
             console.log('🚫 Daily limit error detected, requests blocked until tomorrow');
           } else {
             setLastRateLimitError(Date.now());
-            console.log('🚫 Rate limit error detected, starting 60-second cooldown');
+            console.log('🚫 Rate limit error detected, starting cooldown period');
           }
         }
         
@@ -385,54 +389,43 @@ export default function TradeCandlestickChart({
     };
   }, [symbol, chartDate, tradeTime, timeInterval, executions, validateInputs, retryCount]);
 
-  // Calculate x-axis range based on actual data availability
+  // Calculate x-axis range based on the selected chart date (not first candle date)
   const getXAxisRange = useCallback(() => {
+    // Always use the requested chart date for the range, not the first candle date
+    const requestedDate = new Date(chartDate);
+    
     if (marketData?.ohlc && marketData.ohlc.length > 0) {
       const timestamps = marketData.ohlc.map(d => d.timestamp);
       const minTimestamp = Math.min(...timestamps);
       const maxTimestamp = Math.max(...timestamps);
       const firstCandleDate = new Date(minTimestamp);
       
-      // Use the actual date from the data, not the requested date
-      const actualTradingDate = new Date(firstCandleDate.getFullYear(), firstCandleDate.getMonth(), firstCandleDate.getDate());
-      
       // Calculate data span in hours
       const dataSpanHours = (maxTimestamp - minTimestamp) / (1000 * 60 * 60);
       
       console.log(`📊 Chart range calculation:`, {
-        actualDataDate: actualTradingDate.toDateString(),
-        requestedDate: new Date(chartDate).toDateString(),
+        firstDataDate: firstCandleDate.toDateString(),
+        requestedDate: requestedDate.toDateString(),
         dataSpanHours: dataSpanHours.toFixed(2),
         minTimestamp: new Date(minTimestamp).toLocaleString(),
         maxTimestamp: new Date(maxTimestamp).toLocaleString()
       });
-      
-      // Choose range based on data availability - always show extended hours starting at 4:00 AM
-      const rangeStart = new Date(actualTradingDate);
-      rangeStart.setHours(4, 0, 0, 0); // 4:00 AM
-      const rangeEnd = new Date(actualTradingDate);
-      rangeEnd.setHours(20, 0, 0, 0); // 8:00 PM
-      
-      const range = {
-        min: rangeStart.getTime(),
-        max: rangeEnd.getTime()
-      };
-      console.log(`📏 Using extended hours range: ${new Date(range.min).toLocaleString()} to ${new Date(range.max).toLocaleString()}`);
-      return range;
-    } else {
-      // Fallback to requested chart date (regular hours since we don't know data availability)
-      const fallbackStart = new Date(chartDate);
-      fallbackStart.setHours(9, 30, 0, 0);
-      const fallbackEnd = new Date(chartDate);
-      fallbackEnd.setHours(16, 0, 0, 0);
-      
-      const range = {
-        min: fallbackStart.getTime(),
-        max: fallbackEnd.getTime()
-      };
-      console.log(`📏 Using fallback range: ${new Date(range.min).toLocaleString()} to ${new Date(range.max).toLocaleString()}`);
-      return range;
     }
+    
+    // Always focus on the requested chart date from 4:00 AM to 8:00 PM
+    const rangeStart = new Date(requestedDate.getFullYear(), requestedDate.getMonth(), requestedDate.getDate());
+    rangeStart.setHours(4, 0, 0, 0); // 4:00 AM of the requested date
+    
+    const rangeEnd = new Date(requestedDate.getFullYear(), requestedDate.getMonth(), requestedDate.getDate());
+    rangeEnd.setHours(20, 0, 0, 0); // 8:00 PM of the requested date
+    
+    const range = {
+      min: rangeStart.getTime(),
+      max: rangeEnd.getTime()
+    };
+    
+    console.log(`📏 Focusing on requested date range: ${new Date(range.min).toLocaleString()} to ${new Date(range.max).toLocaleString()}`);
+    return range;
   }, [marketData, chartDate]);
 
   // Process executions for scatter series overlay
@@ -488,19 +481,10 @@ export default function TradeCandlestickChart({
       }))
     });
 
-    // Simple fix: subtract one day from execution timestamp to correct the offset
     const parseExecutionTime = (executionTime: Date | null): number => {
       if (!executionTime) return Date.now();
       
-      const timestamp = new Date(executionTime).getTime();
-      const correctedTimestamp = timestamp - (24 * 60 * 60 * 1000); // Subtract 24 hours
-      
-      console.log(`⏰ Simple time correction:`, {
-        originalTime: new Date(timestamp).toLocaleString(),
-        correctedTime: new Date(correctedTimestamp).toLocaleString()
-      });
-      
-      return correctedTimestamp;
+      return new Date(executionTime).getTime();
     };
 
     // Separate buy and sell executions for different series
@@ -628,6 +612,8 @@ export default function TradeCandlestickChart({
     },
     xaxis: {
       type: 'datetime',
+      min: xAxisRange.min,
+      max: xAxisRange.max,
       tooltip: {
         enabled: false
       },
@@ -681,10 +667,15 @@ export default function TradeCandlestickChart({
     tooltip: {
       theme: 'dark',
       custom: ({ seriesIndex, dataPointIndex, w }) => {
-        const data = w.globals.seriesCandleO[seriesIndex][dataPointIndex];
-        if (!data) return '';
+        // Only show custom tooltip for candlestick series (index 0)
+        if (seriesIndex !== 0) return '';
         
-        const ohlc = marketData?.ohlc[dataPointIndex];
+        // Check if candlestick data exists for this series and data point
+        if (!w.globals.seriesCandleO || !w.globals.seriesCandleO[seriesIndex] || !w.globals.seriesCandleO[seriesIndex][dataPointIndex]) {
+          return '';
+        }
+        
+        const ohlc = marketData?.ohlc?.[dataPointIndex];
         if (!ohlc) return '';
         
         return `
@@ -707,7 +698,7 @@ export default function TradeCandlestickChart({
       }
     },
     legend: {
-      show: true,
+      show: false,
       position: 'bottom',
       horizontalAlign: 'center',
       floating: false,
@@ -813,13 +804,33 @@ export default function TradeCandlestickChart({
             {(error?.includes('ALPHA_VANTAGE_DAILY_LIMIT') || 
               marketData.error?.includes('ALPHA_VANTAGE_DAILY_LIMIT')) ? (
               <div className="mt-4 space-y-3">
-                <p className="text-sm text-red-600">Daily API limit of 25 requests exceeded. The limit resets at midnight UTC.</p>
+                <p className="text-sm text-red-600">Alpha Vantage daily API limit of 25 requests exceeded. The limit resets at midnight UTC.</p>
                 <div className="flex gap-3 justify-center">
                   <Button
                     onClick={() => window.location.href = '/settings'}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
                   >
                     Upgrade Plan
+                  </Button>
+                  <Button
+                    onClick={() => window.location.href = '/contact'}
+                    variant="outline"
+                    className="px-6 py-2"
+                  >
+                    Contact Support
+                  </Button>
+                </div>
+              </div>
+            ) : (error?.includes('Rate limit exceeded') && error?.includes('10 requests per 30 minutes')) ? (
+              <div className="mt-4 space-y-3">
+                <p className="text-sm text-orange-600">You've reached your limit of 10 requests per 30 minutes.</p>
+                <p className="text-xs text-muted">Free users are limited to 10 chart requests every 30 minutes to ensure fair usage.</p>
+                <div className="flex gap-3 justify-center">
+                  <Button
+                    onClick={() => window.location.href = '/settings'}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+                  >
+                    Upgrade to Premium
                   </Button>
                   <Button
                     onClick={() => window.location.href = '/contact'}

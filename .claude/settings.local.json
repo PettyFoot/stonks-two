@@ -111,7 +111,10 @@
       "Read(/c:\\Users\\lcorr\\OneDrive\\Pictures\\CC/**)",
       "Read(//c/Users/lcorr/OneDrive/Pictures/CC/**)",
       "WebFetch(domain:docs.snaptrade.com)",
-      "WebFetch(domain:www.alphavantage.co)"
+      "WebFetch(domain:www.alphavantage.co)",
+      "WebFetch(domain:polygon.io)",
+      "Bash(npx dotenv -e .env.local -- psql:*)",
+      "Bash(npx dotenv:*)"
     ],
     "deny": [],
     "ask": []

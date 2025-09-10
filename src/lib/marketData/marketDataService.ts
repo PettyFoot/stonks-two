@@ -1,7 +1,7 @@
 import { MarketDataProvider, MarketDataResponse, TimeWindow, TradeContext, MarketDataConfig, CacheEntry } from './types';
 import { TimeInterval } from '../timeIntervals';
 import { AlphaVantageProvider } from './providers/alphaVantageProvider';
-import { DemoProvider } from './providers/demoProvider';
+import { PolygonProvider } from './providers/polygonProvider';
 import { TimeWindowCalculator } from './timeWindowCalculator';
 
 /**
@@ -31,18 +31,29 @@ export class MarketDataService {
    * Initialize data providers in order of preference
    */
   private initializeProviders() {
-    // Use Alpha Vantage as the only real data provider
+    // Primary: Alpha Vantage (free tier available)
     const alphaVantage = new AlphaVantageProvider();
     if (alphaVantage.isAvailable()) {
       this.providers.push(alphaVantage);
-      console.log('Alpha Vantage provider initialized (20+ years of historical data)');
+      console.log('✅ Alpha Vantage provider initialized (primary, free tier available)');
     } else {
-      console.log('Alpha Vantage provider not available (no API key)');
+      console.log('❌ Alpha Vantage provider not available (no API key)');
     }
     
-    // Final fallback to demo data (if enabled)
-    if (this.config.fallbackToMock) {
-      this.providers.push(new DemoProvider());
+    // Fallback: Polygon.io (premium data, paid subscription)
+    const polygon = new PolygonProvider();
+    if (polygon.isAvailable()) {
+      this.providers.push(polygon);
+      console.log('✅ Polygon.io provider initialized (fallback, premium subscription required)');
+    } else {
+      console.log('❌ Polygon.io provider not available (no API key or disabled)');
+    }
+    
+    // REMOVED: Demo provider - never use fake data in production
+    // All requests should either succeed with real data or fail with clear error messages
+    
+    if (this.providers.length === 0) {
+      console.error('❌ No market data providers available! Please configure at least one provider.');
     }
   }
   
@@ -86,13 +97,22 @@ export class MarketDataService {
           );
           
           if (ohlcData && ohlcData.length > 0) {
+            // Determine the appropriate source identifier based on provider name
+            let source: 'alpha_vantage' | 'polygon';
+            if (provider.name.toLowerCase().includes('alpha')) {
+              source = 'alpha_vantage';
+            } else {
+              // Default to polygon for any other provider (should only be polygon now)
+              source = 'polygon';
+            }
+
             const response: MarketDataResponse = {
               symbol: tradeContext.symbol,
               date: tradeContext.date,
               interval: timeWindow.interval,
               ohlc: ohlcData,
               success: true,
-              source: provider.name.toLowerCase().includes('alpha') ? 'alpha_vantage' as const : 'mock' as const,
+              source,
               cached: false
             };
             
@@ -125,7 +145,7 @@ export class MarketDataService {
         ohlc: [],
         success: false,
         error: error instanceof Error ? error.message : 'Market data not available',
-        source: 'alpha_vantage',
+        source: 'alpha_vantage' as const,
         cached: false
       };
     }
@@ -232,4 +252,11 @@ export class MarketDataService {
 }
 
 // Singleton instance for use across the application
-export const marketDataService = new MarketDataService();
+// Demo fallback is disabled by default - always show real data or error messages
+export const marketDataService = new MarketDataService({
+  fallbackToMock: false, // Never use demo data in production
+  cacheEnabled: true,
+  cacheExpiryHours: 24,
+  preferredInterval: '5m',
+  maxRetries: 2
+});
