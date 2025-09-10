@@ -76,8 +76,8 @@ export async function GET(request: NextRequest) {
     console.log('Raw SnapTrade API Response:', JSON.stringify(activitiesResponse.data, null, 2));
 
     const activitiesData = activitiesResponse.data;
-    const activities = (activitiesData && 'activities' in activitiesData) 
-      ? (activitiesData.activities || []) 
+    const activities = (activitiesData && 'data' in activitiesData) 
+      ? (activitiesData.data || []) 
       : [];
 
     console.log(`Step 3: Found ${activities.length} activities`);

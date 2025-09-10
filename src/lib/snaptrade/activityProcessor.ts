@@ -228,8 +228,8 @@ export class SnapTradeActivityProcessor {
           });
 
           const activitiesData = activitiesResponse.data;
-          const activities: SnapTradeActivity[] = (activitiesData && 'activities' in activitiesData) 
-            ? (activitiesData.activities || []) 
+          const activities: SnapTradeActivity[] = (activitiesData && 'data' in activitiesData) 
+            ? (activitiesData.data || []) 
             : [];
 
           // Filter for trade activities only (BUY/SELL)
