@@ -154,7 +154,8 @@ export async function GET(request: NextRequest) {
         activitiesFromAPI: activities.length,
         ordersWouldBeProcessed: testResult.ordersWouldBeCreated,
         testMode: true,
-        note: 'Orders were not saved to database - this is test mode'
+        note: 'Orders were not saved to database - this is test mode',
+        ordersAsTheyWouldAppearInDatabase: testResult.ordersData
       }
     });
 
