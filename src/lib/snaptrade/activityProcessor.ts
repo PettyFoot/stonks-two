@@ -356,6 +356,138 @@ export class SnapTradeActivityProcessor {
   }
 
   /**
+   * Test method that processes provided activities without saving to database
+   * Mimics processActivities but uses pre-fetched activities and returns orders for inspection
+   */
+  async testProcessActivities(
+    rawActivities: AccountUniversalActivity[],
+    accountInfo: { id: string; name: string; number?: string },
+    userId: string,
+    connectionId: string,
+    onProgress?: (progress: number, message: string) => void
+  ): Promise<{
+    activitiesFound: number;
+    ordersWouldBeCreated: number;
+    duplicatesSkipped: number;
+    errors: string[];
+    success: boolean;
+    ordersData: any[];
+  }> {
+    const errors: string[] = [];
+    let activitiesFound = 0;
+    let ordersWouldBeCreated = 0;
+    let duplicatesSkipped = 0;
+
+    try {
+      onProgress?.(10, 'Converting activities to internal format');
+
+      // Convert AccountUniversalActivity to SnapTradeActivity format
+      const activities: SnapTradeActivity[] = rawActivities.map(activity => 
+        adaptAccountActivity(activity, accountInfo)
+      );
+
+      console.log(`Converted ${activities.length} raw activities to internal format`);
+
+      onProgress?.(30, 'Filtering for trade activities (BUY/SELL)');
+
+      // Filter for trade activities only (BUY/SELL) - same logic as processActivities
+      const tradeActivities = activities.filter(activity => 
+        ['BUY', 'SELL'].includes(activity.type?.toUpperCase() || '')
+      );
+
+      activitiesFound = tradeActivities.length;
+      console.log(`Found ${activitiesFound} trade activities (BUY/SELL) out of ${activities.length} total activities`);
+
+      if (tradeActivities.length === 0) {
+        console.log('No BUY/SELL activities found to process');
+        return {
+          activitiesFound,
+          ordersWouldBeCreated: 0,
+          duplicatesSkipped: 0,
+          errors,
+          success: true,
+          ordersData: []
+        };
+      }
+
+      onProgress?.(50, 'Converting activities to order format');
+
+      // Convert activities to orders with sequence numbers - same logic as processActivities
+      const orders = tradeActivities.map((activity, index) =>
+        this.mapActivityToOrder(activity, userId, connectionId, index)
+      );
+
+      console.log(`Mapped ${orders.length} activities to order format`);
+      console.log('Sample order structure:', JSON.stringify(orders[0], null, 2));
+
+      onProgress?.(70, 'Checking for potential duplicates');
+
+      // Filter out duplicates - same logic as processActivities
+      const originalCount = orders.length;
+      const uniqueOrders = await this.filterDuplicates(orders, userId);
+      duplicatesSkipped = originalCount - uniqueOrders.length;
+
+      console.log(`Duplicate check: ${originalCount} orders -> ${uniqueOrders.length} unique orders (${duplicatesSkipped} duplicates)`);
+
+      ordersWouldBeCreated = uniqueOrders.length;
+
+      onProgress?.(90, 'Logging order details');
+
+      // Log detailed information about each order that would be created
+      console.log('\n=== ORDERS THAT WOULD BE CREATED ===');
+      uniqueOrders.forEach((order, index) => {
+        console.log(`\nOrder ${index + 1}:`, {
+          orderId: order.orderId,
+          symbol: order.symbol,
+          side: order.side,
+          orderType: order.orderType,
+          orderQuantity: order.orderQuantity,
+          limitPrice: order.limitPrice,
+          orderExecutedTime: order.orderExecutedTime,
+          accountId: order.accountId,
+          brokerType: order.brokerType,
+          snapTradeActivityId: order.snapTradeActivityId,
+          activityHash: order.activityHash,
+          brokerMetadata: {
+            originalTradeDate: order.brokerMetadata?.originalTradeDate,
+            institution: order.brokerMetadata?.institution,
+            type: order.brokerMetadata?.type,
+            description: order.brokerMetadata?.description,
+            currency: order.brokerMetadata?.currency,
+            exchange: order.brokerMetadata?.exchange
+          }
+        });
+      });
+      console.log('=== END ORDERS ===\n');
+
+      onProgress?.(100, 'Test processing complete');
+
+      return {
+        activitiesFound,
+        ordersWouldBeCreated,
+        duplicatesSkipped,
+        errors,
+        success: errors.length === 0,
+        ordersData: uniqueOrders
+      };
+
+    } catch (error) {
+      const errorMsg = handleSnapTradeError(error);
+      errors.push(errorMsg);
+      console.error('Error in test processing:', errorMsg, error);
+      
+      return {
+        activitiesFound,
+        ordersWouldBeCreated,
+        duplicatesSkipped,
+        errors,
+        success: false,
+        ordersData: []
+      };
+    }
+  }
+
+  /**
    * Get activity count estimate for date range (for UI planning)
    */
   async estimateActivityCount(

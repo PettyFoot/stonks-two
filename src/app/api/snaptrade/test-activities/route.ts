@@ -95,53 +95,29 @@ export async function GET(request: NextRequest) {
       });
     });
 
-    // Step 4: Process activities through SnapTradeActivityProcessor
-    console.log('Step 4: Processing activities through ActivityProcessor...');
+    // Step 4: Test process activities through new test method
+    console.log('Step 4: Testing activity processing with fetched activities...');
     
     const processor = new SnapTradeActivityProcessor();
-    const result = await processor.processActivities(
-      session.user.sub, // connectionId (using userId)
+    const testResult = await processor.testProcessActivities(
+      activities, // Use the activities we already fetched
+      { 
+        id: testAccount.id, 
+        name: testAccount.name || 'Unknown Account',
+        number: testAccount.number 
+      },
       session.user.sub, // userId
-      {
-        dateFrom: new Date('2010-01-01'),
-        dateTo: new Date('2025-09-02'),
-        onProgress: (progress, message) => {
-          console.log(`Processing progress: ${progress}% - ${message}`);
-        }
+      session.user.sub, // connectionId (using userId)
+      (progress, message) => {
+        console.log(`Test processing progress: ${progress}% - ${message}`);
       }
     );
 
-    console.log('Processing result:', result);
+    console.log('Test processing result:', testResult);
 
-    // Step 5: Get the orders that were created from these activities
-    const createdOrders = await prisma.order.findMany({
-      where: {
-        userId: session.user.sub,
-        orderExecutedTime: {
-          gte: new Date('2010-01-01'),
-          lte: new Date('2025-09-02')
-        }
-      },
-      orderBy: {
-        orderExecutedTime: 'desc'
-      },
-      take: 20 // Get recent orders to show what was created
-    });
-
-    console.log('Step 5: Orders in database (recent 20):');
-    createdOrders.forEach((order, index) => {
-      console.log(`Order ${index + 1}:`, {
-        id: order.id,
-        orderId: order.orderId,
-        symbol: order.symbol,
-        side: order.side,
-        orderQuantity: order.orderQuantity,
-        limitPrice: order.limitPrice?.toString(),
-        orderExecutedTime: order.orderExecutedTime,
-        snapTradeActivityId: order.snapTradeActivityId,
-        brokerType: order.brokerType
-      });
-    });
+    // Step 5: Note - orders are NOT saved to database in test mode
+    console.log('Step 5: Test complete - no orders saved to database');
+    console.log(`${testResult.ordersWouldBeCreated} orders would be created in production mode`);
 
     console.log('=== SnapTrade Integration Test Complete ===');
 
@@ -155,28 +131,30 @@ export async function GET(request: NextRequest) {
       },
       rawActivities: activities,
       processingResult: {
-        activitiesFound: result.activitiesFound,
-        ordersCreated: result.ordersCreated,
-        duplicatesSkipped: result.duplicatesSkipped,
-        errors: result.errors,
-        success: result.success
+        activitiesFound: testResult.activitiesFound,
+        ordersWouldBeCreated: testResult.ordersWouldBeCreated,
+        duplicatesSkipped: testResult.duplicatesSkipped,
+        errors: testResult.errors,
+        success: testResult.success
       },
-      ordersInDatabase: createdOrders.map(order => ({
-        id: order.id,
+      ordersData: testResult.ordersData.map(order => ({
         orderId: order.orderId,
         symbol: order.symbol,
         side: order.side,
+        orderType: order.orderType,
         orderQuantity: order.orderQuantity,
         limitPrice: order.limitPrice?.toString(),
         orderExecutedTime: order.orderExecutedTime?.toISOString(),
         snapTradeActivityId: order.snapTradeActivityId,
-        brokerType: order.brokerType
+        brokerType: order.brokerType,
+        brokerMetadata: order.brokerMetadata
       })),
       summary: {
         accountsAvailable: accounts.length,
         activitiesFromAPI: activities.length,
-        ordersProcessed: result.ordersCreated,
-        totalOrdersInDB: createdOrders.length
+        ordersWouldBeProcessed: testResult.ordersWouldBeCreated,
+        testMode: true,
+        note: 'Orders were not saved to database - this is test mode'
       }
     });
 
