@@ -42,12 +42,64 @@ export default function ConnectBrokerModal({
     snapTradeUserSecret: string;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [initialConnectionCount, setInitialConnectionCount] = useState<number>(0);
 
   const handleClose = () => {
     setConnectionState(ConnectionState.CONNECTING);
     setSnapTradeData(null);
     setError(null);
+    setInitialConnectionCount(0);
     onClose();
+  };
+
+  // Function to get current connection count
+  const getCurrentConnectionCount = async (): Promise<number> => {
+    try {
+      const [connectionsResponse, liveConnectionsResponse] = await Promise.all([
+        fetch('/api/snaptrade/connections'),
+        fetch('/api/snaptrade/connections/live')
+      ]);
+
+      let totalCount = 0;
+
+      if (connectionsResponse.ok) {
+        const connectionsData = await connectionsResponse.json();
+        const filteredConnections = (connectionsData.connections || []).filter(
+          (connection: any) => connection.brokerName !== 'Connection-1'
+        );
+        totalCount += filteredConnections.length;
+      }
+
+      if (liveConnectionsResponse.ok) {
+        const liveConnectionsData = await liveConnectionsResponse.json();
+        totalCount += (liveConnectionsData.connections || []).length;
+      }
+
+      return totalCount;
+    } catch (error) {
+      console.error('Error getting connection count:', error);
+      return 0;
+    }
+  };
+
+  // Polling mechanism to detect new connections
+  const checkForNewConnections = async () => {
+    const currentCount = await getCurrentConnectionCount();
+    console.log('Checking connections - initial:', initialConnectionCount, 'current:', currentCount);
+    
+    if (currentCount > initialConnectionCount && initialConnectionCount > 0) {
+      console.log('New connection detected, completing connection flow');
+      setConnectionState(ConnectionState.SUCCESS);
+      toast.success('Successfully connected to your broker!');
+      
+      setTimeout(() => {
+        onConnectionComplete();
+        handleClose();
+      }, 2000);
+      
+      return true; // New connection detected
+    }
+    return false;
   };
 
   const initiateBrokerConnection = async () => {
@@ -55,6 +107,10 @@ export default function ConnectBrokerModal({
     setError(null);
 
     try {
+      // Capture initial connection count
+      const initialCount = await getCurrentConnectionCount();
+      setInitialConnectionCount(initialCount);
+      console.log('Initial connection count:', initialCount);
       // Create redirect URI for current domain
       const redirectUri = `${window.location.origin}/api/snaptrade/redirect`;
 
@@ -159,6 +215,39 @@ export default function ConnectBrokerModal({
         }
       };
 
+      // Fallback polling mechanism - check for new connections and popup state every 3 seconds
+      const pollForNewConnections = setInterval(async () => {
+        if (popup.closed) {
+          clearInterval(pollForNewConnections);
+          return;
+        }
+
+        if (connectionState === ConnectionState.REDIRECTING) {
+          try {
+            // Check if popup URL has changed to our redirect URL (indicating completion)
+            if (popup.location && popup.location.pathname === '/api/snaptrade/redirect') {
+              console.log('Popup reached redirect URL, checking for new connections');
+              // Give SnapTrade a moment to complete the connection
+              setTimeout(async () => {
+                const hasNewConnection = await checkForNewConnections();
+                if (hasNewConnection) {
+                  clearInterval(pollForNewConnections);
+                  popup.close();
+                }
+              }, 2000);
+            }
+          } catch (crossOriginError) {
+            // Can't access popup.location due to cross-origin restrictions, that's normal
+            // Just check for new connections
+            const hasNewConnection = await checkForNewConnections();
+            if (hasNewConnection) {
+              clearInterval(pollForNewConnections);
+              popup.close();
+            }
+          }
+        }
+      }, 3000);
+
       // Add message listener
       window.addEventListener('message', handleMessage);
 
@@ -166,6 +255,7 @@ export default function ConnectBrokerModal({
       const checkClosed = setInterval(() => {
         if (popup.closed) {
           clearInterval(checkClosed);
+          clearInterval(pollForNewConnections);
           window.removeEventListener('message', handleMessage);
           
           if (connectionState === ConnectionState.REDIRECTING) {
@@ -178,6 +268,7 @@ export default function ConnectBrokerModal({
       setTimeout(() => {
         window.removeEventListener('message', handleMessage);
         clearInterval(checkClosed);
+        clearInterval(pollForNewConnections);
       }, 5 * 60 * 1000); // 5 minutes timeout
 
     } catch (error) {

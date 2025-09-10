@@ -72,10 +72,26 @@ export async function GET(request: NextRequest) {
     // Log all parameters for debugging
     console.log('SnapTrade OAuth redirect parameters:', Object.fromEntries(searchParams.entries()));
     
-    // Check for SnapTrade-specific parameters
+    // Check for various SnapTrade-specific parameters that might indicate success
     const success = searchParams.get('success');
     const error = searchParams.get('error');
     const brokerAuthorizationId = searchParams.get('brokerAuthorizationId');
+    const connectionComplete = searchParams.get('connectionComplete');
+    const authComplete = searchParams.get('authComplete');
+    const status = searchParams.get('status');
+    const code = searchParams.get('code'); // OAuth code parameter
+    
+    console.log('SnapTrade redirect - all search parameters:', Object.fromEntries(searchParams.entries()));
+    console.log('SnapTrade redirect analysis:', {
+      success,
+      error,
+      brokerAuthorizationId,
+      connectionComplete,
+      authComplete,
+      status,
+      code,
+      hasAnySuccessIndicator: !!(success === 'true' || brokerAuthorizationId || connectionComplete === 'true' || authComplete === 'true' || status === 'complete' || code)
+    });
     
     // Create HTML page that communicates with parent window
     let messageType = 'ERROR';
@@ -91,18 +107,19 @@ export async function GET(request: NextRequest) {
         errorCode: error || 'connection_failed'
       };
     }
-    // Handle successful authorization
-    else if (success === 'true' || brokerAuthorizationId) {
-      console.log('SnapTrade OAuth success, sending success message to parent');
+    // Handle successful authorization - check multiple possible success indicators
+    else if (success === 'true' || brokerAuthorizationId || connectionComplete === 'true' || authComplete === 'true' || status === 'complete' || code) {
+      console.log('SnapTrade OAuth success detected, sending success message to parent');
       messageType = 'SUCCESS';
       messageData = {
-        authorizationId: brokerAuthorizationId || 'success',
+        authorizationId: brokerAuthorizationId || code || 'success',
         success: true
       };
     }
     // Invalid request
     else {
       console.warn('Invalid SnapTrade OAuth redirect, no success or error parameter');
+      console.warn('Available parameters:', Array.from(searchParams.keys()));
       messageType = 'ERROR';
       messageData = { 
         error: 'Invalid request - no success or error parameter found',
@@ -154,14 +171,23 @@ export async function GET(request: NextRequest) {
     <div class="container">
         <div class="spinner"></div>
         <h2 class="${messageType === 'SUCCESS' ? 'success' : 'error'}">
-            ${messageType === 'SUCCESS' ? 'Connection Successful!' : 'Connection Failed'}
+            ${messageType === 'SUCCESS' ? 'All Connected!' : 'Connection Failed'}
         </h2>
         <p>
             ${messageType === 'SUCCESS' 
-                ? 'Your broker connection has been established. This window will close automatically.' 
+                ? 'Your broker has been successfully connected to StonksTwo. This window will close automatically and your connection count will update shortly.' 
                 : `Error: ${messageData.error}`
             }
         </p>
+        ${messageType === 'SUCCESS' ? `
+        <div style="margin-top: 20px; padding: 15px; background-color: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px;">
+            <p style="margin: 0; color: #0369a1; font-size: 14px;">
+                ✓ Authentication successful<br/>
+                ✓ Broker connection established<br/>
+                ✓ Refreshing your account data...
+            </p>
+        </div>
+        ` : ''}
     </div>
     
     <script>
