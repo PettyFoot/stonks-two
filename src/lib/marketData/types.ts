@@ -16,6 +16,7 @@ export interface MarketDataResponse {
   error?: string;
   source: 'alpha_vantage' | 'polygon';  // Track data source
   cached?: boolean;          // Whether data came from cache
+  rateLimitInfo?: RateLimitInfo;  // Rate limit information when applicable
 }
 
 export interface TimeWindow {

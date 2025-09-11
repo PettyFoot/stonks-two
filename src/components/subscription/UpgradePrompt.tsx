@@ -11,7 +11,8 @@ import {
   TrendingUp, 
   X,
   Zap,
-  ArrowRight
+  ArrowRight,
+  Star
 } from 'lucide-react';
 import { InlineTriangleLoader } from '@/components/ui/TriangleLoader';
 import { cn } from '@/lib/utils';
@@ -30,9 +31,9 @@ interface UpgradePromptProps {
 }
 
 const DEFAULT_BENEFITS = [
-  'Unlimited trade imports',
-  'Advanced analytics',
-  'Export capabilities',
+  'Unlimited Trade Imports',
+  'Direct Broker Integration',
+  'Unlimited chart data in records',
   'Priority support'
 ];
 
@@ -218,7 +219,7 @@ export function UpgradePrompt({
           <ul className="space-y-2">
             {benefits.map((benefit, index) => (
               <li key={index} className="flex items-center gap-2 text-sm">
-                <TrendingUp className="h-4 w-4 text-green-500 shrink-0" />
+                <Star className="h-4 w-4 text-yellow-500 shrink-0" />
                 <span>{benefit}</span>
               </li>
             ))}

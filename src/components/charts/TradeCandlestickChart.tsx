@@ -55,7 +55,19 @@ export default function TradeCandlestickChart({
   const [timeInterval, setTimeInterval] = useState<TimeInterval>('5m');
   const [selectedExecution, setSelectedExecution] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<string>('');
-  const [chartDate, setChartDate] = useState<string>(tradeDate); // Independent chart date
+  const [chartDate, setChartDate] = useState<string>(() => {
+    if (!tradeDate) return '';
+    // Handle different date formats from the parent
+    if (/^\d{4}-\d{2}-\d{2}$/.test(tradeDate)) {
+      return tradeDate; // Already in correct format
+    }
+    // Parse formatted dates like "Sep 03, 2025"
+    const date = new Date(tradeDate + ' 12:00:00'); // Add time to avoid timezone issues
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }); // Independent chart date
   const [retryCount, setRetryCount] = useState<number>(0); // Force retry counter
   const [lastRateLimitError, setLastRateLimitError] = useState<number>(0); // Track last rate limit error timestamp
   
@@ -63,6 +75,18 @@ export default function TradeCandlestickChart({
   const abortControllerRef = useRef<AbortController | null>(null);
   const requestInProgressRef = useRef<boolean>(false);
 
+  // Helper function to check if a date is a weekend
+  const isWeekend = useCallback((dateStr: string): boolean => {
+    try {
+      // Parse date consistently to avoid timezone issues
+      const date = new Date(dateStr + 'T12:00:00');
+      const day = date.getDay();
+      return day === 0 || day === 6; // Sunday = 0, Saturday = 6
+    } catch (error) {
+      console.warn('Error parsing date for weekend check:', error);
+      return false;
+    }
+  }, []);
 
   // Validate inputs - memoized to prevent useEffect loops
   const validateInputs = useCallback((symbol: string, chartDate: string) => {
@@ -165,6 +189,25 @@ export default function TradeCandlestickChart({
         setIsLoading(false);
         return;
       }
+
+      // Check if it's a weekend before making API calls
+      if (isWeekend(chartDate)) {
+        console.log(`📅 Weekend detected for ${chartDate}, skipping API call`);
+        setError(null); // Clear any previous errors
+        setMarketData({
+          symbol,
+          date: chartDate,
+          interval: timeInterval,
+          ohlc: [],
+          success: false,
+          error: 'No chart data available - markets are closed on weekends',
+          source: 'alpha_vantage' as const,
+          cached: false
+        });
+        setIsLoading(false);
+        setDataSource('No data (weekend)');
+        return;
+      }
       
       // Log execution data for debugging
       console.log('📊 Chart initialization:', {
@@ -242,19 +285,25 @@ export default function TradeCandlestickChart({
         }
         
         // Convert date to ISO format (YYYY-MM-DD) for API
+        // Handle both ISO format strings and date objects without timezone shifts
         const convertToISODate = (dateStr: string): string => {
           try {
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime())) {
-              throw new Error('Invalid date');
-            }
-            return date.toISOString().split('T')[0];
-          } catch (error) {
-            console.error('Date conversion error:', error, 'Input:', dateStr);
-            // Fallback: if already in ISO format, return as-is
+            // If already in ISO format (YYYY-MM-DD), return as-is
             if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
               return dateStr;
             }
+            // For other formats, parse with local timezone hint (use noon to avoid timezone issues)
+            const date = new Date(dateStr + 'T12:00:00');
+            if (isNaN(date.getTime())) {
+              throw new Error('Invalid date');
+            }
+            // Use local date methods to avoid timezone conversion
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+          } catch (error) {
+            console.error('Date conversion error:', error, 'Input:', dateStr);
             throw error;
           }
         };
@@ -281,11 +330,22 @@ export default function TradeCandlestickChart({
         console.log(`📡 API request sent: /api/market-data?${params.toString()}`);
         console.log(`🔗 Response status: ${response.status} ${response.statusText}`);
         
-        if (!response.ok) {
-          throw new Error(`Failed to fetch market data: ${response.status} ${response.statusText}`);
+        // Always read the response body first, even for non-ok responses
+        const data: MarketDataResponse = await response.json();
+        
+        // Handle rate limit responses (429) specially
+        if (response.status === 429) {
+          console.warn(`🚫 Rate limit exceeded:`, data);
+          const rateLimitError = new Error(data.error || 'Rate limit exceeded');
+          // Attach rate limit info to the error for later use
+          (rateLimitError as any).rateLimitInfo = data.rateLimitInfo;
+          throw rateLimitError;
         }
         
-        const data: MarketDataResponse = await response.json();
+        // Handle other non-ok responses
+        if (!response.ok) {
+          throw new Error(data.error || `Failed to fetch market data: ${response.status} ${response.statusText}`);
+        }
         
         console.log(`📊 API Response for ${symbol}:`, {
           success: data.success,
@@ -343,6 +403,9 @@ export default function TradeCandlestickChart({
         console.error('Error fetching market data:', err);
         const errorMsg = err instanceof Error ? err.message : 'Failed to load chart data';
         
+        // Extract rate limit info if available
+        const rateLimitInfo = (err as any)?.rateLimitInfo;
+        
         // Track rate limit errors to prevent rapid retries
         if (errorMsg.includes('ALPHA_VANTAGE_RATE_LIMIT') || 
             errorMsg.includes('POLYGON_RATE_LIMIT') || 
@@ -370,7 +433,8 @@ export default function TradeCandlestickChart({
           success: false,
           error: errorMsg,
           source: 'alpha_vantage' as const,
-          cached: false
+          cached: false,
+          rateLimitInfo // Include rate limit info for the UI
         });
         setDataSource('error');
       } finally {
@@ -392,7 +456,8 @@ export default function TradeCandlestickChart({
   // Calculate x-axis range based on the selected chart date (not first candle date)
   const getXAxisRange = useCallback(() => {
     // Always use the requested chart date for the range, not the first candle date
-    const requestedDate = new Date(chartDate);
+    // Parse date string correctly to avoid timezone shift
+    const requestedDate = new Date(chartDate + 'T12:00:00');
     
     if (marketData?.ohlc && marketData.ohlc.length > 0) {
       const timestamps = marketData.ohlc.map(d => d.timestamp);
@@ -448,11 +513,14 @@ export default function TradeCandlestickChart({
       // STRICT DATE FILTERING: Only show executions on the exact same date as chart
       let withinTimeRange = false;
       if (executionTime) {
-        const executionDate = new Date(executionTime).toDateString();
-        const chartDateObj = new Date(chartDate).toDateString();
+        // Parse dates consistently by extracting just the date portion
+        const executionDate = new Date(executionTime).toLocaleDateString('en-CA'); // Returns YYYY-MM-DD
+        const chartDateForComparison = /^\d{4}-\d{2}-\d{2}$/.test(chartDate) 
+          ? chartDate 
+          : new Date(chartDate + 'T12:00:00').toLocaleDateString('en-CA');
         
         // Only allow executions that are on the exact same date as the chart
-        withinTimeRange = (executionDate === chartDateObj);
+        withinTimeRange = (executionDate === chartDateForComparison);
       }
       
       // Check if execution price is within chart's price range (with 10% padding for safety)
@@ -467,7 +535,7 @@ export default function TradeCandlestickChart({
       timeRange: `${new Date(xAxisRange.min).toLocaleTimeString()} - ${new Date(xAxisRange.max).toLocaleTimeString()}`,
       priceRange: `$${priceRange.min.toFixed(2)} - $${priceRange.max.toFixed(2)}`,
       chartDate,
-      chartDateObj: new Date(chartDate),
+      chartDateObj: new Date(chartDate + 'T12:00:00'),
       visibleExecutions: visibleExecutions.map(e => ({
         side: e.side,
         price: Number(e.limitPrice).toFixed(2),
@@ -775,7 +843,7 @@ export default function TradeCandlestickChart({
           <div className="flex items-center gap-2">
             <input
               type="date"
-              value={new Date(chartDate).toISOString().split('T')[0]}
+              value={chartDate}
               onChange={(e) => setChartDate(e.target.value)}
               className="w-36 h-9 px-3 py-2 text-sm border border-input rounded-md bg-white shadow-xs outline-none focus:ring-2 focus:ring-ring focus:border-ring"
               title="Chart Date (independent of trade date)"
@@ -797,17 +865,28 @@ export default function TradeCandlestickChart({
       <CardContent>
         {error && marketData && !marketData.success && (
           <div className="text-center py-8">
-            <p className="text-muted-foreground text-lg">Sorry, no trade data available for this symbol on this day</p>
-            <p className="text-sm text-muted mt-2">Unable to fetch market data for {symbol} on {chartDate}</p>
+            {/* Check for weekend first */}
+            {(marketData.error?.includes('markets are closed on weekends') || 
+              isWeekend(chartDate)) ? (
+              <div>
+                <p className="text-muted-foreground text-lg">No chart data available</p>
+                <p className="text-sm text-muted mt-2">Markets are closed on weekends</p>
+              </div>
+            ) : (
+              <div>
+                <p className="text-muted-foreground text-lg">Sorry, no trade data available for this symbol on this day</p>
+                <p className="text-sm text-muted mt-2">Unable to fetch market data for {symbol} on {chartDate}</p>
+              </div>
+            )}
             
-            {/* Check if this is a rate limit error */}
-            {(error?.includes('ALPHA_VANTAGE_DAILY_LIMIT') || 
+            {/* Check if this is a rate limit error - only show if NOT a weekend */}
+            {!isWeekend(chartDate) && (error?.includes('ALPHA_VANTAGE_DAILY_LIMIT') || 
               marketData.error?.includes('ALPHA_VANTAGE_DAILY_LIMIT')) ? (
               <div className="mt-4 space-y-3">
                 <p className="text-sm text-red-600">Alpha Vantage daily API limit of 25 requests exceeded. The limit resets at midnight UTC.</p>
                 <div className="flex gap-3 justify-center">
                   <Button
-                    onClick={() => window.location.href = '/settings'}
+                    onClick={() => window.location.href = '/settings?tab=subscription'}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
                   >
                     Upgrade Plan
@@ -821,13 +900,23 @@ export default function TradeCandlestickChart({
                   </Button>
                 </div>
               </div>
-            ) : (error?.includes('Rate limit exceeded') && error?.includes('10 requests per 30 minutes')) ? (
+            ) : !isWeekend(chartDate) && (marketData.rateLimitInfo && !marketData.rateLimitInfo.allowed) ? (
               <div className="mt-4 space-y-3">
-                <p className="text-sm text-orange-600">You've reached your limit of 10 requests per 30 minutes.</p>
-                <p className="text-xs text-muted">Free users are limited to 10 chart requests every 30 minutes to ensure fair usage.</p>
+                <p className="text-sm text-orange-600">
+                  You've reached your limit of 10 requests per 30 minutes.
+                </p>
+                <p className="text-xs text-muted">
+                  You've made {marketData.rateLimitInfo.callsMade}/10 requests. 
+                  {marketData.rateLimitInfo.callsRemaining !== null && (
+                    ` ${marketData.rateLimitInfo.callsRemaining} remaining.`
+                  )}
+                </p>
+                <p className="text-xs text-muted">
+                  Try again {new Date(marketData.rateLimitInfo.resetAt).toLocaleTimeString()}.
+                </p>
                 <div className="flex gap-3 justify-center">
                   <Button
-                    onClick={() => window.location.href = '/settings'}
+                    onClick={() => window.location.href = '/settings?tab=subscription'}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
                   >
                     Upgrade to Premium
@@ -841,7 +930,7 @@ export default function TradeCandlestickChart({
                   </Button>
                 </div>
               </div>
-            ) : (error?.includes('ALPHA_VANTAGE_RATE_LIMIT_5_PER_MINUTE') || 
+            ) : !isWeekend(chartDate) && (error?.includes('ALPHA_VANTAGE_RATE_LIMIT_5_PER_MINUTE') || 
               marketData.error?.includes('ALPHA_VANTAGE_RATE_LIMIT_5_PER_MINUTE') ||
               error?.includes('rate limit exceeded (5 requests/minute)') ||
               marketData.error?.includes('rate limit exceeded (5 requests/minute)')) ? (
@@ -862,7 +951,7 @@ export default function TradeCandlestickChart({
                     {isLoading ? 'Retrying...' : 'Retry'}
                   </Button>
                   <Button
-                    onClick={() => window.location.href = '/settings'}
+                    onClick={() => window.location.href = '/settings?tab=subscription'}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
                   >
                     Upgrade
@@ -876,7 +965,7 @@ export default function TradeCandlestickChart({
                   </Button>
                 </div>
               </div>
-            ) : (
+            ) : !isWeekend(chartDate) && (
               <div className="mt-4">
                 <Button
                   onClick={() => window.location.href = '/contact'}
@@ -919,11 +1008,14 @@ export default function TradeCandlestickChart({
                 const executionTime = execution.orderExecutedTime ? new Date(execution.orderExecutedTime).getTime() : null;
                 
                 if (executionTime) {
-                  const executionDate = new Date(executionTime).toDateString();
-                  const chartDateObj = new Date(chartDate).toDateString();
+                  // Parse dates consistently by extracting just the date portion
+                  const executionDate = new Date(executionTime).toLocaleDateString('en-CA'); // Returns YYYY-MM-DD
+                  const chartDateForComparison = /^\d{4}-\d{2}-\d{2}$/.test(chartDate) 
+                    ? chartDate 
+                    : new Date(chartDate + 'T12:00:00').toLocaleDateString('en-CA');
                   
                   // Only allow executions that are on the exact same date as the chart
-                  return executionDate === chartDateObj;
+                  return executionDate === chartDateForComparison;
                 }
                 
                 return false;
@@ -955,14 +1047,23 @@ export default function TradeCandlestickChart({
           </div>
         ) : !(error && marketData && !marketData.success) && (
           <div className="text-center py-8">
-            <p className="text-muted-foreground text-lg">Sorry, no trade data available for this symbol on this day</p>
-            <p className="text-sm text-muted mt-2">Unable to fetch market data for {symbol} on {chartDate}</p>
-            <Button
-              onClick={() => window.location.href = '/contact'}
-              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
-            >
-              Contact Support
-            </Button>
+            {isWeekend(chartDate) ? (
+              <div>
+                <p className="text-muted-foreground text-lg">No chart data available</p>
+                <p className="text-sm text-muted mt-2">Markets are closed on weekends</p>
+              </div>
+            ) : (
+              <div>
+                <p className="text-muted-foreground text-lg">Sorry, no trade data available for this symbol on this day</p>
+                <p className="text-sm text-muted mt-2">Unable to fetch market data for {symbol} on {chartDate}</p>
+                <Button
+                  onClick={() => window.location.href = '/contact'}
+                  className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+                >
+                  Contact Support
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </CardContent>

@@ -79,8 +79,15 @@ export async function GET(request: Request) {
       console.log(`📊 Fetching market data for ${symbol} on ${date} (${interval})`);
       const response = await marketDataService.fetchMarketData(tradeContext, interval);
       
-      // Record the API call for usage tracking (only for authenticated users)
-      if (user && rateLimitInfo) {
+      // Log cache vs API usage
+      if (response.cached) {
+        console.log(`📋 Server cache HIT for ${symbol} on ${date} - saved API call`);
+      } else {
+        console.log(`🌐 Fresh API call made for ${symbol} on ${date} from ${response.source}`);
+      }
+      
+      // Record the API call for usage tracking (only for authenticated users and non-cached responses)
+      if (user && rateLimitInfo && !response.cached) {
         const responseTime = Date.now() - startTime;
         await recordMarketDataApiCall(
           user.id,
@@ -93,6 +100,8 @@ export async function GET(request: Request) {
           }
         );
         console.log(`📝 Recorded API usage: ${response.source} call for user ${user.id}`);
+      } else if (user && response.cached) {
+        console.log(`📋 Using server cache for ${symbol} - not counting against API usage limit`);
       }
       
       // Log the result for debugging

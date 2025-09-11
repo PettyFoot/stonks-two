@@ -13,7 +13,8 @@ import {
   TrendingUp,
   Database,
   Download,
-  HeadphonesIcon
+  HeadphonesIcon,
+  Star
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -43,11 +44,11 @@ const DEFAULT_TIERS: PricingTier[] = [
     billing: 'forever',
     description: 'Perfect for getting started with basic trading analytics',
     features: [
-      '100 trade imports per month',
-      'Basic performance metrics',
-      'Simple charts and visualizations',
-      'Monthly P&L reports',
-      'Community support'
+      'Full platform access',
+      'All analytics features',
+      'No credit card required',
+      '10 API calls per minute',
+      '10 uploads per day'
     ],
   },
   {
@@ -57,14 +58,10 @@ const DEFAULT_TIERS: PricingTier[] = [
     billing: 'per month',
     description: 'Complete trading analytics suite for serious traders',
     features: [
-      'Unlimited trade imports',
-      'Advanced analytics and metrics',
-      'Detailed performance reports',
-      'Data export capabilities',
-      'Advanced chart types',
-      'Real-time sync',
-      'Priority email support',
-      'API access (coming soon)'
+      'Unlimited Trade Imports',
+      'Direct Broker Integration',
+      'Unlimited chart data in records',
+      'Priority support'
     ],
     popular: true,
   },
@@ -165,8 +162,8 @@ function PricingCard({ tier, onUpgrade, className, disabled = false }: PricingCa
         <ul className="space-y-3" role="list">
           {tier.features.map((feature, index) => (
             <li key={index} className="flex items-start gap-3">
-              <div className="flex-shrink-0 mt-0.5 text-green-600 dark:text-green-400">
-                {getFeatureIcon(index)}
+              <div className="flex-shrink-0 mt-0.5 text-yellow-500">
+                <Star className="h-4 w-4" aria-hidden="true" />
               </div>
               <span className="text-sm text-foreground">{feature}</span>
             </li>

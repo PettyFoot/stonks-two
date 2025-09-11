@@ -11,7 +11,10 @@ export class TimeWindowCalculator {
     const { date } = tradeContext;
     
     // Parse trade date and ensure we're working with the correct timezone
-    const tradeDate = new Date(date);
+    // Parse date string with noon time to avoid timezone issues
+    const tradeDate = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
+      ? new Date(date + 'T12:00:00')
+      : new Date(date + 'T12:00:00');
     
     console.log(`📅 TimeWindow calculation for ${date}:`, {
       originalDate: tradeDate.toISOString(),
@@ -53,7 +56,10 @@ export class TimeWindowCalculator {
     const { date } = tradeContext;
     
     // Parse trade date and ensure consistent timezone handling
-    const tradeDate = new Date(date);
+    // Parse date string with noon time to avoid timezone issues
+    const tradeDate = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
+      ? new Date(date + 'T12:00:00')
+      : new Date(date + 'T12:00:00');
     
     console.log(`📅 TimeWindow calculation for ${date} (${interval} interval):`);
     

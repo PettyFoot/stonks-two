@@ -61,7 +61,7 @@ export default function Features() {
       icon: <Share2 className="h-8 w-8" />,
       title: "Trade Records & Sharing",
       description: "View detailed trade records with entry/exit markers, individual executions, and profitability metrics. Share records via secure links.",
-      features: ["Entry and exit markers", "Individual executions", "Profitability metrics", "Secure link sharing (14-day expiry)"]
+      features: ["Entry and exit markers", "Individual executions", "Profitability metrics", "Secure link sharing"]
     },
   ];
 
@@ -161,7 +161,7 @@ export default function Features() {
         </h2>
         <p className="text-xl text-[var(--theme-primary-text)] mb-8 max-w-2xl mx-auto">
           Join thousands of professional traders who trust Trade Voyager Analytics to track and improve their performance. 
-          Start with our <Link href="/demo" className="text-[var(--theme-tertiary)] hover:underline">free demo</Link> or explore our <Link href="/pricing" className="text-[var(--theme-tertiary)] hover:underline">pricing options</Link>.
+          Start for <Link href="/demo" className="text-[var(--theme-tertiary)] hover:underline">FREE</Link> or explore our <Link href="/pricing" className="text-[var(--theme-tertiary)] hover:underline">pricing options</Link>.
         </p>
         <div className="flex justify-center space-x-4">
           <Link href="/demo">

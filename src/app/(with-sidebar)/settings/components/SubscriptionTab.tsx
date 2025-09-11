@@ -54,15 +54,6 @@ function SubscriptionTabInternal() {
             {/* Plan Status */}
             <SubscriptionStatus />
 
-            {/* Upgrade Prompt for Free Users */}
-            {isFree && (
-              <div className="mt-6">
-                <UpgradePrompt
-                  feature="unlimited trades and advanced analytics"
-                  className="border-2 border-primary/20"
-                />
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>

@@ -39,7 +39,9 @@ export default function Pricing() {
       features: [
         "Full platform access",
         "All analytics features",
-        "No credit card required"
+        "No credit card required",
+        "10 API calls per minute",
+        "10 uploads per day"
       ],
       limitations: [
         "Not all brokers available"
@@ -56,10 +58,10 @@ export default function Pricing() {
       badge: "Best Value",
       badgeVariant: "default" as const,
       features: [
-        "Unlimited trade tracking",
-        "All broker integrations",
-        "Advanced analytics",
-        "Data export"
+        "Unlimited Trade Imports",
+        "Direct Broker Integration",
+        "Unlimited chart data in records",
+        "Priority support"
       ],
       limitations: [],
       cta: "Start Free Trial",
@@ -189,7 +191,7 @@ export default function Pricing() {
                   <ul className="space-y-2">
                     {plan.features.map((feature, idx) => (
                       <li key={idx} className="flex items-center text-sm text-gray-700">
-                        <Check className="h-4 w-4 text-green-500 mr-3 flex-shrink-0" />
+                        <Star className="h-4 w-4 text-yellow-500 mr-3 flex-shrink-0" />
                         {feature}
                       </li>
                     ))}
