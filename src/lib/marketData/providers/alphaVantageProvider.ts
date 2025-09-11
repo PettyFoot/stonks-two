@@ -42,6 +42,13 @@ export class AlphaVantageProvider implements MarketDataProvider {
       // Rate limiting: max 5 requests per minute
       await this.enforceRateLimit();
       
+      // Alpha Vantage returns data 1 day before requested, so adjust dates by +1 day
+      const adjustedTimeWindow = {
+        ...timeWindow,
+        start: new Date(timeWindow.start.getTime() + 24 * 60 * 60 * 1000),
+        end: new Date(timeWindow.end.getTime() + 24 * 60 * 60 * 1000)
+      };
+      
       // Determine if we need daily or intraday data
       const isDailyInterval = timeWindow.interval === '1d';
       
@@ -74,14 +81,14 @@ export class AlphaVantageProvider implements MarketDataProvider {
         
         // For historical dates (older than current month), use month parameter
         const currentDate = new Date();
-        const requestDate = new Date(timeWindow.start);
+        const requestDate = new Date(adjustedTimeWindow.start);
         const isHistorical = requestDate.getMonth() !== currentDate.getMonth() || 
                            requestDate.getFullYear() !== currentDate.getFullYear();
         
         if (isHistorical) {
           const monthParam = `${requestDate.getFullYear()}-${String(requestDate.getMonth() + 1).padStart(2, '0')}`;
           params.set('month', monthParam);
-          console.log(`Using historical month parameter: ${monthParam}`);
+          console.log(`Using historical month parameter: ${monthParam} (adjusted for Alpha Vantage date offset)`);
         }
         
         timeSeriesKey = `Time Series (${avInterval})`;
@@ -92,7 +99,8 @@ export class AlphaVantageProvider implements MarketDataProvider {
       console.log(`🔗 Alpha Vantage API call for ${symbol} (${isDailyInterval ? 'daily' : timeWindow.interval})`);
       console.log(`📡 API URL: ${url}`);
       console.log(`🔑 API Key available: ${this.apiKey !== 'demo' ? 'YES' : 'NO'}`);
-      console.log(`📅 Date range requested: ${timeWindow.start.toISOString()} to ${timeWindow.end.toISOString()}`);
+      console.log(`📅 Original date range: ${timeWindow.start.toISOString()} to ${timeWindow.end.toISOString()}`);
+      console.log(`📅 Adjusted date range (Alpha Vantage): ${adjustedTimeWindow.start.toISOString()} to ${adjustedTimeWindow.end.toISOString()}`);
       
       const response = await fetch(url);
       
