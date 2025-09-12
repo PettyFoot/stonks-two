@@ -1,13 +1,3 @@
-// Enhanced Trade Data Schema - Comprehensive Trading Information
-// This schema captures all possible trade data points for professional trading analytics
-//
-// ⚠️  CRITICAL WARNING: PROTECTED TABLES
-// The following tables contain critical data and should NEVER be deleted:
-// - users: Contains Auth0 authentication data - DELETION WILL BREAK AUTH!
-//
-// NEVER run: prisma migrate reset (use npm run db:safe-reset instead)
-// Always backup users before schema changes: npm run db:backup-users
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -17,126 +7,96 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ⚠️  PROTECTED TABLE - NEVER DELETE! Contains Auth0 authentication data
-// Use npm run db:backup-users before any schema changes
-// Use npm run db:safe-reset instead of prisma migrate reset
 model User {
-  id            String         @id @default(cuid())
-  email         String         @unique
-  auth0Id       String         @unique
-  name          String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  
-  // Subscription fields
-  stripeCustomerId     String?  @unique
-  subscriptionTier     SubscriptionTier @default(FREE)
-  subscriptionStatus   SubscriptionStatus @default(INACTIVE)
-  
-  // Account deletion fields
-  deletionRequestedAt  DateTime?
-  deletedAt            DateTime?
-  deletionReason       String?
-  finalDeletionAt      DateTime?
-  anonymizedAt         DateTime?
-  canReactivate        Boolean  @default(true)
-  
-  // SnapTrade Integration
-  snapTradeUserId      String?     @unique  // SnapTrade user identifier
-  snapTradeUserSecret  String?              // Encrypted SnapTrade secret
-  snapTradeRegisteredAt DateTime?            // When user registered with SnapTrade
-  
-  // Relations
-  trades        Trade[]
-  orders        Order[]
-  recordsEntries RecordsEntry[]
-  importBatches ImportBatch[]
-  csvUploadLogs CsvUploadLog[]
-  subscriptions Subscription[]
-  paymentHistory PaymentHistory[]
-  accountDeletionLogs AccountDeletionLog[]
-  sharedTrades SharedTrade[]
-  snapTradeSyncs SnapTradeSync[]
-  syncRateLimits SyncRateLimit[]
-  apiUsage ApiUsage[]
-  aiIngestChecks AiIngestToCheck[]
-  adminReviews AiIngestToCheck[] @relation("AdminReviews")
-  dailyUploadCounts DailyUploadCount[]
-  
+  id                    String               @id @default(cuid())
+  email                 String               @unique
+  auth0Id               String               @unique
+  name                  String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  stripeCustomerId      String?              @unique
+  subscriptionStatus    SubscriptionStatus   @default(INACTIVE)
+  subscriptionTier      SubscriptionTier     @default(FREE)
+  canReactivate         Boolean              @default(true)
+  deletedAt             DateTime?
+  deletionReason        String?
+  deletionRequestedAt   DateTime?
+  finalDeletionAt       DateTime?
+  anonymizedAt          DateTime?
+  snapTradeRegisteredAt DateTime?
+  snapTradeUserId       String?              @unique
+  snapTradeUserSecret   String?
+  accountDeletionLogs   AccountDeletionLog[]
+  apiUsage              ApiUsage[]
+  csvUploadLogs         CsvUploadLog[]
+  importBatches         ImportBatch[]
+  orders                Order[]
+  paymentHistory        PaymentHistory[]
+  recordsEntries        RecordsEntry[]
+  sharedTrades          SharedTrade[]
+  snapTradeSyncs        SnapTradeSync[]
+  subscriptions         Subscription[]
+  syncRateLimits        SyncRateLimit[]
+  trades                Trade[]
+  aiIngestChecks        AiIngestToCheck[] @relation("UserAiIngestChecks")
+  adminReviews          AiIngestToCheck[] @relation("AdminReviews")
+  dailyUploadCounts     DailyUploadCount[]
+
   @@map("users")
 }
 
-// Core Trade/Execution Record - Each fill is a separate record
 model Trade {
-  id                    String      @id @default(cuid())
-  userId                String
-  
-  // 1. Trade Identification
-  symbol                String      // Ticker symbol
-  assetClass            AssetClass  @default(EQUITY)
-  brokerName            String?     // Broker name
-  tradeSource           TradeSource @default(IMPORTED)
-  
-  // 2. Order & Execution Details
-  orderType             OrderType   @default(MARKET)
-  side                  TradeSide   // Long/Short
-  timeInForce           TimeInForce @default(DAY)
-  remainingQuantity     Int?        // Remaining quantity after fill
-  averageFillPrice      Decimal?    @db.Decimal(10,2) // Average price across all fills
-  
-  // Trade Status and Enhanced Fields
-  status                TradeStatus @default(OPEN)
-  avgEntryPrice         Decimal?    // Average entry price
-  avgExitPrice          Decimal?    // Average exit price
-  openQuantity          Int?        // Open quantity
-  closeQuantity         Int?        // Close quantity
-  
-  // 3. Trade Timing & Duration
-  entryDate             DateTime    // Entry date (same as orderFilledTime for simplicity)
-  exitDate              DateTime?   // Exit date (for closed positions)
-  timeInTrade           Int?        // Duration in seconds
-  marketSession         MarketSession @default(REGULAR)
-  holdingPeriod         HoldingPeriod @default(INTRADAY)
-  
-  // 4. Price Data at Entry & Exit
-  entryPrice            Decimal?    @db.Decimal(10,2) // Entry price
-  exitPrice             Decimal?    @db.Decimal(10,2) // Exit price
-  highDuringTrade       Decimal?    @db.Decimal(10,2) // Highest price during trade
-  lowDuringTrade        Decimal?    @db.Decimal(10,2) // Lowest price during trade
-  
-  // 5. Calculated Trade Fields (for complete trades)
-  openTime              DateTime?   // When trade was opened
-  closeTime             DateTime?   // When trade was closed
-  quantity              Int?        // Total closed shares
-  costBasis             Decimal?    @db.Decimal(10,2) // Sum of (buyQuantity * buyLimitPrice)
-  proceeds              Decimal?    @db.Decimal(10,2) // Sum of (sellQuantity * sellLimitPrice)
-  ordersInTrade         String[]    // List of order IDs that make up this trade - for records queries, use Order.tradeId instead
-  ordersCount           Int?        // Number of orders in this trade
-  isCalculated          Boolean     @default(false) // Flag to indicate if this is a calculated trade
-  
-  // Legacy/Calculated Fields
-  date                  DateTime    // Main trade date
-  executions            Int         @default(1) // Number of partial fills
-  pnl                   Decimal     @default(0) @db.Decimal(10,2) // Realized P&L
-  commission            Decimal?    @db.Decimal(10,2) // Commission fees
-  fees                  Decimal?    @db.Decimal(10,2) // Other fees
-  notes                 String?     // User notes (final saved)
-  notesChanges          String?     // Auto-saved changes (before user confirms)
-  tags                  String[]    // User tags
-  
-  // Metadata
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
-  
-  // Relations
-  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  recordsEntryId        String?
-  recordsEntry          RecordsEntry? @relation(fields: [recordsEntryId], references: [id])
-  importBatchId         String?
-  importBatch           ImportBatch? @relation(fields: [importBatchId], references: [id])
-  snapTradeId           String?     // SnapTrade trade ID for tracking
-  importSource          ImportSource @default(CSV)
-  
+  id                String        @id @default(cuid())
+  userId            String
+  symbol            String
+  assetClass        AssetClass    @default(EQUITY)
+  brokerName        String?
+  tradeSource       TradeSource   @default(IMPORTED)
+  orderType         OrderType     @default(MARKET)
+  side              TradeSide
+  timeInForce       TimeInForce   @default(DAY)
+  remainingQuantity Int?
+  averageFillPrice  Decimal?      @db.Decimal(10, 2)
+  status            TradeStatus   @default(OPEN)
+  avgEntryPrice     Decimal?
+  avgExitPrice      Decimal?
+  openQuantity      Int?
+  closeQuantity     Int?
+  entryDate         DateTime
+  exitDate          DateTime?
+  timeInTrade       Int?
+  marketSession     MarketSession @default(REGULAR)
+  holdingPeriod     HoldingPeriod @default(INTRADAY)
+  entryPrice        Decimal?      @db.Decimal(10, 2)
+  exitPrice         Decimal?      @db.Decimal(10, 2)
+  highDuringTrade   Decimal?      @db.Decimal(10, 2)
+  lowDuringTrade    Decimal?      @db.Decimal(10, 2)
+  openTime          DateTime?
+  closeTime         DateTime?
+  quantity          Int?
+  costBasis         Decimal?      @db.Decimal(10, 2)
+  proceeds          Decimal?      @db.Decimal(10, 2)
+  ordersInTrade     String[]
+  ordersCount       Int?
+  isCalculated      Boolean       @default(false)
+  date              DateTime
+  executions        Int           @default(1)
+  pnl               Decimal       @default(0) @db.Decimal(10, 2)
+  commission        Decimal?      @db.Decimal(10, 2)
+  fees              Decimal?      @db.Decimal(10, 2)
+  notes             String?
+  tags              String[]
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  importBatchId     String?
+  notesChanges      String?
+  recordsEntryId    String?
+  importSource      ImportSource  @default(CSV)
+  snapTradeId       String?
+  importBatch       ImportBatch?  @relation(fields: [importBatchId], references: [id])
+  recordsEntry      RecordsEntry? @relation(fields: [recordsEntryId], references: [id])
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId, date])
   @@index([userId, symbol])
   @@index([userId, assetClass])
@@ -150,184 +110,150 @@ model Trade {
   @@index([userId, fees])
   @@index([userId, entryDate])
   @@index([userId, exitDate])
-  @@index([userId, status, date])  // Optimized for records queries filtering by status and date
-  @@index([userId, date, status])  // Alternative compound index for date-first queries
+  @@index([userId, status, date])
+  @@index([userId, date, status])
   @@map("trades")
 }
 
-// Order-level information (individual order executions)
 model Order {
-  id                    String      @id @default(cuid())
-  userId                String
-  orderId               String      // External order ID
-  parentOrderId         String?     // For bracket/OCO orders
-  symbol                String
-  orderType             OrderType
-  side                  OrderSide   // Buy/Sell
-  timeInForce           TimeInForce
-  orderQuantity         Int         // Total order quantity
-  limitPrice            Decimal?    @db.Decimal(10,2) // Limit price if applicable
-  stopPrice             Decimal?    @db.Decimal(10,2) // Stop price if applicable
-  orderStatus           OrderStatus
-  orderPlacedTime       DateTime
-  orderExecutedTime     DateTime?   // When order was executed
-  orderUpdatedTime      DateTime?
-  orderCancelledTime    DateTime?
-  accountId             String?     // Account ID associated with order
-  orderAccount          String?     // Account associated with order
-  orderRoute            String?     // Route/venue for order execution
-  brokerType            BrokerType  @default(GENERIC_CSV) // Broker this order came from
-  tags                  String[]    // Tags for this order
-  usedInTrade           Boolean     @default(false) // Whether this order has been used in trade calculation
-  tradeId               String?     // ID of the calculated trade this order belongs to
-  importBatchId         String?     // ID of the import batch this order came from
-  
-  // SnapTrade Integration Fields
-  snapTradeActivityId   String?     @unique  // Original activity ID from SnapTrade
-  datePrecision         DatePrecision @default(MILLISECOND) // Time precision from broker
-  importSequence        Int?        // For ordering same-timestamp activities
-  activityHash          String?     // SHA256 for deduplication
-  brokerMetadata        Json?       // Raw broker-specific data
-  
-  // Relations
-  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  importBatch           ImportBatch? @relation(fields: [importBatchId], references: [id])
-  
-  @@unique([orderId, brokerType]) // Composite unique constraint
+  id                  String        @id @default(cuid())
+  userId              String
+  orderId             String
+  parentOrderId       String?
+  symbol              String
+  orderType           OrderType
+  side                OrderSide
+  timeInForce         TimeInForce
+  orderQuantity       Int
+  limitPrice          Decimal?      @db.Decimal(10, 2)
+  stopPrice           Decimal?      @db.Decimal(10, 2)
+  orderStatus         OrderStatus
+  orderPlacedTime     DateTime
+  orderExecutedTime   DateTime?
+  orderUpdatedTime    DateTime?
+  orderCancelledTime  DateTime?
+  accountId           String?
+  orderAccount        String?
+  orderRoute          String?
+  brokerType          BrokerType    @default(GENERIC_CSV)
+  tags                String[]
+  usedInTrade         Boolean       @default(false)
+  tradeId             String?
+  importBatchId       String?
+  activityHash        String?
+  brokerMetadata      Json?
+  datePrecision       DatePrecision @default(MILLISECOND)
+  importSequence      Int?
+  snapTradeActivityId String?       @unique
+  importBatch         ImportBatch?  @relation(fields: [importBatchId], references: [id])
+  user                User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, brokerType])
   @@index([userId, symbol])
   @@index([userId, orderStatus])
   @@index([tradeId])
-  @@index([userId, tradeId])  // Optimized for records queries fetching orders by user and trade
-  @@index([userId, snapTradeActivityId])  // For SnapTrade activity lookups
-  @@index([userId, activityHash])  // For deduplication
-  @@index([userId, brokerType, orderExecutedTime])  // For time-based queries
+  @@index([userId, tradeId])
+  @@index([userId, snapTradeActivityId])
+  @@index([userId, activityHash])
+  @@index([userId, brokerType, orderExecutedTime])
   @@map("orders")
 }
 
-
-
 model RecordsEntry {
-  id           String    @id @default(cuid())
-  userId       String
-  date         DateTime
-  pnl          Float
-  totalTrades  Int
-  totalVolume  Int
-  winRate      Float?
-  mfeRatio     Float?
-  netPnl       Float?
-  commissions  Float?
-  notes        String?
-  chartImage   String?   // URL to stored image
-  
-  // Metadata
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  
-  // Relations
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  trades       Trade[]
-  
+  id          String   @id @default(cuid())
+  userId      String
+  date        DateTime
+  pnl         Float
+  totalTrades Int
+  totalVolume Int
+  winRate     Float?
+  mfeRatio    Float?
+  netPnl      Float?
+  commissions Float?
+  notes       String?
+  chartImage  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trades      Trade[]
+
   @@index([userId, date])
   @@map("records_entries")
 }
 
 model ImportBatch {
-  id            String      @id @default(cuid())
-  userId        String
-  filename      String
-  fileSize      Int?        // File size in bytes
-  brokerType    BrokerType
-  importType    ImportType  @default(STANDARD) // Track if standard or custom format
-  status        ImportStatus
-  totalRecords  Int         @default(0)
-  successCount  Int         @default(0)
-  errorCount    Int         @default(0)
-  errors        Json?       // Store import errors as JSON
-  
-  // AI mapping data
-  aiMappingUsed     Boolean @default(false)
-  mappingConfidence Float?  // Overall AI mapping confidence
-  columnMappings    Json?   // Store column mapping decisions
-  userReviewRequired Boolean @default(false)
-  
-  // Temporary file storage for broker selection flow
-  tempFileContent   String? @db.Text // Store CSV content temporarily for reprocessing
-  pendingAiMappings Json?            // Store pending AI mappings before user approval
-  pendingBrokerName String?          // Store broker name for pending AI mappings
-  
-  // Background processing
-  jobId         String?     // For background job tracking
-  processingStarted DateTime?
+  id                  String         @id @default(cuid())
+  userId              String
+  filename            String
+  fileSize            Int?
+  brokerType          BrokerType
+  importType          ImportType     @default(STANDARD)
+  status              ImportStatus
+  totalRecords        Int            @default(0)
+  successCount        Int            @default(0)
+  errorCount          Int            @default(0)
+  errors              Json?
+  aiMappingUsed       Boolean        @default(false)
+  mappingConfidence   Float?
+  columnMappings      Json?
+  userReviewRequired  Boolean        @default(false)
+  jobId               String?
+  processingStarted   DateTime?
   processingCompleted DateTime?
-  
-  // Metadata
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  
-  // Relations
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  trades        Trade[]
-  orders        Order[]
-  csvUploadLogs CsvUploadLog[]
-  aiIngestCheck AiIngestToCheck?
-  
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  tempFileContent     String?
+  csvUploadLogs       CsvUploadLog[]
+  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders              Order[]
+  trades              Trade[]
+  aiIngestCheck       AiIngestToCheck?
+
   @@index([userId, status])
   @@index([userId, importType])
   @@map("import_batches")
 }
 
 model CsvUploadLog {
-  id              String      @id @default(cuid())
+  id              String       @id @default(cuid())
   userId          String
   importBatchId   String?
   filename        String
-  originalHeaders String[]    // Original CSV headers
-  mappedHeaders   Json?       // Final header mappings
+  originalHeaders String[]
+  mappedHeaders   Json?
   rowCount        Int
   uploadStatus    UploadStatus
   errorMessage    String?
-  
-  // Processing details
-  parseMethod     ParseMethod // STANDARD or AI_MAPPED
+  parseMethod     ParseMethod
   aiConfidence    Float?
-  userInteraction Boolean @default(false) // Did user review/correct mappings
-  
-  // Metadata
-  createdAt       DateTime    @default(now())
-  
-  // Relations
-  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userInteraction Boolean      @default(false)
+  createdAt       DateTime     @default(now())
   importBatch     ImportBatch? @relation(fields: [importBatchId], references: [id])
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   aiIngestCheck   AiIngestToCheck?
-  
+
   @@index([userId, createdAt])
   @@map("csv_upload_logs")
 }
 
-// Subscription Management Models
 model Subscription {
-  id                String             @id @default(cuid())
-  userId            String
-  stripeSubscriptionId String          @unique
-  stripeCustomerId  String
-  stripePriceId     String
-  tier              SubscriptionTier
-  status            SubscriptionStatus
-  currentPeriodStart DateTime
-  currentPeriodEnd  DateTime
-  cancelAtPeriodEnd Boolean           @default(false)
-  canceledAt        DateTime?
-  trialStart        DateTime?
-  trialEnd          DateTime?
-  
-  // Metadata
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  
-  // Relations
-  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id                   String             @id @default(cuid())
+  userId               String
+  stripeSubscriptionId String             @unique
+  stripeCustomerId     String
+  stripePriceId        String
+  tier                 SubscriptionTier
+  status               SubscriptionStatus
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean            @default(false)
+  canceledAt           DateTime?
+  trialStart           DateTime?
+  trialEnd             DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([stripeSubscriptionId])
   @@index([status])
@@ -339,19 +265,15 @@ model PaymentHistory {
   userId                String
   stripePaymentIntentId String        @unique
   stripeSubscriptionId  String?
-  amount                Int           // Amount in cents
+  amount                Int
   currency              String        @default("usd")
   status                PaymentStatus
   description           String?
   receiptUrl            String?
-  
-  // Metadata
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
-  
-  // Relations
   user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@index([userId])
   @@index([stripePaymentIntentId])
   @@index([status])
@@ -359,27 +281,258 @@ model PaymentHistory {
 }
 
 model WebhookEvent {
-  id              String    @id @default(cuid())
-  stripeEventId   String    @unique
-  eventType       String
-  processed       Boolean   @default(false)
-  processedAt     DateTime?
-  data            Json
-  
-  // Metadata
-  createdAt       DateTime  @default(now())
-  
+  id            String    @id @default(cuid())
+  stripeEventId String    @unique
+  eventType     String
+  processed     Boolean   @default(false)
+  processedAt   DateTime?
+  data          Json
+  createdAt     DateTime  @default(now())
+
   @@index([stripeEventId])
   @@index([eventType])
   @@index([processed])
   @@map("webhook_events")
 }
 
-// Enums
+model AccountDeletionLog {
+  id           String         @id @default(cuid())
+  userId       String
+  userEmail    String
+  action       DeletionAction
+  performedBy  String
+  reason       String?
+  details      Json?
+  scheduledFor DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime       @default(now())
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("account_deletion_logs")
+}
+
+model SharedTrade {
+  id            String   @id @default(cuid())
+  shareKey      String   @unique
+  userId        String
+  tradeSnapshot Json
+  orderSnapshot Json
+  metadata      Json?
+  expiresAt     DateTime
+  accessCount   Int      @default(0)
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([shareKey])
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+  @@map("shared_trades")
+}
+
+model SnapTradeSync {
+  id              String     @id @default(cuid())
+  userId          String
+  connectionId    String
+  syncType        SyncType   @default(MANUAL)
+  status          SyncStatus @default(PENDING)
+  startedAt       DateTime   @default(now())
+  completedAt     DateTime?
+  activitiesFound Int        @default(0)
+  ordersCreated   Int        @default(0)
+  errors          Json?
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, connectionId])
+  @@index([userId, startedAt])
+  @@index([status])
+  @@map("snaptrade_syncs")
+}
+
+model Broker {
+  id         String            @id @default(cuid())
+  name       String            @unique
+  website    String?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  aliases    BrokerAlias[]
+  csvFormats BrokerCsvFormat[]
+
+  @@index([name])
+  @@map("brokers")
+}
+
+model BrokerAlias {
+  id       String @id @default(cuid())
+  brokerId String
+  alias    String @unique
+  broker   Broker @relation(fields: [brokerId], references: [id], onDelete: Cascade)
+
+  @@index([alias])
+  @@index([brokerId])
+  @@map("broker_aliases")
+}
+
+model BrokerCsvFormat {
+  id                String    @id @default(cuid())
+  brokerId          String
+  formatName        String
+  description       String?
+  headerFingerprint String
+  headers           String[]
+  sampleData        Json?
+  fieldMappings     Json
+  confidence        Float
+  usageCount        Int       @default(0)
+  lastUsed          DateTime?
+  successRate       Float     @default(1.0)
+  createdBy         String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  broker            Broker    @relation(fields: [brokerId], references: [id], onDelete: Cascade)
+  aiIngestChecks    AiIngestToCheck[]
+
+  @@unique([brokerId, headerFingerprint])
+  @@index([headerFingerprint])
+  @@index([brokerId])
+  @@index([brokerId, usageCount])
+  @@map("broker_csv_formats")
+}
+
+model SyncRateLimit {
+  id              String    @id @default(cuid())
+  userId          String
+  date            DateTime  @db.Date
+  manualSyncCount Int       @default(0)
+  lastSyncAt      DateTime?
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@map("sync_rate_limits")
+}
+
+model ApiUsage {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String   @map("user_id")
+  apiProvider        String   @default("polygon") @map("api_provider") @db.VarChar(50)
+  endpoint           String   @db.VarChar(255)
+  method             String   @default("GET") @db.VarChar(10)
+  requestParams      Json?    @map("request_params")
+  responseStatusCode Int?     @map("response_status_code")
+  responseTimeMs     Int?     @map("response_time_ms")
+  responseSizeBytes  Int?     @map("response_size_bytes")
+  timestamp          DateTime @default(now()) @db.Timestamptz(6)
+  countedForLimit    Boolean  @default(true) @map("counted_for_limit")
+  subscriptionTier   String?  @map("subscription_tier") @db.VarChar(50)
+  errorMessage       String?  @map("error_message")
+  apiCreditsUsed     Int      @default(1) @map("api_credits_used")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  isError            Boolean? @default(dbgenerated("(response_status_code >= 400)")) @map("is_error")
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp(sort: Desc)], map: "idx_api_usage_rate_limit")
+  @@index([userId, timestamp(sort: Desc), apiProvider, countedForLimit], map: "idx_api_usage_user_window")
+  @@index([userId, endpoint, timestamp(sort: Desc)], map: "idx_api_usage_endpoint_analytics")
+  @@index([userId, timestamp(sort: Desc)], map: "idx_api_usage_errors")
+  @@index([apiProvider, userId, timestamp(sort: Desc)], map: "idx_api_usage_provider")
+  @@map("api_usage")
+}
+
+model AiIngestToCheck {
+  id                 String            @id @default(cuid())
+  userId             String
+  brokerCsvFormatId  String
+  csvUploadLogId     String            @unique
+  importBatchId      String            @unique
+  processingStatus   ProcessingStatus  @default(PENDING)
+  orderIds           String[]          @default([])
+  processedAt        DateTime?
+  processingError    String?
+  processingTimeMs   Int?
+  userIndicatedError Boolean           @default(false)
+  userReviewedAt     DateTime?
+  adminReviewStatus  AdminReviewStatus @default(PENDING)
+  adminNotes         String?
+  adminReviewedAt    DateTime?
+  adminReviewedBy    String?
+  aiConfidence       Float             @db.Real
+  mappingAccuracy    Float?            @db.Real
+  dataQualityScore   Float?            @db.Real
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  // Relations
+  user              User              @relation("UserAiIngestChecks", fields: [userId], references: [id], onDelete: Cascade)
+  brokerCsvFormat   BrokerCsvFormat   @relation(fields: [brokerCsvFormatId], references: [id])
+  csvUploadLog      CsvUploadLog      @relation(fields: [csvUploadLogId], references: [id])
+  importBatch       ImportBatch       @relation(fields: [importBatchId], references: [id])
+  adminReviewer     User?             @relation("AdminReviews", fields: [adminReviewedBy], references: [id])
+  feedbackItems     AiIngestFeedbackItem[]
+
+  @@index([adminReviewStatus, createdAt], map: "idx_ai_ingest_checks_admin_queue")
+  @@index([brokerCsvFormatId], map: "idx_ai_ingest_checks_broker_format")
+  @@index([aiConfidence], map: "idx_ai_ingest_checks_confidence")
+  @@index([userIndicatedError, adminReviewStatus], map: "idx_ai_ingest_checks_priority")
+  @@index([userId, userIndicatedError, createdAt(sort: Desc)], map: "idx_ai_ingest_checks_user_flagged")
+  @@index([userId, createdAt(sort: Desc)], map: "idx_ai_ingest_checks_user_recent")
+  @@map("ai_ingest_checks")
+}
+
+model AiIngestFeedbackItem {
+  id               String    @id @default(cuid())
+  aiIngestCheckId  String
+  csvHeader        String    @db.VarChar(255)
+  aiMapping        String    @db.VarChar(255)
+  suggestedMapping String?   @db.VarChar(255)
+  issueType        String?
+  comment          String?
+  confidence       Float?    @db.Real
+  isCorrect        Boolean?
+  correctedBy      String?
+  correctedAt      DateTime?
+  originalValue    String?
+  createdAt        DateTime  @default(now())
+  aiIngestCheck    AiIngestToCheck @relation(fields: [aiIngestCheckId], references: [id], onDelete: Cascade)
+
+  @@index([aiIngestCheckId], map: "idx_ai_ingest_feedback_items_check")
+  @@map("ai_ingest_feedback_items")
+}
+
+model DailyUploadCount {
+  id     String   @id @default(dbgenerated("(gen_random_uuid())::text"))
+  userId String
+  date   DateTime @db.Date
+  count  Int?     @default(0)
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date], map: "unique_user_date")
+  @@index([userId, date], map: "idx_daily_upload_counts")
+  @@map("daily_upload_counts")
+}
+
+model day_data {
+  id          String   @id
+  userId      String
+  date        DateTime
+  pnl         Float
+  trades      Int
+  volume      Int
+  winRate     Float?
+  commissions Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
 enum SubscriptionTier {
   FREE
   PREMIUM
-  
+
   @@map("subscription_tier")
 }
 
@@ -390,7 +543,7 @@ enum SubscriptionStatus {
   CANCELED
   UNPAID
   TRIALING
-  
+
   @@map("subscription_status")
 }
 
@@ -400,7 +553,7 @@ enum PaymentStatus {
   FAILED
   CANCELED
   REFUNDED
-  
+
   @@map("payment_status")
 }
 
@@ -414,29 +567,29 @@ enum AssetClass {
   ETF
   MUTUAL_FUND
   COMMODITY
-  
+
   @@map("asset_class")
 }
 
 enum TradeSide {
-  LONG   // Long position
-  SHORT  // Short position
-  
+  LONG
+  SHORT
+
   @@map("trade_side")
 }
 
 enum TradeStatus {
   OPEN
   CLOSED
-  BLANK    // For empty records entries with notes only
-  
+  BLANK
+
   @@map("trade_status")
 }
 
 enum OrderSide {
   BUY
   SELL
-  
+
   @@map("order_side")
 }
 
@@ -446,7 +599,7 @@ enum TradeSource {
   API
   IMPORTED
   COPY_TRADING
-  
+
   @@map("trade_source")
 }
 
@@ -459,17 +612,17 @@ enum OrderType {
   MARKET_ON_CLOSE
   LIMIT_ON_CLOSE
   PEGGED_TO_MIDPOINT
-  
+
   @@map("order_type")
 }
 
 enum TimeInForce {
   DAY
-  GTC      // Good Till Cancelled
-  IOC      // Immediate or Cancel
-  FOK      // Fill or Kill
-  GTD      // Good Till Date
-  
+  GTC
+  IOC
+  FOK
+  GTD
+
   @@map("time_in_force")
 }
 
@@ -477,7 +630,7 @@ enum LiquidityFlag {
   MAKER
   TAKER
   UNKNOWN
-  
+
   @@map("liquidity_flag")
 }
 
@@ -486,17 +639,17 @@ enum MarketSession {
   REGULAR
   AFTER_HOURS
   EXTENDED
-  
+
   @@map("market_session")
 }
 
 enum HoldingPeriod {
-  SCALP       // < 5 minutes
-  INTRADAY    // Same day
-  SWING       // 1-7 days
-  POSITION    // 1-4 weeks
-  LONG_TERM   // > 1 month
-  
+  SCALP
+  INTRADAY
+  SWING
+  POSITION
+  LONG_TERM
+
   @@map("holding_period")
 }
 
@@ -507,7 +660,7 @@ enum OrderStatus {
   CANCELLED
   REJECTED
   EXPIRED
-  
+
   @@map("order_status")
 }
 
@@ -519,7 +672,7 @@ enum BrokerType {
   FIDELITY
   ROBINHOOD
   GENERIC_CSV
-  
+
   @@map("broker_type")
 }
 
@@ -528,14 +681,14 @@ enum ImportStatus {
   PROCESSING
   COMPLETED
   FAILED
-  
+
   @@map("import_status")
 }
 
 enum ImportType {
   STANDARD
   CUSTOM
-  
+
   @@map("import_type")
 }
 
@@ -546,7 +699,7 @@ enum UploadStatus {
   VALIDATED
   IMPORTED
   FAILED
-  
+
   @@map("upload_status")
 }
 
@@ -554,32 +707,8 @@ enum ParseMethod {
   STANDARD
   AI_MAPPED
   USER_CORRECTED
-  
-  @@map("parse_method")
-}
 
-// Account Deletion Management
-model AccountDeletionLog {
-  id              String           @id @default(cuid())
-  userId          String
-  userEmail       String
-  action          DeletionAction
-  performedBy     String           // User ID who performed the action
-  reason          String?
-  details         Json?            // Additional metadata (IP, user agent, etc.)
-  scheduledFor    DateTime?        // When action is scheduled to happen
-  completedAt     DateTime?        // When action was actually completed
-  
-  // Metadata
-  createdAt       DateTime         @default(now())
-  
-  // Relations
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@index([userId])
-  @@index([action])
-  @@index([createdAt])
-  @@map("account_deletion_logs")
+  @@map("parse_method")
 }
 
 enum DeletionAction {
@@ -588,161 +717,30 @@ enum DeletionAction {
   SOFT_DELETED
   HARD_DELETED
   EXPIRED
-  
+
   @@map("deletion_action")
 }
-
-// Trade Sharing Management
-model SharedTrade {
-  id            String    @id @default(cuid())
-  shareKey      String    @unique // Random key for URL access
-  userId        String    // Creator of the share
-  tradeSnapshot Json      // Frozen trade data at time of sharing
-  orderSnapshot Json      // Frozen order/execution data at time of sharing
-  metadata      Json?     // Additional metadata (original trade ID, etc.)
-  expiresAt     DateTime  // 14 days from creation
-  accessCount   Int       @default(0) // Track how many times it's been accessed
-  
-  // Metadata
-  createdAt     DateTime  @default(now())
-  
-  // Relations
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@index([shareKey])
-  @@index([userId, expiresAt])
-  @@index([expiresAt]) // For cleanup jobs
-  @@map("shared_trades")
-}
-
 
 enum ImportSource {
   CSV
   SNAPTRADE_API
   MANUAL
-  
+
   @@map("import_source")
 }
 
 enum DatePrecision {
   DAILY
   MILLISECOND
-  
+
   @@map("date_precision")
-}
-
-// SnapTrade sync tracking
-model SnapTradeSync {
-  id              String     @id @default(cuid())
-  userId          String
-  connectionId    String
-  syncType        SyncType   @default(MANUAL)
-  status          SyncStatus @default(PENDING)
-  startedAt       DateTime   @default(now())
-  completedAt     DateTime?
-  activitiesFound Int        @default(0)
-  ordersCreated   Int        @default(0)
-  errors          Json?
-  
-  // Relations
-  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@index([userId, connectionId])
-  @@index([userId, startedAt])
-  @@index([status])
-  @@map("snaptrade_syncs")
-}
-
-// Broker Management for CSV Format Detection
-model Broker {
-  id          String   @id @default(cuid())
-  name        String   @unique  // Primary broker name (e.g., "Interactive Brokers")
-  website     String?  // Broker website URL
-  
-  // Relations
-  aliases     BrokerAlias[]     // Alternative names for this broker
-  csvFormats  BrokerCsvFormat[] // CSV formats used by this broker
-  
-  // Metadata
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  @@index([name])
-  @@map("brokers")
-}
-
-// Alternative names for brokers (e.g., "IBKR" -> "Interactive Brokers")
-model BrokerAlias {
-  id        String @id @default(cuid())
-  brokerId  String
-  alias     String @unique  // Alternative name (e.g., "IBKR", "TOS", "Schwab")
-  
-  // Relations
-  broker    Broker @relation(fields: [brokerId], references: [id], onDelete: Cascade)
-  
-  @@index([alias])     // Fast lookup by alias
-  @@index([brokerId])  // Fast lookup by broker
-  @@map("broker_aliases")
-}
-
-// CSV formats for each broker - stores learned mappings
-model BrokerCsvFormat {
-  id                String   @id @default(cuid())
-  brokerId          String
-  formatName        String   // User-friendly name (e.g., "Interactive Brokers Flex Query")
-  description       String?  // Optional description of the format
-  
-  // Header identification
-  headerFingerprint String   // Hash of sorted headers for quick matching
-  headers           String[] // Original CSV headers from the file
-  sampleData        Json?    // Sample row data for context
-  
-  // Mapping configuration
-  fieldMappings     Json     // Header -> Order field mappings with confidence scores
-  confidence        Float    // Overall format confidence (0.0-1.0)
-  
-  // Usage tracking
-  usageCount        Int      @default(0)  // How many times this format has been used
-  lastUsed          DateTime?             // When this format was last used
-  successRate       Float    @default(1.0) // Success rate for this format
-  
-  // Metadata
-  createdBy         String?  // User ID who created/verified this format
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
-  // Relations
-  broker            Broker   @relation(fields: [brokerId], references: [id], onDelete: Cascade)
-  aiIngestChecks    AiIngestToCheck[]
-  
-  @@unique([brokerId, headerFingerprint])  // Prevent duplicate formats per broker
-  @@index([headerFingerprint])            // Fast format matching
-  @@index([brokerId])                     // Fast broker lookup
-  @@index([brokerId, usageCount])         // Popular formats for broker
-  @@map("broker_csv_formats")
-}
-
-// Daily sync rate limiting
-model SyncRateLimit {
-  id              String   @id @default(cuid())
-  userId          String
-  date            DateTime @db.Date
-  manualSyncCount Int      @default(0)
-  lastSyncAt      DateTime?
-  
-  // Relations
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@unique([userId, date])
-  @@index([userId, date])
-  @@map("sync_rate_limits")
 }
 
 enum SyncType {
   MANUAL
   AUTOMATIC
   WEBHOOK
-  
+
   @@map("sync_type")
 }
 
@@ -751,156 +749,17 @@ enum SyncStatus {
   RUNNING
   COMPLETED
   FAILED
-  
+
   @@map("sync_status")
 }
 
-// API Usage Tracking for Rate Limiting and Analytics
-model ApiUsage {
-  id              String   @id @default(uuid()) @db.Uuid
-  userId          String   @map("user_id")
-  
-  // API Call Details
-  apiProvider     String   @default("polygon") @map("api_provider") @db.VarChar(50)
-  endpoint        String   @db.VarChar(255)
-  method          String   @default("GET") @db.VarChar(10)
-  
-  // Request/Response Metadata
-  requestParams   Json?    @map("request_params") @db.JsonB
-  responseStatusCode Int?  @map("response_status_code")
-  responseTimeMs  Int?     @map("response_time_ms")
-  responseSizeBytes Int?   @map("response_size_bytes")
-  
-  // Rate Limiting & Tracking
-  timestamp       DateTime @default(now()) @db.Timestamptz
-  countedForLimit Boolean  @default(true) @map("counted_for_limit")
-  subscriptionTier String? @map("subscription_tier") @db.VarChar(50)
-  
-  // Error Tracking
-  errorMessage    String?  @map("error_message") @db.Text
-  isError         Boolean? @map("is_error") // Generated column in SQL
-  
-  // Cost & Credits
-  apiCreditsUsed  Int      @default(1) @map("api_credits_used")
-  
-  // Metadata
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
-  
-  // Relations
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Indexes for performance
-  @@index([userId, timestamp(sort: Desc)], map: "idx_api_usage_rate_limit")
-  @@index([userId, timestamp(sort: Desc), apiProvider, countedForLimit], map: "idx_api_usage_user_window")
-  @@index([userId, endpoint, timestamp(sort: Desc)], map: "idx_api_usage_endpoint_analytics")
-  @@index([userId, timestamp(sort: Desc)], map: "idx_api_usage_errors")
-  @@index([apiProvider, userId, timestamp(sort: Desc)], map: "idx_api_usage_provider")
-  
-  @@map("api_usage")
-}
-
-// AI Ingestion Tracking for Admin Review and User Feedback
-model AiIngestToCheck {
-  id                String   @id @default(cuid())
-  userId            String
-  brokerCsvFormatId String
-  csvUploadLogId    String   @unique
-  importBatchId     String   @unique
-  
-  // Processing tracking
-  processingStatus  ProcessingStatus @default(PENDING)
-  orderIds          String[] @default([])
-  processedAt       DateTime?
-  processingError   String?  @db.Text
-  processingTimeMs  Int?
-  
-  // User feedback
-  userIndicatedError Boolean @default(false)
-  userReviewedAt    DateTime?
-  
-  // Admin review
-  adminReviewStatus AdminReviewStatus @default(PENDING)
-  adminNotes        String?  @db.Text
-  adminReviewedAt   DateTime?
-  adminReviewedBy   String?
-  
-  // Quality metrics
-  aiConfidence      Float    @db.Real
-  mappingAccuracy   Float?   @db.Real
-  dataQualityScore  Float?   @db.Real
-  
-  // Metadata
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
-  // Relations
-  user              User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  brokerCsvFormat   BrokerCsvFormat @relation(fields: [brokerCsvFormatId], references: [id])
-  csvUploadLog      CsvUploadLog @relation(fields: [csvUploadLogId], references: [id])
-  importBatch       ImportBatch @relation(fields: [importBatchId], references: [id])
-  adminReviewer     User? @relation("AdminReviews", fields: [adminReviewedBy], references: [id])
-  feedbackItems     AiIngestFeedbackItem[]
-  
-  // Optimized indexes for common queries
-  @@index([userId, userIndicatedError, createdAt(sort: Desc)])  // User-flagged issues
-  @@index([adminReviewStatus, createdAt])                      // Admin review queue
-  @@index([userId, createdAt(sort: Desc)])                     // User's recent uploads
-  @@index([aiConfidence])                                      // Low confidence checks
-  @@index([userIndicatedError, adminReviewStatus])             // Priority review queue
-  @@index([brokerCsvFormatId])                                 // Broker format analysis
-  
-  @@map("ai_ingest_checks")
-}
-
-// Structured feedback items from users
-model AiIngestFeedbackItem {
-  id                String   @id @default(cuid())
-  aiIngestCheckId   String
-  csvHeader         String   @db.VarChar(255)
-  aiMapping         String   @db.VarChar(255)
-  suggestedMapping  String?  @db.VarChar(255)
-  issueType         String?  // 'WRONG_FIELD', 'LOW_CONFIDENCE', 'MISSING_MAPPING', 'OTHER'
-  comment           String?  @db.Text
-  confidence        Float?   @db.Real
-  
-  // Audit fields for admin review
-  isCorrect         Boolean? // Admin marks if feedback was correct
-  correctedBy       String?
-  correctedAt       DateTime?
-  originalValue     String?  // Store original AI suggestion for comparison
-  
-  createdAt         DateTime @default(now())
-  
-  // Relations
-  aiIngestCheck     AiIngestToCheck @relation(fields: [aiIngestCheckId], references: [id], onDelete: Cascade)
-  
-  @@index([aiIngestCheckId])
-  @@map("ai_ingest_feedback_items")
-}
-
-// Daily upload tracking for subscription-based rate limiting
-model DailyUploadCount {
-  id        String   @id @default(cuid())
-  userId    String
-  date      DateTime @db.Date
-  count     Int      @default(0)
-  
-  // Relations
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@unique([userId, date])
-  @@index([userId, date])
-  @@map("daily_upload_counts")
-}
-
-// Enums for AI ingestion tracking
 enum ProcessingStatus {
   PENDING
   PROCESSING
   COMPLETED
   FAILED
   RETRY_NEEDED
-  
+
   @@map("processing_status")
 }
 
@@ -911,7 +770,6 @@ enum AdminReviewStatus {
   CORRECTED
   DISMISSED
   ESCALATED
-  
+
   @@map("admin_review_status")
 }
-
