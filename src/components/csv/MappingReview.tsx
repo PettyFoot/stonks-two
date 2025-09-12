@@ -94,6 +94,7 @@ export default function MappingReview({
   const [correctedMappings, setCorrectedMappings] = useState<CorrectedMapping>({});
   const [showSampleData, setShowSampleData] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   console.log('🔍 MappingReview component loaded');
   console.log('📊 AI Result:', aiResult);
@@ -148,8 +149,6 @@ export default function MappingReview({
       return newMappings;
     });
   };
-
-  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleReportError = async () => {
     console.log('❌ User reported error with AI mappings');
