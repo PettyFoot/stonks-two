@@ -45,6 +45,7 @@ export interface CsvIngestionResult {
   requiresBrokerSelection: boolean;
   backgroundJobId?: string;
   brokerFormatUsed?: string; // Name of broker format that was used
+  aiIngestCheckId?: string; // ID of AI ingestion check for user review
 }
 
 // CSV validation result
@@ -366,14 +367,14 @@ export class CsvIngestionService {
         brokerDetection,
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         isValid: false,
         isStandardFormat: false,
         headers: [],
         sampleRows: [],
         rowCount: 0,
-        errors: [`Failed to parse CSV: ${error instanceof Error ? error.message : 'Unknown error'}`],
+        errors: [`Failed to parse CSV: ${(error as any) instanceof Error ? (error as Error).message : 'Unknown error'}`],
         fileSize,
       };
     }
@@ -526,9 +527,9 @@ export class CsvIngestionService {
           validation.detectedFormat
         );
       }
-    } catch (error) {
+    } catch (error: unknown) {
       // Update upload log with error
-      await this.updateUploadLog(uploadLog.id, 'FAILED', undefined, error instanceof Error ? error.message : 'Unknown error');
+      await this.updateUploadLog(uploadLog.id, 'FAILED', undefined, (error as any) instanceof Error ? (error as Error).message : 'Unknown error');
       throw error;
     }
   }
@@ -647,9 +648,9 @@ export class CsvIngestionService {
         });
 
         successCount++;
-      } catch (error) {
+      } catch (error: unknown) {
         errorCount++;
-        const errorMessage = `Row ${i + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        const errorMessage = `Row ${i + 1}: ${(error as any) instanceof Error ? (error as Error).message : 'Unknown error'}`;
         errors.push(errorMessage);
       }
     }
@@ -678,7 +679,7 @@ export class CsvIngestionService {
         const tradeBuilder = new TradeBuilder();
         await tradeBuilder.processUserOrders(userId);
         await tradeBuilder.persistTrades(userId);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Trade calculation error:', error);
         // Don't fail the import if trade calculation fails
       }
@@ -765,9 +766,9 @@ export class CsvIngestionService {
         });
 
         successCount++;
-      } catch (error) {
+      } catch (error: unknown) {
         errorCount++;
-        const errorMessage = `Row ${i + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        const errorMessage = `Row ${i + 1}: ${(error as any) instanceof Error ? (error as Error).message : 'Unknown error'}`;
         errors.push(errorMessage);
       }
     }
@@ -793,7 +794,7 @@ export class CsvIngestionService {
         const tradeBuilder = new TradeBuilder();
         await tradeBuilder.processUserOrders(userId);
         await tradeBuilder.persistTrades(userId);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Trade calculation error:', error);
         // Don't fail the import if trade calculation fails
       }
@@ -901,9 +902,9 @@ export class CsvIngestionService {
         });
 
         successCount++;
-      } catch (error) {
+      } catch (error: unknown) {
         errorCount++;
-        const errorMessage = `Row ${i + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        const errorMessage = `Row ${i + 1}: ${(error as any) instanceof Error ? (error as Error).message : 'Unknown error'}`;
         errors.push(errorMessage);
       }
     }
@@ -929,7 +930,7 @@ export class CsvIngestionService {
         const tradeBuilder = new TradeBuilder();
         await tradeBuilder.processUserOrders(userId);
         await tradeBuilder.persistTrades(userId);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Trade calculation error:', error);
         // Don't fail the import if trade calculation fails
       }
@@ -1008,22 +1009,39 @@ export class CsvIngestionService {
     // Create AiIngestToCheck record if using AI mapping (not user mappings)
     let aiIngestCheck: any = null;
     if (!userMappings) {
+      // Find or create a generic broker for unknown formats
+      let genericBroker = await prisma.broker.findUnique({
+        where: { name: 'Unknown' }
+      });
+      
+      if (!genericBroker) {
+        genericBroker = await prisma.broker.create({
+          data: { name: 'Unknown' }
+        });
+      }
+
+      // Generate header fingerprint
+      const openAiService = new OpenAiMappingService();
+      const headerFingerprint = openAiService.generateHeaderFingerprint(headers);
+
       // Create or find broker CSV format for this new mapping
       let brokerCsvFormat = await prisma.brokerCsvFormat.findFirst({
         where: {
-          formatName: `Generic_AI_${Date.now()}`,
+          brokerId: genericBroker.id,
+          headerFingerprint: headerFingerprint
         }
       });
 
       if (!brokerCsvFormat) {
         brokerCsvFormat = await prisma.brokerCsvFormat.create({
           data: {
+            brokerId: genericBroker.id,
             formatName: `Generic_AI_${Date.now()}`,
             description: `AI-generated mapping for ${fileName}`,
-            sampleHeaders: headers,
+            headerFingerprint: headerFingerprint,
+            headers: headers,
             fieldMappings: mappingResult.mappings as unknown as Prisma.InputJsonValue,
-            confidence: mappingResult.overallConfidence,
-            isActive: false, // Don't make active until user approves
+            confidence: mappingResult.overallConfidence
           }
         });
       }
@@ -1037,6 +1055,7 @@ export class CsvIngestionService {
           importBatchId: importBatch.id,
           processingStatus: 'PENDING',
           userIndicatedError: false,
+          aiConfidence: mappingResult.overallConfidence,
         }
       });
     }
@@ -1067,7 +1086,7 @@ export class CsvIngestionService {
     // Include detected format info in the mapping result if available
     if (detectedFormat && !userMappings) {
       mappingResult.detectedFormat = detectedFormat as unknown as Record<string, unknown>;
-      mappingResult.formatConfidence = detectedFormat.confidence;
+      mappingResult.formatConfidence = detectedFormat!.confidence;
     }
 
     // Process with mappings
@@ -1077,8 +1096,8 @@ export class CsvIngestionService {
 
     try {
       // Check if this is an order format (has orderId field mapping)
-      const isOrderFormat = mappingResult.mappings.some(m => 'tradeVoyagerField' in m && m.tradeVoyagerField === 'orderId');
-      const brokerType = detectedFormat ? this.getBrokerTypeFromFormat(detectedFormat) : BrokerType.GENERIC_CSV;
+      const isOrderFormat = mappingResult.mappings.some(m => 'tradeVoyagerField' in m && (m as any).tradeVoyagerField === 'orderId');
+      const brokerType = detectedFormat ? this.getBrokerTypeFromFormat(detectedFormat!) : BrokerType.GENERIC_CSV;
       
       if (isOrderFormat) {
         // Process as orders
@@ -1091,8 +1110,8 @@ export class CsvIngestionService {
             // Apply mappings with first-match-wins logic
             for (const mapping of mappingResult.mappings) {
               if ('csvColumn' in mapping && 'tradeVoyagerField' in mapping) {
-                const targetField = mapping.tradeVoyagerField as string;
-                const csvColumn = mapping.csvColumn as string;
+                const targetField = (mapping as any).tradeVoyagerField as string;
+                const csvColumn = (mapping as any).csvColumn as string;
                 
                 // Check if target field already mapped (first-match-wins)
                 if (mappedFields.has(targetField)) {
@@ -1159,9 +1178,10 @@ export class CsvIngestionService {
             });
             
             successCount++;
-          } catch (error) {
+          } catch (error: unknown) {
             errorCount++;
-            errors.push(`Row ${index + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            const errorMessage = (error as any) instanceof Error ? (error as Error).message : 'Unknown error';
+            errors.push(`Row ${index + 1}: ${errorMessage}`);
           }
         }
       } else {
@@ -1191,14 +1211,16 @@ export class CsvIngestionService {
             });
 
             successCount++;
-          } catch (error) {
+          } catch (error: unknown) {
             errorCount++;
-            errors.push(`Row ${index + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            const errorMessage = (error as any) instanceof Error ? (error as Error).message : 'Unknown error';
+            errors.push(`Row ${index + 1}: ${errorMessage}`);
           }
         }
       }
-    } catch (error) {
-      errors.push(`Mapping application failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } catch (error: unknown) {
+      const errorMessage = (error as any) instanceof Error ? (error as Error).message : 'Unknown error';
+      errors.push(`Mapping application failed: ${errorMessage}`);
       errorCount = records.length;
     }
 
@@ -1224,7 +1246,7 @@ export class CsvIngestionService {
         const tradeBuilder = new TradeBuilder();
         await tradeBuilder.processUserOrders(userId);
         await tradeBuilder.persistTrades(userId);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Trade calculation error:', error);
         // Don't fail the import if trade calculation fails
       }
@@ -1424,7 +1446,7 @@ export class CsvIngestionService {
           const orderExecutedTime = this.getOrderExecutedTime(mappedData, aiResult.mappings);
           const symbol = String(mappedData.symbol || '');
           const orderQuantity = Number(mappedData.orderQuantity) || 0;
-          const brokerType = this.getBrokerTypeFromName(brokerName);
+          const brokerType = BrokerType.GENERIC_CSV;
 
           // Check for duplicate
           if (await this.isDuplicateOrder(userId, importBatch.id, symbol, orderQuantity, orderExecutedTime, brokerType)) {
@@ -1459,13 +1481,13 @@ export class CsvIngestionService {
           });
           
           successCount++;
-        } catch (error) {
+        } catch (error: unknown) {
           errorCount++;
-          errors.push(`Row ${index + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          errors.push(`Row ${index + 1}: ${(error as any) instanceof Error ? (error as Error).message : 'Unknown error'}`);
         }
       }
-    } catch (error) {
-      errors.push(`OpenAI mapping application failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } catch (error: unknown) {
+      errors.push(`OpenAI mapping application failed: ${(error as any) instanceof Error ? (error as Error).message : 'Unknown error'}`);
       errorCount = records.length;
     }
 
@@ -1493,7 +1515,7 @@ export class CsvIngestionService {
         const tradeBuilder = new TradeBuilder();
         await tradeBuilder.processUserOrders(userId);
         await tradeBuilder.persistTrades(userId);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Trade calculation error:', error);
         // Don't fail the import if trade calculation fails
       }
@@ -1671,7 +1693,7 @@ export class CsvIngestionService {
         if (mapping.transformer && DATA_TRANSFORMERS[mapping.transformer as keyof typeof DATA_TRANSFORMERS]) {
           try {
             transformedValue = DATA_TRANSFORMERS[mapping.transformer as keyof typeof DATA_TRANSFORMERS](String(value)) || value;
-          } catch (error) {
+          } catch (error: unknown) {
             console.warn(`Transformer ${mapping.transformer} failed for value ${value}:`, error);
             transformedValue = value;
           }
@@ -1893,9 +1915,9 @@ export class CsvIngestionService {
         });
 
         successCount++;
-      } catch (error) {
+      } catch (error: unknown) {
         errorCount++;
-        errors.push(`Filled order ${index + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        errors.push(`Filled order ${index + 1}: ${(error as any) instanceof Error ? (error as Error).message : 'Unknown error'}`);
       }
     }
 
@@ -1923,9 +1945,9 @@ export class CsvIngestionService {
         });
 
         successCount++;
-      } catch (error) {
+      } catch (error: unknown) {
         errorCount++;
-        errors.push(`Working order ${index + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        errors.push(`Working order ${index + 1}: ${(error as any) instanceof Error ? (error as Error).message : 'Unknown error'}`);
       }
     }
 
@@ -1956,9 +1978,9 @@ export class CsvIngestionService {
 
           successCount++;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         errorCount++;
-        errors.push(`Cancelled order ${index + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        errors.push(`Cancelled order ${index + 1}: ${(error as any) instanceof Error ? (error as Error).message : 'Unknown error'}`);
       }
     }
 

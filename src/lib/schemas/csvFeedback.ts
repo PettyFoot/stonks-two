@@ -44,7 +44,7 @@ export const UserFeedbackItemSchema = z.object({
     .min(1, 'AI mapping cannot be empty')
     .max(255, 'AI mapping too long'),
   
-  suggestedMapping: z.enum(ORDER_FIELDS as [string, ...string[]])
+  suggestedMapping: z.enum(ORDER_FIELDS as unknown as [string, ...string[]])
     .optional(),
   
   issueType: z.enum([
@@ -123,7 +123,7 @@ export const AdminReviewUpdateSchema = z.object({
 export const MappingCorrectionSchema = z.object({
   feedbackItemId: z.string().cuid(),
   
-  correctedMapping: z.enum(ORDER_FIELDS as [string, ...string[]])
+  correctedMapping: z.enum(ORDER_FIELDS as unknown as [string, ...string[]])
     .describe('The correct field mapping'),
     
   applyToFutureUploads: z.boolean()
