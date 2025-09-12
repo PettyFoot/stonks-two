@@ -17,6 +17,8 @@ import {
   type CsvFormat, 
   DATA_TRANSFORMERS 
 } from '@/lib/csvFormatRegistry';
+import { BrokerFormatService, type FormatDetectionResult } from '@/lib/brokerFormatService';
+import { OpenAiMappingService, type OpenAiMappingResult } from '@/lib/ai/openAiMappingService';
 import { TradeBuilder } from '@/lib/tradeBuilder';
 
 export type CustomCsvRow = Record<string, string>;
@@ -38,8 +40,11 @@ export interface CsvIngestionResult {
   errorCount: number;
   errors: string[];
   aiMappingResult?: AiMappingResult;
+  openAiMappingResult?: OpenAiMappingResult;
   requiresUserReview: boolean;
+  requiresBrokerSelection: boolean;
   backgroundJobId?: string;
+  brokerFormatUsed?: string; // Name of broker format that was used
 }
 
 // CSV validation result
@@ -54,6 +59,7 @@ export interface CsvValidationResult {
   detectedFormat?: CsvFormat;
   formatConfidence?: number;
   formatReasoning?: string[];
+  brokerDetection?: FormatDetectionResult;
 }
 
 // Schwab order data structure
@@ -102,12 +108,87 @@ interface NormalizedOrder {
 export class CsvIngestionService {
   private aiMapper: CsvAiMapper;
   private formatDetector: CsvFormatDetector;
+  private brokerFormatService: BrokerFormatService;
+  private openAiService: OpenAiMappingService;
 
   constructor() {
     // Initialize AI mapper with API key from environment
     const aiApiKey = process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || '';
     this.aiMapper = new CsvAiMapper(aiApiKey);
     this.formatDetector = new CsvFormatDetector();
+    this.brokerFormatService = new BrokerFormatService();
+    this.openAiService = new OpenAiMappingService();
+  }
+
+  /**
+   * Helper method to determine appropriate orderExecutedTime based on whether we have a specific execution time mapping
+   */
+  private getOrderExecutedTime(mappedData: Record<string, unknown>, mappings?: Record<string, any> | ColumnMapping[]): Date {
+    // If we have a specific orderExecutedTime from mapping, use it
+    if (mappedData.orderExecutedTime) {
+      return new Date(String(mappedData.orderExecutedTime));
+    }
+
+    // Check if any of the original headers contained execution-specific terms
+    let hasExecutionTimeMapping = false;
+    if (mappings) {
+      if (Array.isArray(mappings)) {
+        // ColumnMapping[] format
+        hasExecutionTimeMapping = mappings.some((mapping: any) => 
+          mapping.tradeVoyagerField === 'orderExecutedTime' && this.isExecutionSpecificHeader(mapping.csvColumn)
+        );
+      } else {
+        // Record<string, mapping> format (OpenAI mappings)
+        hasExecutionTimeMapping = Object.entries(mappings).some(([csvHeader, mapping]) => 
+          mapping.field === 'orderExecutedTime' && this.isExecutionSpecificHeader(csvHeader)
+        );
+      }
+    }
+
+    // If we don't have execution-specific mapping, use orderPlacedTime for orderExecutedTime
+    if (!hasExecutionTimeMapping && mappedData.orderPlacedTime) {
+      return new Date(String(mappedData.orderPlacedTime));
+    }
+
+    // Fallback to current time if no placed time either
+    return mappedData.orderPlacedTime ? new Date(String(mappedData.orderPlacedTime)) : new Date();
+  }
+
+  /**
+   * Check if a header name contains execution-specific terms
+   */
+  private isExecutionSpecificHeader(headerName: string): boolean {
+    const header = headerName.toLowerCase();
+    const executionTerms = ['exec', 'execution', 'fill', 'filled', 'trade'];
+    const timeTerms = ['time', 'date'];
+    
+    return executionTerms.some(execTerm => header.includes(execTerm)) && 
+           timeTerms.some(timeTerm => header.includes(timeTerm));
+  }
+
+  /**
+   * Check for duplicate orders before creating a new one
+   */
+  private async isDuplicateOrder(
+    userId: string,
+    importBatchId: string,
+    symbol: string,
+    orderQuantity: number,
+    orderExecutedTime: Date,
+    brokerType: string
+  ): Promise<boolean> {
+    const existingOrder = await prisma.order.findFirst({
+      where: {
+        userId,
+        importBatchId,
+        symbol,
+        orderQuantity,
+        orderExecutedTime,
+        brokerType: brokerType as BrokerType,
+      }
+    });
+
+    return !!existingOrder;
   }
 
   // Validate and clean mappings to prevent conflicts
@@ -157,6 +238,31 @@ export class CsvIngestionService {
     };
   }
 
+  /**
+   * Enhanced validation that includes broker format detection
+   */
+  async validateCsvFileWithBrokerDetection(fileContent: string): Promise<CsvValidationResult & {
+    brokerDetection?: FormatDetectionResult;
+    requiresBrokerSelection?: boolean;
+  }> {
+    const baseValidation = await this.validateCsvFile(fileContent);
+    
+    if (!baseValidation.isValid) {
+      return baseValidation;
+    }
+
+    // Try to detect broker format from database
+    const brokerDetection = await this.brokerFormatService.detectFormat(baseValidation.headers);
+    
+    const result = {
+      ...baseValidation,
+      brokerDetection,
+      requiresBrokerSelection: !brokerDetection.isExactMatch && brokerDetection.confidence < 0.8
+    };
+
+    return result;
+  }
+
   async validateCsvFile(fileContent: string): Promise<CsvValidationResult> {
     const fileSize = Buffer.byteLength(fileContent, 'utf8');
     
@@ -196,6 +302,9 @@ export class CsvIngestionService {
         const detector = new CsvFormatDetector();
         const formatDetection = detector.detectFormat(headers, sampleRows, fileContent);
         
+        // Also try broker format detection from database
+        const brokerDetection = await this.brokerFormatService.detectFormat(headers);
+        
         return {
           isValid: true,
           isStandardFormat: false,
@@ -207,6 +316,7 @@ export class CsvIngestionService {
           detectedFormat: formatDetection.format || undefined,
           formatConfidence: formatDetection.confidence,
           formatReasoning: formatDetection.reasoning,
+          brokerDetection,
         };
       }
       
@@ -236,6 +346,9 @@ export class CsvIngestionService {
       // Try automatic format detection first
       const formatDetection = this.formatDetector.detectFormat(headers, sampleRows, fileContent);
       
+      // Also try broker format detection from database
+      const brokerDetection = await this.brokerFormatService.detectFormat(headers);
+      
       // Check if it's standard format
       const isStandardFormat = this.isStandardCsvFormat(headers);
 
@@ -250,6 +363,7 @@ export class CsvIngestionService {
         detectedFormat: formatDetection.format || undefined,
         formatConfidence: formatDetection.confidence,
         formatReasoning: formatDetection.reasoning,
+        brokerDetection,
       };
 
     } catch (error) {
@@ -286,7 +400,8 @@ export class CsvIngestionService {
     fileName: string,
     userId: string,
     accountTags: string[] = [],
-    userMappings?: ColumnMapping[]
+    userMappings?: ColumnMapping[],
+    brokerName?: string
   ): Promise<CsvIngestionResult> {
     
     // First validate the file
@@ -304,24 +419,28 @@ export class CsvIngestionService {
     );
 
     try {
-      // Check if this is a Schwab format specifically
+      // Check for Schwab Today's Trade Activity format first (special case)
       const schwabPattern = /Today's Trade Activity for \d+\w*\s+.*on\s+\d{1,2}\/\d{1,2}\/\d{2,4}/i;
       const isSchwabFormat = schwabPattern.test(fileContent);
       
-      console.log('=== CSV Processing Debug ===');
-      console.log('Detected format:', validation.detectedFormat?.id);
-      console.log('Format confidence:', validation.formatConfidence);
+      // Try to detect broker format from database
+      const brokerDetection = await this.brokerFormatService.detectFormat(validation.headers);
+      
+      console.log('=== Enhanced CSV Processing Debug ===');
       console.log('Is standard format:', validation.isStandardFormat);
       console.log('Is Schwab Today\'s format:', isSchwabFormat);
-      console.log('Processing path will be:', 
-        isSchwabFormat ? 'processSchwabCsv' :
-        validation.isStandardFormat ? 'processStandardCsv' :
-        validation.detectedFormat && validation.formatConfidence && validation.formatConfidence >= 0.7 ? 'processDetectedFormatCsv' :
-        'processCustomCsv'
-      );
+      console.log('Broker detection result:', {
+        broker: brokerDetection.broker?.name,
+        format: brokerDetection.format?.formatName,
+        confidence: brokerDetection.confidence,
+        isExactMatch: brokerDetection.isExactMatch
+      });
+      console.log('User provided broker name:', brokerName);
+      console.log('Has user mappings:', !!userMappings);
       
+      // Decision tree for processing method
       if (isSchwabFormat && !userMappings) {
-        // Process as Schwab CSV
+        console.log('→ Using processSchwabCsv (special Schwab format)');
         return await this.processSchwabCsv(
           fileContent,
           fileName,
@@ -331,7 +450,7 @@ export class CsvIngestionService {
           validation.fileSize
         );
       } else if (validation.isStandardFormat && !userMappings) {
-        // Process as standard CSV
+        console.log('→ Using processStandardCsv');
         return await this.processStandardCsv(
           fileContent, 
           fileName, 
@@ -340,9 +459,30 @@ export class CsvIngestionService {
           uploadLog.id,
           validation.fileSize
         );
+      } else if (brokerDetection.isExactMatch && brokerDetection.confidence >= 0.8 && !userMappings) {
+        console.log('→ Using known broker format from database');
+        return await this.processKnownBrokerFormat(
+          fileContent,
+          fileName,
+          userId,
+          accountTags,
+          uploadLog.id,
+          validation.fileSize,
+          brokerDetection
+        );
+      } else if (brokerDetection.confidence >= 0.6 && !userMappings) {
+        console.log('→ Using similar broker format from database');
+        return await this.processKnownBrokerFormat(
+          fileContent,
+          fileName,
+          userId,
+          accountTags,
+          uploadLog.id,
+          validation.fileSize,
+          brokerDetection
+        );
       } else if (validation.detectedFormat && validation.formatConfidence && validation.formatConfidence >= 0.7 && !userMappings) {
-        // Process with detected format
-        console.log('Using processDetectedFormatCsv for format:', validation.detectedFormat.id);
+        console.log('→ Using legacy processDetectedFormatCsv');
         return await this.processDetectedFormatCsv(
           fileContent,
           fileName,
@@ -352,9 +492,29 @@ export class CsvIngestionService {
           validation.fileSize,
           validation.detectedFormat
         );
+      } else if (brokerName && !userMappings) {
+        console.log('→ Using processOpenAiCsv with broker name');
+        return await this.processOpenAiCsv(
+          fileContent,
+          fileName,
+          userId,
+          accountTags,
+          uploadLog.id,
+          validation.fileSize,
+          brokerName
+        );
+      } else if (!brokerName && !userMappings) {
+        console.log('→ Using processOpenAiCsv without broker name (will require broker selection)');
+        return await this.processOpenAiCsv(
+          fileContent,
+          fileName,
+          userId,
+          accountTags,
+          uploadLog.id,
+          validation.fileSize
+        );
       } else {
-        // Process as custom CSV with AI mapping
-        console.log('Using processCustomCsv, detected format:', validation.detectedFormat?.id || 'none');
+        console.log('→ Using legacy processCustomCsv with user mappings');
         return await this.processCustomCsv(
           fileContent, 
           fileName, 
@@ -371,6 +531,171 @@ export class CsvIngestionService {
       await this.updateUploadLog(uploadLog.id, 'FAILED', undefined, error instanceof Error ? error.message : 'Unknown error');
       throw error;
     }
+  }
+
+  /**
+   * Process CSV using a known broker format from database
+   */
+  private async processKnownBrokerFormat(
+    fileContent: string,
+    fileName: string,
+    userId: string,
+    accountTags: string[],
+    uploadLogId: string,
+    fileSize: number,
+    brokerDetection: FormatDetectionResult
+  ): Promise<CsvIngestionResult> {
+    
+    if (!brokerDetection.broker || !brokerDetection.format) {
+      throw new Error('Invalid broker detection result');
+    }
+
+    const records = parse(fileContent, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+      bom: true,
+    });
+
+    if (records.length === 0) {
+      throw new Error('No data found in CSV file');
+    }
+
+    // Create import batch
+    const importBatch = await prisma.importBatch.create({
+      data: {
+        userId,
+        filename: fileName,
+        fileSize,
+        brokerType: this.getBrokerTypeFromName(brokerDetection.broker.name),
+        importType: 'CUSTOM',
+        status: 'PROCESSING',
+        totalRecords: records.length,
+        aiMappingUsed: false,
+        mappingConfidence: brokerDetection.confidence,
+        columnMappings: brokerDetection.format.fieldMappings as any,
+        userReviewRequired: false,
+      },
+    });
+
+    // Update upload log
+    await this.updateUploadLog(uploadLogId, 'PARSING', 'STANDARD', undefined, importBatch.id);
+
+    const errors: string[] = [];
+    let successCount = 0;
+    let errorCount = 0;
+
+    // Extract mappings from the stored format
+    const fieldMappings = brokerDetection.format.fieldMappings as Record<string, any>;
+
+    // Process each row using stored broker format mappings
+    for (let i = 0; i < records.length; i++) {
+      try {
+        const mappedData: Record<string, unknown> = {};
+        const brokerMetadata: Record<string, unknown> = {};
+
+        // Apply stored mappings
+        for (const [csvHeader, mapping] of Object.entries(fieldMappings)) {
+          const value = (records[i] as Record<string, unknown>)[csvHeader];
+          
+          if (value !== undefined && value !== null && value !== '') {
+            if (mapping.field === 'brokerMetadata' || mapping.confidence < 0.5) {
+              brokerMetadata[csvHeader] = value;
+            } else {
+              mappedData[mapping.field] = value;
+            }
+          }
+        }
+
+        // Calculate times using helper method
+        const orderPlacedTime = mappedData.orderPlacedTime ? new Date(String(mappedData.orderPlacedTime)) : new Date();
+        const orderExecutedTime = this.getOrderExecutedTime(mappedData, brokerDetection.format.fieldMappings as Record<string, any>);
+        const symbol = String(mappedData.symbol || '');
+        const orderQuantity = Number(mappedData.orderQuantity) || 0;
+        const brokerType = this.getBrokerTypeFromName(brokerDetection.broker.name);
+
+        // Check for duplicate
+        if (await this.isDuplicateOrder(userId, importBatch.id, symbol, orderQuantity, orderExecutedTime, brokerType)) {
+          console.log(`Skipping duplicate order: ${symbol} ${orderQuantity} shares at ${orderExecutedTime.toISOString()}`);
+          continue; // Skip this duplicate order
+        }
+
+        // Create order record
+        await prisma.order.create({
+          data: {
+            userId,
+            importBatchId: importBatch.id,
+            orderId: String(mappedData.orderId || `known-${Date.now()}-${i}`),
+            parentOrderId: mappedData.parentOrderId ? String(mappedData.parentOrderId) : null,
+            symbol,
+            orderType: this.normalizeOrderType(String(mappedData.orderType || 'MARKET')),
+            side: this.normalizeOrderSide(String(mappedData.side || 'BUY')),
+            timeInForce: this.normalizeTimeInForce(String(mappedData.timeInForce || 'DAY')),
+            orderQuantity,
+            limitPrice: mappedData.limitPrice ? Number(mappedData.limitPrice) : null,
+            stopPrice: mappedData.stopPrice ? Number(mappedData.stopPrice) : null,
+            orderStatus: this.normalizeOrderStatus(String(mappedData.orderStatus || 'FILLED')),
+            orderPlacedTime,
+            orderExecutedTime,
+            accountId: mappedData.accountId ? String(mappedData.accountId) : null,
+            orderAccount: mappedData.orderAccount ? String(mappedData.orderAccount) : null,
+            orderRoute: mappedData.orderRoute ? String(mappedData.orderRoute) : null,
+            brokerType,
+            brokerMetadata: Object.keys(brokerMetadata).length > 0 ? brokerMetadata as any : null,
+            tags: [...accountTags, ...(mappedData.tags ? String(mappedData.tags).split(',') : [])],
+          },
+        });
+
+        successCount++;
+      } catch (error) {
+        errorCount++;
+        const errorMessage = `Row ${i + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        errors.push(errorMessage);
+      }
+    }
+
+    // Update import batch with results
+    await prisma.importBatch.update({
+      where: { id: importBatch.id },
+      data: {
+        status: errorCount === records.length ? 'FAILED' : 'COMPLETED',
+        successCount,
+        errorCount,
+        errors: errors.length > 0 ? errors : undefined,
+        processingCompleted: new Date(),
+      },
+    });
+
+    // Update format usage statistics
+    await this.brokerFormatService.updateFormatUsage(brokerDetection.format.id, successCount > 0);
+
+    // Update upload log
+    await this.updateUploadLog(uploadLogId, 'IMPORTED', 'STANDARD');
+
+    // Calculate trades after successful import
+    if (successCount > 0) {
+      try {
+        const tradeBuilder = new TradeBuilder();
+        await tradeBuilder.processUserOrders(userId);
+        await tradeBuilder.persistTrades(userId);
+      } catch (error) {
+        console.error('Trade calculation error:', error);
+        // Don't fail the import if trade calculation fails
+      }
+    }
+
+    return {
+      success: errorCount < records.length,
+      importBatchId: importBatch.id,
+      importType: 'CUSTOM',
+      totalRecords: records.length,
+      successCount,
+      errorCount,
+      errors,
+      requiresUserReview: false,
+      requiresBrokerSelection: false,
+      brokerFormatUsed: brokerDetection.format.formatName,
+    };
   }
 
   private async processStandardCsv(
@@ -483,6 +808,7 @@ export class CsvIngestionService {
       errorCount,
       errors,
       requiresUserReview: false,
+      requiresBrokerSelection: false,
     };
   }
 
@@ -543,6 +869,13 @@ export class CsvIngestionService {
         if (i === 0) {
           console.log('Creating first order with brokerType:', orderBrokerType, 'for format:', detectedFormat.id);
         }
+
+        // Check for duplicate
+        if (await this.isDuplicateOrder(userId, importBatch.id, normalizedOrder.symbol, normalizedOrder.orderQuantity, normalizedOrder.orderExecutedTime, orderBrokerType)) {
+          console.log(`Skipping duplicate order: ${normalizedOrder.symbol} ${normalizedOrder.orderQuantity} shares at ${normalizedOrder.orderExecutedTime.toISOString()}`);
+          continue; // Skip this duplicate order
+        }
+
         await prisma.order.create({
           data: {
             userId,
@@ -611,6 +944,7 @@ export class CsvIngestionService {
       errorCount,
       errors,
       requiresUserReview: false,
+      requiresBrokerSelection: false,
     };
   }
 
@@ -667,12 +1001,51 @@ export class CsvIngestionService {
         aiMappingUsed: !userMappings,
         mappingConfidence: mappingResult.overallConfidence,
         columnMappings: mappingResult.mappings as unknown as Prisma.InputJsonValue,
-        userReviewRequired: mappingResult.requiresUserReview,
+        userReviewRequired: true, // Always require review for AI-generated mappings
       },
     });
 
-    // If mapping confidence is too low or missing required fields, return for user review
-    if (mappingResult.requiresUserReview) {
+    // Create AiIngestToCheck record if using AI mapping (not user mappings)
+    let aiIngestCheck: any = null;
+    if (!userMappings) {
+      // Create or find broker CSV format for this new mapping
+      let brokerCsvFormat = await prisma.brokerCsvFormat.findFirst({
+        where: {
+          brokerName: 'Generic',
+          formatName: `Generic_AI_${Date.now()}`,
+        }
+      });
+
+      if (!brokerCsvFormat) {
+        brokerCsvFormat = await prisma.brokerCsvFormat.create({
+          data: {
+            brokerName: 'Generic',
+            formatName: `Generic_AI_${Date.now()}`,
+            description: `AI-generated mapping for ${fileName}`,
+            sampleHeaders: headers,
+            fieldMappings: mappingResult.mappings as unknown as Prisma.InputJsonValue,
+            confidence: mappingResult.overallConfidence,
+            isActive: false, // Don't make active until user approves
+          }
+        });
+      }
+
+      // Create AiIngestToCheck record for user review tracking
+      aiIngestCheck = await prisma.aiIngestToCheck.create({
+        data: {
+          userId,
+          brokerCsvFormatId: brokerCsvFormat.id,
+          csvUploadLogId: uploadLogId,
+          importBatchId: importBatch.id,
+          processingStatus: 'PENDING',
+          userIndicatedError: false,
+        }
+      });
+    }
+
+    // Always require user review for AI-generated mappings to collect feedback
+    // and ensure data accuracy
+    if (true) { // Always require review for AI mappings
       await prisma.importBatch.update({
         where: { id: importBatch.id },
         data: { status: 'PENDING' },
@@ -688,6 +1061,8 @@ export class CsvIngestionService {
         errors: [],
         aiMappingResult: mappingResult,
         requiresUserReview: true,
+        requiresBrokerSelection: false,
+        aiIngestCheckId: aiIngestCheck?.id, // Include for frontend reference
       };
     }
 
@@ -748,6 +1123,18 @@ export class CsvIngestionService {
               console.log(`First-match-wins: Skipped ${skippedMappings.length} duplicate mappings for orders:`, skippedMappings);
             }
             
+            // Calculate times using helper method
+            const orderPlacedTime = mappedData.orderPlacedTime ? new Date(String(mappedData.orderPlacedTime)) : new Date();
+            const orderExecutedTime = this.getOrderExecutedTime(mappedData, mappingResult.mappings);
+            const symbol = String(mappedData.symbol || '');
+            const orderQuantity = Number(mappedData.orderQuantity) || 0;
+
+            // Check for duplicate
+            if (await this.isDuplicateOrder(userId, importBatch.id, symbol, orderQuantity, orderExecutedTime, brokerType)) {
+              console.log(`Skipping duplicate order: ${symbol} ${orderQuantity} shares at ${orderExecutedTime.toISOString()}`);
+              continue; // Skip this duplicate order
+            }
+
             // Create order record
             await prisma.order.create({
               data: {
@@ -755,16 +1142,16 @@ export class CsvIngestionService {
                 importBatchId: importBatch.id,
                 orderId: String(mappedData.orderId || `auto-${Date.now()}-${index}`),
                 parentOrderId: mappedData.parentOrderId ? String(mappedData.parentOrderId) : null,
-                symbol: String(mappedData.symbol || ''),
+                symbol,
                 orderType: this.normalizeOrderType(String(mappedData.orderType || 'MARKET')),
                 side: this.normalizeOrderSide(String(mappedData.side || 'BUY')),
                 timeInForce: this.normalizeTimeInForce(String(mappedData.timeInForce || 'DAY')),
-                orderQuantity: Number(mappedData.orderQuantity) || 0,
+                orderQuantity,
                 limitPrice: mappedData.limitPrice ? Number(mappedData.limitPrice) : null,
                 stopPrice: mappedData.stopPrice ? Number(mappedData.stopPrice) : null,
                 orderStatus: this.normalizeOrderStatus(String(mappedData.orderStatus || 'FILLED')),
-                orderPlacedTime: mappedData.orderPlacedTime ? new Date(String(mappedData.orderPlacedTime)) : new Date(),
-                orderExecutedTime: mappedData.orderExecutedTime ? new Date(String(mappedData.orderExecutedTime)) : new Date(),
+                orderPlacedTime,
+                orderExecutedTime,
                 accountId: mappedData.accountId ? String(mappedData.accountId) : null,
                 orderAccount: mappedData.orderAccount ? String(mappedData.orderAccount) : null,
                 orderRoute: mappedData.orderRoute ? String(mappedData.orderRoute) : null,
@@ -855,7 +1242,301 @@ export class CsvIngestionService {
       errors,
       aiMappingResult: mappingResult,
       requiresUserReview: false,
+      requiresBrokerSelection: false,
     };
+  }
+
+  /**
+   * Process CSV with OpenAI analysis when no known format is detected
+   */
+  async processOpenAiCsv(
+    fileContent: string,
+    fileName: string,
+    userId: string,
+    accountTags: string[],
+    uploadLogId: string,
+    fileSize: number,
+    brokerName?: string
+  ): Promise<CsvIngestionResult> {
+    
+    const records = parse(fileContent, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+      bom: true,
+    });
+
+    if (records.length === 0) {
+      throw new Error('No data found in CSV file');
+    }
+
+    const headers = Object.keys(records[0] as Record<string, unknown>);
+    const sampleData = records.slice(0, 5) as Record<string, unknown>[];
+
+    // If no broker name provided, require user to select one
+    if (!brokerName) {
+      console.log('🔍 No broker name provided, storing file content for later processing');
+      console.log(`📊 File contains ${records.length} records with ${headers.length} columns`);
+      console.log('📋 Headers:', headers);
+      
+      // Create a temporary import batch for later processing
+      const importBatch = await prisma.importBatch.create({
+        data: {
+          userId,
+          filename: fileName,
+          fileSize,
+          brokerType: BrokerType.GENERIC_CSV,
+          importType: 'CUSTOM',
+          status: 'PENDING',
+          totalRecords: records.length,
+          aiMappingUsed: false,
+          userReviewRequired: true,
+          tempFileContent: fileContent, // Store the file content for later processing
+        },
+      });
+
+      console.log(`✅ Created pending import batch: ${importBatch.id}`);
+      console.log('⏸️ Waiting for user to select broker...');
+
+      return {
+        success: false,
+        importBatchId: importBatch.id,
+        importType: 'CUSTOM',
+        totalRecords: records.length,
+        successCount: 0,
+        errorCount: 0,
+        errors: [],
+        requiresUserReview: true,
+        requiresBrokerSelection: true,
+      };
+    }
+
+    console.log(`🤖 Processing CSV with OpenAI for broker: ${brokerName}`);
+    console.log('📊 Sending headers to OpenAI:', headers);
+    console.log('🔬 Sample data rows:', sampleData.length);
+    
+    // Generate AI mappings WITHOUT creating broker format yet
+    // The format will be created later after user approval
+    const aiResult = await this.openAiService.analyzeHeaders({
+      csvHeaders: headers,
+      sampleData,
+      brokerName: brokerName
+    });
+    
+    console.log('✨ OpenAI mapping completed!');
+    console.log(`📊 Confidence score: ${(aiResult.overallConfidence * 100).toFixed(1)}%`);
+    console.log('🔍 Mapped fields:', Object.keys(aiResult.mappings).length);
+    console.log('❓ Unmapped fields:', aiResult.brokerMetadataFields.length);
+    console.log('⏸️ Broker format NOT created yet - waiting for user approval');
+
+    // Create import batch
+    const importBatch = await prisma.importBatch.create({
+      data: {
+        userId,
+        filename: fileName,
+        fileSize,
+        brokerType: this.getBrokerTypeFromName(brokerName),
+        importType: 'CUSTOM',
+        status: 'PROCESSING',
+        totalRecords: records.length,
+        aiMappingUsed: true,
+        mappingConfidence: aiResult.overallConfidence,
+        columnMappings: aiResult.mappings as unknown as Prisma.InputJsonValue,
+        userReviewRequired: true, // Always require review for AI-generated mappings
+      },
+    });
+
+    // Update upload log
+    await this.updateUploadLog(uploadLogId, 'MAPPED', 'AI_MAPPED', undefined, importBatch.id);
+
+    // Store the pending AI result in import batch for later processing
+    // Don't create AiIngestToCheck yet since we don't have a broker format ID yet
+    // Using columnMappings temporarily until we can add the new columns
+    await prisma.importBatch.update({
+      where: { id: importBatch.id },
+      data: {
+        columnMappings: {
+          pendingAiMappings: aiResult.mappings,
+          pendingBrokerName: brokerName,
+          pendingMetadata: aiResult.brokerMetadataFields,
+          overallConfidence: aiResult.overallConfidence
+        } as any,
+        tempFileContent: fileContent, // Store file content for later processing
+      },
+    });
+
+    // Always require user review for AI-generated mappings to ensure accuracy
+    // and collect feedback for improving the AI model
+    if (true) { // Always require review for AI mappings
+      await prisma.importBatch.update({
+        where: { id: importBatch.id },
+        data: { status: 'PENDING' },
+      });
+
+      return {
+        success: false,
+        importBatchId: importBatch.id,
+        importType: 'CUSTOM',
+        totalRecords: records.length,
+        successCount: 0,
+        errorCount: 0,
+        errors: [],
+        openAiMappingResult: aiResult,
+        requiresUserReview: true,
+        requiresBrokerSelection: false,
+        brokerFormatUsed: brokerName || 'AI_Generated',
+        // aiIngestCheckId will be created after user approves the mappings
+      };
+    }
+
+    // Process with OpenAI mappings
+    const errors: string[] = [];
+    let successCount = 0;
+    let errorCount = 0;
+
+    try {
+      for (const [index, row] of records.entries()) {
+        try {
+          const mappedData: Record<string, unknown> = {};
+          const brokerMetadata: Record<string, unknown> = {};
+
+          // Apply OpenAI mappings
+          for (const [csvHeader, mapping] of Object.entries(aiResult.mappings)) {
+            const value = (row as Record<string, unknown>)[csvHeader];
+            
+            if (value !== undefined && value !== null && value !== '') {
+              if (mapping.field === 'brokerMetadata') {
+                brokerMetadata[csvHeader] = value;
+              } else {
+                mappedData[mapping.field] = value;
+              }
+            }
+          }
+
+          // Store unmapped fields in brokerMetadata
+          for (const field of aiResult.brokerMetadataFields) {
+            const value = (row as Record<string, unknown>)[field];
+            if (value !== undefined && value !== null && value !== '') {
+              brokerMetadata[field] = value;
+            }
+          }
+
+          // Calculate times using helper method
+          const orderPlacedTime = mappedData.orderPlacedTime ? new Date(String(mappedData.orderPlacedTime)) : new Date();
+          const orderExecutedTime = this.getOrderExecutedTime(mappedData, aiResult.mappings);
+          const symbol = String(mappedData.symbol || '');
+          const orderQuantity = Number(mappedData.orderQuantity) || 0;
+          const brokerType = this.getBrokerTypeFromName(brokerName);
+
+          // Check for duplicate
+          if (await this.isDuplicateOrder(userId, importBatch.id, symbol, orderQuantity, orderExecutedTime, brokerType)) {
+            console.log(`Skipping duplicate order: ${symbol} ${orderQuantity} shares at ${orderExecutedTime.toISOString()}`);
+            continue; // Skip this duplicate order
+          }
+
+          // Create order record
+          await prisma.order.create({
+            data: {
+              userId,
+              importBatchId: importBatch.id,
+              orderId: String(mappedData.orderId || `ai-${Date.now()}-${index}`),
+              parentOrderId: mappedData.parentOrderId ? String(mappedData.parentOrderId) : null,
+              symbol,
+              orderType: this.normalizeOrderType(String(mappedData.orderType || 'MARKET')),
+              side: this.normalizeOrderSide(String(mappedData.side || 'BUY')),
+              timeInForce: this.normalizeTimeInForce(String(mappedData.timeInForce || 'DAY')),
+              orderQuantity,
+              limitPrice: mappedData.limitPrice ? Number(mappedData.limitPrice) : null,
+              stopPrice: mappedData.stopPrice ? Number(mappedData.stopPrice) : null,
+              orderStatus: this.normalizeOrderStatus(String(mappedData.orderStatus || 'FILLED')),
+              orderPlacedTime,
+              orderExecutedTime,
+              accountId: mappedData.accountId ? String(mappedData.accountId) : null,
+              orderAccount: mappedData.orderAccount ? String(mappedData.orderAccount) : null,
+              orderRoute: mappedData.orderRoute ? String(mappedData.orderRoute) : null,
+              brokerType,
+              brokerMetadata: Object.keys(brokerMetadata).length > 0 ? brokerMetadata as any : null,
+              tags: [...accountTags, ...(mappedData.tags ? String(mappedData.tags).split(',') : [])],
+            },
+          });
+          
+          successCount++;
+        } catch (error) {
+          errorCount++;
+          errors.push(`Row ${index + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+    } catch (error) {
+      errors.push(`OpenAI mapping application failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      errorCount = records.length;
+    }
+
+    // Update import batch with results
+    await prisma.importBatch.update({
+      where: { id: importBatch.id },
+      data: {
+        status: errorCount === records.length ? 'FAILED' : 'COMPLETED',
+        successCount,
+        errorCount,
+        errors: errors.length > 0 ? errors : undefined,
+        processingCompleted: new Date(),
+      },
+    });
+
+    // Format usage statistics will be updated when the format is actually created
+    // after user approval in the finalize-mappings endpoint
+
+    // Update upload log
+    await this.updateUploadLog(uploadLogId, 'IMPORTED', 'AI_MAPPED', undefined, importBatch.id);
+
+    // Calculate trades after successful import
+    if (successCount > 0) {
+      try {
+        const tradeBuilder = new TradeBuilder();
+        await tradeBuilder.processUserOrders(userId);
+        await tradeBuilder.persistTrades(userId);
+      } catch (error) {
+        console.error('Trade calculation error:', error);
+        // Don't fail the import if trade calculation fails
+      }
+    }
+
+    return {
+      success: errorCount < records.length,
+      importBatchId: importBatch.id,
+      importType: 'CUSTOM',
+      totalRecords: records.length,
+      successCount,
+      errorCount,
+      errors,
+      openAiMappingResult: aiResult,
+      requiresUserReview: false,
+      requiresBrokerSelection: false,
+      brokerFormatUsed: brokerName || 'AI_Generated',
+    };
+  }
+
+  /**
+   * Convert broker name to BrokerType enum
+   */
+  private getBrokerTypeFromName(brokerName: string): BrokerType {
+    const normalized = brokerName.toLowerCase();
+    
+    if (normalized.includes('interactive') || normalized.includes('ibkr')) {
+      return BrokerType.INTERACTIVE_BROKERS;
+    } else if (normalized.includes('schwab') || normalized.includes('charles')) {
+      return BrokerType.CHARLES_SCHWAB;
+    } else if (normalized.includes('ameritrade') || normalized.includes('thinkorswim') || normalized.includes('tos')) {
+      return BrokerType.TD_AMERITRADE;
+    } else if (normalized.includes('etrade') || normalized.includes('e*trade')) {
+      return BrokerType.E_TRADE;
+    } else if (normalized.includes('fidelity')) {
+      return BrokerType.FIDELITY;
+    } else if (normalized.includes('robinhood')) {
+      return BrokerType.ROBINHOOD;
+    } else {
+      return BrokerType.GENERIC_CSV;
+    }
   }
 
   private async createUploadLog(
@@ -1053,6 +1734,41 @@ export class CsvIngestionService {
       normalizedData.tags = accountTags;
     }
 
+    // Calculate proper times - if we have both placed and executed, use them; otherwise use placed for both
+    let orderPlacedTime: Date;
+    let orderExecutedTime: Date;
+    
+    if (normalizedData.orderPlacedTime && normalizedData.orderExecutedTime) {
+      // We have both times explicitly
+      orderPlacedTime = new Date(String(normalizedData.orderPlacedTime));
+      orderExecutedTime = new Date(String(normalizedData.orderExecutedTime));
+    } else if (normalizedData.orderPlacedTime) {
+      // Only have placed time - use it for both
+      orderPlacedTime = new Date(String(normalizedData.orderPlacedTime));
+      orderExecutedTime = orderPlacedTime;
+    } else if (normalizedData.orderExecutedTime) {
+      // Only have executed time - check if it's from an execution-specific mapping
+      const hasExecutionMapping = Object.entries(format.fieldMappings).some(([csvHeader, mapping]) => 
+        mapping.tradeVoyagerField === 'orderExecutedTime' && this.isExecutionSpecificHeader(csvHeader)
+      );
+      
+      if (hasExecutionMapping) {
+        // It's a true execution time, use current time for placed
+        orderExecutedTime = new Date(String(normalizedData.orderExecutedTime));
+        orderPlacedTime = orderExecutedTime; // Assume they're the same unless we have both
+      } else {
+        // It's probably a general time, use it for both
+        const time = new Date(String(normalizedData.orderExecutedTime));
+        orderPlacedTime = time;
+        orderExecutedTime = time;
+      }
+    } else {
+      // No time data, use current time
+      const currentTime = new Date();
+      orderPlacedTime = currentTime;
+      orderExecutedTime = currentTime;
+    }
+
     // Ensure required fields have defaults for orders
     const order: NormalizedOrder = {
       orderId: String(normalizedData.orderId || ''),
@@ -1065,8 +1781,8 @@ export class CsvIngestionService {
       limitPrice: normalizedData.limitPrice ? Number(normalizedData.limitPrice) : null,
       stopPrice: normalizedData.stopPrice ? Number(normalizedData.stopPrice) : null,
       orderStatus: 'FILLED',
-      orderPlacedTime: normalizedData.orderExecutedTime ? new Date(String(normalizedData.orderExecutedTime)) : new Date(),
-      orderExecutedTime: normalizedData.orderExecutedTime ? new Date(String(normalizedData.orderExecutedTime)) : new Date(),
+      orderPlacedTime,
+      orderExecutedTime,
       accountId: normalizedData.accountId ? String(normalizedData.accountId) : null,
       orderAccount: normalizedData.orderAccount ? String(normalizedData.orderAccount) : null,
       orderRoute: normalizedData.orderRoute ? String(normalizedData.orderRoute) : null,
@@ -1278,6 +1994,7 @@ export class CsvIngestionService {
       errorCount,
       errors,
       requiresUserReview: false,
+      requiresBrokerSelection: false,
     };
   }
 

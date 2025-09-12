@@ -49,7 +49,6 @@ model User {
   // Relations
   trades        Trade[]
   orders        Order[]
-  dayData       DayData[]
   recordsEntries RecordsEntry[]
   importBatches ImportBatch[]
   csvUploadLogs CsvUploadLog[]
@@ -59,6 +58,10 @@ model User {
   sharedTrades SharedTrade[]
   snapTradeSyncs SnapTradeSync[]
   syncRateLimits SyncRateLimit[]
+  apiUsage ApiUsage[]
+  aiIngestChecks AiIngestToCheck[]
+  adminReviews AiIngestToCheck[] @relation("AdminReviews")
+  dailyUploadCounts DailyUploadCount[]
   
   @@map("users")
 }
@@ -131,7 +134,6 @@ model Trade {
   recordsEntry          RecordsEntry? @relation(fields: [recordsEntryId], references: [id])
   importBatchId         String?
   importBatch           ImportBatch? @relation(fields: [importBatchId], references: [id])
-  partialFills          PartialFill[]
   snapTradeId           String?     // SnapTrade trade ID for tracking
   importSource          ImportSource @default(CSV)
   
@@ -202,45 +204,7 @@ model Order {
   @@map("orders")
 }
 
-// Partial Fill tracking for complex orders
-model PartialFill {
-  id                    String      @id @default(cuid())
-  tradeId               String
-  fillSequence          Int         // Order of fills (1, 2, 3...)
-  fillQuantity          Int
-  fillPrice             Decimal     @db.Decimal(10,2)
-  fillTime              DateTime
-  venue                 String?
-  liquidityFlag         LiquidityFlag?
-  
-  // Relations
-  trade                 Trade       @relation(fields: [tradeId], references: [id], onDelete: Cascade)
-  
-  @@index([tradeId, fillSequence])
-  @@map("partial_fills")
-}
 
-model DayData {
-  id          String   @id @default(cuid())
-  userId      String
-  date        DateTime
-  pnl         Float
-  trades      Int
-  volume      Int
-  winRate     Float?
-  commissions Float?
-  
-  // Metadata
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relations
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@unique([userId, date])
-  @@index([userId, date])
-  @@map("day_data")
-}
 
 model RecordsEntry {
   id           String    @id @default(cuid())
@@ -287,6 +251,11 @@ model ImportBatch {
   columnMappings    Json?   // Store column mapping decisions
   userReviewRequired Boolean @default(false)
   
+  // Temporary file storage for broker selection flow
+  tempFileContent   String? @db.Text // Store CSV content temporarily for reprocessing
+  pendingAiMappings Json?            // Store pending AI mappings before user approval
+  pendingBrokerName String?          // Store broker name for pending AI mappings
+  
   // Background processing
   jobId         String?     // For background job tracking
   processingStarted DateTime?
@@ -301,6 +270,7 @@ model ImportBatch {
   trades        Trade[]
   orders        Order[]
   csvUploadLogs CsvUploadLog[]
+  aiIngestCheck AiIngestToCheck?
   
   @@index([userId, status])
   @@index([userId, importType])
@@ -329,6 +299,7 @@ model CsvUploadLog {
   // Relations
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   importBatch     ImportBatch? @relation(fields: [importBatchId], references: [id])
+  aiIngestCheck   AiIngestToCheck?
   
   @@index([userId, createdAt])
   @@map("csv_upload_logs")
@@ -682,6 +653,75 @@ model SnapTradeSync {
   @@map("snaptrade_syncs")
 }
 
+// Broker Management for CSV Format Detection
+model Broker {
+  id          String   @id @default(cuid())
+  name        String   @unique  // Primary broker name (e.g., "Interactive Brokers")
+  website     String?  // Broker website URL
+  
+  // Relations
+  aliases     BrokerAlias[]     // Alternative names for this broker
+  csvFormats  BrokerCsvFormat[] // CSV formats used by this broker
+  
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([name])
+  @@map("brokers")
+}
+
+// Alternative names for brokers (e.g., "IBKR" -> "Interactive Brokers")
+model BrokerAlias {
+  id        String @id @default(cuid())
+  brokerId  String
+  alias     String @unique  // Alternative name (e.g., "IBKR", "TOS", "Schwab")
+  
+  // Relations
+  broker    Broker @relation(fields: [brokerId], references: [id], onDelete: Cascade)
+  
+  @@index([alias])     // Fast lookup by alias
+  @@index([brokerId])  // Fast lookup by broker
+  @@map("broker_aliases")
+}
+
+// CSV formats for each broker - stores learned mappings
+model BrokerCsvFormat {
+  id                String   @id @default(cuid())
+  brokerId          String
+  formatName        String   // User-friendly name (e.g., "Interactive Brokers Flex Query")
+  description       String?  // Optional description of the format
+  
+  // Header identification
+  headerFingerprint String   // Hash of sorted headers for quick matching
+  headers           String[] // Original CSV headers from the file
+  sampleData        Json?    // Sample row data for context
+  
+  // Mapping configuration
+  fieldMappings     Json     // Header -> Order field mappings with confidence scores
+  confidence        Float    // Overall format confidence (0.0-1.0)
+  
+  // Usage tracking
+  usageCount        Int      @default(0)  // How many times this format has been used
+  lastUsed          DateTime?             // When this format was last used
+  successRate       Float    @default(1.0) // Success rate for this format
+  
+  // Metadata
+  createdBy         String?  // User ID who created/verified this format
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  broker            Broker   @relation(fields: [brokerId], references: [id], onDelete: Cascade)
+  aiIngestChecks    AiIngestToCheck[]
+  
+  @@unique([brokerId, headerFingerprint])  // Prevent duplicate formats per broker
+  @@index([headerFingerprint])            // Fast format matching
+  @@index([brokerId])                     // Fast broker lookup
+  @@index([brokerId, usageCount])         // Popular formats for broker
+  @@map("broker_csv_formats")
+}
+
 // Daily sync rate limiting
 model SyncRateLimit {
   id              String   @id @default(cuid())
@@ -713,5 +753,165 @@ enum SyncStatus {
   FAILED
   
   @@map("sync_status")
+}
+
+// API Usage Tracking for Rate Limiting and Analytics
+model ApiUsage {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id")
+  
+  // API Call Details
+  apiProvider     String   @default("polygon") @map("api_provider") @db.VarChar(50)
+  endpoint        String   @db.VarChar(255)
+  method          String   @default("GET") @db.VarChar(10)
+  
+  // Request/Response Metadata
+  requestParams   Json?    @map("request_params") @db.JsonB
+  responseStatusCode Int?  @map("response_status_code")
+  responseTimeMs  Int?     @map("response_time_ms")
+  responseSizeBytes Int?   @map("response_size_bytes")
+  
+  // Rate Limiting & Tracking
+  timestamp       DateTime @default(now()) @db.Timestamptz
+  countedForLimit Boolean  @default(true) @map("counted_for_limit")
+  subscriptionTier String? @map("subscription_tier") @db.VarChar(50)
+  
+  // Error Tracking
+  errorMessage    String?  @map("error_message") @db.Text
+  isError         Boolean? @map("is_error") // Generated column in SQL
+  
+  // Cost & Credits
+  apiCreditsUsed  Int      @default(1) @map("api_credits_used")
+  
+  // Metadata
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Indexes for performance
+  @@index([userId, timestamp(sort: Desc)], map: "idx_api_usage_rate_limit")
+  @@index([userId, timestamp(sort: Desc), apiProvider, countedForLimit], map: "idx_api_usage_user_window")
+  @@index([userId, endpoint, timestamp(sort: Desc)], map: "idx_api_usage_endpoint_analytics")
+  @@index([userId, timestamp(sort: Desc)], map: "idx_api_usage_errors")
+  @@index([apiProvider, userId, timestamp(sort: Desc)], map: "idx_api_usage_provider")
+  
+  @@map("api_usage")
+}
+
+// AI Ingestion Tracking for Admin Review and User Feedback
+model AiIngestToCheck {
+  id                String   @id @default(cuid())
+  userId            String
+  brokerCsvFormatId String
+  csvUploadLogId    String   @unique
+  importBatchId     String   @unique
+  
+  // Processing tracking
+  processingStatus  ProcessingStatus @default(PENDING)
+  orderIds          String[] @default([])
+  processedAt       DateTime?
+  processingError   String?  @db.Text
+  processingTimeMs  Int?
+  
+  // User feedback
+  userIndicatedError Boolean @default(false)
+  userReviewedAt    DateTime?
+  
+  // Admin review
+  adminReviewStatus AdminReviewStatus @default(PENDING)
+  adminNotes        String?  @db.Text
+  adminReviewedAt   DateTime?
+  adminReviewedBy   String?
+  
+  // Quality metrics
+  aiConfidence      Float    @db.Real
+  mappingAccuracy   Float?   @db.Real
+  dataQualityScore  Float?   @db.Real
+  
+  // Metadata
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  user              User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brokerCsvFormat   BrokerCsvFormat @relation(fields: [brokerCsvFormatId], references: [id])
+  csvUploadLog      CsvUploadLog @relation(fields: [csvUploadLogId], references: [id])
+  importBatch       ImportBatch @relation(fields: [importBatchId], references: [id])
+  adminReviewer     User? @relation("AdminReviews", fields: [adminReviewedBy], references: [id])
+  feedbackItems     AiIngestFeedbackItem[]
+  
+  // Optimized indexes for common queries
+  @@index([userId, userIndicatedError, createdAt(sort: Desc)])  // User-flagged issues
+  @@index([adminReviewStatus, createdAt])                      // Admin review queue
+  @@index([userId, createdAt(sort: Desc)])                     // User's recent uploads
+  @@index([aiConfidence])                                      // Low confidence checks
+  @@index([userIndicatedError, adminReviewStatus])             // Priority review queue
+  @@index([brokerCsvFormatId])                                 // Broker format analysis
+  
+  @@map("ai_ingest_checks")
+}
+
+// Structured feedback items from users
+model AiIngestFeedbackItem {
+  id                String   @id @default(cuid())
+  aiIngestCheckId   String
+  csvHeader         String   @db.VarChar(255)
+  aiMapping         String   @db.VarChar(255)
+  suggestedMapping  String?  @db.VarChar(255)
+  issueType         String?  // 'WRONG_FIELD', 'LOW_CONFIDENCE', 'MISSING_MAPPING', 'OTHER'
+  comment           String?  @db.Text
+  confidence        Float?   @db.Real
+  
+  // Audit fields for admin review
+  isCorrect         Boolean? // Admin marks if feedback was correct
+  correctedBy       String?
+  correctedAt       DateTime?
+  originalValue     String?  // Store original AI suggestion for comparison
+  
+  createdAt         DateTime @default(now())
+  
+  // Relations
+  aiIngestCheck     AiIngestToCheck @relation(fields: [aiIngestCheckId], references: [id], onDelete: Cascade)
+  
+  @@index([aiIngestCheckId])
+  @@map("ai_ingest_feedback_items")
+}
+
+// Daily upload tracking for subscription-based rate limiting
+model DailyUploadCount {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime @db.Date
+  count     Int      @default(0)
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@map("daily_upload_counts")
+}
+
+// Enums for AI ingestion tracking
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  RETRY_NEEDED
+  
+  @@map("processing_status")
+}
+
+enum AdminReviewStatus {
+  PENDING
+  IN_REVIEW
+  APPROVED
+  CORRECTED
+  DISMISSED
+  ESCALATED
+  
+  @@map("admin_review_status")
 }
 

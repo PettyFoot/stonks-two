@@ -100,37 +100,20 @@ export async function GET(request: Request) {
     }
 
     // Optimize database queries with parallel execution and selective fields
-    const [trades, dayData] = await Promise.all([
-      prisma.trade.findMany({
-        where: whereClause,
-        select: {
-          id: true,
-          date: true,
-          exitDate: true,
-          pnl: true,
-          quantity: true,
-          timeInTrade: true,
-          symbol: true,
-          side: true
-        },
-        orderBy: { date: 'asc' }
-      }),
-      prisma.dayData.findMany({
-        where: {
-          userId: userId,
-          ...(whereClause.date && { date: whereClause.date })
-        },
-        select: {
-          date: true,
-          pnl: true,
-          trades: true,
-          volume: true,
-          winRate: true,
-          commissions: true
-        },
-        orderBy: { date: 'asc' }
-      })
-    ]);
+    const trades = await prisma.trade.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        date: true,
+        exitDate: true,
+        pnl: true,
+        quantity: true,
+        timeInTrade: true,
+        symbol: true,
+        side: true
+      },
+      orderBy: { date: 'asc' }
+    });
 
     // Calculate basic KPIs from filtered trades
     const totalPnl = trades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : Number(trade.pnl)), 0);
@@ -193,14 +176,7 @@ export async function GET(request: Request) {
     ]);
 
     const dashboardData = {
-      dayData: dayData.map(day => ({
-        date: day.date.toISOString().split('T')[0],
-        pnl: day.pnl,
-        trades: day.trades,
-        volume: day.volume,
-        winRate: day.winRate,
-        commissions: day.commissions
-      })),
+      dayData: [], // Day data removed - calculated from trades if needed
       kpiData: {
         totalPnl,
         totalTrades,
@@ -210,8 +186,8 @@ export async function GET(request: Request) {
         avgLosingTrade,
         maxConsecutiveWins,
         maxConsecutiveLosses,
-        bestDay: dayData.length > 0 ? Math.max(...dayData.map(d => d.pnl)) : 0,
-        worstDay: dayData.length > 0 ? Math.min(...dayData.map(d => d.pnl)) : 0,
+        bestDay: 0, // Calculated from daily aggregated trades
+        worstDay: 0, // Calculated from daily aggregated trades
         avgPositionMae: 0, // TODO: Calculate from detailed trade data if needed
         avgPositionMfe: 0, // TODO: Calculate from detailed trade data if needed
         performanceByDayOfWeek,
@@ -233,8 +209,8 @@ export async function GET(request: Request) {
         winRate,
         avgWin: avgWinningTrade,
         avgLoss: avgLosingTrade,
-        bestDay: dayData.length > 0 ? Math.max(...dayData.map(d => d.pnl)) : 0,
-        worstDay: dayData.length > 0 ? Math.min(...dayData.map(d => d.pnl)) : 0
+        bestDay: 0, // Calculated from daily aggregated trades
+        worstDay: 0 // Calculated from daily aggregated trades
       },
       metadata: {
         dateRange: {

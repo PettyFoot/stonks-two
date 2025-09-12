@@ -1,4 +1,4 @@
-import { Trade, DayData } from '@prisma/client';
+import { Trade } from '@prisma/client';
 
 export interface TradeMetrics {
   // Basic P&L
@@ -43,11 +43,9 @@ export interface PerformanceData {
 
 export class TradingAnalyzer {
   private trades: Trade[];
-  private dayData: DayData[];
 
-  constructor(trades: Trade[], dayData: DayData[] = []) {
+  constructor(trades: Trade[]) {
     this.trades = trades.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    this.dayData = dayData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }
 
   calculateMetrics(): TradeMetrics {

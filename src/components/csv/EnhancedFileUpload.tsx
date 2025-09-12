@@ -14,8 +14,12 @@ import {
   AlertTriangle, 
   Download,
   RefreshCw,
-  Info
+  Info,
+  Building2,
+  Brain
 } from 'lucide-react';
+import BrokerSelector from '@/components/broker/BrokerSelector';
+import MappingReview from '@/components/csv/MappingReview';
 // Removed broker formats import - using automatic detection now
 
 // Types
@@ -48,16 +52,29 @@ interface UploadState {
   error: string | null;
 }
 
+interface UploadLimitStatus {
+  allowed: boolean;
+  remaining: number;
+  limit: number;
+  resetAt: string;
+  isUnlimited: boolean;
+  used: number;
+}
+
 interface EnhancedFileUploadProps {
   onUploadComplete?: (result: Record<string, unknown>) => void;
   onMappingRequired?: (result: Record<string, unknown>) => void;
   accountTags?: string[];
+  uploadLimitStatus?: UploadLimitStatus | null;
+  onRefreshLimits?: () => void;
 }
 
 export default function EnhancedFileUpload({ 
   onUploadComplete, 
   onMappingRequired, 
-  accountTags = [] 
+  accountTags = [],
+  uploadLimitStatus,
+  onRefreshLimits
 }: EnhancedFileUploadProps) {
   const { user } = useUser();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -73,8 +90,37 @@ export default function EnhancedFileUpload({
   });
 
   const [customAccountTags, setCustomAccountTags] = useState('');
+  
+  // New state for broker selection and mapping review
+  const [showBrokerSelector, setShowBrokerSelector] = useState(false);
+  const [showMappingReview, setShowMappingReview] = useState(false);
+  const [pendingImportBatchId, setPendingImportBatchId] = useState<string | null>(null);
+  const [aiMappingResult, setAiMappingResult] = useState<any>(null);
+  const [aiIngestCheckId, setAiIngestCheckId] = useState<string | null>(null);
+
+  // New function to clear only the file, keeping status messages
+  const clearFileOnly = useCallback(() => {
+    console.log('🧹 Clearing file only, keeping status');
+    setState(prev => ({ 
+      ...prev,
+      file: null,
+      isDragOver: false,
+      isUploading: false,
+      uploadProgress: 0,
+      validationResult: null,
+      error: null
+      // Keep uploadResult to show success message
+    }));
+    setCustomAccountTags('');
+    setShowBrokerSelector(false);
+    setShowMappingReview(false);
+    setPendingImportBatchId(null);
+    setAiMappingResult(null);
+    setAiIngestCheckId(null);
+  }, []);
 
   const resetState = useCallback(() => {
+    console.log('🔄 Resetting EnhancedFileUpload state');
     setState({
       file: null,
       isDragOver: false,
@@ -85,6 +131,11 @@ export default function EnhancedFileUpload({
       error: null,
     });
     setCustomAccountTags('');
+    setShowBrokerSelector(false);
+    setShowMappingReview(false);
+    setPendingImportBatchId(null);
+    setAiMappingResult(null);
+    setAiIngestCheckId(null);
   }, []);
 
   const validateFile = useCallback((file: File): string | null => {
@@ -205,17 +256,46 @@ export default function EnhancedFileUpload({
       }));
 
       // Handle different result types
-      if (result.requiresUserReview) {
-        onMappingRequired?.(result);
-      } else if (result.success) {
-        onUploadComplete?.(result);
-        // Clear file selection after successful upload
+      console.log('📊 Upload result:', result);
+      console.log('🔍 Requires broker selection:', result.requiresBrokerSelection);
+      console.log('📝 Requires user review:', result.requiresUserReview);
+      
+      if (result.requiresBrokerSelection) {
+        console.log('🏢 Showing broker selector modal');
+        setPendingImportBatchId(result.importBatchId);
+        setShowBrokerSelector(true);
+      } else if (result.requiresUserReview && result.openAiMappingResult && result.openAiMappingResult.mappings) {
+        console.log('🧠 Showing AI mapping review modal');
+        console.log('🔍 Upload AI result validation:', {
+          hasMappings: !!result.openAiMappingResult.mappings,
+          mappingsCount: Object.keys(result.openAiMappingResult.mappings || {}).length,
+          hasConfidence: typeof result.openAiMappingResult.overallConfidence === 'number',
+          showMappingReview: showMappingReview
+        });
+        setAiMappingResult(result.openAiMappingResult);
+        setPendingImportBatchId(result.importBatchId);
+        setAiIngestCheckId(result.aiIngestCheckId || null);
+        
+        // Force a small delay to ensure state is set properly
         setTimeout(() => {
-          resetState();
+          console.log('🎯 Setting showMappingReview to true');
+          setShowMappingReview(true);
+        }, 100);
+      } else if (result.success) {
+        console.log('✅ Upload completed successfully');
+        onUploadComplete?.(result);
+        // Refresh upload limits after successful upload
+        onRefreshLimits?.();
+        // Clear only the file, keep success status message
+        setTimeout(() => {
+          clearFileOnly();
           if (fileInputRef.current) {
             fileInputRef.current.value = '';
           }
-        }, 2000); // Wait 2 seconds to show success message before clearing
+        }, 2000); // Wait 2 seconds to show success message before clearing file
+      } else {
+        // Legacy fallback for other mapping required scenarios
+        onMappingRequired?.(result);
       }
 
     } catch (error) {
@@ -259,6 +339,159 @@ export default function EnhancedFileUpload({
     window.open('/api/csv/template', '_blank');
   };
 
+  // Handle broker selection
+  const handleBrokerSelected = async (broker: any, brokerName: string) => {
+    console.log(`🏢 Broker selected: ${brokerName} (ID: ${broker.id})`);
+    console.log('📄 Processing import batch:', pendingImportBatchId);
+    
+    setShowBrokerSelector(false);
+    
+    if (!pendingImportBatchId) {
+      console.error('❌ No pending import batch ID');
+      setState(prev => ({ ...prev, error: 'Missing import batch ID' }));
+      return;
+    }
+
+    try {
+      setState(prev => ({ 
+        ...prev, 
+        isUploading: true, 
+        uploadProgress: 50,
+        error: null 
+      }));
+
+      console.log('🚀 Calling process-with-broker API...');
+      const allTags = [
+        ...accountTags,
+        ...customAccountTags.split(',').map(tag => tag.trim()).filter(Boolean)
+      ];
+
+      const response = await fetch('/api/csv/process-with-broker', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          importBatchId: pendingImportBatchId,
+          brokerName: brokerName,
+          accountTags: allTags,
+        }),
+      });
+
+      const result = await response.json();
+      console.log('📊 Process-with-broker result:', result);
+
+      setState(prev => ({ 
+        ...prev, 
+        uploadResult: result, 
+        isUploading: false, 
+        uploadProgress: 100 
+      }));
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Processing failed');
+      }
+
+      // Check if we need mapping review
+      if (result.requiresUserReview && result.openAiMappingResult && result.openAiMappingResult.mappings) {
+        console.log('🧠 AI mapping needs review, showing mapping review modal');
+        console.log('🔍 AI result validation:', {
+          hasMappings: !!result.openAiMappingResult.mappings,
+          mappingsCount: Object.keys(result.openAiMappingResult.mappings || {}).length,
+          hasConfidence: typeof result.openAiMappingResult.overallConfidence === 'number',
+          showMappingReview: showMappingReview
+        });
+        setAiMappingResult(result.openAiMappingResult);
+        setAiIngestCheckId(result.aiIngestCheckId || null);
+        
+        // Force a small delay to ensure state is set properly
+        setTimeout(() => {
+          console.log('🎯 Setting showMappingReview to true from broker selection');
+          setShowMappingReview(true);
+        }, 100);
+      } else if (result.success) {
+        console.log('✅ Processing completed successfully');
+        onUploadComplete?.(result);
+        // Refresh upload limits after successful processing
+        onRefreshLimits?.();
+        // Clear only the file, keep success status message
+        setTimeout(() => {
+          clearFileOnly();
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+        }, 2000);
+      }
+
+    } catch (error) {
+      console.error('💥 Process with broker error:', error);
+      setState(prev => ({ 
+        ...prev, 
+        error: error instanceof Error ? error.message : 'Processing failed',
+        isUploading: false,
+        uploadProgress: 0
+      }));
+    }
+  };
+
+  // Handle creating new broker
+  const handleCreateBroker = async (brokerName: string) => {
+    console.log(`➕ Creating new broker: ${brokerName}`);
+    
+    try {
+      const response = await fetch('/api/brokers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: brokerName,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create broker');
+      }
+
+      const result = await response.json();
+      console.log('✅ Created broker:', result.broker);
+      
+      // Now select this broker
+      handleBrokerSelected(result.broker, brokerName);
+      
+    } catch (error) {
+      console.error('💥 Create broker error:', error);
+      setState(prev => ({ ...prev, error: error instanceof Error ? error.message : 'Failed to create broker' }));
+    }
+  };
+
+  // Handle mapping review approval
+  const handleMappingApproved = async (correctedMappings?: { [csvHeader: string]: string }) => {
+    console.log('✅ Mapping approved');
+    if (correctedMappings) {
+      console.log('🔧 User made corrections:', correctedMappings);
+      // TODO: Apply corrections and reprocess
+      // For now, just proceed with original mappings
+    }
+    
+    setShowMappingReview(false);
+    
+    // The result should already be in uploadResult, just trigger the callback
+    if (state.uploadResult) {
+      onUploadComplete?.(state.uploadResult);
+      // Refresh upload limits after successful completion
+      onRefreshLimits?.();
+      // Clear only the file, keep success status message
+      setTimeout(() => {
+        clearFileOnly();
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }, 1000);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Instructions */}
@@ -291,14 +524,47 @@ export default function EnhancedFileUpload({
       </Card>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Upload Section */}
+        {/* Upload Section - Conditionally show limit reached message */}
         <Card className="bg-theme-surface border-theme-border">
           <CardHeader>
             <CardTitle className="text-base font-medium text-theme-primary-text">
               Upload CSV File
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
+          {/* Show limit reached message if user has no remaining uploads */}
+          {uploadLimitStatus && !uploadLimitStatus.isUnlimited && uploadLimitStatus.remaining === 0 ? (
+            <CardContent className="space-y-6">
+              <div className="text-center py-12">
+                <div className="mb-6">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-theme-red/10 border-2 border-theme-red/30 rounded-full mb-4">
+                    <AlertTriangle className="h-8 w-8 text-theme-red" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-theme-red mb-2">Upload Limit Reached</h3>
+                  <p className="text-theme-secondary-text">
+                    Free tier limit: <span className="font-medium text-theme-red">{uploadLimitStatus.used}/{uploadLimitStatus.limit} uploads used</span>
+                  </p>
+                </div>
+                
+                <div className="space-y-4">
+                  <p className="text-theme-primary-text">
+                    Upgrade to Premium to get unlimited daily uploads!
+                  </p>
+                  
+                  <Button 
+                    onClick={() => window.location.href = '/settings?tab=subscription'}
+                    className="bg-theme-tertiary hover:bg-theme-tertiary/90 text-white px-8 py-3 text-lg font-medium"
+                  >
+                    Upgrade to Premium
+                  </Button>
+                  
+                  <p className="text-xs text-theme-secondary-text">
+                    Uploads reset daily at midnight
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          ) : (
+            <CardContent className="space-y-6">
             {/* Format Detection Status */}
             {state.validationResult?.detectedFormatInfo && (
               <div className="p-4 bg-theme-tertiary/10 border border-theme-tertiary/30 rounded-lg">
@@ -450,6 +716,7 @@ export default function EnhancedFileUpload({
               )}
             </Button>
           </CardContent>
+          )}
         </Card>
 
         {/* Status Section */}
@@ -626,6 +893,37 @@ export default function EnhancedFileUpload({
           </CardContent>
         </Card>
       </div>
+      
+      {/* Broker Selection Modal */}
+      <BrokerSelector
+        isOpen={showBrokerSelector}
+        onClose={() => {
+          console.log('❌ Broker selector cancelled');
+          setShowBrokerSelector(false);
+          setPendingImportBatchId(null);
+        }}
+        onSelectBroker={handleBrokerSelected}
+        onCreateBroker={handleCreateBroker}
+        importBatchId={pendingImportBatchId || undefined}
+        fileName={state.file?.name}
+      />
+
+      {/* Mapping Review Modal */}
+      <MappingReview
+        isOpen={showMappingReview}
+        onClose={() => {
+          console.log('❌ Mapping review cancelled');
+          setShowMappingReview(false);
+          setAiMappingResult(null);
+        }}
+        onApproveMapping={handleMappingApproved}
+        aiResult={aiMappingResult}
+        sampleData={state.validationResult?.sampleRows}
+        fileName={state.file?.name}
+        brokerName={String(state.uploadResult?.brokerFormatUsed || 'Unknown')}
+        aiIngestCheckId={aiIngestCheckId}
+        importBatchId={pendingImportBatchId}
+      />
     </div>
   );
 }

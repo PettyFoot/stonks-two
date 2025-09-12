@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CsvIngestionService, FILE_SIZE_LIMITS } from '@/lib/csvIngestion';
 import { getCurrentUser } from '@/lib/auth0';
+import { checkUploadLimit, incrementUploadCount } from '@/lib/uploadRateLimiter';
 import { z } from 'zod';
 
 export async function POST(request: NextRequest) {
@@ -9,6 +10,20 @@ export async function POST(request: NextRequest) {
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    // Check upload limits before processing
+    const limitStatus = await checkUploadLimit(user.id);
+    if (!limitStatus.allowed) {
+      return NextResponse.json({ 
+        error: 'Upload limit exceeded',
+        details: {
+          limit: limitStatus.limit,
+          remaining: limitStatus.remaining,
+          resetAt: limitStatus.resetAt.toISOString(),
+          isUnlimited: limitStatus.isUnlimited
+        }
+      }, { status: 429 });
     }
 
     const formData = await request.formData();
@@ -37,6 +52,8 @@ export async function POST(request: NextRequest) {
     const accountTags = accountTagsStr ? 
       accountTagsStr.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0) : 
       [];
+    
+    const brokerName = formData.get('brokerName') as string;
 
     // Read file content
     const fileContent = await file.text();
@@ -57,8 +74,23 @@ export async function POST(request: NextRequest) {
       fileContent,
       file.name,
       user.id,
-      accountTags
+      accountTags,
+      undefined, // userMappings
+      brokerName || undefined // brokerName
     );
+
+    // Increment upload count after successful processing
+    // (Note: this will be called when the upload completes successfully, 
+    // not just when it's validated)
+    if (result.success && result.successCount > 0) {
+      try {
+        await incrementUploadCount(user.id);
+        console.log(`✅ Upload count incremented for user ${user.id}`);
+      } catch (error) {
+        console.error('Failed to increment upload count:', error);
+        // Don't fail the whole operation for counting issues
+      }
+    }
 
     return NextResponse.json(result);
 
@@ -115,6 +147,14 @@ export async function PUT(request: NextRequest) {
         confidence: validation.formatConfidence,
         reasoning: validation.formatReasoning,
         brokerName: validation.detectedFormat.brokerName,
+      } : validation.brokerDetection?.format ? {
+        name: validation.brokerDetection.format.formatName,
+        description: validation.brokerDetection.format.description || `${validation.brokerDetection.broker?.name} CSV format`,
+        confidence: validation.brokerDetection.confidence,
+        reasoning: validation.brokerDetection.isExactMatch ? 
+          [`Exact format match found - headers match perfectly`] :
+          [`Matched existing broker format with ${Math.round(validation.brokerDetection.confidence * 100)}% confidence`],
+        brokerName: validation.brokerDetection.broker?.name,
       } : null,
     };
 

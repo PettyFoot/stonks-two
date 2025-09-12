@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { useRouter } from 'next/navigation';
 import TopBar from '@/components/TopBar';
@@ -43,6 +43,15 @@ interface MappingModalState {
   importBatchId: string | null;
 }
 
+interface UploadLimitStatus {
+  allowed: boolean;
+  remaining: number;
+  limit: number;
+  resetAt: string;
+  isUnlimited: boolean;
+  used: number;
+}
+
 export default function EnhancedImportPage() {
   const { user, isLoading } = useUser();
   const router = useRouter();
@@ -56,6 +65,8 @@ export default function EnhancedImportPage() {
   });
   
   const [isProcessingMapping, setIsProcessingMapping] = useState(false);
+  const [uploadLimitStatus, setUploadLimitStatus] = useState<UploadLimitStatus | null>(null);
+  const [activeTab, setActiveTab] = useState('broker');
 
   // Redirect if not authenticated
   React.useEffect(() => {
@@ -77,8 +88,13 @@ export default function EnhancedImportPage() {
   const handleUploadComplete = (result: Record<string, unknown>) => {
     console.log('Upload completed:', result);
     
+    // Prevent any form of page refresh or navigation
     // Stay on the import page - no redirect
     // The EnhancedFileUpload component will show success message
+    if (typeof window !== 'undefined') {
+      // Prevent any automatic redirects or refreshes
+      window.history.replaceState(null, '', window.location.href);
+    }
   };
 
   const handleMappingRequired = (result: Record<string, unknown>) => {
@@ -131,6 +147,35 @@ export default function EnhancedImportPage() {
     setMappingModal(prev => ({ ...prev, isOpen: false }));
   };
 
+  // Fetch upload limits when CSV tab becomes active
+  const fetchUploadLimits = async () => {
+    if (!user) return;
+    
+    try {
+      const response = await fetch('/api/user/upload-limits');
+      if (response.ok) {
+        const limits = await response.json();
+        setUploadLimitStatus(limits);
+        console.log('📊 Upload limits:', limits);
+      } else {
+        console.error('Failed to fetch upload limits');
+      }
+    } catch (error) {
+      console.error('Error fetching upload limits:', error);
+    }
+  };
+
+  // Fetch limits when component mounts and when CSV tab is selected
+  useEffect(() => {
+    if (activeTab === 'csv') {
+      fetchUploadLimits();
+    }
+  }, [activeTab, user]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+  };
+
   return (
     <div className="flex flex-col h-full">
       <TopBar title="Import Trades" showTimeRangeFilters={false} />
@@ -148,7 +193,7 @@ export default function EnhancedImportPage() {
           </div>
 
           {/* Import Methods Tabs */}
-          <Tabs defaultValue="broker" className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-8">
               <TabsTrigger value="broker" className="flex items-center gap-2">
                 <Building2 className="h-4 w-4" />
@@ -203,6 +248,8 @@ export default function EnhancedImportPage() {
                 onUploadComplete={handleUploadComplete}
                 onMappingRequired={handleMappingRequired}
                 accountTags={[]}
+                uploadLimitStatus={uploadLimitStatus}
+                onRefreshLimits={fetchUploadLimits}
               />
             </TabsContent>
           </Tabs>

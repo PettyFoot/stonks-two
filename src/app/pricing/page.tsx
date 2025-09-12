@@ -40,7 +40,7 @@ export default function Pricing() {
         "Full platform access",
         "All analytics features",
         "No credit card required",
-        "10 API calls per minute",
+        "10 API calls per 30 minutes",
         "10 uploads per day"
       ],
       limitations: [

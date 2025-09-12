@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
     };
 
     // Execute parallel queries for different usage metrics
-    const [tradeStats, dayDataStats, recordsStats] = await Promise.all([
+    const [tradeStats, recordsStats] = await Promise.all([
       // Trade-related usage
       prisma.trade.aggregate({
         where: whereClause,
@@ -110,27 +110,6 @@ export async function GET(request: NextRequest) {
           commission: true,
           fees: true,
         },
-      }),
-
-      // Daily aggregation usage
-      prisma.dayData.aggregate({
-        where: {
-          userId: user.id,
-          date: {
-            gte: startDate,
-            lte: endDate,
-          }
-        },
-        _count: { id: true },
-        _sum: {
-          pnl: true,
-          trades: true,
-          volume: true,
-          commissions: true,
-        },
-        _avg: {
-          winRate: true,
-        }
       }),
 
       // Records entries
@@ -180,9 +159,7 @@ export async function GET(request: NextRequest) {
         list: uniqueSymbols.map(s => s.symbol),
       },
       analytics: {
-        dayDataEntries: dayDataStats._count.id || 0,
         recordsEntries: recordsStats._count.id || 0,
-        averageWinRate: dayDataStats._avg.winRate || 0,
         enabled: !isFreeTier,
       },
       features: {

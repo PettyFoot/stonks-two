@@ -35,28 +35,14 @@ export async function GET(request: NextRequest) {
       where.symbol = symbol.toUpperCase();
     }
 
-    // Fetch trades and day data
-    const [trades, dayData] = await Promise.all([
-      prisma.trade.findMany({
-        where,
-        orderBy: { date: 'asc' }
-      }),
-      prisma.dayData.findMany({
-        where: {
-          userId: user.id,
-          ...(startDate || endDate ? {
-            date: {
-              ...(startDate ? { gte: new Date(startDate) } : {}),
-              ...(endDate ? { lte: new Date(endDate) } : {})
-            }
-          } : {})
-        },
-        orderBy: { date: 'asc' }
-      })
-    ]);
+    // Fetch trades
+    const trades = await prisma.trade.findMany({
+      where,
+      orderBy: { date: 'asc' }
+    });
 
-    // Create analyzer and calculate metrics
-    const analyzer = new TradingAnalyzer(trades, dayData);
+    // Create analyzer and calculate metrics (without dayData)
+    const analyzer = new TradingAnalyzer(trades);
     const metrics = analyzer.calculateMetrics();
     const performanceData = analyzer.calculatePerformanceData();
     const monthlyMetrics = analyzer.calculateMonthlyMetrics();

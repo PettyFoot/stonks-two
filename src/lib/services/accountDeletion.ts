@@ -207,21 +207,7 @@ class AccountDeletionServiceImpl implements AccountDeletionService {
         where: { userId }
       });
 
-      await tx.dayData.deleteMany({
-        where: { userId }
-      });
-
-      // Delete partial fills first (they reference trades)
-      const tradeIds = await tx.trade.findMany({
-        where: { userId },
-        select: { id: true }
-      });
-
-      for (const trade of tradeIds) {
-        await tx.partialFill.deleteMany({
-          where: { tradeId: trade.id }
-        });
-      }
+      // Note: dayData and partialFill tables have been removed
 
       // Delete orders
       await tx.order.deleteMany({
