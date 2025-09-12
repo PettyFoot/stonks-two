@@ -164,7 +164,7 @@ export default function BrokerSelector({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
+      <DialogContent className="!w-[80vw] md:!w-[60vw] !max-w-none sm:!max-w-none max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
@@ -196,85 +196,89 @@ export default function BrokerSelector({
           </div>
 
           {/* Brokers List */}
-          <ScrollArea className="flex-1 max-h-[400px]">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin" />
-                <span className="ml-2">Loading brokers...</span>
-              </div>
-            ) : filteredBrokers.length === 0 ? (
-              <div className="text-center py-8">
-                <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">
-                  {searchQuery ? 'No brokers found matching your search.' : 'No brokers available.'}
-                </p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  onClick={() => setShowCreateForm(true)}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add New Broker
-                </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-3">
-                {filteredBrokers.map((broker) => (
-                  <Card 
-                    key={broker.id}
-                    className={`cursor-pointer transition-colors hover:bg-muted/50 ${
-                      selectedBroker?.id === broker.id ? 'ring-2 ring-primary bg-primary/5' : ''
-                    }`}
-                    onClick={() => handleSelectBroker(broker)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="font-medium">{broker.name}</h3>
-                            {selectedBroker?.id === broker.id && (
-                              <Check className="h-4 w-4 text-primary" />
-                            )}
-                          </div>
-                          
-                          {broker.website && (
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-                              <Globe className="h-3 w-3" />
-                              <span>{broker.website}</span>
-                            </div>
-                          )}
-                          
-                          {broker.aliases.length > 0 && (
-                            <div className="flex items-center gap-2 mb-2">
-                              <Tag className="h-3 w-3 text-muted-foreground" />
-                              <div className="flex flex-wrap gap-1">
-                                {broker.aliases.slice(0, 3).map((alias) => (
-                                  <Badge key={alias.id} variant="secondary" className="text-xs">
-                                    {alias.alias}
-                                  </Badge>
-                                ))}
-                                {broker.aliases.length > 3 && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    +{broker.aliases.length - 3} more
-                                  </Badge>
+          <div className="h-[400px] overflow-hidden">
+            <ScrollArea className="h-full">
+              <div className="p-4">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <span className="ml-2">Loading brokers...</span>
+                  </div>
+                ) : filteredBrokers.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">
+                      {searchQuery ? 'No brokers found matching your search.' : 'No brokers available.'}
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-4"
+                      onClick={() => setShowCreateForm(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add New Broker
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {filteredBrokers.map((broker) => (
+                      <Card 
+                        key={broker.id}
+                        className={`cursor-pointer transition-colors hover:bg-muted/50 ${
+                          selectedBroker?.id === broker.id ? 'ring-2 ring-primary bg-primary/5' : ''
+                        }`}
+                        onClick={() => handleSelectBroker(broker)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h3 className="font-medium">{broker.name}</h3>
+                                {selectedBroker?.id === broker.id && (
+                                  <Check className="h-4 w-4 text-primary" />
                                 )}
                               </div>
+                              
+                              {broker.website && (
+                                <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
+                                  <Globe className="h-3 w-3" />
+                                  <span>{broker.website}</span>
+                                </div>
+                              )}
+                              
+                              {broker.aliases.length > 0 && (
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Tag className="h-3 w-3 text-muted-foreground" />
+                                  <div className="flex flex-wrap gap-1">
+                                    {broker.aliases.slice(0, 3).map((alias) => (
+                                      <Badge key={alias.id} variant="secondary" className="text-xs">
+                                        {alias.alias}
+                                      </Badge>
+                                    ))}
+                                    {broker.aliases.length > 3 && (
+                                      <Badge variant="secondary" className="text-xs">
+                                        +{broker.aliases.length - 3} more
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {broker.csvFormats.length > 0 && (
+                                <div className="text-xs text-muted-foreground">
+                                  {broker.csvFormats.length} CSV format{broker.csvFormats.length !== 1 ? 's' : ''} available
+                                </div>
+                              )}
                             </div>
-                          )}
-                          
-                          {broker.csvFormats.length > 0 && (
-                            <div className="text-xs text-muted-foreground">
-                              {broker.csvFormats.length} CSV format{broker.csvFormats.length !== 1 ? 's' : ''} available
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </ScrollArea>
+            </ScrollArea>
+          </div>
 
           {/* Create Custom Broker Form */}
           {showCreateForm && (
@@ -310,19 +314,20 @@ export default function BrokerSelector({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-between pt-4">
-          <Button variant="outline" onClick={() => setShowCreateForm(true)}>
+        <div className="flex flex-col md:flex-row md:justify-between gap-3 pt-4">
+          <Button variant="outline" onClick={() => setShowCreateForm(true)} className="w-full md:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Add New Broker
           </Button>
           
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleClose}>
+          <div className="flex flex-col md:flex-row gap-2">
+            <Button variant="outline" onClick={handleClose} className="w-full md:w-auto">
               Cancel
             </Button>
             <Button 
               onClick={handleConfirmSelection}
               disabled={!selectedBroker}
+              className="w-full md:w-auto"
             >
               Continue with {selectedBroker?.name || 'Selected Broker'}
             </Button>

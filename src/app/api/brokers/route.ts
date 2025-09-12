@@ -81,9 +81,24 @@ export async function POST(request: NextRequest) {
 
     const brokerService = new BrokerFormatService();
     
-    // Create the broker
-    console.log(`🏗️ Creating broker: ${name}`);
+    // Find or create the broker (this already checks for aliases)
+    console.log(`🏗️ Finding or creating broker: ${name}`);
     const broker = await brokerService.findOrCreateBroker(name.trim());
+    
+    // If broker was found by an existing name/alias, add the entered name as a new alias if it's different
+    const trimmedName = name.trim();
+    const isNewAlias = broker.name !== trimmedName && 
+                      !broker.aliases.some(alias => alias.alias === trimmedName);
+    
+    if (isNewAlias) {
+      console.log(`🔗 Adding "${trimmedName}" as new alias for existing broker: ${broker.name}`);
+      try {
+        await brokerService.addBrokerAlias(broker.id, trimmedName);
+        console.log(`✅ Added new alias: "${trimmedName}"`);
+      } catch (aliasError) {
+        console.warn(`⚠️ Alias "${trimmedName}" already exists or couldn't be added:`, aliasError);
+      }
+    }
     
     // Add website if provided
     if (website) {

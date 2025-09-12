@@ -175,6 +175,40 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    // Record user feedback if corrections were made
+    if (correctedMappings && Object.keys(correctedMappings).length > 0) {
+      console.log(`📝 Recording feedback for ${Object.keys(correctedMappings).length} corrected mappings`);
+      
+      for (const [csvHeader, correctedField] of Object.entries(correctedMappings)) {
+        const originalMapping = aiMappings[csvHeader];
+        if (originalMapping) {
+          const aiConfidence = originalMapping.confidence || 0;
+          
+          // Determine issue type based on the correction
+          let issueType = 'WRONG_FIELD';
+          if (aiConfidence < 0.5) {
+            issueType = 'LOW_CONFIDENCE';
+          } else if (correctedField === 'brokerMetadata') {
+            issueType = 'SHOULD_BE_METADATA';
+          }
+
+          await prisma.aiIngestFeedbackItem.create({
+            data: {
+              aiIngestCheckId: aiIngestCheck.id,
+              csvHeader,
+              aiMapping: originalMapping.field,
+              suggestedMapping: correctedField,
+              issueType,
+              confidence: aiConfidence,
+              originalValue: JSON.stringify(originalMapping),
+              comment: `User corrected: ${originalMapping.field} → ${correctedField}`,
+            }
+          });
+        }
+      }
+      console.log(`✅ Created ${Object.keys(correctedMappings).length} feedback items`);
+    }
+
     // Create ingestion service and process the CSV with the approved mappings
     console.log('🚀 Processing CSV with approved mappings...');
     const ingestionService = new CsvIngestionService();
@@ -224,6 +258,19 @@ export async function POST(request: NextRequest) {
       // Update format usage statistics
       if (result.successCount > 0) {
         await brokerFormatService.updateFormatUsage(format.id, true);
+      }
+
+      // Update AiIngestToCheck with orderIds if processing was successful
+      if (result.orderIds && result.orderIds.length > 0) {
+        await prisma.aiIngestToCheck.update({
+          where: { id: aiIngestCheck.id },
+          data: {
+            orderIds: result.orderIds,
+            processingStatus: 'COMPLETED',
+            processedAt: new Date()
+          }
+        });
+        console.log(`✅ Updated AiIngestToCheck with ${result.orderIds.length} order IDs`);
       }
 
       console.log('🎉 Processing completed successfully!');

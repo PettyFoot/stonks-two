@@ -46,6 +46,7 @@ export interface CsvIngestionResult {
   backgroundJobId?: string;
   brokerFormatUsed?: string; // Name of broker format that was used
   aiIngestCheckId?: string; // ID of AI ingestion check for user review
+  orderIds?: string[]; // IDs of created orders for AiIngestToCheck tracking
 }
 
 // CSV validation result
@@ -585,9 +586,11 @@ export class CsvIngestionService {
     const errors: string[] = [];
     let successCount = 0;
     let errorCount = 0;
+    const createdOrderIds: string[] = []; // Track created order IDs for AiIngestToCheck
 
     // Extract mappings from the stored format
     const fieldMappings = brokerDetection.format.fieldMappings as Record<string, any>;
+    const brokerName = brokerDetection.broker.name.replace(/[^A-Za-z0-9]/g, '_'); // Clean broker name for ID
 
     // Process each row using stored broker format mappings
     for (let i = 0; i < records.length; i++) {
@@ -622,11 +625,11 @@ export class CsvIngestionService {
         }
 
         // Create order record
-        await prisma.order.create({
+        const createdOrder = await prisma.order.create({
           data: {
             userId,
             importBatchId: importBatch.id,
-            orderId: String(mappedData.orderId || `known-${Date.now()}-${i}`),
+            orderId: String(mappedData.orderId || `${brokerName}-${Date.now()}-${i}`),
             parentOrderId: mappedData.parentOrderId ? String(mappedData.parentOrderId) : null,
             symbol,
             orderType: this.normalizeOrderType(String(mappedData.orderType || 'MARKET')),
@@ -646,6 +649,9 @@ export class CsvIngestionService {
             tags: [...accountTags, ...(mappedData.tags ? String(mappedData.tags).split(',') : [])],
           },
         });
+
+        // Collect the created order ID for AiIngestToCheck
+        createdOrderIds.push(createdOrder.id);
 
         successCount++;
       } catch (error: unknown) {
@@ -696,6 +702,7 @@ export class CsvIngestionService {
       requiresUserReview: false,
       requiresBrokerSelection: false,
       brokerFormatUsed: brokerDetection.format.formatName,
+      orderIds: createdOrderIds,
     };
   }
 
@@ -1533,6 +1540,100 @@ export class CsvIngestionService {
       requiresUserReview: false,
       requiresBrokerSelection: false,
       brokerFormatUsed: brokerName || 'AI_Generated',
+    };
+  }
+
+  /**
+   * Process an existing import batch with AI mappings after broker selection
+   */
+  async processExistingBatchWithAiMappings(
+    importBatchId: string,
+    brokerName: string,
+    userId: string
+  ): Promise<CsvIngestionResult> {
+    console.log(`🔄 Processing existing batch ${importBatchId} with AI mappings for broker: ${brokerName}`);
+    
+    // Get the existing import batch
+    const importBatch = await prisma.importBatch.findUnique({
+      where: { 
+        id: importBatchId,
+        userId // Ensure user owns this batch
+      }
+    });
+
+    if (!importBatch) {
+      throw new Error('Import batch not found');
+    }
+
+    if (importBatch.status !== 'PENDING') {
+      throw new Error('Import batch is not in pending state');
+    }
+
+    if (!importBatch.tempFileContent) {
+      throw new Error('File content not found. The temporary data may have expired. Please re-upload the file.');
+    }
+
+    console.log(`📊 Found existing batch with ${importBatch.totalRecords} records`);
+
+    // Parse the stored file content
+    const records = parse(importBatch.tempFileContent, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+      bom: true,
+    });
+
+    const headers = Object.keys(records[0] as Record<string, unknown>);
+    const sampleData = records.slice(0, 5) as Record<string, unknown>[];
+
+    console.log(`🤖 Generating AI mappings for broker: ${brokerName}`);
+    console.log('📊 Sending headers to OpenAI:', headers);
+    
+    // Generate AI mappings
+    const aiResult = await this.openAiService.analyzeHeaders({
+      csvHeaders: headers,
+      sampleData,
+      brokerName: brokerName
+    });
+    
+    console.log('✨ OpenAI mapping completed!');
+    console.log(`📊 Confidence score: ${(aiResult.overallConfidence * 100).toFixed(1)}%`);
+    console.log('🔍 Mapped fields:', Object.keys(aiResult.mappings).length);
+    console.log('❓ Unmapped fields:', aiResult.brokerMetadataFields.length);
+
+    // Update the existing import batch with AI mappings
+    await prisma.importBatch.update({
+      where: { id: importBatch.id },
+      data: {
+        brokerType: this.getBrokerTypeFromName(brokerName),
+        status: 'PENDING', // Keep as PENDING for user review
+        aiMappingUsed: true,
+        mappingConfidence: aiResult.overallConfidence,
+        userReviewRequired: true,
+        columnMappings: {
+          pendingAiMappings: aiResult.mappings,
+          pendingBrokerName: brokerName,
+          pendingMetadata: aiResult.brokerMetadataFields,
+          overallConfidence: aiResult.overallConfidence
+        } as any,
+      },
+    });
+
+    console.log('✅ Updated existing import batch with AI mappings');
+    console.log('⏸️ Waiting for user to approve mappings...');
+
+    return {
+      success: false,
+      importBatchId: importBatch.id, // Return the SAME import batch ID
+      importType: 'CUSTOM',
+      totalRecords: records.length,
+      successCount: 0,
+      errorCount: 0,
+      errors: [],
+      openAiMappingResult: aiResult,
+      requiresUserReview: true,
+      requiresBrokerSelection: false,
+      brokerFormatUsed: brokerName,
     };
   }
 
