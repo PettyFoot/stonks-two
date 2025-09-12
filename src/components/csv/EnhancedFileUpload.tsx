@@ -921,8 +921,8 @@ export default function EnhancedFileUpload({
         sampleData={state.validationResult?.sampleRows}
         fileName={state.file?.name}
         brokerName={String(state.uploadResult?.brokerFormatUsed || 'Unknown')}
-        aiIngestCheckId={aiIngestCheckId}
-        importBatchId={pendingImportBatchId}
+        aiIngestCheckId={aiIngestCheckId || undefined}
+        importBatchId={pendingImportBatchId || undefined}
       />
     </div>
   );

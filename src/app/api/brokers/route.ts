@@ -160,10 +160,13 @@ export async function PATCH(request: NextRequest) {
     
     const { prisma } = await import('@/lib/prisma');
     
-    // Update the broker
-    const updatedBroker = await prisma.broker.update({
+    // Extract aliases for separate handling
+    const { aliases, ...brokerData } = validatedData;
+    
+    // Update the broker (excluding aliases)
+    let updatedBroker = await prisma.broker.update({
       where: { id: brokerId },
-      data: validatedData,
+      data: brokerData,
       include: {
         aliases: true,
         csvFormats: {
@@ -171,6 +174,34 @@ export async function PATCH(request: NextRequest) {
         }
       }
     });
+
+    // Handle aliases update if provided
+    if (aliases && Array.isArray(aliases)) {
+      // Delete existing aliases and create new ones
+      await prisma.brokerAlias.deleteMany({
+        where: { brokerId }
+      });
+
+      if (aliases.length > 0) {
+        await prisma.brokerAlias.createMany({
+          data: aliases.map(alias => ({
+            brokerId,
+            alias
+          }))
+        });
+
+        // Fetch updated broker with new aliases
+        updatedBroker = await prisma.broker.findUnique({
+          where: { id: brokerId },
+          include: {
+            aliases: true,
+            csvFormats: {
+              orderBy: { usageCount: 'desc' }
+            }
+          }
+        }) || updatedBroker;
+      }
+    }
 
     console.log(`✅ Successfully updated broker: ${brokerId}`);
     

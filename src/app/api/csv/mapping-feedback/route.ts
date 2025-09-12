@@ -6,7 +6,7 @@ import { z } from 'zod';
 const MappingFeedbackSchema = z.object({
   aiIngestCheckId: z.string(),
   importBatchId: z.string(),
-  correctedMappings: z.record(z.string()).optional(), // { csvHeader: correctedField }
+  correctedMappings: z.record(z.string(), z.string()).optional(), // { csvHeader: correctedField }
   overallSatisfaction: z.enum(['SATISFIED', 'NEEDS_IMPROVEMENT', 'POOR']).optional(),
   comments: z.string().optional(),
 });
@@ -89,11 +89,9 @@ export async function POST(request: NextRequest) {
     await prisma.aiIngestToCheck.update({
       where: { id: aiIngestCheckId },
       data: {
-        processingStatus: wasSuccessful ? 'COMPLETED' : 'NEEDS_REVIEW',
+        processingStatus: wasSuccessful ? 'COMPLETED' : 'FAILED',
         processedAt: new Date(),
         userIndicatedError: !wasSuccessful,
-        userFeedback: overallSatisfaction,
-        userComments: comments,
       }
     });
 

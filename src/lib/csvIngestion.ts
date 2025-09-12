@@ -1011,7 +1011,6 @@ export class CsvIngestionService {
       // Create or find broker CSV format for this new mapping
       let brokerCsvFormat = await prisma.brokerCsvFormat.findFirst({
         where: {
-          brokerName: 'Generic',
           formatName: `Generic_AI_${Date.now()}`,
         }
       });
@@ -1019,7 +1018,6 @@ export class CsvIngestionService {
       if (!brokerCsvFormat) {
         brokerCsvFormat = await prisma.brokerCsvFormat.create({
           data: {
-            brokerName: 'Generic',
             formatName: `Generic_AI_${Date.now()}`,
             description: `AI-generated mapping for ${fileName}`,
             sampleHeaders: headers,

@@ -8,7 +8,7 @@ import { prisma } from '@/lib/prisma';
 
 const FinalizeMappingsSchema = z.object({
   importBatchId: z.string(),
-  correctedMappings: z.record(z.string()).optional(), // Optional user corrections
+  correctedMappings: z.record(z.string(), z.string()).optional(), // Optional user corrections
   userApproved: z.boolean().default(true),
   reportError: z.boolean().optional().default(false),
 }).strict();
@@ -167,11 +167,11 @@ export async function POST(request: NextRequest) {
       data: {
         userId: user.id,
         brokerCsvFormatId: format.id,
+        csvUploadLogId: importBatch.id, // Use importBatch.id as placeholder for now
         importBatchId: importBatch.id,
         processingStatus: 'PENDING', // Using valid enum value
         userIndicatedError: false,
-        aiConfidence: overallConfidence,
-        userCorrectedMappings: correctedMappings ? Object.keys(correctedMappings).length : 0
+        aiConfidence: overallConfidence
       }
     });
 
