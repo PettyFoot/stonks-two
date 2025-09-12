@@ -32,6 +32,8 @@ const ORDER_FIELDS = {
   accountId: 'Broker account identifier/number',
   orderAccount: 'Account name or description',
   orderRoute: 'Order routing destination (ARCA, NASDAQ, etc.)',
+  commission: 'Commission charged by broker for the order',
+  fees: 'Additional fees charged by broker (regulatory, exchange, etc.)',
   tags: 'User-defined tags or categories',
   tradeId: 'Associated trade group identifier'
 } as const;
@@ -454,6 +456,21 @@ ${csvHeaders.map((header, i) => `${i + 1}. "${header}"`).join('\n')}`;
       'trade id': { field: 'tradeId', confidence: 0.9 },
       'tradeid': { field: 'tradeId', confidence: 0.9 },
       'group id': { field: 'tradeId', confidence: 0.7 },
+      
+      // Commission variations
+      'commission': { field: 'commission', confidence: 0.9 },
+      'comm': { field: 'commission', confidence: 0.8 },
+      'broker commission': { field: 'commission', confidence: 0.9 },
+      'trade commission': { field: 'commission', confidence: 0.8 },
+      
+      // Fees variations
+      'fees': { field: 'fees', confidence: 0.9 },
+      'fee': { field: 'fees', confidence: 0.8 },
+      'regulatory fees': { field: 'fees', confidence: 0.8 },
+      'exchange fees': { field: 'fees', confidence: 0.8 },
+      'sec fees': { field: 'fees', confidence: 0.7 },
+      'taf': { field: 'fees', confidence: 0.7 },
+      'clearing fees': { field: 'fees', confidence: 0.7 },
     };
 
     // Apply heuristic mappings

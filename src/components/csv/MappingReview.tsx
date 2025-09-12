@@ -67,7 +67,7 @@ interface OpenAiMappingResult {
 interface MappingReviewProps {
   isOpen: boolean;
   onClose: () => void;
-  onApproveMapping: (correctedMappings?: { [csvHeader: string]: string }) => void;
+  onApproveMapping: (result?: Record<string, unknown> | { [csvHeader: string]: string }) => void;
   aiResult: OpenAiMappingResult;
   sampleData?: Record<string, unknown>[];
   fileName?: string;

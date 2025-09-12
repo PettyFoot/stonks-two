@@ -38,7 +38,9 @@ export interface CsvIngestionResult {
   totalRecords: number;
   successCount: number;
   errorCount: number;
+  duplicateCount?: number; // Number of orders skipped as duplicates
   errors: string[];
+  duplicateMessages?: string[]; // Details about skipped duplicates
   aiMappingResult?: AiMappingResult;
   openAiMappingResult?: OpenAiMappingResult;
   requiresUserReview: boolean;
@@ -170,6 +172,7 @@ export class CsvIngestionService {
 
   /**
    * Check for duplicate orders before creating a new one
+   * Checks across ALL imports for the user, not just the current batch
    */
   private async isDuplicateOrder(
     userId: string,
@@ -177,17 +180,24 @@ export class CsvIngestionService {
     symbol: string,
     orderQuantity: number,
     orderExecutedTime: Date,
-    brokerType: string
+    brokerType: string,
+    limitPrice?: number | null
   ): Promise<boolean> {
+    const whereClause: any = {
+      userId,
+      symbol,
+      orderQuantity,
+      orderExecutedTime,
+      brokerType: brokerType as BrokerType,
+    };
+
+    // Include limitPrice in duplicate detection if it exists
+    if (limitPrice !== null && limitPrice !== undefined) {
+      whereClause.limitPrice = limitPrice;
+    }
+
     const existingOrder = await prisma.order.findFirst({
-      where: {
-        userId,
-        importBatchId,
-        symbol,
-        orderQuantity,
-        orderExecutedTime,
-        brokerType: brokerType as BrokerType,
-      }
+      where: whereClause
     });
 
     return !!existingOrder;
@@ -584,8 +594,10 @@ export class CsvIngestionService {
     await this.updateUploadLog(uploadLogId, 'PARSING', 'STANDARD', undefined, importBatch.id);
 
     const errors: string[] = [];
+    const duplicateMessages: string[] = [];
     let successCount = 0;
     let errorCount = 0;
+    let duplicateCount = 0;
     const createdOrderIds: string[] = []; // Track created order IDs for AiIngestToCheck
 
     // Extract mappings from the stored format
@@ -619,8 +631,12 @@ export class CsvIngestionService {
         const brokerType = this.getBrokerTypeFromName(brokerDetection.broker.name);
 
         // Check for duplicate
-        if (await this.isDuplicateOrder(userId, importBatch.id, symbol, orderQuantity, orderExecutedTime, brokerType)) {
-          console.log(`Skipping duplicate order: ${symbol} ${orderQuantity} shares at ${orderExecutedTime.toISOString()}`);
+        const limitPrice = mappedData.limitPrice ? Number(mappedData.limitPrice) : null;
+        if (await this.isDuplicateOrder(userId, importBatch.id, symbol, orderQuantity, orderExecutedTime, brokerType, limitPrice)) {
+          duplicateCount++;
+          const duplicateMessage = `Row ${i + 1}: Duplicate order ${symbol} ${orderQuantity} shares at ${orderExecutedTime.toISOString()}${limitPrice ? ` (limit: $${limitPrice})` : ''}`;
+          duplicateMessages.push(duplicateMessage);
+          console.log(`Skipping duplicate order: ${symbol} ${orderQuantity} shares at ${orderExecutedTime.toISOString()} (limitPrice: ${limitPrice})`);
           continue; // Skip this duplicate order
         }
 
@@ -692,13 +708,15 @@ export class CsvIngestionService {
     }
 
     return {
-      success: errorCount < records.length,
+      success: successCount > 0,
       importBatchId: importBatch.id,
       importType: 'CUSTOM',
       totalRecords: records.length,
       successCount,
       errorCount,
+      duplicateCount: duplicateCount > 0 ? duplicateCount : undefined,
       errors,
+      duplicateMessages: duplicateMessages.length > 0 ? duplicateMessages : undefined,
       requiresUserReview: false,
       requiresBrokerSelection: false,
       brokerFormatUsed: brokerDetection.format.formatName,
@@ -864,8 +882,10 @@ export class CsvIngestionService {
     await this.updateUploadLog(uploadLogId, 'PARSING', 'STANDARD', undefined, importBatch.id);
 
     const errors: string[] = [];
+    const duplicateMessages: string[] = [];
     let successCount = 0;
     let errorCount = 0;
+    let duplicateCount = 0;
 
     // Process each row using detected format mappings
     for (let i = 0; i < records.length; i++) {
@@ -879,8 +899,11 @@ export class CsvIngestionService {
         }
 
         // Check for duplicate
-        if (await this.isDuplicateOrder(userId, importBatch.id, normalizedOrder.symbol, normalizedOrder.orderQuantity, normalizedOrder.orderExecutedTime, orderBrokerType)) {
-          console.log(`Skipping duplicate order: ${normalizedOrder.symbol} ${normalizedOrder.orderQuantity} shares at ${normalizedOrder.orderExecutedTime.toISOString()}`);
+        if (await this.isDuplicateOrder(userId, importBatch.id, normalizedOrder.symbol, normalizedOrder.orderQuantity, normalizedOrder.orderExecutedTime, orderBrokerType, normalizedOrder.limitPrice)) {
+          duplicateCount++;
+          const duplicateMessage = `Row ${i + 1}: Duplicate order ${normalizedOrder.symbol} ${normalizedOrder.orderQuantity} shares at ${normalizedOrder.orderExecutedTime.toISOString()}${normalizedOrder.limitPrice ? ` (limit: $${normalizedOrder.limitPrice})` : ''}`;
+          duplicateMessages.push(duplicateMessage);
+          console.log(`Skipping duplicate order: ${normalizedOrder.symbol} ${normalizedOrder.orderQuantity} shares at ${normalizedOrder.orderExecutedTime.toISOString()} (limitPrice: ${normalizedOrder.limitPrice})`);
           continue; // Skip this duplicate order
         }
 
@@ -944,13 +967,15 @@ export class CsvIngestionService {
     }
 
     return {
-      success: errorCount < records.length,
+      success: successCount > 0,
       importBatchId: importBatch.id,
       importType: 'CUSTOM',
       totalRecords: records.length,
       successCount,
       errorCount,
+      duplicateCount: duplicateCount > 0 ? duplicateCount : undefined,
       errors,
+      duplicateMessages: duplicateMessages.length > 0 ? duplicateMessages : undefined,
       requiresUserReview: false,
       requiresBrokerSelection: false,
     };
@@ -1098,8 +1123,10 @@ export class CsvIngestionService {
 
     // Process with mappings
     const errors: string[] = [];
+    const duplicateMessages: string[] = [];
     let successCount = 0;
     let errorCount = 0;
+    let duplicateCount = 0;
 
     try {
       // Check if this is an order format (has orderId field mapping)
@@ -1154,8 +1181,12 @@ export class CsvIngestionService {
             const orderQuantity = Number(mappedData.orderQuantity) || 0;
 
             // Check for duplicate
-            if (await this.isDuplicateOrder(userId, importBatch.id, symbol, orderQuantity, orderExecutedTime, brokerType)) {
-              console.log(`Skipping duplicate order: ${symbol} ${orderQuantity} shares at ${orderExecutedTime.toISOString()}`);
+            const limitPrice = mappedData.limitPrice ? Number(mappedData.limitPrice) : null;
+            if (await this.isDuplicateOrder(userId, importBatch.id, symbol, orderQuantity, orderExecutedTime, brokerType, limitPrice)) {
+              duplicateCount++;
+              const duplicateMessage = `Row ${index + 1}: Duplicate order ${symbol} ${orderQuantity} shares at ${orderExecutedTime.toISOString()}${limitPrice ? ` (limit: $${limitPrice})` : ''}`;
+              duplicateMessages.push(duplicateMessage);
+              console.log(`Skipping duplicate order: ${symbol} ${orderQuantity} shares at ${orderExecutedTime.toISOString()} (limitPrice: ${limitPrice})`);
               continue; // Skip this duplicate order
             }
 
@@ -1260,13 +1291,15 @@ export class CsvIngestionService {
     }
 
     return {
-      success: errorCount < records.length,
+      success: successCount > 0,
       importBatchId: importBatch.id,
       importType: 'CUSTOM',
       totalRecords: records.length,
       successCount,
       errorCount,
+      duplicateCount: duplicateCount > 0 ? duplicateCount : undefined,
       errors,
+      duplicateMessages: duplicateMessages.length > 0 ? duplicateMessages : undefined,
       aiMappingResult: mappingResult,
       requiresUserReview: false,
       requiresBrokerSelection: false,
@@ -1418,8 +1451,10 @@ export class CsvIngestionService {
 
     // Process with OpenAI mappings
     const errors: string[] = [];
+    const duplicateMessages: string[] = [];
     let successCount = 0;
     let errorCount = 0;
+    let duplicateCount = 0;
 
     try {
       for (const [index, row] of records.entries()) {
@@ -1456,8 +1491,12 @@ export class CsvIngestionService {
           const brokerType = BrokerType.GENERIC_CSV;
 
           // Check for duplicate
-          if (await this.isDuplicateOrder(userId, importBatch.id, symbol, orderQuantity, orderExecutedTime, brokerType)) {
-            console.log(`Skipping duplicate order: ${symbol} ${orderQuantity} shares at ${orderExecutedTime.toISOString()}`);
+          const limitPrice = mappedData.limitPrice ? Number(mappedData.limitPrice) : null;
+          if (await this.isDuplicateOrder(userId, importBatch.id, symbol, orderQuantity, orderExecutedTime, brokerType, limitPrice)) {
+            duplicateCount++;
+            const duplicateMessage = `Row ${index + 1}: Duplicate order ${symbol} ${orderQuantity} shares at ${orderExecutedTime.toISOString()}${limitPrice ? ` (limit: $${limitPrice})` : ''}`;
+            duplicateMessages.push(duplicateMessage);
+            console.log(`Skipping duplicate order: ${symbol} ${orderQuantity} shares at ${orderExecutedTime.toISOString()} (limitPrice: ${limitPrice})`);
             continue; // Skip this duplicate order
           }
 
@@ -1529,13 +1568,15 @@ export class CsvIngestionService {
     }
 
     return {
-      success: errorCount < records.length,
+      success: successCount > 0,
       importBatchId: importBatch.id,
       importType: 'CUSTOM',
       totalRecords: records.length,
       successCount,
       errorCount,
+      duplicateCount: duplicateCount > 0 ? duplicateCount : undefined,
       errors,
+      duplicateMessages: duplicateMessages.length > 0 ? duplicateMessages : undefined,
       openAiMappingResult: aiResult,
       requiresUserReview: false,
       requiresBrokerSelection: false,

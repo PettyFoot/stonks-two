@@ -147,10 +147,13 @@ export async function POST(request: NextRequest) {
     const headers = Object.keys(records[0] as Record<string, unknown>);
     const sampleData = records.slice(0, 3) as Record<string, unknown>[];
     
+    // Generate incremental format name
+    const formatName = await brokerFormatService.generateFormatName(broker.id, broker.name);
+    
     // Create the broker format
     const formatData = {
       brokerId: broker.id,
-      formatName: `${broker.name} Format ${new Date().toISOString().split('T')[0]} (User Approved)`,
+      formatName,
       description: `User-approved AI format for ${broker.name}${correctedMappings ? ' with corrections' : ''}`,
       headers,
       sampleData,

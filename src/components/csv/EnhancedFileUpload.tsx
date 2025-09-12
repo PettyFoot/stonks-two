@@ -467,28 +467,49 @@ export default function EnhancedFileUpload({
   };
 
   // Handle mapping review approval
-  const handleMappingApproved = async (correctedMappings?: { [csvHeader: string]: string }) => {
+  const handleMappingApproved = async (finalizedResult?: Record<string, unknown>) => {
     console.log('✅ Mapping approved');
-    if (correctedMappings) {
-      console.log('🔧 User made corrections:', correctedMappings);
-      // TODO: Apply corrections and reprocess
-      // For now, just proceed with original mappings
-    }
+    console.log('📊 Finalized result received:', finalizedResult);
     
     setShowMappingReview(false);
     
-    // The result should already be in uploadResult, just trigger the callback
-    if (state.uploadResult) {
-      onUploadComplete?.(state.uploadResult);
+    // Update state with the finalized result from the API
+    if (finalizedResult) {
+      console.log('🔄 Updating uploadResult with finalized counts');
+      setState(prev => ({
+        ...prev,
+        uploadResult: {
+          ...finalizedResult,
+          success: true // Ensure success is true since mapping was approved
+        }
+      }));
+      
+      // Trigger completion callback with the updated result
+      onUploadComplete?.(finalizedResult);
+      
       // Refresh upload limits after successful completion
       onRefreshLimits?.();
+      
       // Clear only the file, keep success status message
       setTimeout(() => {
         clearFileOnly();
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
-      }, 1000);
+      }, 2000); // Give user time to see the success message
+    } else {
+      // Fallback to old behavior if no result provided
+      console.log('⚠️ No finalized result provided, using existing uploadResult');
+      if (state.uploadResult) {
+        onUploadComplete?.(state.uploadResult);
+        onRefreshLimits?.();
+        setTimeout(() => {
+          clearFileOnly();
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+        }, 1000);
+      }
     }
   };
 
@@ -552,7 +573,7 @@ export default function EnhancedFileUpload({
                   
                   <Button 
                     onClick={() => window.location.href = '/settings?tab=subscription'}
-                    className="bg-theme-tertiary hover:bg-theme-tertiary/90 text-white px-8 py-3 text-lg font-medium"
+                    className="bg-theme-secondary hover:bg-theme-tertiary/90 text-white px-8 py-3 text-lg font-medium"
                   >
                     Upgrade to Premium
                   </Button>
@@ -812,82 +833,130 @@ export default function EnhancedFileUpload({
               </div>
             )}
 
-            {state.uploadResult && (
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  {state.uploadResult.success ? (
-                    <CheckCircle className="h-5 w-5 text-theme-green" />
-                  ) : (
-                    <XCircle className="h-5 w-5 text-theme-red" />
+            {(state.uploadResult as any) && (() => {
+              const result = state.uploadResult!;
+              return (
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    {result.success ? (
+                      <CheckCircle className="h-5 w-5 text-theme-green" />
+                    ) : (
+                      <XCircle className="h-5 w-5 text-theme-red" />
+                    )}
+                    <Badge variant={result.success ? "default" : "destructive"}>
+                      {result.success ? 'Success' : 
+                        ((result as any).duplicateCount && Number((result as any).duplicateCount) > 0 && result.successCount === 0) ? 'All Duplicates' : 'Needs Review'}
+                    </Badge>
+                  </div>
+
+                  <div className={`grid gap-4 ${((result as any).duplicateCount && Number((result as any).duplicateCount) > 0) ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                    <div className="text-center p-3 bg-theme-surface rounded">
+                      <div className="text-2xl font-bold text-theme-green">
+                        {String(result.successCount || 0)}
+                      </div>
+                      <div className="text-xs text-theme-secondary-text">Imported</div>
+                    </div>
+                    <div className="text-center p-3 bg-theme-surface rounded">
+                      <div className="text-2xl font-bold text-theme-red">
+                        {String(result.errorCount || 0)}
+                      </div>
+                      <div className="text-xs text-theme-secondary-text">Errors</div>
+                    </div>
+                    {((result as any).duplicateCount && Number((result as any).duplicateCount) > 0) && (
+                      <div className="text-center p-3 bg-theme-surface rounded">
+                        <div className="text-2xl font-bold text-theme-warning">
+                          {String((result as any).duplicateCount)}
+                        </div>
+                        <div className="text-xs text-theme-secondary-text">Skipped</div>
+                      </div>
+                    )}
+                  </div>
+
+                  {Boolean(result.requiresUserReview) && (
+                    <div className="p-3 bg-theme-warning/10 border border-theme-warning/30 rounded-lg">
+                      <p className="text-sm font-medium text-theme-warning">Review Required</p>
+                      <p className="text-xs text-theme-warning mt-1">
+                        Column mapping needs your attention before import can proceed.
+                      </p>
+                    </div>
                   )}
-                  <Badge variant={state.uploadResult.success ? "default" : "destructive"}>
-                    {state.uploadResult.success ? 'Success' : 'Needs Review'}
-                  </Badge>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-3 bg-theme-surface rounded">
-                    <div className="text-2xl font-bold text-theme-green">
-                      {String(state.uploadResult.successCount || 0)}
-                    </div>
-                    <div className="text-xs text-theme-secondary-text">Imported</div>
-                  </div>
-                  <div className="text-center p-3 bg-theme-surface rounded">
-                    <div className="text-2xl font-bold text-theme-red">
-                      {String(state.uploadResult.errorCount || 0)}
-                    </div>
-                    <div className="text-xs text-theme-secondary-text">Errors</div>
-                  </div>
-                </div>
-
-                {Boolean(state.uploadResult.requiresUserReview) && (
-                  <div className="p-3 bg-theme-warning/10 border border-theme-warning/30 rounded-lg">
-                    <p className="text-sm font-medium text-theme-warning">Review Required</p>
-                    <p className="text-xs text-theme-warning mt-1">
-                      Column mapping needs your attention before import can proceed.
-                    </p>
-                  </div>
-                )}
-
-                {Array.isArray(state.uploadResult.errors) && state.uploadResult.errors.length > 0 && (
-                  <div className="p-4 bg-theme-red/10 border border-theme-red/30 rounded-lg max-h-48 overflow-y-auto">
-                    <div className="flex items-start space-x-2 mb-2">
-                      <XCircle className="h-5 w-5 text-theme-red flex-shrink-0 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-theme-red mb-2">Import Errors:</p>
-                        <ul className="text-xs text-theme-red space-y-1">
-                          {state.uploadResult.errors.slice(0, 10).map((error: string, index: number) => (
-                            <li key={index}>• {error}</li>
-                          ))}
-                          {state.uploadResult.errors.length > 10 && (
-                            <li className="font-medium">... and {state.uploadResult.errors.length - 10} more errors</li>
-                          )}
-                        </ul>
+                  {Array.isArray(result.errors) && result.errors.length > 0 && (
+                    <div className="p-4 bg-theme-red/10 border border-theme-red/30 rounded-lg max-h-48 overflow-y-auto">
+                      <div className="flex items-start space-x-2 mb-2">
+                        <XCircle className="h-5 w-5 text-theme-red flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-theme-red mb-2">Import Errors:</p>
+                          <ul className="text-xs text-theme-red space-y-1">
+                            {result.errors.slice(0, 10).map((error: string, index: number) => (
+                              <li key={index}>• {error}</li>
+                            ))}
+                            {result.errors.length > 10 && (
+                              <li className="font-medium">... and {result.errors.length - 10} more errors</li>
+                            )}
+                          </ul>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {Boolean(state.uploadResult.success && state.uploadResult.message) && (
-                  <div className="p-4 bg-theme-green/10 border border-theme-green/30 rounded-lg">
-                    <div className="flex items-start space-x-2">
-                      <CheckCircle className="h-5 w-5 text-theme-green flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-theme-green mb-1">Success!</p>
-                        <p className="text-xs text-theme-green">{String(state.uploadResult.message)}</p>
+                  {Array.isArray((result as any).duplicateMessages) && (result as any).duplicateMessages.length > 0 && (
+                    <div className="p-4 bg-theme-warning/10 border border-theme-warning/30 rounded-lg max-h-48 overflow-y-auto">
+                      <div className="flex items-start space-x-2 mb-2">
+                        <AlertTriangle className="h-5 w-5 text-theme-warning flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-theme-warning mb-2">Duplicate Orders Skipped:</p>
+                          <ul className="text-xs text-theme-warning space-y-1">
+                            {(result as any).duplicateMessages.slice(0, 10).map((message: string, index: number) => (
+                              <li key={index}>• {message}</li>
+                            ))}
+                            {(result as any).duplicateMessages.length > 10 && (
+                              <li className="font-medium">... and {(result as any).duplicateMessages.length - 10} more duplicates</li>
+                            )}
+                          </ul>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
 
-            {!state.file && !state.error && !state.isUploading && (
+                  {Boolean(result.success && (result as any).message) && (
+                    <div className="p-4 bg-theme-green/10 border border-theme-green/30 rounded-lg">
+                      <div className="flex items-start space-x-2">
+                        <CheckCircle className="h-5 w-5 text-theme-green flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-theme-green mb-1">Success!</p>
+                          <p className="text-xs text-theme-green">{String((result as any).message)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {!state.file && !state.error && !state.isUploading && !state.uploadResult && (
               <div className="text-center py-8">
                 <FileText className="h-12 w-12 text-theme-secondary-text mx-auto mb-4" />
                 <p className="text-sm text-theme-secondary-text">
                   Select a CSV file to begin validation and import
                 </p>
+              </div>
+            )}
+
+            {state.uploadResult && !state.uploadResult.success && (state.uploadResult as any).successCount === 0 && 
+             (state.uploadResult as any).errorCount === 0 && (state.uploadResult as any).duplicateCount && Number((state.uploadResult as any).duplicateCount) > 0 && (
+              <div className="p-4 bg-theme-warning/10 border border-theme-warning/30 rounded-lg">
+                <div className="flex items-start space-x-2">
+                  <AlertTriangle className="h-5 w-5 text-theme-warning flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-theme-warning mb-1">All Orders Already Exist</p>
+                    <p className="text-xs text-theme-warning">
+                      {Number((state.uploadResult as any).duplicateCount) === 1 ? 
+                        'The order in this file has already been imported.' : 
+                        `All ${(state.uploadResult as any).duplicateCount} orders in this file have already been imported.`}
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>

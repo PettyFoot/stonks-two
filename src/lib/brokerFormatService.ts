@@ -282,9 +282,10 @@ export class BrokerFormatService {
     console.log('🎯 OpenAI analysis complete, confidence:', (aiResult.overallConfidence * 100).toFixed(1) + '%');
 
     // Create the format
+    const formatName = await this.generateFormatName(broker.id, broker.name);
     const formatData: CreateFormatData = {
       brokerId: broker.id,
-      formatName: `${broker.name} Format ${new Date().toISOString().split('T')[0]}`,
+      formatName,
       description: `Auto-generated format for ${broker.name}`,
       headers,
       sampleData: sampleData.slice(0, 3), // Store first 3 rows as sample
@@ -296,6 +297,29 @@ export class BrokerFormatService {
     const format = await this.createFormat(formatData);
 
     return { format, aiResult };
+  }
+
+  /**
+   * Generate incremental format name for a broker
+   */
+  async generateFormatName(brokerId: string, brokerName: string): Promise<string> {
+    const existingFormats = await prisma.brokerCsvFormat.findMany({
+      where: { brokerId },
+      select: { formatName: true }
+    });
+
+    // Extract format numbers from existing format names
+    const formatNumbers = existingFormats
+      .map(format => {
+        const match = format.formatName.match(new RegExp(`^${brokerName}\\s+Format\\s+(\\d+)$`));
+        return match ? parseInt(match[1], 10) : 0;
+      })
+      .filter(num => num > 0);
+
+    // Find the next available number
+    const nextNumber = formatNumbers.length > 0 ? Math.max(...formatNumbers) + 1 : 1;
+    
+    return `${brokerName} Format ${nextNumber}`;
   }
 
   /**

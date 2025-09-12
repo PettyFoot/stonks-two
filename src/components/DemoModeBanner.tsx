@@ -3,15 +3,22 @@
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsMobile } from '@/hooks/useMediaQuery';
 import { Button } from '@/components/ui/button';
 import { Info, Sparkles, Clock, X } from 'lucide-react';
 
 export function DemoModeBanner() {
   const { isDemo, expiresAt, upgradeUrl, extendSession } = useAuth();
   const pathname = usePathname();
+  const isMobile = useIsMobile();
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [isMinimized, setIsMinimized] = useState(false);
   const [isExpiringSoon, setIsExpiringSoon] = useState(false);
+
+  // Set initial minimized state based on mobile detection after mount
+  useEffect(() => {
+    setIsMinimized(isMobile);
+  }, [isMobile]);
 
   useEffect(() => {
     if (!isDemo || !expiresAt) return;

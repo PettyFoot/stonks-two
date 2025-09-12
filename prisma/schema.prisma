@@ -136,6 +136,8 @@ model Order {
   orderAccount        String?
   orderRoute          String?
   brokerType          BrokerType    @default(GENERIC_CSV)
+  commission          Decimal?      @db.Decimal(10, 2)
+  fees                Decimal?      @db.Decimal(10, 2)
   tags                String[]
   usedInTrade         Boolean       @default(false)
   tradeId             String?

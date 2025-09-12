@@ -188,6 +188,8 @@ export async function GET(request: Request) {
             orderAccount: order.orderAccount,
             orderRoute: order.orderRoute,
             brokerType: order.brokerType,
+            commission: order.commission,
+            fees: order.fees,
             tags: order.tags,
             usedInTrade: order.usedInTrade,
             tradeId: order.tradeId,
