@@ -838,6 +838,11 @@ export default function TradeCandlestickChart({
             <span className="ml-2 text-xs font-normal text-muted">
               ({executions.length} execution{executions.length !== 1 ? 's' : ''})
               {dataSource && ` • ${dataSource}`}
+              {dataSource === 'demo_data' && (
+                <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
+                  Demo Data
+                </span>
+              )}
             </span>
           </CardTitle>
           <div className="flex items-center gap-2">

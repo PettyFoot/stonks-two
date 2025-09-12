@@ -195,18 +195,22 @@ async function createDemoUser() {
 }
 
 async function seedTrades(userId: string) {
-  // Clear existing demo trades
+  // Clear existing demo trades and orders
   await prisma.trade.deleteMany({
     where: { userId }
   });
+  await prisma.order.deleteMany({
+    where: { userId }
+  });
   
-  console.log('Cleared existing demo trades');
+  console.log('Cleared existing demo trades and orders');
   
   // Generate and create new demo trades
   const scenarios = generateTradeScenarios();
+  let orderCounter = 1;
   
   for (const scenario of scenarios) {
-    await prisma.trade.create({
+    const trade = await prisma.trade.create({
       data: {
         userId,
         symbol: scenario.symbol,
@@ -232,11 +236,90 @@ async function seedTrades(userId: string) {
         executions: 1,
         createdAt: scenario.entryDate,
         updatedAt: scenario.exitDate || scenario.entryDate,
+        isCalculated: true,
+        ordersInTrade: [],
+        ordersCount: 0
       }
     });
+    
+    // Create individual order executions for recent trades (last 30 days) so they show up in charts
+    const daysSinceEntry = (Date.now() - scenario.entryDate.getTime()) / (1000 * 60 * 60 * 24);
+    if (daysSinceEntry <= 30 && scenario.status === 'CLOSED') {
+      const orderIds = [];
+      
+      // Entry order
+      const entryOrderId = `DEMO_ORDER_${orderCounter++}`;
+      const entryOrder = await prisma.order.create({
+        data: {
+          id: `order_${trade.id}_entry`,
+          userId,
+          orderId: entryOrderId,
+          symbol: scenario.symbol,
+          orderType: 'MARKET',
+          side: scenario.side === 'LONG' ? 'BUY' : 'SELL',
+          timeInForce: 'DAY',
+          orderQuantity: scenario.quantity,
+          limitPrice: scenario.entryPrice,
+          orderStatus: 'FILLED',
+          orderPlacedTime: scenario.entryDate,
+          orderExecutedTime: new Date(scenario.entryDate.getTime() + Math.random() * 60000), // Execute within 1 minute
+          orderUpdatedTime: new Date(scenario.entryDate.getTime() + Math.random() * 60000),
+          accountId: 'demo-account',
+          orderAccount: 'DEMO',
+          brokerType: 'GENERIC_CSV',
+          commission: (scenario.commission || 1) / 2, // Split commission between entry and exit
+          usedInTrade: true,
+          tradeId: trade.id,
+          datePrecision: 'MILLISECOND',
+          importSequence: orderCounter
+        }
+      });
+      orderIds.push(entryOrder.id);
+      
+      // Exit order (if closed)
+      if (scenario.exitDate && scenario.exitPrice) {
+        const exitOrderId = `DEMO_ORDER_${orderCounter++}`;
+        const exitOrder = await prisma.order.create({
+          data: {
+            id: `order_${trade.id}_exit`,
+            userId,
+            orderId: exitOrderId,
+            symbol: scenario.symbol,
+            orderType: 'MARKET',
+            side: scenario.side === 'LONG' ? 'SELL' : 'BUY',
+            timeInForce: 'DAY',
+            orderQuantity: scenario.quantity,
+            limitPrice: scenario.exitPrice,
+            orderStatus: 'FILLED',
+            orderPlacedTime: scenario.exitDate,
+            orderExecutedTime: new Date(scenario.exitDate.getTime() + Math.random() * 60000),
+            orderUpdatedTime: new Date(scenario.exitDate.getTime() + Math.random() * 60000),
+            accountId: 'demo-account',
+            orderAccount: 'DEMO',
+            brokerType: 'GENERIC_CSV',
+            commission: (scenario.commission || 1) / 2,
+            usedInTrade: true,
+            tradeId: trade.id,
+            datePrecision: 'MILLISECOND',
+            importSequence: orderCounter
+          }
+        });
+        orderIds.push(exitOrder.id);
+      }
+      
+      // Update trade with order references
+      await prisma.trade.update({
+        where: { id: trade.id },
+        data: {
+          ordersInTrade: orderIds,
+          ordersCount: orderIds.length,
+          executions: orderIds.length
+        }
+      });
+    }
   }
   
-  console.log(`Created ${scenarios.length} demo trades`);
+  console.log(`Created ${scenarios.length} demo trades with order executions for recent trades`);
 }
 
 async function createDemoRecords(userId: string) {

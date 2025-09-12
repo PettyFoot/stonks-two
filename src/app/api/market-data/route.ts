@@ -4,8 +4,70 @@ import { marketDataService } from '@/lib/marketData/marketDataService';
 import { TradeContext } from '@/lib/marketData/types';
 import { enforceMarketDataRateLimit, RateLimitExceededError } from '@/lib/marketData/rateLimiter';
 import { recordMarketDataApiCall } from '@/lib/marketData/usageTracking';
+import { isDemoUser } from '@/lib/demo/demoSession';
 
-// Legacy mock functions removed - now using MarketDataService
+// Generate dummy market data for demo mode
+function generateDummyMarketData(symbol: string, date: string, interval: string) {
+  const requestedDate = new Date(date + 'T09:30:00'); // Market open
+  
+  // Generate different but consistent patterns for different symbols
+  const symbolSeed = symbol.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const basePrice = ((symbolSeed % 100) + 50) + (symbolSeed % 20); // Price range $50-170
+  
+  const candles = [];
+  const intervalMinutes = interval === '1m' ? 1 : interval === '5m' ? 5 : interval === '15m' ? 15 : interval === '1h' ? 60 : 60;
+  const totalCandles = interval === '1d' ? 1 : Math.min(78, Math.floor(390 / intervalMinutes)); // Max 78 candles for 6.5 hour trading day
+  
+  let currentPrice = basePrice;
+  const startTime = new Date(requestedDate);
+  
+  // Create a trending pattern that's good for showing buy/sell executions
+  const trendDirection = (symbolSeed % 2 === 0) ? 1 : -1; // Some symbols trend up, others down
+  const trendStrength = 0.002; // 0.2% per candle trend
+  
+  for (let i = 0; i < totalCandles; i++) {
+    const timestamp = new Date(startTime.getTime() + (i * intervalMinutes * 60000));
+    
+    // Create more realistic price movements with trends
+    const volatility = 0.015; // 1.5% volatility
+    const cyclicalPattern = Math.sin(i / 8) * 0.003; // Some cyclical movement
+    const trend = trendDirection * trendStrength * i; // Overall trend
+    const randomChange = (Math.random() - 0.5) * volatility;
+    
+    const priceChange = (trend + cyclicalPattern + randomChange) * currentPrice;
+    const open = currentPrice;
+    const close = currentPrice + priceChange;
+    
+    // High and low with some realistic spread
+    const spreadRange = Math.abs(priceChange) * 1.5 + (currentPrice * 0.008); // Wider spread
+    const high = Math.max(open, close) + (Math.random() * spreadRange * 0.6);
+    const low = Math.min(open, close) - (Math.random() * spreadRange * 0.4);
+    
+    candles.push({
+      timestamp: timestamp.getTime(),
+      open: parseFloat(open.toFixed(2)),
+      high: parseFloat(high.toFixed(2)),
+      low: parseFloat(low.toFixed(2)),
+      close: parseFloat(close.toFixed(2)),
+      volume: Math.floor(Math.random() * 150000) + 20000 // Random volume 20k-170k
+    });
+    
+    currentPrice = close;
+  }
+  
+  console.log(`📊 Generated ${candles.length} dummy candles for ${symbol}, price range: $${Math.min(...candles.map(c => c.low)).toFixed(2)} - $${Math.max(...candles.map(c => c.high)).toFixed(2)}`);
+  
+  return {
+    symbol,
+    date,
+    interval,
+    ohlc: candles,
+    success: true,
+    error: null,
+    source: 'demo_data' as const,
+    cached: false
+  };
+}
 
 export async function GET(request: Request) {
   try {
@@ -51,6 +113,13 @@ export async function GET(request: Request) {
       }
     }
     
+    // Check if this is a demo user and return dummy data
+    if (user && isDemoUser(user.id)) {
+      console.log(`📊 Demo user detected, generating dummy market data for ${symbol}`);
+      const dummyData = generateDummyMarketData(symbol, date, interval);
+      return NextResponse.json(dummyData);
+    }
+    
     // Build simple trade context with just basic info
     const tradeContext: TradeContext = {
       symbol,
@@ -58,8 +127,6 @@ export async function GET(request: Request) {
       time: undefined,
       side: 'long' // Default side, not used in current implementation
     };
-    
-    // REMOVED: Demo data generation - always use real data sources
     
     const startTime = Date.now();
     let rateLimitInfo = null;
