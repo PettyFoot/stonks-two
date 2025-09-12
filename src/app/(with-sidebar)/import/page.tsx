@@ -68,6 +68,31 @@ export default function EnhancedImportPage() {
   const [uploadLimitStatus, setUploadLimitStatus] = useState<UploadLimitStatus | null>(null);
   const [activeTab, setActiveTab] = useState('broker');
 
+  // Fetch upload limits when CSV tab becomes active
+  const fetchUploadLimits = async () => {
+    if (!user) return;
+    
+    try {
+      const response = await fetch('/api/user/upload-limits');
+      if (response.ok) {
+        const limits = await response.json();
+        setUploadLimitStatus(limits);
+        console.log('📊 Upload limits:', limits);
+      } else {
+        console.error('Failed to fetch upload limits');
+      }
+    } catch (error) {
+      console.error('Error fetching upload limits:', error);
+    }
+  };
+
+  // Fetch limits when component mounts and when CSV tab is selected
+  useEffect(() => {
+    if (activeTab === 'csv') {
+      fetchUploadLimits();
+    }
+  }, [activeTab, user]);
+
   // Redirect if not authenticated
   React.useEffect(() => {
     if (!isLoading && !user) {
@@ -146,31 +171,6 @@ export default function EnhancedImportPage() {
   const closeMappingModal = () => {
     setMappingModal(prev => ({ ...prev, isOpen: false }));
   };
-
-  // Fetch upload limits when CSV tab becomes active
-  const fetchUploadLimits = async () => {
-    if (!user) return;
-    
-    try {
-      const response = await fetch('/api/user/upload-limits');
-      if (response.ok) {
-        const limits = await response.json();
-        setUploadLimitStatus(limits);
-        console.log('📊 Upload limits:', limits);
-      } else {
-        console.error('Failed to fetch upload limits');
-      }
-    } catch (error) {
-      console.error('Error fetching upload limits:', error);
-    }
-  };
-
-  // Fetch limits when component mounts and when CSV tab is selected
-  useEffect(() => {
-    if (activeTab === 'csv') {
-      fetchUploadLimits();
-    }
-  }, [activeTab, user]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);

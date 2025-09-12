@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Apply user corrections to the AI mappings
-    let finalMappings = { ...aiMappings };
+    const finalMappings = { ...aiMappings };
     if (correctedMappings && Object.keys(correctedMappings).length > 0) {
       console.log('🔧 Applying user corrections...');
       for (const [csvHeader, newField] of Object.entries(correctedMappings)) {
