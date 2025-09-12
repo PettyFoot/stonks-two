@@ -20,8 +20,19 @@ export function DemoRedirect({ to }: DemoRedirectProps) {
         });
         
         if (response.ok) {
-          router.push(to);
+          const data = await response.json();
+          
+          // Set demo mode in localStorage immediately
+          if (data.setDemoMode) {
+            localStorage.setItem('demo-mode', 'true');
+            console.log('Set demo mode in localStorage before navigation');
+          }
+          
+          // Add a small delay to ensure cookies are set, then use hard navigation
+          await new Promise(resolve => setTimeout(resolve, 100));
+          window.location.href = data.redirect || to;
         } else {
+          console.error('Failed to start demo session');
           // If demo start fails, redirect to home
           router.push('/');
         }

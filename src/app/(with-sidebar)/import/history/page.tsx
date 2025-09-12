@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useUser } from '@auth0/nextjs-auth0/client';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useRouter } from 'next/navigation';
 import TopBar from '@/components/TopBar';
 import { PageTriangleLoader } from '@/components/ui/TriangleLoader';
@@ -53,25 +53,18 @@ interface ImportBatch {
 }
 
 export default function ImportHistoryPage() {
-  const { user, isLoading } = useUser();
+  const { isAdmin, isLoading, user: currentUser } = useAdminAuth();
   const router = useRouter();
   const [importBatches, setImportBatches] = useState<ImportBatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingBatch, setProcessingBatch] = useState<string | null>(null);
 
-  // Redirect if not authenticated
-  React.useEffect(() => {
-    if (!isLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isLoading, router]);
-
   // Fetch import batches
   useEffect(() => {
-    if (user) {
+    if (isAdmin && !isLoading) {
       fetchImportBatches();
     }
-  }, [user]);
+  }, [isAdmin, isLoading]);
 
   const fetchImportBatches = async () => {
     try {
@@ -156,7 +149,7 @@ export default function ImportHistoryPage() {
     );
   }
 
-  if (!user) return null;
+  if (!isAdmin) return null;
 
   return (
     <div className="flex flex-col h-full">

@@ -18,6 +18,7 @@ export async function getCurrentUser() {
           auth0Id: true,
           email: true,
           name: true,
+          isAdmin: true,
           createdAt: true,
           updatedAt: true,
           deletionRequestedAt: true,
@@ -37,6 +38,7 @@ export async function getCurrentUser() {
             auth0Id: true,
             email: true,
             name: true,
+            isAdmin: true,
             createdAt: true,
             updatedAt: true,
             deletionRequestedAt: true,
@@ -62,6 +64,7 @@ export async function getCurrentUser() {
                   auth0Id: true,
                   email: true,
                   name: true,
+                  isAdmin: true,
                   createdAt: true,
                   updatedAt: true,
                   deletionRequestedAt: true,
@@ -86,6 +89,7 @@ export async function getCurrentUser() {
         auth0Id: user.auth0Id,
         email: user.email,
         name: user.name,
+        isAdmin: user.isAdmin,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
       };
@@ -100,6 +104,7 @@ export async function getCurrentUser() {
         auth0Id: null,
         email: demoSession.demoUser.email,
         name: demoSession.demoUser.name,
+        isAdmin: false, // Demo users are never admins
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -117,6 +122,17 @@ export async function requireAuth() {
   const user = await getCurrentUser();
   if (!user) {
     throw new Error('Authentication required');
+  }
+  return user;
+}
+
+export async function requireAdminAuth() {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new Error('Authentication required');
+  }
+  if (!user.isAdmin) {
+    throw new Error('Admin access required');
   }
   return user;
 }

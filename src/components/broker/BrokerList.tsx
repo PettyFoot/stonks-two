@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@auth0/nextjs-auth0/client';
+import { getCurrentUser } from '@/lib/auth0';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +60,7 @@ interface BrokerListProps {
 
 export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
   const { user } = useUser();
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [connections, setConnections] = useState<BrokerConnectionData[]>([]);
   const [liveConnections, setLiveConnections] = useState<LiveConnectionData[]>([]);
   const [syncHistory, setSyncHistory] = useState<Record<string, SyncLogData[]>>({});
@@ -73,7 +75,17 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
     checkSnapTradeConfiguration();
     loadConnections();
     loadLiveConnections();
+    loadCurrentUser();
   }, []);
+
+  const loadCurrentUser = async () => {
+    try {
+      const userData = await getCurrentUser();
+      setCurrentUser(userData);
+    } catch (error) {
+      console.error('Error loading current user:', error);
+    }
+  };
 
   const checkSnapTradeConfiguration = async () => {
     try {
@@ -413,8 +425,8 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
         </div>
         
         <div className="flex items-center gap-3">
-          {/* Test Holdings Button - Only for dannyvera127@gmail.com */}
-          {user?.email === 'dannyvera127@gmail.com' && (
+          {/* Test Holdings Button - Only for admin users */}
+          {currentUser?.isAdmin && (
             <Button
               onClick={handleTestHoldings}
               disabled={testingHoldings}

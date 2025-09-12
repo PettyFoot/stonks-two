@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@auth0/nextjs-auth0';
 import { getDemoSessionFromCookies } from '@/lib/demo/demoSession';
+import { prisma } from '@/lib/prisma';
 
 /**
  * Unified session endpoint that returns the current authentication state
@@ -12,13 +13,27 @@ export async function GET(request: NextRequest) {
     const auth0Session = await getSession();
     
     if (auth0Session?.user?.sub) {
+      // Find user in database to get admin status
+      let isAdmin = false;
+      try {
+        const dbUser = await prisma.user.findUnique({
+          where: { auth0Id: auth0Session.user.sub },
+          select: { isAdmin: true }
+        });
+        isAdmin = dbUser?.isAdmin || false;
+      } catch (error) {
+        console.error('Error fetching user admin status:', error);
+        // Continue with isAdmin = false as fallback
+      }
+
       const response = NextResponse.json({
         type: 'authenticated',
         user: {
           id: auth0Session.user.sub,
           name: auth0Session.user.name || auth0Session.user.nickname || '',
           email: auth0Session.user.email || '',
-          picture: auth0Session.user.picture || null
+          picture: auth0Session.user.picture || null,
+          isAdmin
         }
       });
       
@@ -40,7 +55,8 @@ export async function GET(request: NextRequest) {
           id: demoSession.demoUser.id,
           name: demoSession.demoUser.name,
           email: demoSession.demoUser.email,
-          picture: demoSession.demoUser.picture || null
+          picture: demoSession.demoUser.picture || null,
+          isAdmin: false // Demo users are never admins
         }
       });
       

@@ -14,6 +14,7 @@ interface UserData {
   name: string;
   email: string;
   picture?: string | null;
+  isAdmin?: boolean;
 }
 
 interface AuthContextValue {
