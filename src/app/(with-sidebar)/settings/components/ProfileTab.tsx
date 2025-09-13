@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useSubscription } from '@/hooks/useSubscription';
+import { SubscriptionTier } from '@prisma/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +37,7 @@ interface UserProfile {
 export default function ProfileTab() {
   const { user, isLoading } = useUser();
   const { data: userProfile, loading: profileLoading } = useUserProfile();
+  const { subscription } = useSubscription();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [profile, setProfile] = useState<UserProfile>({
@@ -126,7 +129,9 @@ export default function ProfileTab() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <h3 className="text-xl font-semibold">{user?.name || 'User'}</h3>
-                  <Badge variant="secondary">Free Plan</Badge>
+                  <Badge variant={subscription?.tier === SubscriptionTier.PREMIUM ? "default" : "secondary"}>
+                    {subscription?.tier === SubscriptionTier.PREMIUM ? "Premium" : "Free Plan"}
+                  </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">{user?.email}</p>
                 <p className="text-xs text-muted-foreground">
