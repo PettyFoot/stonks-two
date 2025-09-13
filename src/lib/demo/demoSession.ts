@@ -1,5 +1,4 @@
 import { getIronSession, IronSession, SessionOptions } from 'iron-session';
-import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -61,9 +60,13 @@ export async function createDemoSession(): Promise<DemoSession> {
   return demoSession;
 }
 
-export async function getDemoSessionFromCookies(): Promise<DemoSession | null> {
+export async function getDemoSessionFromCookies(cookieStore?: any): Promise<DemoSession | null> {
   try {
-    const cookieStore = await cookies();
+    // If no cookieStore provided, this function must be called from a server context
+    if (!cookieStore) {
+      const { cookies } = await import('next/headers');
+      cookieStore = await cookies();
+    }
     
     const session = await getIronSession<{ demo?: DemoSession }>(
       cookieStore,
@@ -79,7 +82,7 @@ export async function getDemoSessionFromCookies(): Promise<DemoSession | null> {
     const now = new Date();
     
     if (expiresAt < now) {
-      await clearDemoSession();
+      await clearDemoSession(cookieStore);
       return null;
     }
     return session.demo;
@@ -89,26 +92,41 @@ export async function getDemoSessionFromCookies(): Promise<DemoSession | null> {
   }
 }
 
-export async function saveDemoSession(demoSession: DemoSession) {
+export async function saveDemoSession(demoSession: DemoSession, cookieStore?: any) {
+  if (!cookieStore) {
+    const { cookies } = await import('next/headers');
+    cookieStore = await cookies();
+  }
+  
   const session = await getIronSession<{ demo?: DemoSession }>(
-    await cookies(),
+    cookieStore,
     sessionOptions
   );
   session.demo = demoSession;
   await session.save();
 }
 
-export async function clearDemoSession() {
+export async function clearDemoSession(cookieStore?: any) {
+  if (!cookieStore) {
+    const { cookies } = await import('next/headers');
+    cookieStore = await cookies();
+  }
+  
   const session = await getIronSession<{ demo?: DemoSession }>(
-    await cookies(),
+    cookieStore,
     sessionOptions
   );
   session.demo = undefined;
   await session.save();
 }
 
-export async function extendDemoSession(): Promise<DemoSession | null> {
-  const currentSession = await getDemoSessionFromCookies();
+export async function extendDemoSession(cookieStore?: any): Promise<DemoSession | null> {
+  if (!cookieStore) {
+    const { cookies } = await import('next/headers');
+    cookieStore = await cookies();
+  }
+  
+  const currentSession = await getDemoSessionFromCookies(cookieStore);
   if (!currentSession) {
     return null;
   }
@@ -117,12 +135,13 @@ export async function extendDemoSession(): Promise<DemoSession | null> {
   const newExpiresAt = new Date(Date.now() + 30 * 60 * 1000);
   currentSession.expiresAt = newExpiresAt.toISOString();
   
-  await saveDemoSession(currentSession);
+  await saveDemoSession(currentSession, cookieStore);
   return currentSession;
 }
 
 // Helper to check if a request has a demo session
 export async function isDemoRequest(request: NextRequest): Promise<boolean> {
+  const { cookies } = await import('next/headers');
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get('demo-session');
   
@@ -130,7 +149,7 @@ export async function isDemoRequest(request: NextRequest): Promise<boolean> {
     return false;
   }
 
-  const demoSession = await getDemoSessionFromCookies();
+  const demoSession = await getDemoSessionFromCookies(cookieStore);
   return demoSession !== null;
 }
 
