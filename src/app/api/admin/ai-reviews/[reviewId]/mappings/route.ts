@@ -17,11 +17,11 @@ const MappingUpdateSchema = z.object({
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { reviewId: string } }
+  { params }: { params: Promise<{ reviewId: string }> }
 ) {
   try {
     const user = await requireAdminAuth();
-    const { reviewId } = params;
+    const { reviewId } = await params;
     const body = await request.json();
 
     const { mappings, adminNotes, approve } = MappingUpdateSchema.parse(body);

@@ -30,7 +30,7 @@ async function testFormatDetection() {
       console.log(`   Name: ${result.detectedFormat.name}`);
       console.log(`   Description: ${result.detectedFormat.description}`);
       console.log(`   Broker: ${result.detectedFormat.brokerName}`);
-      console.log(`   Confidence: ${(result.formatConfidence * 100).toFixed(1)}%`);
+      console.log(`   Confidence: ${result.formatConfidence ? (result.formatConfidence * 100).toFixed(1) : '0'}%`);
       console.log(`   Fingerprint: ${result.detectedFormat.fingerprint}`);
 
       if (result.formatReasoning && result.formatReasoning.length > 0) {

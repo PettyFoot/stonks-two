@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-import { KNOWN_CSV_FORMATS } from '../src/lib/csvFormatRegistry';
 
 const prisma = new PrismaClient();
 
@@ -55,65 +54,10 @@ async function migrateCsvFormatsToDatabase() {
       'Charles Schwab': schwabBroker.id,
     };
 
-    // Migrate each format
-    for (const format of KNOWN_CSV_FORMATS) {
-      const brokerId = brokerMap[format.brokerName || ''];
-
-      if (!brokerId) {
-        console.log(`⚠️  Skipping format ${format.id} - no broker mapping found for: ${format.brokerName}`);
-        continue;
-      }
-
-      // Extract headers from the format
-      const headers = format.detectionPatterns.headerPattern;
-
-      // Create or update the format in the database
-      try {
-        const existingFormat = await prisma.brokerCsvFormat.findFirst({
-          where: {
-            brokerId: brokerId,
-            headerFingerprint: format.fingerprint
-          }
-        });
-
-        if (existingFormat) {
-          console.log(`✓ Format already exists: ${format.name} (${format.id})`);
-          continue;
-        }
-
-        const dbFormat = await prisma.brokerCsvFormat.create({
-          data: {
-            brokerId: brokerId,
-            formatName: format.name,
-            description: format.description,
-            headerFingerprint: format.fingerprint,
-            headers: headers,
-            sampleData: {
-              fieldMappings: format.fieldMappings,
-              detectionPatterns: format.detectionPatterns,
-              examples: Object.entries(format.fieldMappings).reduce((acc, [key, value]) => {
-                acc[key] = value.examples;
-                return acc;
-              }, {} as Record<string, string[]>)
-            },
-            fieldMappings: format.fieldMappings,
-            confidence: format.confidence,
-            usageCount: format.usageCount,
-            successRate: 1.0,
-            createdBy: 'system-migration',
-            lastUsed: null
-          }
-        });
-
-        console.log(`✅ Successfully migrated: ${format.name} (${format.id})`);
-        console.log(`   - Broker: ${format.brokerName}`);
-        console.log(`   - Headers: ${headers.join(', ')}`);
-        console.log(`   - Database ID: ${dbFormat.id}\n`);
-
-      } catch (error) {
-        console.error(`❌ Error migrating format ${format.id}:`, error);
-      }
-    }
+    // Note: CSV formats have already been migrated to the database
+    // This migration script is kept for reference but the formats are now stored
+    // in the broker_csv_formats table and managed through the admin interface
+    console.log('Migration already completed - formats are stored in database');
 
     // List all formats now in the database
     console.log('\n📊 Summary of broker_csv_formats in database:');

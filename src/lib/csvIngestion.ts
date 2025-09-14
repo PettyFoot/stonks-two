@@ -209,17 +209,17 @@ export class CsvIngestionService {
           headerPattern: dbFormat.headers,
           // Convert sampleValuePatterns back to RegExp objects if they exist
           sampleValuePatterns: this.convertPatternsToRegExp(
-            dbFormat.sampleData?.detectionPatterns?.sampleValuePatterns
+            (dbFormat.sampleData as any)?.detectionPatterns?.sampleValuePatterns
           ),
           fileNamePatterns: this.convertArrayPatternsToRegExp(
-            dbFormat.sampleData?.detectionPatterns?.fileNamePatterns
+            (dbFormat.sampleData as any)?.detectionPatterns?.fileNamePatterns
           ),
-          specialDetection: dbFormat.sampleData?.detectionPatterns?.specialDetection
+          specialDetection: (dbFormat.sampleData as any)?.detectionPatterns?.specialDetection
             ? {
                 fileStartPattern: this.convertPatternToRegExp(
-                  dbFormat.sampleData.detectionPatterns.specialDetection.fileStartPattern
+                  (dbFormat.sampleData as any).detectionPatterns.specialDetection.fileStartPattern
                 ),
-                sectionHeaders: dbFormat.sampleData.detectionPatterns.specialDetection.sectionHeaders
+                sectionHeaders: (dbFormat.sampleData as any).detectionPatterns.specialDetection.sectionHeaders
               }
             : undefined,
         },

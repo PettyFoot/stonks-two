@@ -4,12 +4,12 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { reviewId: string } }
+  { params }: { params: Promise<{ reviewId: string }> }
 ) {
   try {
     await requireAdminAuth();
 
-    const { reviewId } = params;
+    const { reviewId } = await params;
 
     if (!reviewId) {
       return NextResponse.json(

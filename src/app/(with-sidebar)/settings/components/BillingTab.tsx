@@ -78,7 +78,7 @@ export default function BillingTab() {
                     : 'No billing required'
                   }
                 </p>
-                {isPremium && subscription?.daysRemaining > 0 && (
+                {isPremium && subscription && subscription.daysRemaining && subscription.daysRemaining > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
                     {subscription.inTrial
                       ? `Trial (${subscription.daysRemaining} days remaining)`
