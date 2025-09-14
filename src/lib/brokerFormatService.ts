@@ -300,26 +300,52 @@ export class BrokerFormatService {
   }
 
   /**
-   * Generate incremental format name for a broker
+   * Generate format name with random 4-digit number for a broker
    */
   async generateFormatName(brokerId: string, brokerName: string): Promise<string> {
-    const existingFormats = await prisma.brokerCsvFormat.findMany({
-      where: { brokerId },
-      select: { formatName: true }
+    const randomNumber = Math.floor(Math.random() * 9000) + 1000;
+    const formatName = `${brokerName} Format ${randomNumber}`;
+
+    console.log('🎲 Generating format name:');
+    console.log(`  - Broker: ${brokerName}`);
+    console.log(`  - Random number: ${randomNumber}`);
+    console.log(`  - Format name: ${formatName}`);
+
+    // Check if this format name already exists for this broker
+    const existingFormat = await prisma.brokerCsvFormat.findFirst({
+      where: {
+        brokerId: brokerId,
+        formatName: formatName
+      }
     });
 
-    // Extract format numbers from existing format names
-    const formatNumbers = existingFormats
-      .map(format => {
-        const match = format.formatName.match(new RegExp(`^${brokerName}\\s+Format\\s+(\\d+)$`));
-        return match ? parseInt(match[1], 10) : 0;
-      })
-      .filter(num => num > 0);
+    if (existingFormat) {
+      console.log('⚠️ Format name already exists, generating new one...');
+      // Try up to 5 times to generate a unique name
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const newRandomNumber = Math.floor(Math.random() * 9000) + 1000;
+        const newFormatName = `${brokerName} Format ${newRandomNumber}`;
 
-    // Find the next available number
-    const nextNumber = formatNumbers.length > 0 ? Math.max(...formatNumbers) + 1 : 1;
-    
-    return `${brokerName} Format ${nextNumber}`;
+        const conflictCheck = await prisma.brokerCsvFormat.findFirst({
+          where: {
+            brokerId: brokerId,
+            formatName: newFormatName
+          }
+        });
+
+        if (!conflictCheck) {
+          console.log(`✅ Generated unique format name: ${newFormatName} (attempt ${attempt + 1})`);
+          return newFormatName;
+        }
+      }
+      // If we still have conflicts, append timestamp as fallback
+      const timestamp = Date.now().toString().slice(-4);
+      const fallbackName = `${brokerName} Format ${timestamp}`;
+      console.log(`⚠️ Using timestamp fallback: ${fallbackName}`);
+      return fallbackName;
+    }
+
+    return formatName;
   }
 
   /**

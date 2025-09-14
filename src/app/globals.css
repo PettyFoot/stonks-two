@@ -39,6 +39,12 @@
   --positive: var(--theme-positive);
   --negative: var(--theme-negative);
   --border: var(--theme-border);
+
+  /* Dropdown/Popover solid backgrounds */
+  --popover: var(--theme-surface);
+  --popover-foreground: var(--theme-primary-text);
+  --accent: var(--theme-primary);
+  --accent-foreground: var(--theme-primary-text);
 }
 
 @theme {
@@ -52,6 +58,10 @@
   --color-positive: var(--positive);
   --color-negative: var(--negative);
   --color-border: var(--border);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-family-sans: 'Inter', system-ui, sans-serif;
   --border-radius: 8px;

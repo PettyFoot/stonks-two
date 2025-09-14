@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@auth0/nextjs-auth0/client';
-import { getCurrentUser } from '@/lib/auth0';
+import { useSubscription } from '@/hooks/useSubscription';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,21 +12,23 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { 
-  Building2, 
-  Plus, 
-  RefreshCw, 
-  AlertCircle, 
+import {
+  Building2,
+  Plus,
+  RefreshCw,
+  AlertCircle,
   CheckCircle,
   Clock,
   TestTube,
   MoreVertical,
   RotateCcw,
-  Trash2
+  Trash2,
+  Crown
 } from 'lucide-react';
 import BrokerConnectionCard from './BrokerConnectionCard';
 import ConnectBrokerModal from './ConnectBrokerModal';
 import { BrokerConnectionData, SyncLogData } from '@/lib/snaptrade/types';
+import Link from 'next/link';
 
 interface LiveConnectionData {
   id: string;
@@ -60,7 +62,9 @@ interface BrokerListProps {
 
 export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
   const { user } = useUser();
+  const { hasPremiumAccess } = useSubscription();
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [showUpgradeMessage, setShowUpgradeMessage] = useState(false);
   const [connections, setConnections] = useState<BrokerConnectionData[]>([]);
   const [liveConnections, setLiveConnections] = useState<LiveConnectionData[]>([]);
   const [syncHistory, setSyncHistory] = useState<Record<string, SyncLogData[]>>({});
@@ -80,8 +84,20 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
 
   const loadCurrentUser = async () => {
     try {
-      const userData = await getCurrentUser();
-      setCurrentUser(userData);
+      // Use client-side user data instead of server-side getCurrentUser
+      if (user?.sub) {
+        // Map user data from Auth0 client hook to our expected format
+        const userData = {
+          id: user.sub,
+          auth0Id: user.sub,
+          email: user.email || '',
+          name: user.name || user.nickname || '',
+          isAdmin: false, // Admin status would need to be fetched from an API endpoint if needed
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        setCurrentUser(userData);
+      }
     } catch (error) {
       console.error('Error loading current user:', error);
     }
@@ -329,6 +345,14 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
     toast.success('Broker connected successfully!');
   };
 
+  const handleConnectBrokerClick = () => {
+    if (hasPremiumAccess) {
+      setIsConnectModalOpen(true);
+    } else {
+      setShowUpgradeMessage(true);
+    }
+  };
+
   const handleReconnectLiveConnection = async (connectionId: string) => {
     try {
       const response = await fetch('/api/snaptrade/connections/reconnect', {
@@ -443,7 +467,7 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
           )}
           
           <Button
-            onClick={() => setIsConnectModalOpen(true)}
+            onClick={handleConnectBrokerClick}
             className="bg-theme-tertiary hover:bg-theme-tertiary/90 text-white"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -533,12 +557,32 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
                   Connect your broker to automatically sync your trades and get real-time updates.
                 </p>
                 <Button
-                  onClick={() => setIsConnectModalOpen(true)}
+                  onClick={handleConnectBrokerClick}
                   className="bg-theme-green hover:bg-theme-tertiary/90 text-white"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   {totalConnections === 0 ? 'Connect Your First Broker' : 'Connect Another Broker'}
                 </Button>
+
+                {/* Upgrade Message for Free Users */}
+                {showUpgradeMessage && !hasPremiumAccess && (
+                  <div className="mt-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Crown className="h-5 w-5 text-amber-600" />
+                      <p className="text-sm font-medium text-amber-800">
+                        Broker connection is a Voyager Pro service
+                      </p>
+                    </div>
+                    <Link href="/settings/subscription">
+                      <Button
+                        variant="outline"
+                        className="mt-2 border-amber-300 text-amber-700 hover:bg-amber-100"
+                      >
+                        Upgrade to Voyager Pro
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </>
             );
           })()}

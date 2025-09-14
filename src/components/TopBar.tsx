@@ -109,7 +109,7 @@ function UserMenu() {
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 bg-surface border border-default">
+      <DropdownMenuContent align="end" className="w-56">
         <div className="px-2 py-1.5">
           <p className="text-sm font-medium">{user.name || 'User'}</p>
           <p className="text-xs text-muted-foreground">{user.email}</p>

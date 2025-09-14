@@ -15,8 +15,7 @@ import {
   Download,
   RefreshCw,
   Info,
-  Building2,
-  Brain
+  Building2
 } from 'lucide-react';
 import BrokerSelector from '@/components/broker/BrokerSelector';
 import MappingReview from '@/components/csv/MappingReview';
@@ -571,9 +570,9 @@ export default function EnhancedFileUpload({
                     Upgrade to Premium to get unlimited daily uploads!
                   </p>
                   
-                  <Button 
+                  <Button
                     onClick={() => window.location.href = '/settings?tab=subscription'}
-                    className="bg-theme-secondary hover:bg-theme-tertiary/90 text-white px-8 py-3 text-lg font-medium"
+                    className="bg-gray-800 hover:bg-gray-700 text-white px-8 py-3 text-lg font-medium"
                   >
                     Upgrade to Premium
                   </Button>
@@ -785,11 +784,13 @@ export default function EnhancedFileUpload({
               <div className="space-y-4">
                 <div className="flex items-center space-x-2">
                   <CheckCircle className="h-5 w-5 text-theme-green" />
-                  <Badge 
-                    variant="default" 
-                    className={state.validationResult.errors?.length > 0 ? "bg-theme-red" : "bg-theme-green"}
+                  <Badge
+                    variant="default"
+                    className={state.validationResult.errors?.length > 0 ? "bg-theme-red" :
+                              (state.validationResult.detectedFormatInfo && state.validationResult.detectedFormatInfo.confidence >= 0.95) ? "bg-theme-green" : "bg-theme-secondary"}
                   >
-                    {state.validationResult.errors?.length > 0 ? 'Validation Failed' : 'Validated'}
+                    {state.validationResult.errors?.length > 0 ? 'Validation Failed' :
+                     (state.validationResult.detectedFormatInfo && state.validationResult.detectedFormatInfo.confidence >= 0.95) ? 'Validated' : 'Processing'}
                   </Badge>
                 </div>
 
@@ -844,8 +845,8 @@ export default function EnhancedFileUpload({
                       <XCircle className="h-5 w-5 text-theme-red" />
                     )}
                     <Badge variant={result.success ? "default" : "destructive"}>
-                      {result.success ? 'Success' : 
-                        ((result as any).duplicateCount && Number((result as any).duplicateCount) > 0 && result.successCount === 0) ? 'All Duplicates' : 'Needs Review'}
+                      {result.success ? 'Success' :
+                        ((result as any).duplicateCount && Number((result as any).duplicateCount) > 0 && result.successCount === 0) ? 'All Duplicates' : 'Review Required'}
                     </Badge>
                   </div>
 
@@ -966,10 +967,40 @@ export default function EnhancedFileUpload({
       {/* Broker Selection Modal */}
       <BrokerSelector
         isOpen={showBrokerSelector}
-        onClose={() => {
+        onClose={async () => {
           console.log('❌ Broker selector cancelled');
+
+          // Cancel the import batch if one exists
+          if (pendingImportBatchId && user) {
+            try {
+              console.log('🚀 Calling finalize-mappings API to cancel import batch...');
+              await fetch('/api/csv/finalize-mappings', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  importBatchId: pendingImportBatchId,
+                  userApproved: false,
+                  reportError: false,
+                }),
+              });
+              console.log('✅ Import batch cancelled from broker selector');
+            } catch (error) {
+              console.error('💥 Failed to cancel import batch from broker selector:', error);
+              // Continue with closing even if API call fails
+            }
+          }
+
           setShowBrokerSelector(false);
           setPendingImportBatchId(null);
+
+          // Clear upload result to remove "Review Required" status
+          setState(prev => ({
+            ...prev,
+            uploadResult: null,
+            error: null
+          }));
         }}
         onSelectBroker={handleBrokerSelected}
         onCreateBroker={handleCreateBroker}
@@ -977,13 +1008,13 @@ export default function EnhancedFileUpload({
         fileName={state.file?.name}
       />
 
-      {/* Mapping Review Modal */}
+      {/* Mapping Review Modal - Mandatory (No Cancel) */}
       <MappingReview
         isOpen={showMappingReview}
         onClose={() => {
-          console.log('❌ Mapping review cancelled');
-          setShowMappingReview(false);
-          setAiMappingResult(null);
+          // This should never be called since modal is mandatory,
+          // but just in case, auto-submit the AI mappings
+          console.log('🚫 Unexpected close attempt - modal should be mandatory');
         }}
         onApproveMapping={handleMappingApproved}
         aiResult={aiMappingResult}

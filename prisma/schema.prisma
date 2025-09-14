@@ -42,8 +42,25 @@ model User {
   aiIngestChecks        AiIngestToCheck[] @relation("UserAiIngestChecks")
   adminReviews          AiIngestToCheck[] @relation("AdminReviews")
   dailyUploadCounts     DailyUploadCount[]
+  userPreferences       UserPreferences?
 
   @@map("users")
+}
+
+model UserPreferences {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  billingAddress        Json?
+  taxId                 String?
+  businessName          String?
+  emailInvoices         Boolean  @default(true)
+  sendBillingReminders  Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
 }
 
 model Trade {

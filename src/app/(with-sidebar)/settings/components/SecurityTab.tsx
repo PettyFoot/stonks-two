@@ -67,8 +67,8 @@ export default function SecurityTab() {
   useEffect(() => {
     loadDeletionStatus();
     
-    // Set up periodic refresh to catch reactivations
-    const interval = setInterval(loadDeletionStatus, 10000); // Refresh every 10 seconds
+    // Set up periodic refresh to catch reactivations (less frequent to avoid UI flashing)
+    const interval = setInterval(loadDeletionStatus, 60000); // Refresh every 60 seconds
     
     return () => clearInterval(interval);
   }, [user?.sub, loadDeletionStatus]);

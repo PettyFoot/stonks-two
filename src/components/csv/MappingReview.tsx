@@ -1,18 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  AlertTriangle, 
-  CheckCircle, 
-  XCircle, 
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
   Brain,
-  ArrowRight,
   Info,
   Eye,
   Edit3,
@@ -80,6 +80,10 @@ interface CorrectedMapping {
   [csvHeader: string]: string;
 }
 
+interface MarkedForUpdate {
+  [csvHeader: string]: boolean;
+}
+
 export default function MappingReview({
   isOpen,
   onClose,
@@ -88,19 +92,102 @@ export default function MappingReview({
   sampleData = [],
   fileName,
   brokerName,
-  aiIngestCheckId,
+  aiIngestCheckId: _aiIngestCheckId,
   importBatchId
 }: MappingReviewProps) {
   const [correctedMappings, setCorrectedMappings] = useState<CorrectedMapping>({});
+  const [markedForUpdate, setMarkedForUpdate] = useState<MarkedForUpdate>({});
   const [showSampleData, setShowSampleData] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isAutoSubmitting, setIsAutoSubmitting] = useState(false);
 
   console.log('🔍 MappingReview component loaded');
   console.log('📊 AI Result:', aiResult);
   console.log('📋 Sample data rows:', sampleData?.length || 0);
   console.log('👁️ Modal isOpen:', isOpen);
   console.log('🎯 Component rendering with isOpen:', isOpen, 'aiResult exists:', !!aiResult);
+
+  // Auto-submit handler for back button/ESC key - defined before use in useEffect
+  const handleAutoSubmit = useCallback(async () => {
+    if (isProcessing || isAutoSubmitting) return;
+
+    console.log('🤖 Auto-submitting AI mappings due to navigation attempt');
+    setIsAutoSubmitting(true);
+
+    try {
+      // Use current AI mappings without any user corrections
+      const response = await fetch('/api/csv/finalize-mappings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          importBatchId,
+          userApproved: true,
+          reportError: false,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to finalize mappings');
+      }
+
+      console.log('🎉 Mappings approved as-is successfully:', result);
+      console.log(`✅ ${result.successCount} records imported`);
+
+      // Call the original callback with the result
+      onApproveMapping(result);
+    } catch (error) {
+      console.error('💥 Auto-submit failed:', error);
+      // For now, fall back to the original behavior
+      onApproveMapping();
+    } finally {
+      setIsAutoSubmitting(false);
+    }
+  }, [isProcessing, isAutoSubmitting, importBatchId, onApproveMapping]);
+
+  // Handle browser back button - auto-submit when user tries to navigate away
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Add a dummy history entry when modal opens
+    window.history.pushState({ modalOpen: true }, '');
+
+    const handlePopState = (event: PopStateEvent) => {
+      console.log('🔙 Browser back button detected - auto-submitting AI mappings');
+      // Prevent default back navigation
+      event.preventDefault();
+      // Auto-submit current AI mappings
+      handleAutoSubmit();
+    };
+
+    // Prevent ESC key from closing modal
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        console.log('⌨️ ESC key blocked - auto-submitting AI mappings');
+        event.preventDefault();
+        event.stopPropagation();
+        handleAutoSubmit();
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, handleAutoSubmit]);
+
+  // Handle any close attempts by auto-submitting instead
+  const handleCloseAttempt = useCallback(() => {
+    console.log('🚫 Close attempt blocked - auto-submitting AI mappings');
+    handleAutoSubmit();
+  }, [handleAutoSubmit]);
 
   // Early return if aiResult is not available
   if (!aiResult || !aiResult.mappings) {
@@ -133,6 +220,23 @@ export default function MappingReview({
     return 'Low';
   };
 
+  const handleMarkForUpdate = (csvHeader: string, checked: boolean) => {
+    console.log(`📝 Marking field for update: "${csvHeader}" -> ${checked}`);
+    setMarkedForUpdate(prev => ({
+      ...prev,
+      [csvHeader]: checked
+    }));
+
+    // If unmarking, also clear any correction for this field
+    if (!checked) {
+      setCorrectedMappings(prev => {
+        const newMappings = { ...prev };
+        delete newMappings[csvHeader];
+        return newMappings;
+      });
+    }
+  };
+
   const handleFieldChange = (csvHeader: string, newField: string) => {
     console.log(`✏️ Correcting mapping: "${csvHeader}" -> "${newField}"`);
     setCorrectedMappings(prev => ({
@@ -148,6 +252,10 @@ export default function MappingReview({
       delete newMappings[csvHeader];
       return newMappings;
     });
+    setMarkedForUpdate(prev => ({
+      ...prev,
+      [csvHeader]: false
+    }));
   };
 
   const handleReportError = async () => {
@@ -240,16 +348,24 @@ export default function MappingReview({
   };
 
   const handleApprove = async () => {
-    console.log('✅ Approving mappings with corrections:', correctedMappings);
-    console.log(`🔧 ${Object.keys(correctedMappings).length} fields corrected by user`);
-    
+    // Only include corrections for fields that are marked for update AND have a selected value
+    const actualCorrections: CorrectedMapping = {};
+    Object.entries(correctedMappings).forEach(([csvHeader, value]) => {
+      if (markedForUpdate[csvHeader] && value) {
+        actualCorrections[csvHeader] = value;
+      }
+    });
+
+    console.log('✅ Approving mappings with corrections:', actualCorrections);
+    console.log(`🔧 ${Object.keys(actualCorrections).length} fields corrected by user`);
+
     if (!importBatchId) {
       console.error('❌ Missing importBatchId, cannot finalize mappings');
       return;
     }
 
     setIsProcessing(true);
-    
+
     try {
       console.log('🚀 Calling finalize-mappings API...');
       const response = await fetch('/api/csv/finalize-mappings', {
@@ -259,7 +375,7 @@ export default function MappingReview({
         },
         body: JSON.stringify({
           importBatchId,
-          correctedMappings: Object.keys(correctedMappings).length > 0 ? correctedMappings : undefined,
+          correctedMappings: Object.keys(actualCorrections).length > 0 ? actualCorrections : undefined,
           userApproved: true,
           reportError: false,
         }),
@@ -280,23 +396,20 @@ export default function MappingReview({
     } catch (error) {
       console.error('💥 Failed to finalize mappings:', error);
       // For now, fall back to the original behavior
-      const hasCorrections = Object.keys(correctedMappings).length > 0;
-      onApproveMapping(hasCorrections ? correctedMappings : undefined);
+      const hasCorrections = Object.keys(actualCorrections).length > 0;
+      onApproveMapping(hasCorrections ? actualCorrections : undefined);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleClose = () => {
-    console.log('❌ MappingReview closing, resetting corrections');
-    setCorrectedMappings({});
-    setShowSampleData(false);
-    setShowSuggestions(false);
-    onClose();
+  const getCurrentMapping = (csvHeader: string): string => {
+    // Only return a value if the user has explicitly set one
+    return correctedMappings[csvHeader] || '';
   };
 
-  const getCurrentMapping = (csvHeader: string): string => {
-    return correctedMappings[csvHeader] || aiResult.mappings[csvHeader]?.field || 'brokerMetadata';
+  const getAiSuggestedField = (csvHeader: string): string => {
+    return aiResult.mappings[csvHeader]?.field || 'brokerMetadata';
   };
 
   const getSampleValue = (csvHeader: string): string => {
@@ -308,8 +421,8 @@ export default function MappingReview({
   console.log('🎨 Rendering MappingReview Dialog with open:', isOpen);
   
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="!w-[80vw] md:!w-[65vw] !max-w-none sm:!max-w-none max-h-[90vh] flex flex-col z-[60] bg-white dark:bg-gray-900 overflow-hidden">
+    <Dialog open={isOpen} modal={true}>
+      <DialogContent className="!w-[80vw] md:!w-[65vw] !max-w-none sm:!max-w-none max-h-[90vh] flex flex-col z-[60] bg-white dark:bg-gray-900 overflow-hidden [&>button]:hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5" />
@@ -419,11 +532,12 @@ export default function MappingReview({
             
             {/* Fixed Table Headers - Hidden on mobile */}
             <div className="hidden md:block px-4 py-3 bg-muted/20 border-b">
-              <div className="grid grid-cols-4 gap-4 text-sm font-medium text-muted-foreground">
+              <div className="grid grid-cols-5 gap-4 text-sm font-medium text-muted-foreground">
                 <div>CSV Column</div>
                 <div>AI Confidence</div>
                 <div>AI Suggested Field</div>
-                <div>Corrected Field</div>
+                <div>Mark for Update</div>
+                <div>Suggested Field</div>
               </div>
             </div>
 
@@ -434,7 +548,9 @@ export default function MappingReview({
                   {csvHeaders.map((csvHeader) => {
                     const mapping = aiResult.mappings[csvHeader];
                     const currentField = getCurrentMapping(csvHeader);
+                    const aiSuggestedField = getAiSuggestedField(csvHeader);
                     const sampleValue = getSampleValue(csvHeader);
+                    const isMarkedForUpdate = markedForUpdate[csvHeader] || false;
                     const isModified = correctedMappings[csvHeader] !== undefined;
 
                     return (
@@ -457,7 +573,7 @@ export default function MappingReview({
                             </div>
                             <div className="flex items-center gap-2">
                               {getConfidenceIcon(mapping.confidence)}
-                              <Badge 
+                              <Badge
                                 variant={mapping.confidence >= 0.8 ? 'default' : mapping.confidence >= 0.5 ? 'secondary' : 'destructive'}
                                 className="text-xs"
                               >
@@ -465,16 +581,16 @@ export default function MappingReview({
                               </Badge>
                             </div>
                           </div>
-                          
+
                           <div className="space-y-3">
                             <div>
                               <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">AI Suggested:</div>
                               <div>
-                                {mapping.field === 'brokerMetadata' ? (
+                                {aiSuggestedField === 'brokerMetadata' ? (
                                   <Badge variant="outline" className="text-sm">Metadata</Badge>
                                 ) : (
                                   <code className="text-sm bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
-                                    {mapping.field}
+                                    {aiSuggestedField}
                                   </code>
                                 )}
                               </div>
@@ -484,15 +600,32 @@ export default function MappingReview({
                                 </div>
                               )}
                             </div>
-                            
+
+                            <div className="flex items-center gap-3 pb-2">
+                              <Checkbox
+                                id={`mark-${csvHeader}`}
+                                checked={isMarkedForUpdate}
+                                onCheckedChange={(checked) => handleMarkForUpdate(csvHeader, checked as boolean)}
+                              />
+                              <label
+                                htmlFor={`mark-${csvHeader}`}
+                                className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer"
+                              >
+                                Mark for update
+                              </label>
+                            </div>
+
                             <div>
-                              <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Corrected Field:</div>
+                              <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Suggested Field:</div>
                               <Select
                                 value={currentField}
                                 onValueChange={(value) => handleFieldChange(csvHeader, value)}
+                                disabled={!isMarkedForUpdate}
                               >
-                                <SelectTrigger className="h-10 text-sm border hover:border-blue-300 focus:border-blue-500">
-                                  <SelectValue />
+                                <SelectTrigger className={`h-10 text-sm border hover:border-blue-300 focus:border-blue-500 ${
+                                  !isMarkedForUpdate ? 'opacity-50 cursor-not-allowed' : ''
+                                }`}>
+                                  <SelectValue placeholder="Select a field..." />
                                 </SelectTrigger>
                                 <SelectContent className="z-[100]">
                                   <SelectItem value="brokerMetadata">
@@ -523,7 +656,7 @@ export default function MappingReview({
                                         default: return '';
                                       }
                                     };
-                                    
+
                                     return (
                                       <SelectItem key={field} value={field}>
                                         <div className="flex flex-col items-start">
@@ -559,7 +692,7 @@ export default function MappingReview({
                         </div>
 
                         {/* Desktop Layout */}
-                        <div className="hidden md:grid md:grid-cols-4 gap-4 items-start p-5">
+                        <div className="hidden md:grid md:grid-cols-5 gap-4 items-start p-5">
                           {/* CSV Column */}
                           <div>
                             <div className="font-medium text-sm text-gray-900 dark:text-gray-100">{csvHeader}</div>
@@ -574,7 +707,7 @@ export default function MappingReview({
                           <div className="flex items-center gap-2">
                             {getConfidenceIcon(mapping.confidence)}
                             <div className="flex flex-col">
-                              <Badge 
+                              <Badge
                                 variant={mapping.confidence >= 0.8 ? 'default' : mapping.confidence >= 0.5 ? 'secondary' : 'destructive'}
                                 className="text-xs w-fit"
                               >
@@ -589,11 +722,11 @@ export default function MappingReview({
                           {/* AI Suggested Field */}
                           <div>
                             <div className="text-sm">
-                              {mapping.field === 'brokerMetadata' ? (
+                              {aiSuggestedField === 'brokerMetadata' ? (
                                 <Badge variant="outline" className="text-xs">Metadata</Badge>
                               ) : (
                                 <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
-                                  {mapping.field}
+                                  {aiSuggestedField}
                                 </code>
                               )}
                             </div>
@@ -604,14 +737,26 @@ export default function MappingReview({
                             )}
                           </div>
 
-                          {/* Corrected Field Selector */}
+                          {/* Mark for Update Checkbox */}
+                          <div className="flex items-center justify-center">
+                            <Checkbox
+                              id={`mark-${csvHeader}-desktop`}
+                              checked={isMarkedForUpdate}
+                              onCheckedChange={(checked) => handleMarkForUpdate(csvHeader, checked as boolean)}
+                            />
+                          </div>
+
+                          {/* Suggested Field Selector */}
                           <div>
                             <Select
                               value={currentField}
                               onValueChange={(value) => handleFieldChange(csvHeader, value)}
+                              disabled={!isMarkedForUpdate}
                             >
-                              <SelectTrigger className="h-9 text-sm border hover:border-blue-300 focus:border-blue-500">
-                                <SelectValue />
+                              <SelectTrigger className={`h-9 text-sm border hover:border-blue-300 focus:border-blue-500 ${
+                                !isMarkedForUpdate ? 'opacity-50 cursor-not-allowed' : ''
+                              }`}>
+                                <SelectValue placeholder="Select a field..." />
                               </SelectTrigger>
                               <SelectContent className="z-[100]">
                                 <SelectItem value="brokerMetadata">
@@ -642,7 +787,7 @@ export default function MappingReview({
                                       default: return '';
                                     }
                                   };
-                                  
+
                                   return (
                                     <SelectItem key={field} value={field}>
                                       <div className="flex flex-col items-start">
@@ -656,11 +801,13 @@ export default function MappingReview({
                                 })}
                               </SelectContent>
                             </Select>
-                            {isModified && (
+                            {(isMarkedForUpdate || isModified) && (
                               <div className="flex items-center justify-between mt-2">
                                 <div className="flex items-center gap-1">
                                   <Edit3 className="h-3 w-3 text-blue-500" />
-                                  <span className="text-xs text-blue-600 font-medium">Modified</span>
+                                  <span className="text-xs text-blue-600 font-medium">
+                                    {isModified ? 'Modified' : 'Marked for update'}
+                                  </span>
                                 </div>
                                 <Button
                                   variant="outline"
@@ -683,55 +830,48 @@ export default function MappingReview({
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons - No Cancel Option */}
         <div className="flex justify-between pt-4 flex-shrink-0 border-t bg-white dark:bg-gray-900">
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={handleClose}
-              disabled={isProcessing}
-            >
-              Cancel Import
-            </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={handleReportError}
-              disabled={isProcessing}
+              disabled={isProcessing || isAutoSubmitting}
             >
               Report Mapping Error
             </Button>
           </div>
-          
+
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={handleUseAsIs}
-              disabled={isProcessing}
+              disabled={isProcessing || isAutoSubmitting}
             >
-              {isProcessing ? (
+              {isProcessing || isAutoSubmitting ? (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Processing...
+                  {isAutoSubmitting ? 'Applying AI Mappings...' : 'Processing...'}
                 </>
               ) : (
                 'Use AI Mappings As-Is'
               )}
             </Button>
-            <Button 
+            <Button
               onClick={handleApprove}
-              disabled={isProcessing}
+              disabled={isProcessing || isAutoSubmitting}
             >
-              {isProcessing ? (
+              {isProcessing || isAutoSubmitting ? (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Processing...
+                  {isAutoSubmitting ? 'Applying AI Mappings...' : 'Processing...'}
                 </>
               ) : (
                 <>
                   Apply Corrections & Import
-                  {Object.keys(correctedMappings).length > 0 && (
+                  {Object.keys(correctedMappings).filter(key => markedForUpdate[key] && correctedMappings[key]).length > 0 && (
                     <Badge variant="secondary" className="ml-2">
-                      {Object.keys(correctedMappings).length} corrections
+                      {Object.keys(correctedMappings).filter(key => markedForUpdate[key] && correctedMappings[key]).length} corrections
                     </Badge>
                   )}
                 </>

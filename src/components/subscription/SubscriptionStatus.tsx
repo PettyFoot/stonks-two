@@ -53,12 +53,15 @@ export function SubscriptionStatus({
 
   const getStatusColor = () => {
     if (!subscription) return 'secondary';
-    
+
     switch (subscription.status) {
       case Status.ACTIVE:
-        return subscription.willCancel ? 'destructive' : 'default';
+        if (subscription.willCancel) return 'destructive';
+        // Highlight Premium in green, keep others as secondary
+        return subscription.tier === SubscriptionTier.PREMIUM && !subscription.inTrial ? 'default' : 'secondary';
       case Status.TRIALING:
-        return 'secondary';
+        // Only highlight Premium trial in green, not Free Trial
+        return subscription.tier === SubscriptionTier.PREMIUM ? 'default' : 'secondary';
       case Status.PAST_DUE:
       case Status.UNPAID:
         return 'destructive';
@@ -71,16 +74,19 @@ export function SubscriptionStatus({
 
   const getStatusText = () => {
     if (!subscription) return 'Free';
-    
+
     if (subscription.willCancel) {
       return `Cancels in ${subscription.daysRemaining} days`;
     }
-    
+
     switch (subscription.status) {
       case Status.ACTIVE:
+        if (subscription.tier === SubscriptionTier.PREMIUM) {
+          return subscription.inTrial ? 'Free Trial' : 'Premium';
+        }
         return subscription.inTrial ? 'Free Trial' : 'Active';
       case Status.TRIALING:
-        return 'Free Trial';
+        return subscription.tier === SubscriptionTier.PREMIUM ? 'Free Trial' : 'Free Trial';
       case Status.PAST_DUE:
         return 'Payment Due';
       case Status.UNPAID:
@@ -115,36 +121,43 @@ export function SubscriptionStatus({
         {subscription?.tier === SubscriptionTier.PREMIUM && (
           <Crown className="h-4 w-4 text-yellow-500" aria-hidden="true" />
         )}
-        
-        <div className="flex items-center gap-1">
-          {getStatusIcon()}
-          <Badge 
-            variant={getStatusColor()}
-            className={cn("gap-1", compact && "text-xs")}
-          >
-            {getStatusText()}
-          </Badge>
-        </div>
 
-        {subscription?.tier === SubscriptionTier.PREMIUM && !compact && (
-          <span className="text-sm font-medium">Premium</span>
+        {/* Show Premium first if user has premium tier */}
+        {subscription?.tier === SubscriptionTier.PREMIUM && (
+          <div className="flex items-center gap-2">
+            <Badge
+              variant="default"
+              className={cn("gap-1 bg-green-100 text-green-800 hover:bg-green-200 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800", compact && "text-xs")}
+            >
+              Premium
+            </Badge>
+            {subscription?.inTrial && (
+              <span className={cn("text-muted-foreground", compact ? "text-xs" : "text-sm")}>
+                Free Trial
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Show regular status for non-premium users */}
+        {subscription?.tier !== SubscriptionTier.PREMIUM && (
+          <div className="flex items-center gap-1">
+            {getStatusIcon()}
+            <Badge
+              variant={getStatusColor()}
+              className={cn("gap-1", compact && "text-xs")}
+            >
+              {getStatusText()}
+            </Badge>
+          </div>
         )}
       </div>
 
-      {showDetails && !compact && subscription && (
-        <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Calendar className="h-3 w-3" aria-hidden="true" />
-            <span>{subscription.priceText}</span>
-          </div>
-          
-          {subscription.daysRemaining > 0 && (
-            <div>
-              <span>
-                {subscription.inTrial ? 'Trial ends' : 'Renews'} in {subscription.daysRemaining} days
-              </span>
-            </div>
-          )}
+      {showDetails && !compact && subscription && subscription.daysRemaining > 0 && (
+        <div className="text-xs text-muted-foreground">
+          <span>
+            {subscription.inTrial ? 'Trial ends' : 'Renews'} in {subscription.daysRemaining} days
+          </span>
         </div>
       )}
 

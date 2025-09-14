@@ -108,12 +108,131 @@ export function SubscriptionManagement({ className }: SubscriptionManagementProp
         </CardHeader>
 
         <CardContent>
-          <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="billing">Billing</TabsTrigger>
-              <TabsTrigger value="actions">Actions</TabsTrigger>
-            </TabsList>
+          {hasPremiumAccess ? (
+            // Simplified view for Premium users
+            <div className="space-y-6">
+              {/* Current Plan */}
+              <div className="grid gap-6 md:grid-cols-2">
+                <Card>
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Crown className="h-5 w-5 text-yellow-500" />
+                      Current Plan
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">Premium</span>
+                        <Badge variant="default">Premium</Badge>
+                      </div>
+                      {subscription?.inTrial && subscription?.nextBillingDate && (
+                        <div className="text-sm text-muted-foreground">
+                          Trial ends: {new Date(subscription.nextBillingDate).toLocaleDateString()}
+                        </div>
+                      )}
+                    </div>
+                    <SubscriptionStatus showProgress={false} showDetails={false} compact />
+                  </CardContent>
+                </Card>
+
+                {/* Next Billing */}
+                <Card>
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Calendar className="h-5 w-5" />
+                      Next Billing
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {subscription && subscription.nextBillingDate && subscription.daysRemaining > 0 ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span>{subscription.inTrial ? 'Trial ends' : 'Renews'}</span>
+                          <span className="font-medium">
+                            {new Date(subscription.nextBillingDate).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          in {subscription.daysRemaining} days
+                        </div>
+
+                        {subscription.willCancel && (
+                          <div className="flex items-center gap-1 text-sm text-destructive">
+                            <AlertTriangle className="h-4 w-4" />
+                            Will not auto-renew
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-muted-foreground">
+                        No active billing cycle
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Cancel Subscription */}
+              {subscription?.willCancel ? (
+                <div className="p-4 bg-green-50 dark:bg-green-950/10 rounded-lg border border-green-200 dark:border-green-800">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    <h3 className="font-medium">Reactivate Subscription</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Your subscription is set to cancel. Reactivate to continue Premium access.
+                  </p>
+                  <Button
+                    onClick={handleReactivate}
+                    disabled={actionLoading !== null}
+                    variant="default"
+                  >
+                    {actionLoading === 'reactivate' ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Reactivating...
+                      </>
+                    ) : (
+                      'Reactivate Subscription'
+                    )}
+                  </Button>
+                </div>
+              ) : (
+                <div className="p-4 bg-red-50 dark:bg-red-950/10 rounded-lg border border-red-200 dark:border-red-800">
+                  <div className="flex items-center gap-2 mb-2">
+                    <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                    <h3 className="font-medium">Cancel Subscription</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Cancel your subscription. You&apos;ll retain access until the end of your billing period.
+                  </p>
+                  <Button
+                    onClick={handleCancel}
+                    disabled={actionLoading !== null}
+                    variant="destructive"
+                    className="bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
+                  >
+                    {actionLoading === 'cancel' ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Canceling...
+                      </>
+                    ) : (
+                      'Cancel Subscription'
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            // Tabbed view for non-Premium users
+            <Tabs defaultValue="overview" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="billing">Billing</TabsTrigger>
+                <TabsTrigger value="actions">Actions</TabsTrigger>
+              </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
               <div className="grid gap-6 md:grid-cols-2">
@@ -366,7 +485,8 @@ export function SubscriptionManagement({ className }: SubscriptionManagementProp
                 </CardContent>
               </Card>
             </TabsContent>
-          </Tabs>
+            </Tabs>
+          )}
         </CardContent>
       </Card>
     </div>

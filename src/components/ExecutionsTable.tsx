@@ -884,7 +884,7 @@ export default function ExecutionsTable({
               <Settings className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80 bg-theme-surface border-theme-border shadow-lg">
+          <DropdownMenuContent align="end" className="w-80 shadow-lg">
             <DropdownMenuLabel>Manage Columns</DropdownMenuLabel>
             <DropdownMenuSeparator />
             

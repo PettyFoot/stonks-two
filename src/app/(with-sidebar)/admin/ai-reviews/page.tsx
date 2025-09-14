@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { cn } from '@/lib/utils';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import TopBar from '@/components/TopBar';
 import { PageTriangleLoader } from '@/components/ui/TriangleLoader';
@@ -21,17 +22,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { 
-  AlertTriangle, 
+import {
+  AlertTriangle,
   MoreVertical,
   CheckCircle,
   XCircle,
-  Eye,
   Edit3,
-  Brain
+  Brain,
+  Settings
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import EnhancedMappingReviewTable from '@/components/admin/EnhancedMappingReviewTable';
 
 interface AiIngestReview {
   id: string;
@@ -63,20 +65,14 @@ interface AiIngestReview {
 }
 
 export default function AdminAiReviewsPage() {
-  const { isAdmin, isLoading, user: currentUser } = useAdminAuth();
+  const { isAdmin, isLoading } = useAdminAuth();
   const [reviews, setReviews] = useState<AiIngestReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingReview, setUpdatingReview] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'reviewed'>('pending');
+  const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
 
-  // Fetch reviews
-  useEffect(() => {
-    if (isAdmin && !isLoading) {
-      fetchReviews();
-    }
-  }, [isAdmin, isLoading, filter]);
-
-  const fetchReviews = async () => {
+  const fetchReviews = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/admin/ai-reviews?filter=${filter}`);
@@ -92,7 +88,14 @@ export default function AdminAiReviewsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
+
+  // Fetch reviews
+  useEffect(() => {
+    if (isAdmin && !isLoading) {
+      fetchReviews();
+    }
+  }, [isAdmin, isLoading, filter, fetchReviews]);
 
   const handleReviewAction = async (reviewId: string, action: 'APPROVED' | 'CORRECTED' | 'DISMISSED') => {
     setUpdatingReview(reviewId);
@@ -100,8 +103,8 @@ export default function AdminAiReviewsPage() {
       const response = await fetch('/api/admin/ai-reviews', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          reviewId, 
+        body: JSON.stringify({
+          reviewId,
           adminReviewStatus: action,
           adminNotes: '' // Could be expanded to include notes
         }),
@@ -110,6 +113,10 @@ export default function AdminAiReviewsPage() {
       if (response.ok) {
         await fetchReviews();
         toast.success(`Review ${action.toLowerCase()}`);
+        // Close mapping review if it was open for this review
+        if (selectedReviewId === reviewId) {
+          setSelectedReviewId(null);
+        }
       } else {
         throw new Error('Failed to update review');
       }
@@ -119,6 +126,19 @@ export default function AdminAiReviewsPage() {
     } finally {
       setUpdatingReview(null);
     }
+  };
+
+  const handleViewDetails = (reviewId: string) => {
+    setSelectedReviewId(reviewId);
+  };
+
+  const handleMappingsUpdated = async () => {
+    await fetchReviews();
+    setSelectedReviewId(null);
+  };
+
+  const handleCloseMappingReview = () => {
+    setSelectedReviewId(null);
   };
 
   const getStatusBadge = (status: string) => {
@@ -235,7 +255,16 @@ export default function AdminAiReviewsPage() {
                   </TableHeader>
                   <TableBody>
                     {filteredReviews.map((review) => (
-                      <TableRow key={review.id}>
+                      <TableRow
+                        key={review.id}
+                        className={cn(
+                          'cursor-pointer transition-colors',
+                          selectedReviewId === review.id
+                            ? 'bg-blue-50 border-blue-200'
+                            : 'hover:bg-gray-50'
+                        )}
+                        onClick={() => handleViewDetails(review.id)}
+                      >
                         <TableCell>
                           <div>
                             <div className="font-medium">{review.csvUploadLog.filename}</div>
@@ -276,20 +305,21 @@ export default function AdminAiReviewsPage() {
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button 
-                                variant="ghost" 
+                              <Button
+                                variant="ghost"
                                 size="sm"
                                 disabled={updatingReview === review.id}
+                                onClick={(e) => e.stopPropagation()}
                               >
                                 <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
-                                onClick={() => console.log('View details:', review.id)}
+                                onClick={() => handleViewDetails(review.id)}
                               >
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Details
+                                <Settings className="h-4 w-4 mr-2" />
+                                Review Mappings
                               </DropdownMenuItem>
                               {review.adminReviewStatus === 'PENDING' && (
                                 <>
@@ -326,6 +356,15 @@ export default function AdminAiReviewsPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Mapping Review Table */}
+          {selectedReviewId && (
+            <EnhancedMappingReviewTable
+              reviewId={selectedReviewId}
+              onMappingsUpdated={handleMappingsUpdated}
+              onClose={handleCloseMappingReview}
+            />
+          )}
 
           {/* Info Card */}
           <Card className="bg-blue-50 border-blue-200">

@@ -308,7 +308,7 @@ export default function Sidebar() {
                       {getThemePreview(currentTheme)}
                     </div>
                   </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="w-48 bg-surface border border-default">
+                  <DropdownMenuSubContent className="w-48">
                     {availableThemes.map((theme) => (
                       <DropdownMenuItem
                         key={theme.name}

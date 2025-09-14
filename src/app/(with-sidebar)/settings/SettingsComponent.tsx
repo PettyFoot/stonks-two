@@ -94,9 +94,8 @@ export default function SettingsComponent() {
 
   return (
     <div className="flex flex-col h-full">
-      <TopBar 
-        title="Settings" 
-        subtitle="Manage your account and preferences"
+      <TopBar
+        title="Settings"
         showTimeRangeFilters={false}
       />
       
@@ -113,7 +112,7 @@ export default function SettingsComponent() {
                   Welcome, {user.name || user.email || 'User'}
                 </h1>
                 <p className="text-muted-foreground">
-                  Manage your account settings and preferences
+                  Manage your account settings
                 </p>
               </div>
               <Link 

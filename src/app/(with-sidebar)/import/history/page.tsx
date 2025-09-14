@@ -22,12 +22,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { 
-  FileText, 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  FileText,
   MoreVertical,
   Trash2,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Eye,
+  User
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -46,6 +55,12 @@ interface ImportBatch {
   mappingConfidence?: number;
   createdAt: string;
   updatedAt: string;
+  userId?: string;
+  user?: {
+    id: string;
+    email: string;
+    name: string;
+  };
   _count: {
     trades: number;
     orders: number;
@@ -58,13 +73,41 @@ export default function ImportHistoryPage() {
   const [importBatches, setImportBatches] = useState<ImportBatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingBatch, setProcessingBatch] = useState<string | null>(null);
+  const [ordersModalOpen, setOrdersModalOpen] = useState(false);
+  const [ordersData, setOrdersData] = useState<{
+    batch: {
+      id: string;
+      filename: string;
+      userId: string;
+      userEmail?: string;
+      userName?: string;
+    };
+    orders: Array<{
+      id: string;
+      orderId: string;
+      symbol: string;
+      side: string;
+      orderQuantity: number;
+      limitPrice?: number;
+      orderStatus: string;
+      orderPlacedTime: string;
+      usedInTrade: boolean;
+    }>;
+    summary: {
+      totalOrders: number;
+      usedInTrades: number;
+      unusedOrders: number;
+      orderStatuses: Record<string, number>;
+    };
+  } | null>(null);
+  const [loadingOrders, setLoadingOrders] = useState(false);
 
   // Fetch import batches
   useEffect(() => {
-    if (isAdmin && !isLoading) {
+    if (!isLoading) {
       fetchImportBatches();
     }
-  }, [isAdmin, isLoading]);
+  }, [isLoading]);
 
   const fetchImportBatches = async () => {
     try {
@@ -108,7 +151,7 @@ export default function ImportHistoryPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action }),
       });
-      
+
       const result = await response.json();
       if (result.success) {
         await fetchImportBatches();
@@ -117,6 +160,28 @@ export default function ImportHistoryPage() {
       console.error('Error reprocessing batch:', error);
     } finally {
       setProcessingBatch(null);
+    }
+  };
+
+  const handleViewOrders = async (batchId: string) => {
+    setLoadingOrders(true);
+    setOrdersModalOpen(true);
+
+    try {
+      const response = await fetch(`/api/import-batches/${batchId}/orders`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setOrdersData(data);
+      } else {
+        console.error('Error fetching orders:', data.error);
+        setOrdersData(null);
+      }
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      setOrdersData(null);
+    } finally {
+      setLoadingOrders(false);
     }
   };
 
@@ -196,6 +261,7 @@ export default function ImportHistoryPage() {
                     <TableRow>
                       <TableHead>Date</TableHead>
                       <TableHead>Filename</TableHead>
+                      {isAdmin && <TableHead>User</TableHead>}
                       <TableHead>Type</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Records</TableHead>
@@ -219,6 +285,16 @@ export default function ImportHistoryPage() {
                             </Badge>
                           )}
                         </TableCell>
+                        {isAdmin && (
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-gray-400" />
+                              <span className="text-sm">
+                                {batch.user?.name || batch.user?.email || 'Unknown'}
+                              </span>
+                            </div>
+                          </TableCell>
+                        )}
                         <TableCell>{batch.brokerType}</TableCell>
                         <TableCell>{getStatusBadge(batch.status)}</TableCell>
                         <TableCell>
@@ -249,6 +325,14 @@ export default function ImportHistoryPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              {batch._count.orders > 0 && (
+                                <DropdownMenuItem
+                                  onClick={() => handleViewOrders(batch.id)}
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Orders ({batch._count.orders})
+                                </DropdownMenuItem>
+                              )}
                               {batch._count.orders > 0 && (
                                 <DropdownMenuItem
                                   onClick={() => handleReprocess(batch.id, 'recalculate')}
@@ -308,6 +392,130 @@ export default function ImportHistoryPage() {
           </Card>
         </div>
       </div>
+
+      {/* Orders Modal */}
+      <Dialog open={ordersModalOpen} onOpenChange={setOrdersModalOpen}>
+        <DialogContent className="max-w-6xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Orders from Import Batch</DialogTitle>
+            <DialogDescription>
+              {ordersData?.batch?.filename && (
+                <>
+                  File: {ordersData.batch.filename}
+                  {isAdmin && ordersData.batch.userEmail && (
+                    <> • User: {ordersData.batch.userEmail}</>
+                  )}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {loadingOrders ? (
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+              Loading orders...
+            </div>
+          ) : ordersData ? (
+            <div className="space-y-4">
+              {/* Summary */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold mb-2">Summary</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Total Orders:</span>
+                    <div className="font-medium">{ordersData.summary.totalOrders}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Used in Trades:</span>
+                    <div className="font-medium text-green-600">{ordersData.summary.usedInTrades}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Unused:</span>
+                    <div className="font-medium text-orange-600">{ordersData.summary.unusedOrders}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Status Breakdown:</span>
+                    <div className="text-xs">
+                      {Object.entries(ordersData.summary.orderStatuses).map(([status, count]) => (
+                        <div key={status}>{status}: {count as number}</div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Orders Table */}
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Order ID</TableHead>
+                      <TableHead>Symbol</TableHead>
+                      <TableHead>Side</TableHead>
+                      <TableHead>Quantity</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Placed</TableHead>
+                      <TableHead>Used in Trade</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {ordersData.orders.map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-mono text-xs">
+                          {order.orderId}
+                        </TableCell>
+                        <TableCell className="font-medium">{order.symbol}</TableCell>
+                        <TableCell>
+                          <Badge variant={order.side === 'BUY' ? 'default' : 'secondary'}>
+                            {order.side}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{order.orderQuantity.toLocaleString()}</TableCell>
+                        <TableCell>
+                          {order.limitPrice ? `$${order.limitPrice}` : 'Market'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={
+                            order.orderStatus === 'FILLED' ? 'default' :
+                            order.orderStatus === 'CANCELLED' ? 'destructive' : 'outline'
+                          }>
+                            {order.orderStatus}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {format(new Date(order.orderPlacedTime), 'MMM dd, HH:mm')}
+                        </TableCell>
+                        <TableCell>
+                          {order.usedInTrade ? (
+                            <Badge variant="default" className="text-xs">
+                              Yes
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              No
+                            </Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {ordersData.orders.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  No orders found in this import batch.
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-red-500">
+              Failed to load orders data.
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

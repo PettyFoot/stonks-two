@@ -55,20 +55,29 @@ export async function POST(request: NextRequest) {
     
     const brokerName = formData.get('brokerName') as string;
 
+    console.log('🚀 Starting CSV upload process');
+    console.log(`📊 User: ${user.id}`);
+    console.log(`📁 File: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
+    console.log(`🏷️ Account tags: ${accountTags.length > 0 ? accountTags.join(', ') : 'none'}`);
+    console.log(`🏦 Broker name: ${brokerName || 'not provided'}`);
+
     // Read file content
     const fileContent = await file.text();
+    console.log(`📝 File content length: ${fileContent.length} characters`);
 
     // Initialize ingestion service
     const ingestionService = new CsvIngestionService();
 
     // For large files, should process in background (not implemented in this demo)
     if (file.size > FILE_SIZE_LIMITS.LARGE) {
+      console.log('⚠️ File too large for immediate processing');
       return NextResponse.json({
         message: 'Large file detected. Background processing is not yet implemented.',
         recommendation: 'Please use a smaller file (under 50MB) for immediate processing.'
       }, { status: 413 });
     }
 
+    console.log('🔄 Calling ingestCsv...');
     // Process the CSV
     const result = await ingestionService.ingestCsv(
       fileContent,
@@ -78,6 +87,12 @@ export async function POST(request: NextRequest) {
       undefined, // userMappings
       brokerName || undefined // brokerName
     );
+
+    console.log('✅ ingestCsv completed');
+    console.log(`📊 Result summary: success=${result.success}, successCount=${result.successCount}, errorCount=${result.errorCount}`);
+    console.log(`🔍 Requires user review: ${result.requiresUserReview}`);
+    console.log(`🔍 Requires broker selection: ${result.requiresBrokerSelection}`);
+    console.log(`🆔 Import batch ID: ${result.importBatchId}`);
 
     // Increment upload count after successful processing
     // (Note: this will be called when the upload completes successfully, 

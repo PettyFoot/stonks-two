@@ -59,70 +59,61 @@ function SubscriptionTabInternal() {
       </Card>
 
       {/* Subscription Management */}
-      {isPremium && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <SettingsIcon className="h-5 w-5" />
-              Manage Subscription
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <SubscriptionManagement />
-          </CardContent>
-        </Card>
+      {isPremium ? (
+        <SubscriptionManagement />
+      ) : (
+        <>
+          {/* Pricing Plans */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Available Plans
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-2">
+                Choose the plan that best fits your trading needs
+              </p>
+            </CardHeader>
+            <CardContent>
+              <PricingCards />
+            </CardContent>
+          </Card>
+
+          {/* FAQ Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Frequently Asked Questions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <h4 className="font-medium">Can I cancel my subscription anytime?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Yes, you can cancel your subscription at any time. You&apos;ll continue to have access
+                    to Pro features until the end of your billing period.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="font-medium">What happens to my data if I downgrade?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Your data is never deleted. However, some features may become unavailable
+                    and you&apos;ll be subject to plan limits.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="font-medium">Do you offer refunds?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    We offer a 14-day money-back guarantee for all new subscriptions.
+                    Contact support if you need assistance.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </>
       )}
-
-      {/* Pricing Plans */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Available Plans
-          </CardTitle>
-          <p className="text-sm text-muted-foreground mt-2">
-            Choose the plan that best fits your trading needs
-          </p>
-        </CardHeader>
-        <CardContent>
-          <PricingCards />
-        </CardContent>
-      </Card>
-
-
-      {/* FAQ Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Frequently Asked Questions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <h4 className="font-medium">Can I cancel my subscription anytime?</h4>
-              <p className="text-sm text-muted-foreground">
-                Yes, you can cancel your subscription at any time. You&apos;ll continue to have access 
-                to Pro features until the end of your billing period.
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <h4 className="font-medium">What happens to my data if I downgrade?</h4>
-              <p className="text-sm text-muted-foreground">
-                Your data is never deleted. However, some features may become unavailable 
-                and you&apos;ll be subject to plan limits.
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <h4 className="font-medium">Do you offer refunds?</h4>
-              <p className="text-sm text-muted-foreground">
-                We offer a 14-day money-back guarantee for all new subscriptions. 
-                Contact support if you need assistance.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

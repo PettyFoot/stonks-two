@@ -192,34 +192,48 @@ export function PaymentHistory({
             ))}
           </div>
         ) : (
-          <div className="overflow-hidden rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Method</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {payments.map((payment) => (
-                  <PaymentTableRow
-                    key={payment.id}
-                    payment={payment}
-                    formatAmount={formatAmount}
-                    formatDate={formatDate}
-                    getStatusColor={getStatusColor}
-                    getStatusText={getStatusText}
-                    formatPaymentMethod={formatPaymentMethod}
-                    onDownloadInvoice={handleDownloadInvoice}
-                    downloadingInvoice={downloadingInvoice}
-                  />
-                ))}
-              </TableBody>
-            </Table>
+          <div className="space-y-3">
+            {payments.map((payment) => (
+              <div key={payment.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-center gap-4">
+                    <span className="font-medium">{formatDate(payment.date).split(',')[0]}</span>
+                    <span className="font-medium">{formatAmount(payment.amount, payment.currency)}</span>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <span>{payment.description}</span>
+                    <Badge variant={getStatusColor(payment.status) as "default" | "destructive" | "outline" | "secondary"}>
+                      {getStatusText(payment.status)}
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 ml-4">
+                  {payment.receiptUrl && (
+                    <Button variant="ghost" size="sm" asChild>
+                      <a href={payment.receiptUrl} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  )}
+
+                  {payment.invoiceUrl && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDownloadInvoice(payment.id)}
+                      disabled={downloadingInvoice === payment.id}
+                    >
+                      {downloadingInvoice === payment.id ? (
+                        <InlineTriangleLoader size="sm" />
+                      ) : (
+                        <Download className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 

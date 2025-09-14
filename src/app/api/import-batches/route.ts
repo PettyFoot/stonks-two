@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth0';
 
-// GET - List all import batches for a user
+// GET - List all import batches for a user (or all users if admin)
 export async function GET() {
   try {
     // Get the authenticated user
@@ -11,15 +11,29 @@ export async function GET() {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
+    // If user is admin, get all import batches with user info
+    // If regular user, get only their own batches
+    const whereClause = user.isAdmin ? {} : { userId: user.id };
+
     const importBatches = await prisma.importBatch.findMany({
-      where: { userId: user.id },
+      where: whereClause,
       include: {
         _count: {
           select: {
             trades: true,
             orders: true
           }
-        }
+        },
+        // Include user info for admins
+        ...(user.isAdmin && {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true
+            }
+          }
+        })
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -50,12 +64,13 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    // Verify the batch belongs to the user
+    // Verify the batch belongs to the user (or user is admin)
+    const whereClause = user.isAdmin
+      ? { id: batchId }
+      : { id: batchId, userId: user.id };
+
     const batch = await prisma.importBatch.findFirst({
-      where: {
-        id: batchId,
-        userId: user.id
-      }
+      where: whereClause
     });
 
     if (!batch) {

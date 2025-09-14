@@ -3,12 +3,12 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 import { PaymentHistory } from '@/components/subscription';
 import { useSubscription } from '@/hooks/useSubscription';
+import { BillingInformationForm } from './BillingInformationForm';
 import { SubscriptionTier } from '@prisma/client';
 import {
-  CreditCard,
-  Plus,
   Receipt,
   DollarSign,
   FileText,
@@ -68,25 +68,39 @@ export default function BillingTab() {
         <CardContent>
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-              <div>
+              <div className="flex-1">
                 <h4 className="font-semibold">
                   {isPremium ? 'Premium Plan' : 'Free Plan'}
                 </h4>
                 <p className="text-sm text-muted-foreground">
-                  {isPremium 
-                    ? subscription?.priceText || 'Monthly billing'
+                  {isPremium
+                    ? subscription?.priceText || '$9.99/month'
                     : 'No billing required'
                   }
                 </p>
-                {isPremium && subscription?.daysRemaining && (
+                {isPremium && subscription?.daysRemaining > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    {subscription.inTrial 
-                      ? `Trial ends in ${subscription.daysRemaining} days`
+                    {subscription.inTrial
+                      ? `Trial (${subscription.daysRemaining} days remaining)`
                       : `Renews in ${subscription.daysRemaining} days`
                     }
                   </p>
                 )}
               </div>
+
+              {isPremium && (
+                <div className="flex flex-col items-center gap-2 mx-4">
+                  <Button
+                    onClick={handleManageBilling}
+                    variant="outline"
+                    size="sm"
+                    className="whitespace-nowrap"
+                  >
+                    Update Payment Method
+                  </Button>
+                </div>
+              )}
+
               <span className={`px-2 py-1 rounded text-xs font-medium ${
                 isPremium ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
               }`}>
@@ -106,48 +120,6 @@ export default function BillingTab() {
         </CardContent>
       </Card>
 
-      {/* Payment Methods */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Payment Methods
-            </CardTitle>
-            {isPremium && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleManageBilling}
-                className="flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Manage Methods
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {isPremium ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <CreditCard className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Manage payment methods in billing portal</p>
-                <p className="text-sm mb-4">Update cards, billing address, and payment preferences</p>
-                <Button onClick={handleManageBilling} variant="outline" size="sm">
-                  Open Billing Portal
-                </Button>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <CreditCard className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No payment methods on file</p>
-                <p className="text-sm">Upgrade to Premium to manage payment methods</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Billing History */}
       <Card>
@@ -171,43 +143,7 @@ export default function BillingTab() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-medium mb-2">Billing Address</h4>
-                <div className="text-sm text-muted-foreground space-y-1">
-                  <p>No billing address on file</p>
-                  <p>Add a billing address when you upgrade</p>
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="font-medium mb-2">Tax Information</h4>
-                <div className="text-sm text-muted-foreground space-y-1">
-                  <p>Tax ID: Not provided</p>
-                  <p>Business Name: Not provided</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t">
-              <h4 className="font-medium mb-2">Invoice Preferences</h4>
-              <div className="space-y-2 text-sm">
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" className="rounded" defaultChecked />
-                  Email invoices to my account email
-                </label>
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" className="rounded" />
-                  Send billing reminders
-                </label>
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" className="rounded" />
-                  Include detailed usage reports
-                </label>
-              </div>
-            </div>
-          </div>
+          <BillingInformationForm />
         </CardContent>
       </Card>
 
@@ -263,7 +199,9 @@ export default function BillingTab() {
             <p className="text-muted-foreground mb-4">
               Have questions about billing or need to update your payment information?
             </p>
-            <Button variant="outline">Contact Billing Support</Button>
+            <Button variant="outline" asChild>
+              <Link href="/contact">Contact Billing Support</Link>
+            </Button>
           </div>
         </CardContent>
       </Card>

@@ -320,6 +320,7 @@ export function createSubscriptionManager(userId: string) {
           daysRemaining: 0,
           inTrial: false,
           willCancel: false,
+          nextBillingDate: null,
         };
       }
 
@@ -333,6 +334,7 @@ export function createSubscriptionManager(userId: string) {
         daysRemaining: getDaysUntilRenewal(subscription),
         inTrial: isSubscriptionInTrial(subscription),
         willCancel: willCancelAtPeriodEnd(subscription),
+        nextBillingDate: subscription.currentPeriodEnd,
       };
     },
   };

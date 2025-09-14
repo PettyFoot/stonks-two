@@ -11,6 +11,7 @@ interface SubscriptionInfo {
   daysRemaining: number;
   inTrial: boolean;
   willCancel: boolean;
+  nextBillingDate: Date | null;
 }
 
 interface UseSubscriptionReturn {
@@ -82,6 +83,7 @@ export function useSubscription(): UseSubscriptionReturn {
         daysRemaining: 0,
         inTrial: false,
         willCancel: false,
+        nextBillingDate: null,
       });
     } finally {
       setIsLoading(false);
@@ -178,37 +180,34 @@ export function useSubscription(): UseSubscriptionReturn {
   }, []);
 
   /**
-   * Create billing portal session for subscription management
+   * Get billing portal URL for subscription management
    */
   const createBillingPortalSession = useCallback(async (
     returnUrl?: string
   ): Promise<{ url?: string; error?: string }> => {
     try {
-      const currentUrl = window.location.origin;
-      const return_url = returnUrl || `${currentUrl}/dashboard`;
+      // Use environment variables for portal URLs
+      const isProduction = process.env.NODE_ENV === 'production';
+      const portalUrl = isProduction
+        ? process.env.NEXT_PUBLIC_STRIPE_PORTAL_LINK_LIVE
+        : process.env.NEXT_PUBLIC_STRIPE_PORTAL_LINK_TEST;
 
-      const response = await fetch(
-        `/api/stripe/billing-portal?return_url=${encodeURIComponent(return_url)}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        return { error: errorData.error || 'Failed to create billing portal session' };
+      if (!portalUrl) {
+        return { error: 'Stripe portal URL not configured' };
       }
 
-      const data = await response.json();
-      return { url: data.url };
+      // Add user's email as prefilled parameter if available
+      const userEmail = user?.email;
+      const urlWithEmail = userEmail
+        ? `${portalUrl}?prefilled_email=${encodeURIComponent(userEmail)}`
+        : portalUrl;
+
+      return { url: urlWithEmail };
     } catch (err) {
-      console.error('Error creating billing portal session:', err);
-      return { error: err instanceof Error ? err.message : 'Failed to create billing portal session' };
+      console.error('Error getting billing portal URL:', err);
+      return { error: err instanceof Error ? err.message : 'Failed to get billing portal URL' };
     }
-  }, []);
+  }, [user?.email]);
 
   /**
    * Refresh subscription data

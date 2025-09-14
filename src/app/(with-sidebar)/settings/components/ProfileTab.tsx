@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 import {
   User,
   Mail,
@@ -40,6 +41,7 @@ export default function ProfileTab() {
   const { subscription } = useSubscription();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [emailError, setEmailError] = useState('');
   const [profile, setProfile] = useState<UserProfile>({
     name: user?.name || '',
     email: user?.email || '',
@@ -50,22 +52,59 @@ export default function ProfileTab() {
     website: ''
   });
 
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleSave = async () => {
+    setEmailError('');
+
+    // Validate email format
+    if (profile.email && !validateEmail(profile.email)) {
+      setEmailError('Please enter a valid email address');
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
     setIsSaving(true);
     try {
-      // TODO: Implement API call to save profile
-      // await fetch('/api/user/profile', {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(profile)
-      // });
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const response = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: profile.name,
+          email: profile.email
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 409) {
+          setEmailError('Email is already in use by another account');
+          toast.error('Email is already in use by another account');
+        } else if (response.status === 400) {
+          const errorMessage = data.details?.[0]?.message || data.error || 'Invalid request data';
+          toast.error(errorMessage);
+        } else {
+          toast.error(data.error || 'Failed to update profile');
+        }
+        return;
+      }
+
+      // Success
       setIsEditing(false);
+
+      if (data.changes?.email) {
+        toast.success('Profile updated successfully! Please verify your new email address through your authentication provider.');
+      } else {
+        toast.success('Profile updated successfully!');
+      }
+
     } catch (error) {
       console.error('Failed to save profile:', error);
+      toast.error('Failed to update profile. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -82,6 +121,7 @@ export default function ProfileTab() {
       bio: '',
       website: ''
     });
+    setEmailError('');
     setIsEditing(false);
   };
 
@@ -167,14 +207,30 @@ export default function ProfileTab() {
                       id="email"
                       type="email"
                       value={profile.email}
-                      disabled={true} // Email is managed by Auth0
-                      className="pl-10 bg-muted"
+                      onChange={(e) => {
+                        setProfile({ ...profile, email: e.target.value });
+                        if (emailError) setEmailError('');
+                      }}
+                      disabled={!isEditing}
+                      className={`pl-10 ${emailError ? 'border-red-500' : ''}`}
                       placeholder="Email address"
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Email is managed through your authentication provider
-                  </p>
+                  {emailError && (
+                    <p className="text-xs text-red-500">
+                      {emailError}
+                    </p>
+                  )}
+                  {!isEditing && (
+                    <p className="text-xs text-muted-foreground">
+                      Email changes will update your profile but not your authentication email. You'll need to verify through your authentication provider to change your login email.
+                    </p>
+                  )}
+                  {isEditing && (
+                    <p className="text-xs text-muted-foreground">
+                      Changing your email will update your profile. To change your login email, you'll need to verify the new address through your authentication provider.
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">

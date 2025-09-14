@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 
 // Global Prisma client for database operations
 declare global {
-  // eslint-disable-next-line no-var
+   
   var __prisma: PrismaClient | undefined;
 }
 

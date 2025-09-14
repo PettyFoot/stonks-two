@@ -12,10 +12,10 @@ import {
   type AiMappingResult, 
   type ColumnMapping
 } from '@/lib/ai/csvMapper';
-import { 
-  CsvFormatDetector, 
-  type CsvFormat, 
-  DATA_TRANSFORMERS 
+import {
+  CsvFormatDetector,
+  type CsvFormat,
+  DATA_TRANSFORMERS
 } from '@/lib/csvFormatRegistry';
 import { BrokerFormatService, type FormatDetectionResult } from '@/lib/brokerFormatService';
 import { OpenAiMappingService, type OpenAiMappingResult } from '@/lib/ai/openAiMappingService';
@@ -119,9 +119,148 @@ export class CsvIngestionService {
     // Initialize AI mapper with API key from environment
     const aiApiKey = process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || '';
     this.aiMapper = new CsvAiMapper(aiApiKey);
+    // formatDetector will be initialized with database formats when needed
     this.formatDetector = new CsvFormatDetector();
     this.brokerFormatService = new BrokerFormatService();
     this.openAiService = new OpenAiMappingService();
+  }
+
+  /**
+   * Convert a single pattern to RegExp, handling various serialized formats
+   */
+  private convertPatternToRegExp(pattern: any): RegExp | undefined {
+    if (!pattern) return undefined;
+    if (pattern instanceof RegExp) return pattern;
+
+    try {
+      if (typeof pattern === 'string') {
+        // Handle regex patterns that might be serialized as strings
+        // Check if it's a regex pattern like "/pattern/flags"
+        const regexMatch = pattern.match(/^\/(.+)\/([gimuy]*)$/);
+        if (regexMatch) {
+          return new RegExp(regexMatch[1], regexMatch[2]);
+        }
+        // Otherwise treat as a plain string pattern
+        return new RegExp(pattern);
+      }
+
+      if (pattern.source && typeof pattern.source === 'string') {
+        // Handle objects with source and flags properties
+        return new RegExp(pattern.source, pattern.flags || '');
+      }
+    } catch (error) {
+      console.warn('Failed to convert pattern to RegExp:', pattern, error);
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Convert object of patterns to RegExp
+   */
+  private convertPatternsToRegExp(patterns: any): { [key: string]: RegExp } | undefined {
+    if (!patterns || typeof patterns !== 'object') return undefined;
+
+    const result: { [key: string]: RegExp } = {};
+    for (const [key, pattern] of Object.entries(patterns)) {
+      const regExp = this.convertPatternToRegExp(pattern);
+      if (regExp) {
+        result[key] = regExp;
+      }
+    }
+
+    return Object.keys(result).length > 0 ? result : undefined;
+  }
+
+  /**
+   * Convert array of patterns to RegExp array
+   */
+  private convertArrayPatternsToRegExp(patterns: any[]): RegExp[] | undefined {
+    if (!patterns || !Array.isArray(patterns)) return undefined;
+
+    const result: RegExp[] = [];
+    for (const pattern of patterns) {
+      const regExp = this.convertPatternToRegExp(pattern);
+      if (regExp) {
+        result.push(regExp);
+      }
+    }
+
+    return result.length > 0 ? result : undefined;
+  }
+
+  /**
+   * Load CSV formats from database and initialize the format detector
+   */
+  private async initializeFormatDetector(): Promise<void> {
+    try {
+      // Get popular formats from database
+      const dbFormats = await this.brokerFormatService.getPopularFormats(50);
+
+      // Convert database formats to CsvFormat interface
+      const csvFormats: CsvFormat[] = dbFormats.map(dbFormat => ({
+        id: dbFormat.id,
+        name: dbFormat.formatName,
+        description: dbFormat.description || '',
+        fingerprint: dbFormat.headerFingerprint,
+        confidence: dbFormat.confidence,
+        fieldMappings: dbFormat.fieldMappings as any,
+        detectionPatterns: {
+          headerPattern: dbFormat.headers,
+          // Convert sampleValuePatterns back to RegExp objects if they exist
+          sampleValuePatterns: this.convertPatternsToRegExp(
+            dbFormat.sampleData?.detectionPatterns?.sampleValuePatterns
+          ),
+          fileNamePatterns: this.convertArrayPatternsToRegExp(
+            dbFormat.sampleData?.detectionPatterns?.fileNamePatterns
+          ),
+          specialDetection: dbFormat.sampleData?.detectionPatterns?.specialDetection
+            ? {
+                fileStartPattern: this.convertPatternToRegExp(
+                  dbFormat.sampleData.detectionPatterns.specialDetection.fileStartPattern
+                ),
+                sectionHeaders: dbFormat.sampleData.detectionPatterns.specialDetection.sectionHeaders
+              }
+            : undefined,
+        },
+        brokerName: dbFormat.broker.name,
+        version: '1.0',
+        createdAt: dbFormat.createdAt,
+        updatedAt: dbFormat.updatedAt,
+        usageCount: dbFormat.usageCount,
+        createdBy: dbFormat.createdBy || undefined,
+      }));
+
+      // Initialize format detector with loaded formats
+      this.formatDetector = new CsvFormatDetector(csvFormats);
+
+      console.log(`✅ Loaded ${csvFormats.length} CSV formats from database`);
+    } catch (error) {
+      console.error('❌ Failed to load CSV formats from database:', error);
+      // Fallback to empty detector
+      this.formatDetector = new CsvFormatDetector([]);
+    }
+  }
+
+  /**
+   * Helper method to safely parse date strings, returning null for invalid dates
+   */
+  private parseDateSafely(dateValue: unknown): Date | null {
+    if (!dateValue) {
+      return null;
+    }
+
+    const dateString = String(dateValue).trim();
+    if (!dateString || dateString === 'undefined' || dateString === 'null') {
+      return null;
+    }
+
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return null;
+    }
+
+    return date;
   }
 
   /**
@@ -130,7 +269,10 @@ export class CsvIngestionService {
   private getOrderExecutedTime(mappedData: Record<string, unknown>, mappings?: Record<string, any> | ColumnMapping[]): Date {
     // If we have a specific orderExecutedTime from mapping, use it
     if (mappedData.orderExecutedTime) {
-      return new Date(String(mappedData.orderExecutedTime));
+      const parsedDate = this.parseDateSafely(mappedData.orderExecutedTime);
+      if (parsedDate) {
+        return parsedDate;
+      }
     }
 
     // Check if any of the original headers contained execution-specific terms
@@ -138,12 +280,12 @@ export class CsvIngestionService {
     if (mappings) {
       if (Array.isArray(mappings)) {
         // ColumnMapping[] format
-        hasExecutionTimeMapping = mappings.some((mapping: any) => 
+        hasExecutionTimeMapping = mappings.some((mapping: any) =>
           mapping.tradeVoyagerField === 'orderExecutedTime' && this.isExecutionSpecificHeader(mapping.csvColumn)
         );
       } else {
         // Record<string, mapping> format (OpenAI mappings)
-        hasExecutionTimeMapping = Object.entries(mappings).some(([csvHeader, mapping]) => 
+        hasExecutionTimeMapping = Object.entries(mappings).some(([csvHeader, mapping]) =>
           mapping.field === 'orderExecutedTime' && this.isExecutionSpecificHeader(csvHeader)
         );
       }
@@ -151,11 +293,15 @@ export class CsvIngestionService {
 
     // If we don't have execution-specific mapping, use orderPlacedTime for orderExecutedTime
     if (!hasExecutionTimeMapping && mappedData.orderPlacedTime) {
-      return new Date(String(mappedData.orderPlacedTime));
+      const parsedDate = this.parseDateSafely(mappedData.orderPlacedTime);
+      if (parsedDate) {
+        return parsedDate;
+      }
     }
 
-    // Fallback to current time if no placed time either
-    return mappedData.orderPlacedTime ? new Date(String(mappedData.orderPlacedTime)) : new Date();
+    // Fallback to current time if no valid placed time either
+    const fallbackDate = this.parseDateSafely(mappedData.orderPlacedTime);
+    return fallbackDate || new Date();
   }
 
   /**
@@ -277,6 +423,9 @@ export class CsvIngestionService {
 
   async validateCsvFile(fileContent: string): Promise<CsvValidationResult> {
     const fileSize = Buffer.byteLength(fileContent, 'utf8');
+
+    // Initialize format detector with database formats
+    await this.initializeFormatDetector();
     
     if (fileSize > FILE_SIZE_LIMITS.MAX) {
       return {
@@ -309,10 +458,9 @@ export class CsvIngestionService {
         const headers = sampleOrder ? Object.keys(sampleOrder) : ['symbol', 'side', 'orderQuantity', 'orderStatus'];
         const sampleRows = [schwabResult.filledOrders[0], schwabResult.workingOrders[0]].filter(Boolean).slice(0, 3);
         
-        // Get Schwab format definition
-        const { CsvFormatDetector } = await import('./csvFormatRegistry');
-        const detector = new CsvFormatDetector();
-        const formatDetection = detector.detectFormat(headers, sampleRows, fileContent);
+        // Get format detection using our initialized detector
+        await this.initializeFormatDetector();
+        const formatDetection = this.formatDetector.detectFormat(headers, sampleRows, fileContent);
         
         // Also try broker format detection from database
         const brokerDetection = await this.brokerFormatService.detectFormat(headers);
@@ -416,19 +564,29 @@ export class CsvIngestionService {
     brokerName?: string
   ): Promise<CsvIngestionResult> {
     
+    console.log('🔍 Starting CSV ingestion process');
+    console.log(`📊 File: ${fileName}, User: ${userId}, Size: ${fileContent.length} chars`);
+    console.log(`🏦 Broker name provided: ${brokerName || 'none'}`);
+    console.log(`🔧 User mappings provided: ${!!userMappings}`);
+
     // First validate the file
+    console.log('📋 Validating CSV file...');
     const validation = await this.validateCsvFile(fileContent);
     if (!validation.isValid) {
+      console.error('❌ CSV validation failed:', validation.errors);
       throw new Error(`CSV validation failed: ${validation.errors.join(', ')}`);
     }
+    console.log(`✅ CSV validation passed: ${validation.rowCount} rows, ${validation.headers.length} columns`);
 
     // Log the upload attempt
+    console.log('📝 Creating upload log...');
     const uploadLog = await this.createUploadLog(
       userId, 
       fileName, 
       validation.headers, 
       validation.rowCount
     );
+    console.log(`✅ Upload log created: ${uploadLog.id}`);
 
     try {
       // Check for Schwab Today's Trade Activity format first (special case)
@@ -436,6 +594,7 @@ export class CsvIngestionService {
       const isSchwabFormat = schwabPattern.test(fileContent);
       
       // Try to detect broker format from database
+      console.log('🔍 Detecting broker format from database...');
       const brokerDetection = await this.brokerFormatService.detectFormat(validation.headers);
       
       console.log('=== Enhanced CSV Processing Debug ===');
@@ -610,21 +769,39 @@ export class CsvIngestionService {
         const mappedData: Record<string, unknown> = {};
         const brokerMetadata: Record<string, unknown> = {};
 
-        // Apply stored mappings
+        // Apply stored mappings (supports both single and multiple field mappings)
         for (const [csvHeader, mapping] of Object.entries(fieldMappings)) {
           const value = (records[i] as Record<string, unknown>)[csvHeader];
-          
+
           if (value !== undefined && value !== null && value !== '') {
-            if (mapping.field === 'brokerMetadata' || mapping.confidence < 0.5) {
-              brokerMetadata[csvHeader] = value;
+            // Handle new format with multiple fields
+            if (mapping.fields && Array.isArray(mapping.fields)) {
+              // Map the CSV value to all specified order fields
+              mapping.fields.forEach((field: string) => {
+                if (field === 'brokerMetadata' || mapping.confidence < 0.5) {
+                  brokerMetadata[csvHeader] = value;
+                } else {
+                  mappedData[field] = value;
+                }
+              });
+            } else if (mapping.field) {
+              // Handle legacy format with single field
+              if (mapping.field === 'brokerMetadata' || mapping.confidence < 0.5) {
+                brokerMetadata[csvHeader] = value;
+              } else {
+                mappedData[mapping.field] = value;
+              }
             } else {
-              mappedData[mapping.field] = value;
+              // Very old format where mapping is just the field name
+              if (typeof mapping === 'string') {
+                mappedData[mapping] = value;
+              }
             }
           }
         }
 
         // Calculate times using helper method
-        const orderPlacedTime = mappedData.orderPlacedTime ? new Date(String(mappedData.orderPlacedTime)) : new Date();
+        const orderPlacedTime = this.parseDateSafely(mappedData.orderPlacedTime) || new Date();
         const orderExecutedTime = this.getOrderExecutedTime(mappedData, brokerDetection.format.fieldMappings as Record<string, any>);
         const symbol = String(mappedData.symbol || '');
         const orderQuantity = Number(mappedData.orderQuantity) || 0;
@@ -1175,7 +1352,7 @@ export class CsvIngestionService {
             }
             
             // Calculate times using helper method
-            const orderPlacedTime = mappedData.orderPlacedTime ? new Date(String(mappedData.orderPlacedTime)) : new Date();
+            const orderPlacedTime = this.parseDateSafely(mappedData.orderPlacedTime) || new Date();
             const orderExecutedTime = this.getOrderExecutedTime(mappedData, mappingResult.mappings);
             const symbol = String(mappedData.symbol || '');
             const orderQuantity = Number(mappedData.orderQuantity) || 0;
@@ -1339,36 +1516,44 @@ export class CsvIngestionService {
       console.log(`📊 File contains ${records.length} records with ${headers.length} columns`);
       console.log('📋 Headers:', headers);
       
-      // Create a temporary import batch for later processing
-      const importBatch = await prisma.importBatch.create({
-        data: {
-          userId,
-          filename: fileName,
-          fileSize,
-          brokerType: BrokerType.GENERIC_CSV,
+      console.log('🏗️ Creating temporary ImportBatch for broker selection...');
+      try {
+        // Create a temporary import batch for later processing
+        const importBatch = await prisma.importBatch.create({
+          data: {
+            userId,
+            filename: fileName,
+            fileSize,
+            brokerType: BrokerType.GENERIC_CSV,
+            importType: 'CUSTOM',
+            status: 'PENDING',
+            totalRecords: records.length,
+            aiMappingUsed: false,
+            userReviewRequired: true,
+            tempFileContent: fileContent, // Store the file content for later processing
+          },
+        });
+
+        console.log(`✅ Successfully created pending ImportBatch: ${importBatch.id}`);
+        console.log(`📊 ImportBatch details: status=${importBatch.status}, records=${importBatch.totalRecords}`);
+        console.log('⏸️ Waiting for user to select broker...');
+
+        return {
+          success: false,
+          importBatchId: importBatch.id,
           importType: 'CUSTOM',
-          status: 'PENDING',
           totalRecords: records.length,
-          aiMappingUsed: false,
-          userReviewRequired: true,
-          tempFileContent: fileContent, // Store the file content for later processing
-        },
-      });
-
-      console.log(`✅ Created pending import batch: ${importBatch.id}`);
-      console.log('⏸️ Waiting for user to select broker...');
-
-      return {
-        success: false,
-        importBatchId: importBatch.id,
-        importType: 'CUSTOM',
-        totalRecords: records.length,
-        successCount: 0,
-        errorCount: 0,
-        errors: [],
-        requiresUserReview: true,
-        requiresBrokerSelection: true,
-      };
+          successCount: 0,
+          errorCount: 0,
+          errors: [],
+          requiresUserReview: true,
+          requiresBrokerSelection: true,
+        };
+      } catch (error) {
+        console.error('❌ Failed to create ImportBatch for broker selection:', error);
+        console.error('💥 Error details:', error instanceof Error ? error.message : 'Unknown error');
+        throw new Error(`Failed to create import batch: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
     }
 
     console.log(`🤖 Processing CSV with OpenAI for broker: ${brokerName}`);
@@ -1389,41 +1574,55 @@ export class CsvIngestionService {
     console.log('❓ Unmapped fields:', aiResult.brokerMetadataFields.length);
     console.log('⏸️ Broker format NOT created yet - waiting for user approval');
 
-    // Create import batch
-    const importBatch = await prisma.importBatch.create({
-      data: {
-        userId,
-        filename: fileName,
-        fileSize,
-        brokerType: this.getBrokerTypeFromName(brokerName),
-        importType: 'CUSTOM',
-        status: 'PROCESSING',
-        totalRecords: records.length,
-        aiMappingUsed: true,
-        mappingConfidence: aiResult.overallConfidence,
-        columnMappings: aiResult.mappings as unknown as Prisma.InputJsonValue,
-        userReviewRequired: true, // Always require review for AI-generated mappings
-      },
-    });
+    console.log('🏗️ Creating ImportBatch for AI mapping review...');
+    let importBatch: any;
+    try {
+      // Create import batch
+      importBatch = await prisma.importBatch.create({
+        data: {
+          userId,
+          filename: fileName,
+          fileSize,
+          brokerType: this.getBrokerTypeFromName(brokerName),
+          importType: 'CUSTOM',
+          status: 'PROCESSING',
+          totalRecords: records.length,
+          aiMappingUsed: true,
+          mappingConfidence: aiResult.overallConfidence,
+          columnMappings: aiResult.mappings as unknown as Prisma.InputJsonValue,
+          userReviewRequired: true, // Always require review for AI-generated mappings
+        },
+      });
 
-    // Update upload log
-    await this.updateUploadLog(uploadLogId, 'MAPPED', 'AI_MAPPED', undefined, importBatch.id);
+      console.log(`✅ Successfully created ImportBatch for AI review: ${importBatch.id}`);
+      console.log(`📊 ImportBatch details: status=${importBatch.status}, records=${importBatch.totalRecords}, confidence=${aiResult.overallConfidence}`);
 
-    // Store the pending AI result in import batch for later processing
-    // Don't create AiIngestToCheck yet since we don't have a broker format ID yet
-    // Using columnMappings temporarily until we can add the new columns
-    await prisma.importBatch.update({
-      where: { id: importBatch.id },
-      data: {
-        columnMappings: {
-          pendingAiMappings: aiResult.mappings,
-          pendingBrokerName: brokerName,
-          pendingMetadata: aiResult.brokerMetadataFields,
-          overallConfidence: aiResult.overallConfidence
-        } as any,
-        tempFileContent: fileContent, // Store file content for later processing
-      },
-    });
+      // Update upload log
+      console.log('📝 Updating upload log with ImportBatch ID...');
+      await this.updateUploadLog(uploadLogId, 'MAPPED', 'AI_MAPPED', undefined, importBatch.id);
+
+      // Store the pending AI result in import batch for later processing
+      // Don't create AiIngestToCheck yet since we don't have a broker format ID yet
+      // Using columnMappings temporarily until we can add the new columns
+      console.log('💾 Storing pending AI mappings in ImportBatch...');
+      await prisma.importBatch.update({
+        where: { id: importBatch.id },
+        data: {
+          columnMappings: {
+            pendingAiMappings: aiResult.mappings,
+            pendingBrokerName: brokerName,
+            pendingMetadata: aiResult.brokerMetadataFields,
+            overallConfidence: aiResult.overallConfidence
+          } as any,
+          tempFileContent: fileContent, // Store file content for later processing
+        },
+      });
+      console.log('✅ Pending AI mappings stored successfully');
+    } catch (error) {
+      console.error('❌ Failed to create ImportBatch for AI mapping:', error);
+      console.error('💥 Error details:', error instanceof Error ? error.message : 'Unknown error');
+      throw new Error(`Failed to create import batch for AI mapping: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 
     // Always require user review for AI-generated mappings to ensure accuracy
     // and collect feedback for improving the AI model
@@ -1484,7 +1683,7 @@ export class CsvIngestionService {
           }
 
           // Calculate times using helper method
-          const orderPlacedTime = mappedData.orderPlacedTime ? new Date(String(mappedData.orderPlacedTime)) : new Date();
+          const orderPlacedTime = this.parseDateSafely(mappedData.orderPlacedTime) || new Date();
           const orderExecutedTime = this.getOrderExecutedTime(mappedData, aiResult.mappings);
           const symbol = String(mappedData.symbol || '');
           const orderQuantity = Number(mappedData.orderQuantity) || 0;
@@ -1856,8 +2055,8 @@ export class CsvIngestionService {
             if (transformedValue instanceof Date) {
               // Already a date from transformer
             } else {
-              const parsedDate = new Date(String(transformedValue));
-              if (isNaN(parsedDate.getTime())) {
+              const parsedDate = this.parseDateSafely(transformedValue);
+              if (!parsedDate) {
                 console.warn(`Failed to parse date from: ${value}`);
                 continue; // Skip invalid dates
               }
@@ -1900,32 +2099,34 @@ export class CsvIngestionService {
     let orderPlacedTime: Date;
     let orderExecutedTime: Date;
     
-    if (normalizedData.orderPlacedTime && normalizedData.orderExecutedTime) {
+    const placedDate = this.parseDateSafely(normalizedData.orderPlacedTime);
+    const executedDate = this.parseDateSafely(normalizedData.orderExecutedTime);
+
+    if (placedDate && executedDate) {
       // We have both times explicitly
-      orderPlacedTime = new Date(String(normalizedData.orderPlacedTime));
-      orderExecutedTime = new Date(String(normalizedData.orderExecutedTime));
-    } else if (normalizedData.orderPlacedTime) {
+      orderPlacedTime = placedDate;
+      orderExecutedTime = executedDate;
+    } else if (placedDate) {
       // Only have placed time - use it for both
-      orderPlacedTime = new Date(String(normalizedData.orderPlacedTime));
-      orderExecutedTime = orderPlacedTime;
-    } else if (normalizedData.orderExecutedTime) {
+      orderPlacedTime = placedDate;
+      orderExecutedTime = placedDate;
+    } else if (executedDate) {
       // Only have executed time - check if it's from an execution-specific mapping
-      const hasExecutionMapping = Object.entries(format.fieldMappings).some(([csvHeader, mapping]) => 
+      const hasExecutionMapping = Object.entries(format.fieldMappings).some(([csvHeader, mapping]) =>
         mapping.tradeVoyagerField === 'orderExecutedTime' && this.isExecutionSpecificHeader(csvHeader)
       );
-      
+
       if (hasExecutionMapping) {
-        // It's a true execution time, use current time for placed
-        orderExecutedTime = new Date(String(normalizedData.orderExecutedTime));
-        orderPlacedTime = orderExecutedTime; // Assume they're the same unless we have both
+        // It's a true execution time, use it for both
+        orderExecutedTime = executedDate;
+        orderPlacedTime = executedDate; // Assume they're the same unless we have both
       } else {
         // It's probably a general time, use it for both
-        const time = new Date(String(normalizedData.orderExecutedTime));
-        orderPlacedTime = time;
-        orderExecutedTime = time;
+        orderPlacedTime = executedDate;
+        orderExecutedTime = executedDate;
       }
     } else {
-      // No time data, use current time
+      // No valid time data, use current time
       const currentTime = new Date();
       orderPlacedTime = currentTime;
       orderExecutedTime = currentTime;
