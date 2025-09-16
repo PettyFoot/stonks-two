@@ -516,7 +516,7 @@ export class FormatApprovalService {
     const startTime = Date.now();
     let processedCount = 0;
     let errorCount = 0;
-    let skippedCount = 0;
+    const skippedCount = 0;
     const errors: string[] = [];
 
     try {
