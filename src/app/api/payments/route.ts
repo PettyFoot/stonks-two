@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] GET /api/payments - User: ${user.id}`, {
+      console.log('[PAYMENTS] Fetching payment history with filters:', {
         status, dateFrom, dateTo, subscriptionId, page, limit
       });
     }
@@ -201,7 +201,7 @@ export async function GET(request: NextRequest) {
     };
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] GET /api/payments completed in ${Date.now() - startTime}ms`);
+
     }
 
     return NextResponse.json(response);
@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] POST /api/payments - User: ${user.id}, PaymentIntentId: ${paymentIntentId}`);
+
     }
 
     // Get payment from database

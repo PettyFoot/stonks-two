@@ -230,7 +230,7 @@ export async function POST(request: Request) {
     });
 
     // Generate share URL
-    const baseUrl = process.env.AUTH0_BASE_URL || 'http://localhost:3002';
+    const baseUrl = process.env.AUTH0_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL;
     const shareUrl = `${baseUrl}/share/record/${shareKey}`;
 
     return NextResponse.json({

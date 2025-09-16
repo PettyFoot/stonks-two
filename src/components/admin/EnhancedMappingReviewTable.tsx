@@ -196,7 +196,8 @@ export default function EnhancedMappingReviewTable({
   const getAvailableOrderFields = (): string[] => {
     const usedFields = getUsedOrderFields();
     const allFields = Object.values(ORDER_FIELDS_BY_CATEGORY).flat().map(field => field.value);
-    return allFields.filter(field => !usedFields.has(field));
+    // brokerMetadata can be used multiple times, so don't filter it out
+    return allFields.filter(field => !usedFields.has(field) || field === 'brokerMetadata');
   };
 
   // Handle adding a new field to a mapping
@@ -248,7 +249,10 @@ export default function EnhancedMappingReviewTable({
     const existingUsage = findFieldUsage(newOrderField);
 
     // If field is already used elsewhere and it's not the same field, show swap dialog
-    if (existingUsage && !(existingUsage.csvHeader === csvHeader && existingUsage.fieldIndex === fieldIndex)) {
+    // Exception: brokerMetadata can be mapped to multiple headers since it becomes an object
+    if (existingUsage &&
+        !(existingUsage.csvHeader === csvHeader && existingUsage.fieldIndex === fieldIndex) &&
+        newOrderField !== 'brokerMetadata') {
       setSwapDialog({
         isOpen: true,
         newField: newOrderField,
@@ -396,7 +400,7 @@ export default function EnhancedMappingReviewTable({
   };
 
   // Submit mappings
-  const submitMappings = async (approve: boolean = true) => {
+  const submitMappings = async () => {
     if (!data) return;
 
     const apiMappings = convertMappingsForAPI();
@@ -418,8 +422,7 @@ export default function EnhancedMappingReviewTable({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           mappings: apiMappings,
-          adminNotes,
-          approve
+          adminNotes
         })
       });
 
@@ -612,8 +615,8 @@ export default function EnhancedMappingReviewTable({
                                       className=""
                                     >
                                       <div className="flex flex-col">
-                                        <span className={isUsed && !isCurrentField ? 'text-orange-600' : ''}>
-                                          {orderField.label} {isUsed && !isCurrentField ? '(will move from other field)' : ''}
+                                        <span className={isUsed && !isCurrentField && orderField.value !== 'brokerMetadata' ? 'text-orange-600' : ''}>
+                                          {orderField.label} {isUsed && !isCurrentField && orderField.value !== 'brokerMetadata' ? '(will move from other field)' : ''}
                                         </span>
                                         {orderField.description && (
                                           <span className="text-xs text-gray-500">{orderField.description}</span>
@@ -728,18 +731,11 @@ export default function EnhancedMappingReviewTable({
       {/* Action Buttons */}
       <div className="flex justify-end gap-3">
         <Button
-          variant="outline"
-          onClick={() => submitMappings(false)}
-          disabled={submitting}
-        >
-          Save as Corrected
-        </Button>
-        <Button
-          onClick={() => submitMappings(true)}
+          onClick={() => submitMappings()}
           disabled={submitting}
         >
           <CheckCircle className="h-4 w-4 mr-2" />
-          {submitting ? 'Approving...' : 'Approve Mappings'}
+          {submitting ? 'Approving...' : hasChanges ? 'Approve Corrections' : 'Approve Mappings'}
         </Button>
       </div>
 

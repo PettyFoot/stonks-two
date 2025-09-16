@@ -29,7 +29,9 @@ import {
   XCircle,
   Edit3,
   Brain,
-  Settings
+  Settings,
+  RefreshCw,
+  Play
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -71,6 +73,8 @@ export default function AdminAiReviewsPage() {
   const [updatingReview, setUpdatingReview] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'reviewed'>('pending');
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
+  const [processingStagingOrders, setProcessingStagingOrders] = useState(false);
+  const [pendingStagingCount, setPendingStagingCount] = useState(0);
 
   const fetchReviews = useCallback(async () => {
     try {
@@ -90,12 +94,61 @@ export default function AdminAiReviewsPage() {
     }
   }, [filter]);
 
-  // Fetch reviews
+  const fetchPendingStagingCount = useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/staging/process-pending');
+      if (response.ok) {
+        const data = await response.json();
+        setPendingStagingCount(data.pendingCount || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching pending staging count:', error);
+    }
+  }, []);
+
+  const handleProcessStagingOrders = async () => {
+    if (processingStagingOrders) return;
+
+    setProcessingStagingOrders(true);
+    try {
+      const response = await fetch('/api/admin/staging/process-pending', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+
+        if (data.processedCount > 0) {
+          toast.success(
+            `Successfully processed ${data.processedCount} staged orders` +
+            (data.errorCount > 0 ? ` (${data.errorCount} errors)` : '')
+          );
+        } else {
+          toast.info('No staged orders found that need processing');
+        }
+
+        // Refresh the pending count
+        await fetchPendingStagingCount();
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to process staging orders');
+      }
+    } catch (error) {
+      console.error('Error processing staging orders:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to process staging orders');
+    } finally {
+      setProcessingStagingOrders(false);
+    }
+  };
+
+  // Fetch reviews and pending staging count
   useEffect(() => {
     if (isAdmin && !isLoading) {
       fetchReviews();
+      fetchPendingStagingCount();
     }
-  }, [isAdmin, isLoading, filter, fetchReviews]);
+  }, [isAdmin, isLoading, filter, fetchReviews, fetchPendingStagingCount]);
 
   const handleReviewAction = async (reviewId: string, action: 'APPROVED' | 'CORRECTED' | 'DISMISSED') => {
     setUpdatingReview(reviewId);
@@ -112,6 +165,7 @@ export default function AdminAiReviewsPage() {
 
       if (response.ok) {
         await fetchReviews();
+        await fetchPendingStagingCount(); // Refresh staging count
         toast.success(`Review ${action.toLowerCase()}`);
         // Close mapping review if it was open for this review
         if (selectedReviewId === reviewId) {
@@ -134,6 +188,7 @@ export default function AdminAiReviewsPage() {
 
   const handleMappingsUpdated = async () => {
     await fetchReviews();
+    await fetchPendingStagingCount(); // Refresh staging count
     setSelectedReviewId(null);
   };
 
@@ -201,6 +256,31 @@ export default function AdminAiReviewsPage() {
               <p className="text-sm text-gray-600 mt-1">
                 Review and approve AI-generated CSV column mappings
               </p>
+            </div>
+
+            {/* Process Staging Orders Button */}
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={handleProcessStagingOrders}
+                disabled={processingStagingOrders}
+                variant={pendingStagingCount > 0 ? "default" : "outline"}
+                className="flex items-center gap-2"
+              >
+                {processingStagingOrders ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Play className="h-4 w-4" />
+                )}
+                Process Staged Orders
+                {pendingStagingCount > 0 && (
+                  <Badge
+                    variant="secondary"
+                    className="ml-1 bg-orange-100 text-orange-800 border-orange-200"
+                  >
+                    {pendingStagingCount}
+                  </Badge>
+                )}
+              </Button>
             </div>
           </div>
 

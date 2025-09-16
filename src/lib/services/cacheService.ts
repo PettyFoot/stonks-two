@@ -213,7 +213,7 @@ export class CacheService {
 
       // This would trigger background computation
       // Implementation depends on your background job system
-      console.log(`Cache warming initiated for user: ${userId}`);
+
       
     } catch (error) {
       console.error('Cache warming error:', error);

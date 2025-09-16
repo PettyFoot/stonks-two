@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
         onProgress: (progress, message) => {
           // In a real implementation, you might want to store progress in database
           // or use websockets to send progress updates to the client
-          console.log(`Sync ${syncLog.id}: ${progress}% - ${message}`);
+
         }
       }
     );

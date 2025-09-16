@@ -99,7 +99,6 @@ export default function EnhancedFileUpload({
 
   // New function to clear only the file, keeping status messages
   const clearFileOnly = useCallback(() => {
-    console.log('🧹 Clearing file only, keeping status');
     setState(prev => ({ 
       ...prev,
       file: null,
@@ -119,7 +118,6 @@ export default function EnhancedFileUpload({
   }, []);
 
   const resetState = useCallback(() => {
-    console.log('🔄 Resetting EnhancedFileUpload state');
     setState({
       file: null,
       isDragOver: false,
@@ -255,17 +253,12 @@ export default function EnhancedFileUpload({
       }));
 
       // Handle different result types
-      console.log('📊 Upload result:', result);
-      console.log('🔍 Requires broker selection:', result.requiresBrokerSelection);
-      console.log('📝 Requires user review:', result.requiresUserReview);
       
       if (result.requiresBrokerSelection) {
-        console.log('🏢 Showing broker selector modal');
         setPendingImportBatchId(result.importBatchId);
         setShowBrokerSelector(true);
       } else if (result.requiresUserReview && result.openAiMappingResult && result.openAiMappingResult.mappings) {
-        console.log('🧠 Showing AI mapping review modal');
-        console.log('🔍 Upload AI result validation:', {
+        console.log('[CSV_UPLOAD] Starting mapping review:', {
           hasMappings: !!result.openAiMappingResult.mappings,
           mappingsCount: Object.keys(result.openAiMappingResult.mappings || {}).length,
           hasConfidence: typeof result.openAiMappingResult.overallConfidence === 'number',
@@ -277,11 +270,10 @@ export default function EnhancedFileUpload({
         
         // Force a small delay to ensure state is set properly
         setTimeout(() => {
-          console.log('🎯 Setting showMappingReview to true');
           setShowMappingReview(true);
         }, 100);
       } else if (result.success) {
-        console.log('✅ Upload completed successfully');
+
         onUploadComplete?.(result);
         // Refresh upload limits after successful upload
         onRefreshLimits?.();
@@ -340,8 +332,6 @@ export default function EnhancedFileUpload({
 
   // Handle broker selection
   const handleBrokerSelected = async (broker: any, brokerName: string) => {
-    console.log(`🏢 Broker selected: ${brokerName} (ID: ${broker.id})`);
-    console.log('📄 Processing import batch:', pendingImportBatchId);
     
     setShowBrokerSelector(false);
     
@@ -359,7 +349,6 @@ export default function EnhancedFileUpload({
         error: null 
       }));
 
-      console.log('🚀 Calling process-with-broker API...');
       const allTags = [
         ...accountTags,
         ...customAccountTags.split(',').map(tag => tag.trim()).filter(Boolean)
@@ -378,7 +367,6 @@ export default function EnhancedFileUpload({
       });
 
       const result = await response.json();
-      console.log('📊 Process-with-broker result:', result);
 
       setState(prev => ({ 
         ...prev, 
@@ -393,8 +381,7 @@ export default function EnhancedFileUpload({
 
       // Check if we need mapping review
       if (result.requiresUserReview && result.openAiMappingResult && result.openAiMappingResult.mappings) {
-        console.log('🧠 AI mapping needs review, showing mapping review modal');
-        console.log('🔍 AI result validation:', {
+        console.log('[CSV_UPLOAD] Setting up mapping review:', {
           hasMappings: !!result.openAiMappingResult.mappings,
           mappingsCount: Object.keys(result.openAiMappingResult.mappings || {}).length,
           hasConfidence: typeof result.openAiMappingResult.overallConfidence === 'number',
@@ -405,11 +392,10 @@ export default function EnhancedFileUpload({
         
         // Force a small delay to ensure state is set properly
         setTimeout(() => {
-          console.log('🎯 Setting showMappingReview to true from broker selection');
           setShowMappingReview(true);
         }, 100);
       } else if (result.success) {
-        console.log('✅ Processing completed successfully');
+
         onUploadComplete?.(result);
         // Refresh upload limits after successful processing
         onRefreshLimits?.();
@@ -435,7 +421,7 @@ export default function EnhancedFileUpload({
 
   // Handle creating new broker
   const handleCreateBroker = async (brokerName: string) => {
-    console.log(`➕ Creating new broker: ${brokerName}`);
+
     
     try {
       const response = await fetch('/api/brokers', {
@@ -454,7 +440,7 @@ export default function EnhancedFileUpload({
       }
 
       const result = await response.json();
-      console.log('✅ Created broker:', result.broker);
+
       
       // Now select this broker
       handleBrokerSelected(result.broker, brokerName);
@@ -467,14 +453,12 @@ export default function EnhancedFileUpload({
 
   // Handle mapping review approval
   const handleMappingApproved = async (finalizedResult?: Record<string, unknown>) => {
-    console.log('✅ Mapping approved');
-    console.log('📊 Finalized result received:', finalizedResult);
+
     
     setShowMappingReview(false);
     
     // Update state with the finalized result from the API
     if (finalizedResult) {
-      console.log('🔄 Updating uploadResult with finalized counts');
       setState(prev => ({
         ...prev,
         uploadResult: {
@@ -498,7 +482,7 @@ export default function EnhancedFileUpload({
       }, 2000); // Give user time to see the success message
     } else {
       // Fallback to old behavior if no result provided
-      console.log('⚠️ No finalized result provided, using existing uploadResult');
+
       if (state.uploadResult) {
         onUploadComplete?.(state.uploadResult);
         onRefreshLimits?.();
@@ -846,7 +830,8 @@ export default function EnhancedFileUpload({
                     )}
                     <Badge variant={result.success ? "default" : "destructive"}>
                       {result.success ? 'Success' :
-                        ((result as any).duplicateCount && Number((result as any).duplicateCount) > 0 && result.successCount === 0) ? 'All Duplicates' : 'Review Required'}
+                        ((result as any).duplicateCount && Number((result as any).duplicateCount) > 0 && result.successCount === 0) ? 'All Duplicates' :
+                        (result as any).aiIngestCheckId ? 'Admin Review Pending' : 'Review Required'}
                     </Badge>
                   </div>
 
@@ -875,10 +860,36 @@ export default function EnhancedFileUpload({
 
                   {Boolean(result.requiresUserReview) && (
                     <div className="p-3 bg-theme-warning/10 border border-theme-warning/30 rounded-lg">
-                      <p className="text-sm font-medium text-theme-warning">Review Required</p>
-                      <p className="text-xs text-theme-warning mt-1">
-                        Column mapping needs your attention before import can proceed.
-                      </p>
+                      {(result as any).staged && (result as any).requiresApproval ? (
+                        <>
+                          <p className="text-sm font-medium text-theme-warning">
+                            {(result as any).isNewFormat ? 'New Format Pending Approval' : 'Format Pending Approval'}
+                          </p>
+                          <p className="text-xs text-theme-warning mt-1">
+                            {(result as any).message}
+                          </p>
+                          <div className="text-xs text-theme-warning mt-2 space-y-1">
+                            <p>• {(result as any).stagedCount || 0} records have been staged for import</p>
+                            <p>• Approval {(result as any).estimatedApprovalTime}</p>
+                            <p>• Your data will automatically be imported once the format is approved</p>
+                            <p>• No further action required from you</p>
+                          </div>
+                        </>
+                      ) : (result as any).aiIngestCheckId ? (
+                        <>
+                          <p className="text-sm font-medium text-theme-warning">Admin Review Pending</p>
+                          <p className="text-xs text-theme-warning mt-1">
+                            New broker format uploaded, waiting for admin review. Most requests take less than 24 hours to process, but may take up to 5 business days. Trade data will automatically be available once format is approved.
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm font-medium text-theme-warning">Review Required</p>
+                          <p className="text-xs text-theme-warning mt-1">
+                            Column mapping needs your attention before import can proceed.
+                          </p>
+                        </>
+                      )}
                     </div>
                   )}
 
@@ -968,12 +979,11 @@ export default function EnhancedFileUpload({
       <BrokerSelector
         isOpen={showBrokerSelector}
         onClose={async () => {
-          console.log('❌ Broker selector cancelled');
+
 
           // Cancel the import batch if one exists
           if (pendingImportBatchId && user) {
             try {
-              console.log('🚀 Calling finalize-mappings API to cancel import batch...');
               await fetch('/api/csv/finalize-mappings', {
                 method: 'POST',
                 headers: {
@@ -985,7 +995,7 @@ export default function EnhancedFileUpload({
                   reportError: false,
                 }),
               });
-              console.log('✅ Import batch cancelled from broker selector');
+
             } catch (error) {
               console.error('💥 Failed to cancel import batch from broker selector:', error);
               // Continue with closing even if API call fails
@@ -1014,7 +1024,6 @@ export default function EnhancedFileUpload({
         onClose={() => {
           // This should never be called since modal is mandatory,
           // but just in case, auto-submit the AI mappings
-          console.log('🚫 Unexpected close attempt - modal should be mandatory');
         }}
         onApproveMapping={handleMappingApproved}
         aiResult={aiMappingResult}

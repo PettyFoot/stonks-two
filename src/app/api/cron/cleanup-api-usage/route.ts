@@ -16,7 +16,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('🧹 Starting API usage cleanup job...');
     const startTime = Date.now();
 
     // Delete API usage records older than 1 hour
@@ -28,8 +27,7 @@ export async function GET(request: Request) {
     const endTime = Date.now();
     const duration = endTime - startTime;
 
-    console.log(`✅ API usage cleanup completed successfully`);
-    console.log(`📊 Deleted ${result} old records in ${duration}ms`);
+
 
     // Update table statistics for better query performance
     await prisma.$executeRaw`ANALYZE api_usage`;

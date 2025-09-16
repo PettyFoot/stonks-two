@@ -23,7 +23,7 @@ export async function POST() {
       );
     }
 
-    console.log(`Processing trades for user: ${userId}`);
+
     
     // Process the user's orders into trades
     const newTrades = await processUserOrders(userId);
@@ -55,7 +55,7 @@ export async function POST() {
       }
     };
 
-    console.log(`Trade processing completed:`, response.data.summary);
+
     
     return NextResponse.json(response);
     

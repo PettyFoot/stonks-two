@@ -156,9 +156,12 @@ export class BrokerFormatService {
   async detectFormat(headers: string[]): Promise<FormatDetectionResult> {
     const fingerprint = this.openAiService.generateHeaderFingerprint(headers);
 
-    // Try exact fingerprint match first
+    // Try exact fingerprint match first - check all formats (approved and unapproved)
     const exactMatch = await prisma.brokerCsvFormat.findFirst({
-      where: { headerFingerprint: fingerprint },
+      where: {
+        headerFingerprint: fingerprint
+        // Removed isApproved filter - let downstream logic handle approval routing
+      },
       include: {
         broker: {
           include: {
@@ -171,14 +174,16 @@ export class BrokerFormatService {
     });
 
     if (exactMatch) {
-      // Update usage count and last used
-      await prisma.brokerCsvFormat.update({
-        where: { id: exactMatch.id },
-        data: {
-          usageCount: { increment: 1 },
-          lastUsed: new Date()
-        }
-      });
+      // Only update usage count for approved formats
+      if (exactMatch.isApproved) {
+        await prisma.brokerCsvFormat.update({
+          where: { id: exactMatch.id },
+          data: {
+            usageCount: { increment: 1 },
+            lastUsed: new Date()
+          }
+        });
+      }
 
       return {
         broker: exactMatch.broker,
@@ -213,8 +218,9 @@ export class BrokerFormatService {
    * Find similar formats by comparing headers
    */
   private async findSimilarFormats(headers: string[]): Promise<(BrokerCsvFormat & { broker: BrokerWithRelations })[]> {
-    // Get all formats and calculate similarity
+    // Get all formats (approved and unapproved) and calculate similarity
     const allFormats = await prisma.brokerCsvFormat.findMany({
+      // Removed isApproved filter - let downstream logic handle approval routing
       include: {
         broker: {
           include: {
@@ -262,24 +268,17 @@ export class BrokerFormatService {
     userId?: string
   ): Promise<{ format: BrokerCsvFormat; aiResult: OpenAiMappingResult }> {
     
-    console.log('🏗️ BrokerFormatService.createFormatWithAI called');
-    console.log('📊 Headers:', headers);
-    console.log('🏢 Broker name:', brokerName);
-    console.log('👤 User ID:', userId);
     
     // Find or create the broker
-    console.log('🔍 Finding or creating broker...');
     const broker = await this.findOrCreateBroker(brokerName);
-    console.log('✅ Broker found/created:', { id: broker.id, name: broker.name });
+
 
     // Use OpenAI to analyze the headers
-    console.log('🤖 Calling OpenAI service...');
     const aiResult = await this.openAiService.analyzeHeaders({
       csvHeaders: headers,
       sampleData,
       brokerName: broker.name
     });
-    console.log('🎯 OpenAI analysis complete, confidence:', (aiResult.overallConfidence * 100).toFixed(1) + '%');
 
     // Create the format
     const formatName = await this.generateFormatName(broker.id, broker.name);
@@ -306,10 +305,9 @@ export class BrokerFormatService {
     const randomNumber = Math.floor(Math.random() * 9000) + 1000;
     const formatName = `${brokerName} Format ${randomNumber}`;
 
-    console.log('🎲 Generating format name:');
-    console.log(`  - Broker: ${brokerName}`);
-    console.log(`  - Random number: ${randomNumber}`);
-    console.log(`  - Format name: ${formatName}`);
+
+
+
 
     // Check if this format name already exists for this broker
     const existingFormat = await prisma.brokerCsvFormat.findFirst({
@@ -320,7 +318,7 @@ export class BrokerFormatService {
     });
 
     if (existingFormat) {
-      console.log('⚠️ Format name already exists, generating new one...');
+
       // Try up to 5 times to generate a unique name
       for (let attempt = 0; attempt < 5; attempt++) {
         const newRandomNumber = Math.floor(Math.random() * 9000) + 1000;
@@ -334,14 +332,14 @@ export class BrokerFormatService {
         });
 
         if (!conflictCheck) {
-          console.log(`✅ Generated unique format name: ${newFormatName} (attempt ${attempt + 1})`);
+
           return newFormatName;
         }
       }
       // If we still have conflicts, append timestamp as fallback
       const timestamp = Date.now().toString().slice(-4);
       const fallbackName = `${brokerName} Format ${timestamp}`;
-      console.log(`⚠️ Using timestamp fallback: ${fallbackName}`);
+
       return fallbackName;
     }
 

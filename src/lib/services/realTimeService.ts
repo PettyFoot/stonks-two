@@ -34,7 +34,7 @@ export class RealTimeService {
         }
       });
 
-      console.log('Real-time analytics listener initialized');
+
     } catch (error) {
       console.error('Failed to initialize PostgreSQL listener:', error);
     }
@@ -214,7 +214,7 @@ export class RealTimeService {
       setInterval(async () => {
         try {
           await this.refreshMaterializedViews();
-          console.log('Materialized views refreshed');
+
         } catch (error) {
           console.error('Periodic view refresh error:', error);
         }
@@ -229,7 +229,7 @@ export class RealTimeService {
         }
       }, 60 * 1000);
 
-      console.log('Periodic analytics updates initialized');
+
     } catch (error) {
       console.error('Failed to initialize periodic updates:', error);
     }
@@ -347,7 +347,7 @@ export class RealTimeService {
   async triggerAnalyticsUpdate(userId: string) {
     try {
       await this.handleAnalyticsRefresh(userId);
-      console.log(`Analytics update triggered for user: ${userId}`);
+
     } catch (error) {
       console.error('Error triggering analytics update:', error);
     }

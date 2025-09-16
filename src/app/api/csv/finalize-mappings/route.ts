@@ -24,10 +24,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { importBatchId, correctedMappings, userApproved, reportError } = FinalizeMappingsSchema.parse(body);
 
-    console.log('🎯 Finalizing AI mappings for import batch:', importBatchId);
-    console.log('✅ User approved:', userApproved);
-    console.log('🔧 User corrections:', correctedMappings ? Object.keys(correctedMappings).length : 0);
-    console.log('❌ User reported error:', reportError);
+
+
 
     // Get the import batch with pending AI mappings
     const importBatch = await prisma.importBatch.findUnique({
@@ -60,7 +58,7 @@ export async function POST(request: NextRequest) {
     const brokerMetadataFields = pendingData.pendingMetadata || [];
     const overallConfidence = pendingData.overallConfidence || 0.5;
 
-    console.log('📊 Retrieved pending mappings:', {
+    console.log('[CSV_FINALIZE] Processing mapping with AI:', {
       mappingsCount: Object.keys(aiMappings).length,
       brokerName,
       confidence: overallConfidence
@@ -74,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     // If user reported an error, record it but don't create the format
     if (reportError) {
-      console.log('❌ User reported error with AI mappings');
+
       
       // Update the import batch to mark as failed
       await prisma.importBatch.update({
@@ -93,7 +91,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!userApproved) {
-      console.log('❌ User did not approve mappings');
+
       
       // Update the import batch to mark as cancelled
       await prisma.importBatch.update({
@@ -114,10 +112,9 @@ export async function POST(request: NextRequest) {
     // Apply user corrections to the AI mappings
     const finalMappings = { ...aiMappings };
     if (correctedMappings && Object.keys(correctedMappings).length > 0) {
-      console.log('🔧 Applying user corrections...');
       for (const [csvHeader, newField] of Object.entries(correctedMappings)) {
         if (finalMappings[csvHeader]) {
-          console.log(`  - Correcting "${csvHeader}": ${finalMappings[csvHeader].field} → ${newField}`);
+
           finalMappings[csvHeader] = {
             ...finalMappings[csvHeader],
             field: newField,
@@ -129,7 +126,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Now create the broker format with the approved (and possibly corrected) mappings
-    console.log('🏗️ Creating broker format with approved mappings...');
     const brokerFormatService = new BrokerFormatService();
     
     // Parse the CSV to get headers for format creation
@@ -140,37 +136,48 @@ export async function POST(request: NextRequest) {
       trim: true,
       bom: true,
     });
-    
+
     const headers = Object.keys(records[0] as Record<string, unknown>);
     const sampleData = records.slice(0, 3) as Record<string, unknown>[];
     
-    // Create upload log BEFORE transaction so it exists for processKnownBrokerFormat
-    console.log('📝 Creating CSV upload log before transaction...');
-    const uploadLog = await prisma.csvUploadLog.create({
-      data: {
+    // Find and update the existing upload log instead of creating a new one
+    const uploadLog = await prisma.csvUploadLog.findFirst({
+      where: {
         userId: user.id,
         filename: importBatch.filename,
-        originalHeaders: headers,
-        rowCount: importBatch.totalRecords,
-        uploadStatus: 'PARSING',
-        parseMethod: 'AI_MAPPED', // Using valid enum value
-        importBatchId: importBatch.id
+        importBatchId: null // Find the original log without importBatchId
+      },
+      orderBy: {
+        createdAt: 'desc' // Get the most recent one
       }
     });
-    console.log(`✅ Created CSV upload log: ${uploadLog.id}`);
+
+    if (!uploadLog) {
+      throw new Error('Original upload log not found');
+    }
+
+    // Update the existing upload log with the import batch ID and final status
+    await prisma.csvUploadLog.update({
+      where: { id: uploadLog.id },
+      data: {
+        importBatchId: importBatch.id,
+        uploadStatus: 'VALIDATED',
+        parseMethod: 'AI_MAPPED',
+        mappedHeaders: headers
+      }
+    });
+
     
     try {
       // Wrap critical database operations in a transaction to ensure atomicity
       const result = await prisma.$transaction(async (tx) => {
-      console.log('📦 Starting database transaction...');
       
       // Find or create the broker
       const broker = await brokerFormatService.findOrCreateBroker(brokerName);
-      console.log(`✅ Found/created broker: ${broker.name} (ID: ${broker.id})`);
+
       
       // Generate incremental format name
       const formatName = await brokerFormatService.generateFormatName(broker.id, broker.name);
-      console.log(`📝 Generated format name: ${formatName}`);
       
       // Create the broker format
       const formatData = {
@@ -185,9 +192,10 @@ export async function POST(request: NextRequest) {
       };
 
       const format = await brokerFormatService.createFormat(formatData);
-      console.log(`✅ Created broker format: ${format.formatName} (ID: ${format.id})`);
 
-      // Create AiIngestToCheck record for tracking
+
+      // Create AiIngestToCheck record for tracking - ALL imports go to admin review
+      const hasUserCorrections = correctedMappings && Object.keys(correctedMappings).length > 0;
       const aiIngestCheck = await tx.aiIngestToCheck.create({
         data: {
           userId: user.id,
@@ -196,58 +204,68 @@ export async function POST(request: NextRequest) {
           importBatchId: importBatch.id,
           processingStatus: 'PENDING', // Using valid enum value
           userIndicatedError: false,
-          aiConfidence: overallConfidence
+          aiConfidence: overallConfidence,
+          adminReviewStatus: 'PENDING', // Always set to pending for admin review
+          adminNotes: hasUserCorrections ? `User made ${Object.keys(correctedMappings).length} corrections to AI mappings` : 'User approved AI mappings as-is'
         }
       });
-      console.log(`✅ Created AiIngestToCheck record: ${aiIngestCheck.id}`);
 
-      // Record feedback only for AI mappings that had user corrections
+
+      // Record feedback for ALL AI mappings - both corrected and uncorrected
       const correctedFieldCount = correctedMappings ? Object.keys(correctedMappings).length : 0;
-      console.log(`📝 Recording feedback for ${correctedFieldCount} user corrections (out of ${Object.keys(aiMappings).length} total AI mappings)`);
 
-      // Only create feedback items for fields that were actually corrected by the user
-      if (correctedMappings && Object.keys(correctedMappings).length > 0) {
-        for (const [csvHeader, correctedField] of Object.entries(correctedMappings)) {
-          const originalMapping = aiMappings[csvHeader];
-          if (!originalMapping) continue; // Skip if no original mapping found
+      // Create feedback items for ALL fields to send to admin review
+      for (const [csvHeader, originalMapping] of Object.entries(aiMappings)) {
+        if (!originalMapping) continue; // Skip if no original mapping found
 
-          // Type assertion since we know the structure from OpenAI service
-          const mapping = originalMapping as { field: string; confidence: number; [key: string]: any };
-          const aiConfidence = mapping.confidence || 0;
+        // Type assertion since we know the structure from OpenAI service
+        const mapping = originalMapping as { field: string; confidence: number; [key: string]: any };
+        const aiConfidence = mapping.confidence || 0;
 
-          // Determine issue type based on the correction
-          let issueType = 'WRONG_FIELD'; // Default for user corrections
+        // Check if this field was corrected by the user
+        const wasCorrectedByUser = correctedMappings && correctedMappings[csvHeader];
+        const finalField = wasCorrectedByUser ? correctedMappings[csvHeader] : mapping.field;
+
+        // Determine issue type based on correction status and confidence
+        let issueType = 'accepted'; // Default for uncorrected mappings
+        let comment = `AI mapping accepted by user: ${mapping.field}`;
+
+        if (wasCorrectedByUser) {
+          issueType = 'user_corrected'; // User made a correction
+          comment = `User corrected: ${mapping.field} → ${finalField}`;
+
           if (aiConfidence < 0.5) {
-            issueType = 'LOW_CONFIDENCE';
-          } else if (correctedField === 'brokerMetadata') {
-            issueType = 'SHOULD_BE_METADATA';
+            issueType = 'low_confidence_corrected';
+          } else if (finalField === 'brokerMetadata') {
+            issueType = 'should_be_metadata';
           }
-
-          const comment = `User corrected: ${mapping.field} → ${correctedField}`;
-
-          await tx.aiIngestFeedbackItem.create({
-            data: {
-              aiIngestCheckId: aiIngestCheck.id,
-              csvHeader,
-              aiMapping: mapping.field,
-              suggestedMapping: correctedField,
-              issueType,
-              confidence: aiConfidence,
-              isCorrect: false, // User corrected it, so AI was wrong
-              originalValue: JSON.stringify(mapping),
-              comment,
-            }
-          });
+        } else if (aiConfidence < 0.5) {
+          issueType = 'low_confidence_accepted';
+          comment = `Low confidence AI mapping accepted: ${mapping.field} (${(aiConfidence * 100).toFixed(1)}%)`;
+        } else if (aiConfidence < 0.8) {
+          issueType = 'medium_confidence_accepted';
+          comment = `Medium confidence AI mapping accepted: ${mapping.field} (${(aiConfidence * 100).toFixed(1)}%)`;
         }
-      } else {
-        console.log('📝 No user corrections to record - user accepted all AI mappings as-is');
+
+        await tx.aiIngestFeedbackItem.create({
+          data: {
+            aiIngestCheckId: aiIngestCheck.id,
+            csvHeader,
+            aiMapping: mapping.field,
+            suggestedMapping: finalField,
+            issueType,
+            confidence: aiConfidence,
+            isCorrect: !wasCorrectedByUser, // True if user didn't correct it, false if they did
+            originalValue: JSON.stringify(mapping),
+            comment,
+          }
+        });
       }
 
       const correctionCount = correctedMappings ? Object.keys(correctedMappings).length : 0;
-      console.log(`✅ Created ${correctionCount} feedback items for user corrections`);
 
-      // Process the CSV with the approved mappings using the known broker format
-      console.log('🚀 Processing CSV with approved mappings...');
+
+      // Process the CSV - since newly created formats are unapproved by default, route to staging
       const brokerDetection = {
         broker: broker,
         format: format,
@@ -257,18 +275,30 @@ export async function POST(request: NextRequest) {
 
       // Create ingestion service (note: this will create orders inside the transaction)
       const ingestionService = new CsvIngestionService();
-      
-      // Use the processKnownBrokerFormat method since we now have a confirmed format
-      const processingResult = await (ingestionService as any).processKnownBrokerFormat(
-        importBatch.tempFileContent,
-        importBatch.filename,
-        user.id,
-        [], // account tags - we can extract these from the original request if needed
-        uploadLog.id,
-        importBatch.fileSize || 0,
-        brokerDetection
-      );
-      console.log(`📊 Processing result: ${processingResult.successCount} successful, ${processingResult.errorCount} errors`);
+
+      // Since this is a newly created format (isApproved = false by default),
+      // we should stage the orders instead of processing them directly
+      const processingResult = !format.isApproved
+        ? await (ingestionService as any).processWithUnapprovedFormat(
+            records,
+            format,
+            importBatch.filename,
+            user.id,
+            [], // account tags
+            uploadLog.id,
+            importBatch.fileSize || 0,
+            brokerDetection,
+            true // isNewFormat flag
+          )
+        : await (ingestionService as any).processKnownBrokerFormat(
+            importBatch.tempFileContent,
+            importBatch.filename,
+            user.id,
+            [], // account tags
+            uploadLog.id,
+            importBatch.fileSize || 0,
+            brokerDetection
+          );
 
       // Clear the temporary file content after successful processing
       await tx.importBatch.update({
@@ -278,7 +308,6 @@ export async function POST(request: NextRequest) {
           columnMappings: {} as any // Clear the pending mappings
         }
       });
-      console.log('🗑️ Cleared temporary file content from ImportBatch');
 
       // Update AiIngestToCheck with orderIds if processing was successful
       if (processingResult.orderIds && processingResult.orderIds.length > 0) {
@@ -290,15 +319,14 @@ export async function POST(request: NextRequest) {
             processedAt: new Date()
           }
         });
-        console.log(`✅ Updated AiIngestToCheck with ${processingResult.orderIds.length} order IDs`);
+
       } else {
-        console.log('⚠️ No order IDs to update in AiIngestToCheck');
+
       }
 
-      console.log('🎉 All database operations completed successfully in transaction!');
-      console.log(`✅ ${processingResult.successCount} records imported`);
+
       if (processingResult.errorCount > 0) {
-        console.log(`⚠️ ${processingResult.errorCount} records had errors`);
+
       }
 
       // Return all the data needed for the response
@@ -313,13 +341,11 @@ export async function POST(request: NextRequest) {
       timeout: 300000, // 5 minutes
       });
 
-      console.log('📦 Transaction completed successfully!');
 
       // Update format usage statistics (outside transaction since it's not critical)
       if (result.processingResult.successCount > 0) {
         try {
           await brokerFormatService.updateFormatUsage(result.format.id, true);
-          console.log('📈 Updated format usage statistics');
         } catch (error) {
           console.error('⚠️ Failed to update format usage statistics:', error);
           // Don't fail the operation for this
@@ -330,7 +356,7 @@ export async function POST(request: NextRequest) {
       if (result.processingResult.success && result.processingResult.successCount > 0) {
         try {
           await incrementUploadCount(user.id);
-          console.log(`✅ Upload count incremented for user ${user.id}`);
+
         } catch (error) {
           console.error('Failed to increment upload count:', error);
           // Don't fail the whole operation for counting issues
@@ -355,7 +381,6 @@ export async function POST(request: NextRequest) {
             errorMessage: transactionError instanceof Error ? transactionError.message : 'Transaction failed'
           }
         });
-        console.log('📝 Updated uploadLog status to FAILED');
       } catch (updateError) {
         console.error('⚠️ Failed to update uploadLog status:', updateError);
       }

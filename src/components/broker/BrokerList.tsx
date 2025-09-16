@@ -298,8 +298,8 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
     setTestingHoldings(true);
     
     try {
-      console.log('=== Starting SnapTrade Integration Test ===');
-      console.log('Testing complete flow: accounts -> activities -> orders table');
+
+
       
       const response = await fetch('/api/snaptrade/test-activities');
       
@@ -310,14 +310,14 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
 
       const testResult = await response.json();
       
-      console.log('=== INTEGRATION TEST RESULTS ===');
-      console.log('Test Parameters:', testResult.testParameters);
-      console.log('Account Used:', testResult.account);
-      console.log('Raw Activities from SnapTrade:', testResult.rawActivities);
-      console.log('Processing Result:', testResult.processingResult);
-      console.log('Orders Created in Database:', testResult.ordersInDatabase);
-      console.log('Summary:', testResult.summary);
-      console.log('=== END INTEGRATION TEST ===');
+
+
+
+
+
+
+
+
       
       if (testResult.success) {
         const summary = testResult.summary;

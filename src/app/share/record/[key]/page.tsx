@@ -8,13 +8,24 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Clock, AlertCircle, BarChart3, TrendingUp, TrendingDown } from 'lucide-react';
 import TradeCandlestickChart from '@/components/charts/TradeCandlestickChart';
-import ExecutionsTable from '@/components/ExecutionsTable';
+import ExecutionsTable, { ExecutionOrder } from '@/components/ExecutionsTable';
 import { TriangleLoader } from '@/components/ui/TriangleLoader';
+import { Trade } from '@/types';
+
+interface SharedTradeMetadata {
+  sharedBy: string;
+  sharedAt: string;
+  description?: string;
+}
 
 interface SharedTradeData {
-  trade: any;
-  orders: any[];
-  metadata: any;
+  trade: {
+    trades?: Trade[];
+    pnl?: number;
+    totalTrades?: number;
+  };
+  orders: ExecutionOrder[];
+  metadata: SharedTradeMetadata;
   expiresAt: string;
   createdAt: string;
 }
@@ -134,18 +145,18 @@ export default function SharedTradePage() {
   const tradesToShow = isMultipleTrades ? trade.trades : [trade];
 
   // Calculate aggregate stats for records shares
-  const totalPnl = isMultipleTrades 
-    ? trade.trades.reduce((sum: number, t: any) => sum + (t.pnl || 0), 0)
+  const totalPnl = isMultipleTrades
+    ? trade.trades!.reduce((sum: number, t: Trade) => sum + (t.pnl || 0), 0)
     : trade.pnl || 0;
 
   const totalTrades = isMultipleTrades ? trade.trades.length : 1;
   const totalVolume = isMultipleTrades ? trade.quantity : trade.quantity || 0;
-  const totalExecutions = isMultipleTrades 
-    ? trade.trades.reduce((sum: number, t: any) => sum + (t.executions || 0), 0)
+  const totalExecutions = isMultipleTrades
+    ? trade.trades!.reduce((sum: number, t: Trade) => sum + (t.executions || 0), 0)
     : trade.executions || orders.length;
 
   // Group orders by symbol for chart display
-  const ordersBySymbol = orders.reduce((acc: any, order: any) => {
+  const ordersBySymbol = orders.reduce((acc: Record<string, ExecutionOrder[]>, order: ExecutionOrder) => {
     const symbol = order.symbol;
     if (!acc[symbol]) {
       acc[symbol] = [];
@@ -154,10 +165,10 @@ export default function SharedTradePage() {
     return acc;
   }, {});
 
-  const mostActiveSymbol = Object.keys(ordersBySymbol).length > 0 
-    ? Object.entries(ordersBySymbol).reduce((a: any, b: any) => 
+  const mostActiveSymbol = Object.keys(ordersBySymbol).length > 0
+    ? Object.entries(ordersBySymbol).reduce((a: [string, ExecutionOrder[]], b: [string, ExecutionOrder[]]) =>
         ordersBySymbol[a[0]].length > ordersBySymbol[b[0]].length ? a : b
-      )[0] 
+      )[0]
     : null;
 
   const chartExecutions = mostActiveSymbol ? ordersBySymbol[mostActiveSymbol] : [];
@@ -242,7 +253,7 @@ export default function SharedTradePage() {
             <CardContent>
               <TradeCandlestickChart
                 symbol={mostActiveSymbol}
-                executions={chartExecutions.map((order: any) => ({
+                executions={chartExecutions.map((order: ExecutionOrder) => ({
                   ...order,
                   userId: 'shared',
                   orderQuantity: order.orderQuantity || 0,
@@ -260,7 +271,7 @@ export default function SharedTradePage() {
 
         {/* Executions Table */}
         <ExecutionsTable 
-          executions={orders.map((order: any) => ({
+          executions={orders.map((order: ExecutionOrder) => ({
             ...order,
             id: order.id || `order-${order.orderId}`,
             userId: order.userId || 'shared'
@@ -269,7 +280,7 @@ export default function SharedTradePage() {
           error={null}
           showActions={false}
           onExecutionSelect={(execution) => {
-            console.log('Selected execution from shared view:', execution);
+
           }}
         />
 

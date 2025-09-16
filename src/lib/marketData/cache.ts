@@ -167,7 +167,7 @@ export class MarketDataCache {
       localStorage.setItem(`${this.CACHE_PREFIX}last_cleanup`, now.toString());
       
       if (cleaned > 0) {
-        console.log(`Cleaned up ${cleaned} expired cache entries`);
+
       }
       
     } catch (error) {

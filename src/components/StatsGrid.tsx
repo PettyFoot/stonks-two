@@ -13,7 +13,7 @@ export interface StatsGridProps {
   className?: string;
 }
 
-export default function StatsGrid({
+const StatsGrid = React.memo<StatsGridProps>(({
   totalExecutions,
   symbol,
   totalVolume,
@@ -21,7 +21,7 @@ export default function StatsGrid({
   commissions = 0,
   netPnl,
   className = ""
-}: StatsGridProps) {
+}) => {
   return (
     <div className={`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 ${className}`}>
       <Card className="bg-surface border-default">
@@ -101,4 +101,8 @@ export default function StatsGrid({
       </Card>
     </div>
   );
-}
+});
+
+StatsGrid.displayName = 'StatsGrid';
+
+export default StatsGrid;

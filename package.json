@@ -22,7 +22,10 @@
     "db:clean-backups": "tsx scripts/backup-users.ts clean",
     "fix-trade-orders": "tsx scripts/fix-trade-order-data.ts",
     "process-deletions": "tsx scripts/processAccountDeletions.ts",
-    "cleanup-shares": "tsx scripts/cleanupExpiredShares.ts"
+    "cleanup-shares": "tsx scripts/cleanupExpiredShares.ts",
+    "grandfather:migrate": "npx dotenv -e .env.local -- tsx scripts/grandfatherCsvFormats.ts migrate",
+    "grandfather:rollback": "npx dotenv -e .env.local -- tsx scripts/grandfatherCsvFormats.ts rollback",
+    "grandfather:status": "npx dotenv -e .env.local -- tsx scripts/grandfatherCsvFormats.ts status"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^3.8.0",
@@ -75,7 +78,6 @@
     "snaptrade-react": "^3.2.4",
     "snaptrade-typescript-sdk": "^9.0.133",
     "sonner": "^2.0.7",
-    "stream": "^0.0.3",
     "stripe": "^18.5.0",
     "tailwind-merge": "^3.3.1",
     "uuid": "^11.1.0",

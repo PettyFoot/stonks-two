@@ -17,15 +17,14 @@ export class AlphaVantageProvider implements MarketDataProvider {
   
   isAvailable(): boolean {
     const available = !!this.apiKey && this.apiKey !== 'demo';
-    console.log(`🔑 Alpha Vantage availability check: ${available ? 'AVAILABLE' : 'NOT AVAILABLE'}`);
     if (!available) {
       if (!this.apiKey) {
-        console.log(`❌ No API key found`);
+
       } else if (this.apiKey === 'demo') {
-        console.log(`❌ API key is set to 'demo'`);
+
       }
     } else {
-      console.log(`✅ API key exists and is not 'demo'`);
+
     }
     return available;
   }
@@ -83,7 +82,7 @@ export class AlphaVantageProvider implements MarketDataProvider {
         if (isHistorical) {
           const monthParam = `${requestDate.getFullYear()}-${String(requestDate.getMonth() + 1).padStart(2, '0')}`;
           params.set('month', monthParam);
-          console.log(`Using historical month parameter: ${monthParam}`);
+
         }
         
         timeSeriesKey = `Time Series (${avInterval})`;
@@ -91,15 +90,9 @@ export class AlphaVantageProvider implements MarketDataProvider {
       
       const url = `https://www.alphavantage.co/query?${params.toString()}`;
       
-      console.log(`🔗 Alpha Vantage API call for ${symbol} (${isDailyInterval ? 'daily' : timeWindow.interval})`);
-      console.log(`📡 API URL: ${url}`);
-      console.log(`🔑 API Key available: ${this.apiKey !== 'demo' ? 'YES' : 'NO'}`);
-      console.log(`📅 Requested date range: ${timeWindow.start.toISOString()} to ${timeWindow.end.toISOString()}`);
       
       const response = await fetch(url);
       
-      console.log(`📊 Response status: ${response.status} ${response.statusText}`);
-      console.log(`📋 Response headers:`, Object.fromEntries(response.headers.entries()));
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -108,12 +101,10 @@ export class AlphaVantageProvider implements MarketDataProvider {
       }
       
       const responseText = await response.text();
-      console.log(`📄 Raw response (first 500 chars):`, responseText.substring(0, 500));
       
       let data;
       try {
         data = JSON.parse(responseText);
-        console.log(`📦 Parsed JSON keys:`, Object.keys(data));
       } catch (parseError) {
         console.error(`❌ Failed to parse JSON response:`, parseError);
         console.error(`📄 Full response text:`, responseText);
@@ -153,8 +144,6 @@ export class AlphaVantageProvider implements MarketDataProvider {
       // Extract time series data
       const timeSeries = data[timeSeriesKey];
       
-      console.log(`🔍 Looking for time series key: "${timeSeriesKey}"`);
-      console.log(`📊 Available data keys:`, Object.keys(data));
       
       if (!timeSeries) {
         console.error(`❌ No time series data found for key: "${timeSeriesKey}"`);
@@ -162,10 +151,9 @@ export class AlphaVantageProvider implements MarketDataProvider {
         throw new Error(`No time series data found for ${symbol}. Expected key: "${timeSeriesKey}". Available keys: ${Object.keys(data).join(', ')}`);
       }
       
-      console.log(`✅ Found time series data with ${Object.keys(timeSeries).length} entries`);
+
       if (Object.keys(timeSeries).length > 0) {
         const firstKey = Object.keys(timeSeries)[0];
-        console.log(`📅 First data point: ${firstKey}`, timeSeries[firstKey]);
       }
       
       // Convert to our format and filter by time window
@@ -199,10 +187,10 @@ export class AlphaVantageProvider implements MarketDataProvider {
           ? (lastCandle.getTime() - firstCandle.getTime()) / (1000 * 60 * 60 * 24) // days
           : (lastCandle.getTime() - firstCandle.getTime()) / (1000 * 60 * 60); // hours
         
-        console.log(`Alpha Vantage data for ${symbol}:`);
-        console.log(`  - ${ohlcData.length} candles from ${firstCandle.toLocaleDateString()} to ${lastCandle.toLocaleDateString()}`);
-        console.log(`  - Time span: ${timeSpan.toFixed(2)} ${isDailyInterval ? 'days' : 'hours'}`);
-        console.log(`  - Requested window: ${timeWindow.start.toLocaleString()} to ${timeWindow.end.toLocaleString()}`);
+
+
+
+
       }
       
       return ohlcData;
@@ -269,22 +257,20 @@ export class AlphaVantageProvider implements MarketDataProvider {
     const now = Date.now();
     const timeSinceLastRequest = now - this.lastRequestTime;
     
-    console.log(`⏱️  Rate limit check: ${timeSinceLastRequest}ms since last request (need 12000ms minimum)`);
-    console.log(`📊 Request count: ${this.requestCount}`);
+
     
     // If less than 12 seconds since last request, wait
     if (timeSinceLastRequest < 12000) {
       const waitTime = 12000 - timeSinceLastRequest;
-      console.log(`⏳ Alpha Vantage rate limiting: waiting ${waitTime}ms (${(waitTime/1000).toFixed(1)}s)`);
+
       await new Promise(resolve => setTimeout(resolve, waitTime));
-      console.log(`✅ Rate limit wait completed`);
+
     } else {
-      console.log(`✅ No rate limit wait needed`);
+
     }
     
     this.lastRequestTime = Date.now();
     this.requestCount++;
-    console.log(`📈 Updated request count: ${this.requestCount}`);
   }
   
   /**
@@ -314,10 +300,9 @@ export class AlphaVantageProvider implements MarketDataProvider {
    */
   async testConnection(): Promise<boolean> {
     try {
-      console.log(`🧪 Testing Alpha Vantage connection...`);
       
       if (!this.isAvailable()) {
-        console.log(`❌ Connection test failed: API key not available`);
+
         return false;
       }
       
@@ -329,31 +314,28 @@ export class AlphaVantageProvider implements MarketDataProvider {
       });
       
       const testUrl = `https://www.alphavantage.co/query?${params.toString()}`;
-      console.log(`🔗 Test URL: ${testUrl}`);
       
       const response = await fetch(testUrl);
-      console.log(`📊 Test response status: ${response.status} ${response.statusText}`);
       
       if (!response.ok) {
-        console.log(`❌ Connection test failed: HTTP ${response.status}`);
+
         return false;
       }
       
       const data = await response.json();
-      console.log(`📦 Test response keys:`, Object.keys(data));
       
       if (data['Error Message']) {
-        console.log(`❌ Connection test failed: ${data['Error Message']}`);
+
         return false;
       }
       
       if (data['Note']) {
-        console.log(`❌ Connection test failed (rate limit): ${data['Note']}`);
+
         return false;
       }
       
       const success = !!data['Global Quote'];
-      console.log(`${success ? '✅' : '❌'} Connection test ${success ? 'PASSED' : 'FAILED'}`);
+
       return success;
       
     } catch (error) {

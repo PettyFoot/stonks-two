@@ -153,7 +153,6 @@ function RecordsContent() {
         ohlcData: chartMarketData.ohlc
       });
 
-      console.log('📊 Trade metrics calculated:', metrics);
       return metrics;
     } catch (error) {
       console.error('Error calculating trade metrics:', error);
@@ -270,7 +269,7 @@ function RecordsContent() {
                   tradeDate={recordsData.date}
                   height={400}
                   onExecutionSelect={(execution) => {
-                    console.log('Selected execution from chart:', execution);
+
                     // TODO: Highlight the execution in the table
                   }}
                   onMarketDataUpdate={(marketData) => {
@@ -339,7 +338,7 @@ function RecordsContent() {
             error={null}
             showActions={true}
             onExecutionSelect={(execution) => {
-              console.log('Selected execution:', execution);
+
             }}
           />
 

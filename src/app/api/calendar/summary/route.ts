@@ -87,15 +87,15 @@ export async function GET(req: NextRequest) {
       ORDER BY date DESC;
     `;
 
-    console.log('\n=== TRADES USED FOR SUMMARY CHARTS ===');
-    console.log(`Total trades found: ${allTrades.length}`);
-    console.log(`Date range: ${startDate ? startDate.toISOString().split('T')[0] : 'all'} to ${endDate ? endDate.toISOString().split('T')[0] : 'all'}`);
-    console.log(`Timeframe: ${timeframe}`);
-    console.log('\n--- Individual Trades ---');
+
+
+
+
+
     allTrades.forEach((trade, index) => {
-      console.log(`${index + 1}. ${trade.date.toISOString().split('T')[0]} | ${trade.symbol} | ${trade.side} | Qty: ${trade.quantity} | Entry: $${trade.entry_price} | Exit: $${trade.exit_price} | P&L: $${trade.pnl}`);
+
     });
-    console.log('=== END TRADES LIST ===\n');
+
 
     // Performance by Day of Month (1-31)
     const dailyPerf = await prisma.$queryRaw<
@@ -165,21 +165,21 @@ export async function GET(req: NextRequest) {
       pnl: yearlyPerf.reduce((sum, y) => sum + (y.total_pnl || 0), 0)
     };
 
-    console.log('\n=== CHART TOTALS VALIDATION ===');
-    console.log('Daily Totals:', dailyTotals);
-    console.log('Monthly Totals:', monthlyTotals);
-    console.log('Yearly Totals:', yearlyTotals);
-    console.log('\nDiscrepancies:');
-    console.log('  Trades - Daily vs Monthly:', dailyTotals.trades - monthlyTotals.trades);
-    console.log('  Trades - Daily vs Yearly:', dailyTotals.trades - yearlyTotals.trades);
-    console.log('  Trades - Monthly vs Yearly:', monthlyTotals.trades - yearlyTotals.trades);
-    console.log('  Shares - Daily vs Monthly:', dailyTotals.shares - monthlyTotals.shares);
-    console.log('  Shares - Daily vs Yearly:', dailyTotals.shares - yearlyTotals.shares);
-    console.log('  Shares - Monthly vs Yearly:', monthlyTotals.shares - yearlyTotals.shares);
-    console.log('  P&L - Daily vs Monthly:', (dailyTotals.pnl - monthlyTotals.pnl).toFixed(2));
-    console.log('  P&L - Daily vs Yearly:', (dailyTotals.pnl - yearlyTotals.pnl).toFixed(2));
-    console.log('  P&L - Monthly vs Yearly:', (monthlyTotals.pnl - yearlyTotals.pnl).toFixed(2));
-    console.log('=== END VALIDATION ===\n');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     return NextResponse.json({
       daily: dailyPerf.map(d => ({

@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] GET /api/user/profile - User: ${user.id}`);
+
     }
 
     // Get comprehensive user data with optimized queries
@@ -230,7 +230,7 @@ export async function GET(request: NextRequest) {
     };
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] GET /api/user/profile completed in ${Date.now() - startTime}ms`);
+
     }
 
     return NextResponse.json(response);
@@ -295,7 +295,7 @@ export async function PUT(request: NextRequest) {
     const { name, email, preferences, metadata } = validationResult.data;
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] PUT /api/user/profile - User: ${user.id}`, { name, email });
+
     }
 
     // Build update data
@@ -359,7 +359,8 @@ export async function PUT(request: NextRequest) {
 
     // Log profile update
     if (process.env.NODE_ENV === 'production') {
-      console.log(`[USER_PROFILE] User ${user.id} updated profile`, {
+      console.log('[USER_PROFILE] Profile updated:', {
+        userId: user.id,
         emailChanged: email && email !== user.email,
         nameChanged: name && name !== user.name,
       });
@@ -388,7 +389,7 @@ export async function PUT(request: NextRequest) {
     };
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] PUT /api/user/profile completed in ${Date.now() - startTime}ms`);
+
     }
 
     return NextResponse.json(response);

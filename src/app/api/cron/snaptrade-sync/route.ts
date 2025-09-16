@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   }
 
   const startTime = Date.now();
-  console.log(`[SNAPTRADE_CRON] Starting daily SnapTrade sync at ${new Date().toISOString()}`);
+
 
   try {
     // Get all users with SnapTrade connections and auto-sync enabled
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    console.log(`[SNAPTRADE_CRON] Found ${users.length} users to sync`);
+
 
     const results = {
       totalUsers: users.length,
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
     // Process each user
     for (const user of users) {
       try {
-        console.log(`[SNAPTRADE_CRON] Processing user ${user.id}`);
+
 
         // Create sync log entry
         const syncLog = await prisma.snapTradeSync.create({
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
             dateFrom,
             dateTo,
             onProgress: (progress, message) => {
-              console.log(`[SNAPTRADE_CRON] User ${user.id}: ${progress}% - ${message}`);
+
             }
           }
         );
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
           results.successfulSyncs++;
           results.totalActivities += result.activitiesFound;
           results.totalOrdersCreated += result.ordersCreated;
-          console.log(`[SNAPTRADE_CRON] User ${user.id} sync completed: ${result.ordersCreated} orders created`);
+
         } else {
           results.failedSyncs++;
           results.errors.push(`User ${user.id}: ${result.errors.join(', ')}`);
@@ -146,9 +146,8 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    console.log(`[SNAPTRADE_CRON] Cleaned up ${deletedLogs.count} old sync logs`);
 
-    console.log(`[SNAPTRADE_CRON] Daily sync completed in ${duration}ms`, {
+    console.log('[SNAPTRADE_CRON] Daily sync completed successfully:', {
       ...results,
       duration,
       cleanedUpLogs: deletedLogs.count

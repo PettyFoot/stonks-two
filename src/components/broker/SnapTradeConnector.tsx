@@ -26,7 +26,7 @@ export default function SnapTradeConnector({
 
   // Handle window messages from SnapTrade iframe
   const handleSuccess = (data: string) => {
-    console.log('SnapTrade connection success:', data);
+
     toast.success('Successfully connected to your broker!');
     
     // Complete the connection process
@@ -41,12 +41,12 @@ export default function SnapTradeConnector({
   };
 
   const handleExit = () => {
-    console.log('User exited SnapTrade connection flow');
+
     onClose();
   };
 
   const handleClose = () => {
-    console.log('SnapTrade modal closed');
+
     onClose();
   };
 
@@ -106,7 +106,7 @@ export default function SnapTradeConnector({
       }
 
       setLoginLink(data.redirectUri);
-      console.log('SnapTrade login link generated:', data.redirectUri);
+
 
     } catch (error) {
       console.error('Error initializing SnapTrade connection:', error);

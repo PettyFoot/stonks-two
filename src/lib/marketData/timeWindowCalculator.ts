@@ -15,8 +15,8 @@ export class TimeWindowCalculator {
     const tradeDate = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
       ? new Date(date + 'T12:00:00')
       : new Date(date + 'T12:00:00');
-    
-    console.log(`📅 TimeWindow calculation for ${date}:`, {
+
+    console.log('[TIME_WINDOW] Parsed trade date:', {
       originalDate: tradeDate.toISOString(),
       localDate: tradeDate.toLocaleString(),
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -26,11 +26,11 @@ export class TimeWindowCalculator {
     // Use UTC methods to ensure consistent timezone handling
     const start = new Date(tradeDate.getFullYear(), tradeDate.getMonth(), tradeDate.getDate());
     start.setHours(4, 0, 0, 0); // 4:00 AM local time (pre-market start)
-    
+
     const end = new Date(tradeDate.getFullYear(), tradeDate.getMonth(), tradeDate.getDate());
     end.setHours(20, 0, 0, 0); // 8:00 PM local time (after-hours end)
-    
-    console.log(`⏰ Trading window:`, {
+
+    console.log('[TIME_WINDOW] Extended trading hours window:', {
       start: start.toISOString(),
       end: end.toISOString(),
       startLocal: start.toLocaleString(),
@@ -61,17 +61,16 @@ export class TimeWindowCalculator {
       ? new Date(date + 'T12:00:00')
       : new Date(date + 'T12:00:00');
     
-    console.log(`📅 TimeWindow calculation for ${date} (${interval} interval):`);
     
     // Always use extended trading hours window regardless of interval
     // Create new Date objects to avoid mutation issues
     const start = new Date(tradeDate.getFullYear(), tradeDate.getMonth(), tradeDate.getDate());
     start.setHours(4, 0, 0, 0); // 4:00 AM local time (pre-market start)
-    
+
     const end = new Date(tradeDate.getFullYear(), tradeDate.getMonth(), tradeDate.getDate());
     end.setHours(20, 0, 0, 0); // 8:00 PM local time (after-hours end)
-    
-    console.log(`⏰ ${interval} trading window:`, {
+
+    console.log('[TIME_WINDOW] Extended trading hours window for interval:', {
       start: start.toISOString(),
       end: end.toISOString(),
       startLocal: start.toLocaleString(),

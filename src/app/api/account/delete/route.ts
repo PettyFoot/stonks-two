@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     const { reason, confirmation } = validationResult.data;
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] POST /api/account/delete - User: ${user.id}`, { reason });
+
     }
 
     // Check if user already requested deletion
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
         await subscriptionService.cancelSubscriptionImmediately(activeSubscription.stripeSubscriptionId);
 
         if (process.env.NODE_ENV === 'development') {
-          console.log(`[API] Cancelled subscription for deleted user: ${user.id}`);
+
         }
       }
     } catch (stripeError) {
@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
 
     // Log successful deletion request
     if (process.env.NODE_ENV === 'production') {
-      console.log(`[ACCOUNT_DELETION] User ${user.id} requested account deletion`, {
+      console.log('Account deletion requested', {
         reason: reason,
         gracePeriodEnd: gracePeriodEnd.toISOString(),
         finalDeletionDate: finalDeletionDate.toISOString(),
@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] POST /api/account/delete completed in ${Date.now() - startTime}ms`);
+
     }
 
     return NextResponse.json(response);
@@ -249,7 +249,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] DELETE /api/account/delete - User: ${user.id} (reactivation)`);
+
     }
 
     // Check current user status
@@ -334,7 +334,7 @@ export async function DELETE(request: NextRequest) {
 
     // Log successful reactivation
     if (process.env.NODE_ENV === 'production') {
-      console.log(`[ACCOUNT_REACTIVATION] User ${user.id} reactivated account`);
+
     }
 
     const response = {
@@ -354,7 +354,7 @@ export async function DELETE(request: NextRequest) {
     };
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] DELETE /api/account/delete completed in ${Date.now() - startTime}ms`);
+
     }
 
     return NextResponse.json(response);

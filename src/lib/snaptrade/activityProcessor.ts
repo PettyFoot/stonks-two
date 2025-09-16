@@ -379,7 +379,7 @@ export class SnapTradeActivityProcessor {
     let duplicatesSkipped = 0;
 
     try {
-      console.log(`Test processing for user ID: ${userId} (database CUID)`);
+
       onProgress?.(10, 'Converting activities to internal format');
 
       // Convert AccountUniversalActivity to SnapTradeActivity format
@@ -387,7 +387,7 @@ export class SnapTradeActivityProcessor {
         adaptAccountActivity(activity, accountInfo)
       );
 
-      console.log(`Converted ${activities.length} raw activities to internal format`);
+
 
       onProgress?.(30, 'Filtering for trade activities (BUY/SELL)');
 
@@ -397,10 +397,10 @@ export class SnapTradeActivityProcessor {
       );
 
       activitiesFound = tradeActivities.length;
-      console.log(`Found ${activitiesFound} trade activities (BUY/SELL) out of ${activities.length} total activities`);
+
 
       if (tradeActivities.length === 0) {
-        console.log('No BUY/SELL activities found to process');
+
         return {
           activitiesFound,
           ordersWouldBeCreated: 0,
@@ -418,8 +418,8 @@ export class SnapTradeActivityProcessor {
         this.mapActivityToOrder(activity, userId, connectionId, index)
       );
 
-      console.log(`Mapped ${orders.length} activities to order format`);
-      console.log('Sample order structure:', JSON.stringify(orders[0], null, 2));
+
+
 
       onProgress?.(70, 'Checking for potential duplicates');
 
@@ -428,16 +428,16 @@ export class SnapTradeActivityProcessor {
       const uniqueOrders = await this.filterDuplicates(orders, userId);
       duplicatesSkipped = originalCount - uniqueOrders.length;
 
-      console.log(`Duplicate check: ${originalCount} orders -> ${uniqueOrders.length} unique orders (${duplicatesSkipped} duplicates)`);
+
 
       ordersWouldBeCreated = uniqueOrders.length;
 
       onProgress?.(90, 'Logging order details');
 
       // Log detailed information about each order that would be created
-      console.log('\n=== ORDERS THAT WOULD BE CREATED ===');
+
       uniqueOrders.forEach((order, index) => {
-        console.log(`\nOrder ${index + 1}:`, {
+        console.log(`[SNAPTRADE_TEST] Order ${index + 1} details:`, {
           orderId: order.orderId,
           symbol: order.symbol,
           side: order.side,
@@ -459,7 +459,7 @@ export class SnapTradeActivityProcessor {
           }
         });
       });
-      console.log('=== END ORDERS ===\n');
+
 
       onProgress?.(100, 'Test processing complete');
 

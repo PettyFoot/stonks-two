@@ -40,14 +40,14 @@ export async function GET(request: NextRequest) {
     
     for (const connection of connections) {
       if (connection.status !== 'ACTIVE' || !connection.accounts?.length) {
-        console.log(`Skipping inactive connection ${connection.id}`);
+
         continue;
       }
 
       // Process each account in this connection
       for (const account of connection.accounts) {
         try {
-          console.log(`Fetching holdings for account: ${account.id}`);
+
           
           const holdingsResponse = await client.accountInformation.getUserHoldings({
             userId: credentials.snapTradeUserId,
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
             accountId: account.id,
           });
 
-          console.log('Holdings response for account', account.id, ':', holdingsResponse.data);
+
 
           holdingsData.push({
             connectionId: connection.id,

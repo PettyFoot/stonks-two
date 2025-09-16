@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     const { immediately, reason, feedback, metadata = {} } = validationResult.data;
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] POST /api/subscription/cancel - User: ${user.id}, Immediately: ${immediately}`);
+
     }
 
     // Get current active subscription
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
     // Log cancellation feedback if provided
     if (reason || feedback) {
       if (process.env.NODE_ENV === 'production') {
-        console.log(`[SUBSCRIPTION_FEEDBACK] User ${user.id} cancelled subscription:`, {
+        console.log('[SUBSCRIPTION_CANCEL] Cancellation feedback:', {
           subscriptionId: currentSubscription.stripeSubscriptionId,
           reason,
           feedback,
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] POST /api/subscription/cancel completed in ${Date.now() - startTime}ms`);
+
     }
 
     return NextResponse.json(response);

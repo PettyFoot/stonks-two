@@ -102,17 +102,11 @@ export default function MappingReview({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAutoSubmitting, setIsAutoSubmitting] = useState(false);
 
-  console.log('🔍 MappingReview component loaded');
-  console.log('📊 AI Result:', aiResult);
-  console.log('📋 Sample data rows:', sampleData?.length || 0);
-  console.log('👁️ Modal isOpen:', isOpen);
-  console.log('🎯 Component rendering with isOpen:', isOpen, 'aiResult exists:', !!aiResult);
 
   // Auto-submit handler for back button/ESC key - defined before use in useEffect
   const handleAutoSubmit = useCallback(async () => {
     if (isProcessing || isAutoSubmitting) return;
 
-    console.log('🤖 Auto-submitting AI mappings due to navigation attempt');
     setIsAutoSubmitting(true);
 
     try {
@@ -135,8 +129,7 @@ export default function MappingReview({
         throw new Error(result.error || 'Failed to finalize mappings');
       }
 
-      console.log('🎉 Mappings approved as-is successfully:', result);
-      console.log(`✅ ${result.successCount} records imported`);
+
 
       // Call the original callback with the result
       onApproveMapping(result);
@@ -157,7 +150,6 @@ export default function MappingReview({
     window.history.pushState({ modalOpen: true }, '');
 
     const handlePopState = (event: PopStateEvent) => {
-      console.log('🔙 Browser back button detected - auto-submitting AI mappings');
       // Prevent default back navigation
       event.preventDefault();
       // Auto-submit current AI mappings
@@ -167,7 +159,7 @@ export default function MappingReview({
     // Prevent ESC key from closing modal
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        console.log('⌨️ ESC key blocked - auto-submitting AI mappings');
+
         event.preventDefault();
         event.stopPropagation();
         handleAutoSubmit();
@@ -185,7 +177,6 @@ export default function MappingReview({
 
   // Handle any close attempts by auto-submitting instead
   const handleCloseAttempt = useCallback(() => {
-    console.log('🚫 Close attempt blocked - auto-submitting AI mappings');
     handleAutoSubmit();
   }, [handleAutoSubmit]);
 
@@ -221,7 +212,6 @@ export default function MappingReview({
   };
 
   const handleMarkForUpdate = (csvHeader: string, checked: boolean) => {
-    console.log(`📝 Marking field for update: "${csvHeader}" -> ${checked}`);
     setMarkedForUpdate(prev => ({
       ...prev,
       [csvHeader]: checked
@@ -238,7 +228,7 @@ export default function MappingReview({
   };
 
   const handleFieldChange = (csvHeader: string, newField: string) => {
-    console.log(`✏️ Correcting mapping: "${csvHeader}" -> "${newField}"`);
+
     setCorrectedMappings(prev => ({
       ...prev,
       [csvHeader]: newField
@@ -246,7 +236,6 @@ export default function MappingReview({
   };
 
   const handleResetMapping = (csvHeader: string) => {
-    console.log(`🔄 Resetting mapping for: "${csvHeader}"`);
     setCorrectedMappings(prev => {
       const newMappings = { ...prev };
       delete newMappings[csvHeader];
@@ -259,7 +248,7 @@ export default function MappingReview({
   };
 
   const handleReportError = async () => {
-    console.log('❌ User reported error with AI mappings');
+
     
     if (!importBatchId) {
       console.error('❌ Missing importBatchId, cannot report error');
@@ -269,7 +258,6 @@ export default function MappingReview({
     setIsProcessing(true);
     
     try {
-      console.log('🚀 Calling finalize-mappings API to report error...');
       const response = await fetch('/api/csv/finalize-mappings', {
         method: 'POST',
         headers: {
@@ -288,7 +276,7 @@ export default function MappingReview({
         throw new Error(result.error || 'Failed to report error');
       }
 
-      console.log('✅ Error reported successfully:', result);
+
       
       // Close the dialog and notify parent
       onClose();
@@ -303,7 +291,7 @@ export default function MappingReview({
   };
 
   const handleUseAsIs = async () => {
-    console.log('✅ Using AI mappings as-is without corrections');
+
     
     if (!importBatchId) {
       console.error('❌ Missing importBatchId, cannot finalize mappings');
@@ -313,7 +301,6 @@ export default function MappingReview({
     setIsProcessing(true);
     
     try {
-      console.log('🚀 Calling finalize-mappings API for as-is approval...');
       const response = await fetch('/api/csv/finalize-mappings', {
         method: 'POST',
         headers: {
@@ -332,8 +319,7 @@ export default function MappingReview({
         throw new Error(result.error || 'Failed to finalize mappings');
       }
 
-      console.log('🎉 Mappings approved as-is successfully:', result);
-      console.log(`✅ ${result.successCount} records imported`);
+
       
       // Call the original callback with the result
       onApproveMapping(result);
@@ -347,6 +333,9 @@ export default function MappingReview({
     }
   };
 
+  // Check if any rows are marked for update
+  const hasMarkedItems = Object.values(markedForUpdate).some(marked => marked);
+
   const handleApprove = async () => {
     // Only include corrections for fields that are marked for update AND have a selected value
     const actualCorrections: CorrectedMapping = {};
@@ -356,8 +345,7 @@ export default function MappingReview({
       }
     });
 
-    console.log('✅ Approving mappings with corrections:', actualCorrections);
-    console.log(`🔧 ${Object.keys(actualCorrections).length} fields corrected by user`);
+
 
     if (!importBatchId) {
       console.error('❌ Missing importBatchId, cannot finalize mappings');
@@ -367,7 +355,6 @@ export default function MappingReview({
     setIsProcessing(true);
 
     try {
-      console.log('🚀 Calling finalize-mappings API...');
       const response = await fetch('/api/csv/finalize-mappings', {
         method: 'POST',
         headers: {
@@ -387,8 +374,7 @@ export default function MappingReview({
         throw new Error(result.error || 'Failed to finalize mappings');
       }
 
-      console.log('🎉 Mappings finalized successfully:', result);
-      console.log(`✅ ${result.successCount} records imported`);
+
       
       // Call the original callback with the finalized result
       onApproveMapping(result);
@@ -418,7 +404,6 @@ export default function MappingReview({
     return value ? String(value).substring(0, 50) : '';
   };
 
-  console.log('🎨 Rendering MappingReview Dialog with open:', isOpen);
   
   return (
     <Dialog open={isOpen} modal={true}>
@@ -859,7 +844,8 @@ export default function MappingReview({
             </Button>
             <Button
               onClick={handleApprove}
-              disabled={isProcessing || isAutoSubmitting}
+              disabled={isProcessing || isAutoSubmitting || !hasMarkedItems}
+              title={!hasMarkedItems ? "Please mark at least one row for update to apply corrections" : ""}
             >
               {isProcessing || isAutoSubmitting ? (
                 <>

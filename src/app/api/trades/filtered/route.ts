@@ -34,10 +34,10 @@ export async function POST(request: Request) {
     const page: number = body.page || 1;
     const limit: number = body.limit || 50;
 
-    console.log('=== FILTERED TRADES API REQUEST ===');
-    console.log('Request body:', body);
-    console.log('Filters:', filters);
-    console.log('Pagination:', { page, limit });
+
+
+
+
 
     // Get current user (handles both demo and Auth0)
     const user = await getCurrentUser();

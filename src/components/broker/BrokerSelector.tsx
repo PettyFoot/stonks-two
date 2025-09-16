@@ -66,7 +66,6 @@ export default function BrokerSelector({
   // Load brokers on component mount
   useEffect(() => {
     if (isOpen) {
-      console.log('🔍 BrokerSelector opened, loading brokers...');
       loadBrokers();
     }
   }, [isOpen]);
@@ -74,25 +73,22 @@ export default function BrokerSelector({
   // Filter brokers based on search query
   useEffect(() => {
     if (!searchQuery.trim()) {
-      console.log('📋 No search query, showing all brokers');
       setFilteredBrokers(brokers);
       return;
     }
 
-    console.log(`🔎 Filtering brokers with query: "${searchQuery}"`);
     const query = searchQuery.toLowerCase();
     const filtered = brokers.filter(broker => 
       broker.name.toLowerCase().includes(query) ||
       broker.aliases.some(alias => alias.alias.toLowerCase().includes(query))
     );
-    console.log(`✅ Found ${filtered.length} matching brokers`);
+
     setFilteredBrokers(filtered);
   }, [searchQuery, brokers]);
 
   const loadBrokers = async () => {
     setIsLoading(true);
     try {
-      console.log('📡 Fetching brokers from API...');
       const response = await fetch('/api/brokers');
       
       if (!response.ok) {
@@ -100,7 +96,7 @@ export default function BrokerSelector({
       }
 
       const data = await response.json();
-      console.log(`✅ Loaded ${data.brokers.length} brokers`);
+
       setBrokers(data.brokers);
       setFilteredBrokers(data.brokers);
       
@@ -118,12 +114,10 @@ export default function BrokerSelector({
     if (value.trim().length > 2) {
       setIsSearching(true);
       try {
-        console.log(`🔍 Searching API for: "${value}"`);
         const response = await fetch(`/api/brokers?q=${encodeURIComponent(value)}`);
         
         if (response.ok) {
           const data = await response.json();
-          console.log(`🔎 API search returned ${data.brokers.length} results`);
           setBrokers(data.brokers);
         }
       } catch (error) {
@@ -135,26 +129,25 @@ export default function BrokerSelector({
   };
 
   const handleSelectBroker = (broker: Broker) => {
-    console.log(`✅ Selected broker: ${broker.name} (ID: ${broker.id})`);
+
     setSelectedBroker(broker);
   };
 
   const handleConfirmSelection = () => {
     if (selectedBroker) {
-      console.log(`🚀 Confirming broker selection: ${selectedBroker.name}`);
       onSelectBroker(selectedBroker, selectedBroker.name);
     }
   };
 
   const handleCreateCustomBroker = () => {
     if (customBrokerName.trim()) {
-      console.log(`➕ Creating custom broker: ${customBrokerName}`);
+
       onCreateBroker(customBrokerName.trim());
     }
   };
 
   const handleClose = () => {
-    console.log('❌ BrokerSelector closing, resetting state');
+
     setSearchQuery('');
     setSelectedBroker(null);
     setCustomBrokerName('');

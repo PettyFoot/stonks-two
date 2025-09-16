@@ -27,7 +27,7 @@ export function useUserSync() {
       if (lastSyncTime) {
         const timeSinceLastSync = Date.now() - parseInt(lastSyncTime, 10);
         if (timeSinceLastSync < SYNC_INTERVAL) {
-          console.log('Skipping user sync - last synced', Math.round(timeSinceLastSync / 1000), 'seconds ago');
+
           hasSyncedRef.current = true;
           return;
         }
@@ -48,7 +48,7 @@ export function useUserSync() {
         if (!response.ok) {
           // If it's a 401 error and we haven't exceeded max retries, retry after delay
           if (response.status === 401 && retryCount < maxRetries) {
-            console.log(`User sync authentication failed, retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/${maxRetries + 1})`);
+
             hasSyncedRef.current = false; // Reset flag to allow retry
             setTimeout(() => {
               syncUser(retryCount + 1);
@@ -61,11 +61,11 @@ export function useUserSync() {
         }
 
         const result = await response.json();
-        console.log('User synced successfully:', result.user);
+
         
         // Handle reactivation
         if (result.wasReactivated) {
-          console.log('Account was reactivated during sync');
+
           setWasReactivated(true);
           
           // Check if we've already shown the reactivation message
@@ -86,7 +86,7 @@ export function useUserSync() {
       } catch (error) {
         // If it's a network error and we haven't exceeded max retries, retry after delay
         if (retryCount < maxRetries && (error instanceof TypeError || (error instanceof Error && error.message.includes('fetch')))) {
-          console.log(`User sync network error, retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/${maxRetries + 1})`);
+
           hasSyncedRef.current = false; // Reset flag to allow retry
           setTimeout(() => {
             syncUser(retryCount + 1);

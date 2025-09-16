@@ -2,52 +2,64 @@ import { NextResponse } from 'next/server';
 import { TradeSide, Prisma } from '@prisma/client';
 import { getCurrentUser } from '@/lib/auth0';
 import { prisma } from '@/lib/prisma';
-import { 
-  normalizePaginationParams, 
-  buildOffsetPaginationOptions, 
+import {
+  normalizePaginationParams,
+  buildOffsetPaginationOptions,
   createPaginatedResponse,
-  generateCursor 
+  generateCursor
 } from '@/lib/utils/pagination';
+import { tradesQuerySchema, createTradeSchema } from '@/lib/schemas/trades';
+import { ERROR_MESSAGES, HTTP_STATUS, DEFAULTS, DATE_FORMATS } from '@/constants/app';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  
-  // Extract filter parameters
-  const symbol = searchParams.get('symbol');
-  const side = searchParams.get('side');
-  const dateFrom = searchParams.get('dateFrom');
-  const dateTo = searchParams.get('dateTo');
-  const tags = searchParams.get('tags')?.split(',');
-  const duration = searchParams.get('duration');
-  const showOpenTrades = searchParams.get('showOpenTrades') === 'true';
-  
-  // Extract pagination parameters
-  const page = parseInt(searchParams.get('page') || '1', 10);
-  const limit = parseInt(searchParams.get('limit') || '50', 10);
-  const sortBy = searchParams.get('sortBy') || 'date';
-  const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
+
+  // Validate query parameters using Zod
+  const queryParams = {
+    symbol: searchParams.get('symbol') || undefined,
+    side: searchParams.get('side') || undefined,
+    dateFrom: searchParams.get('dateFrom') || undefined,
+    dateTo: searchParams.get('dateTo') || undefined,
+    tags: searchParams.get('tags') || undefined,
+    duration: searchParams.get('duration') || undefined,
+    showOpenTrades: searchParams.get('showOpenTrades') === 'true',
+    page: parseInt(searchParams.get('page') || '1', 10),
+    limit: parseInt(searchParams.get('limit') || '50', 10),
+    sortBy: searchParams.get('sortBy') || 'date',
+    sortOrder: searchParams.get('sortOrder') || 'desc'
+  };
+
+  const validationResult = tradesQuerySchema.safeParse(queryParams);
+  if (!validationResult.success) {
+    return NextResponse.json({
+      error: ERROR_MESSAGES.INVALID_QUERY_PARAMETERS,
+      details: validationResult.error.issues
+    }, { status: HTTP_STATUS.BAD_REQUEST });
+  }
+
+  const { symbol, side, dateFrom, dateTo, tags, duration, showOpenTrades, page, limit, sortBy, sortOrder } = validationResult.data;
   
   // Performance logging in development
   const startTime = process.env.NODE_ENV === 'development' ? Date.now() : 0;
   if (process.env.NODE_ENV === 'development') {
-    console.log('=== OPTIMIZED TRADES API GET REQUEST ===');
-    console.log('Request URL:', request.url);
-    console.log('Pagination:', { page, limit, sortBy, sortOrder });
+
+
+
   }
   
   // Get current user (handles both demo and Auth0)
   const user = await getCurrentUser();
   if (!user) {
-    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    return NextResponse.json({ error: ERROR_MESSAGES.AUTHENTICATION_REQUIRED }, { status: HTTP_STATUS.UNAUTHORIZED });
   }
   
   const userId = user.id;
-  console.log('Using userId:', userId);
+
 
   // Simple validation: ensure we have a valid user
   if (!userId) {
     console.error('No userId found');
-    return NextResponse.json({ error: 'Invalid user state' }, { status: 401 });
+    return NextResponse.json({ error: ERROR_MESSAGES.INVALID_USER_STATE }, { status: HTTP_STATUS.UNAUTHORIZED });
   }
 
   // Build where clause for filters
@@ -103,8 +115,8 @@ export async function GET(request: Request) {
     });
     
     if (process.env.NODE_ENV === 'development') {
-      console.log('Database query WHERE clause:', JSON.stringify(where, null, 2));
-      console.log('Pagination params:', paginationParams);
+
+
     }
     
     // Build pagination options
@@ -154,24 +166,17 @@ export async function GET(request: Request) {
     ]);
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`Database returned ${trades.length} trades (page ${paginationParams.page} of ${Math.ceil(totalCount / paginationParams.limit)})`);
-      console.log(`Total trades matching filters: ${totalCount}`);
+
+
       const endTime = Date.now();
-      console.log(`Query execution time: ${endTime - startTime}ms`);
+
     }
 
     // Transform trades to match frontend interface
     const transformedTrades = trades.map(trade => ({
       id: trade.id,
-      date: trade.date.toLocaleDateString('en-US', { 
-        day: '2-digit', 
-        month: 'short', 
-        year: 'numeric' 
-      }),
-      time: trade.openTime ? trade.openTime.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit'
-      }) : '00:00',
+      date: trade.date.toLocaleDateString('en-US', DATE_FORMATS.DISPLAY_DATE),
+      time: trade.openTime ? trade.openTime.toLocaleTimeString('en-US', DATE_FORMATS.TIME_FORMAT) : DEFAULTS.TIME_DISPLAY,
       symbol: trade.symbol,
       side: trade.side.toLowerCase() as 'long' | 'short',
       quantity: trade.quantity,
@@ -223,7 +228,7 @@ export async function GET(request: Request) {
     };
     
     if (process.env.NODE_ENV === 'development') {
-      console.log(`Returning page ${paginationParams.page} with ${transformedTrades.length} items`);
+
     }
     
     return NextResponse.json(responseData);
@@ -248,24 +253,45 @@ export async function POST(request: Request) {
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      return NextResponse.json({ error: ERROR_MESSAGES.AUTHENTICATION_REQUIRED }, { status: HTTP_STATUS.UNAUTHORIZED });
     }
 
     const body = await request.json();
+
+    // Validate request body using Zod
+    const validationResult = createTradeSchema.safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json({
+        error: ERROR_MESSAGES.INVALID_TRADE_DATA,
+        details: validationResult.error.issues
+      }, { status: HTTP_STATUS.BAD_REQUEST });
+    }
+
+    const validatedData = validationResult.data;
     
     const now = new Date();
     const newTrade = await prisma.trade.create({
       data: {
         userId: user.id,
-        date: body.date ? new Date(body.date) : now,
-        entryDate: body.date ? new Date(body.date) : now,
-        symbol: body.symbol,
-        side: (body.side || 'long').toUpperCase() as TradeSide,
-        quantity: body.volume || 0,
-        executions: body.executions || 1,
-        pnl: body.pnl || 0,
-        notes: body.notes,
-        tags: body.tags || []
+        date: validatedData.date ? new Date(validatedData.date) : now,
+        entryDate: validatedData.date ? new Date(validatedData.date) : now,
+        symbol: validatedData.symbol,
+        side: validatedData.side.toUpperCase() as TradeSide,
+        quantity: validatedData.volume || validatedData.quantity || 0,
+        executions: validatedData.executions,
+        pnl: validatedData.pnl,
+        entryPrice: validatedData.entryPrice,
+        exitPrice: validatedData.exitPrice,
+        notes: validatedData.notes,
+        tags: validatedData.tags,
+        commission: validatedData.commission,
+        fees: validatedData.fees,
+        assetClass: validatedData.assetClass,
+        orderType: validatedData.orderType,
+        timeInForce: validatedData.timeInForce,
+        marketSession: validatedData.marketSession,
+        holdingPeriod: validatedData.holdingPeriod,
+        status: validatedData.status
       }
     });
 

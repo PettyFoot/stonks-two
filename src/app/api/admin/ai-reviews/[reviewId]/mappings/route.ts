@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth } from '@/lib/auth0';
 import { prisma } from '@/lib/prisma';
+import { FormatApprovalService } from '@/lib/services/FormatApprovalService';
 import { z } from 'zod';
 
 const MappingUpdateSchema = z.object({
@@ -119,12 +120,18 @@ export async function PUT(
         data: {
           fieldMappings: newFieldMappings,
           confidence: 1.0, // Admin-reviewed has full confidence
+          isApproved: true, // Always approve when admin reviews
+          approvedBy: user.id,
+          approvedAt: new Date(),
           updatedAt: new Date()
         }
       });
 
       // Update the AI review status
-      const reviewStatus = approve ? 'APPROVED' : 'CORRECTED';
+      // Determine if mappings were changed by checking for modified or new mappings
+      const hasChanges = mappings.some(m => m.isModified || m.isNew);
+      const reviewStatus = hasChanges ? 'CORRECTED' : 'APPROVED';
+
       const updatedReview = await tx.aiIngestToCheck.update({
         where: { id: reviewId },
         data: {
@@ -132,7 +139,7 @@ export async function PUT(
           adminNotes: adminNotes || '',
           adminReviewedAt: new Date(),
           adminReviewedBy: user.id,
-          processingStatus: approve ? 'COMPLETED' : 'PENDING'
+          processingStatus: 'COMPLETED' // Always mark as completed when admin reviews
         }
       });
 
@@ -193,8 +200,8 @@ export async function PUT(
         }
       }
 
-      // If approved, update the import batch status as well
-      if (approve && review.importBatch) {
+      // Update the import batch status since we're always completing the review
+      if (review.importBatch) {
         await tx.importBatch.update({
           where: { id: review.importBatch.id },
           data: {
@@ -212,6 +219,21 @@ export async function PUT(
       };
     });
 
+    // After transaction completes, migrate any staged orders since format is now approved
+    try {
+      console.log(`[AI Reviews] Format approved, triggering staged order migration for format ${review.brokerCsvFormatId}`);
+      const approvalService = new FormatApprovalService();
+      const migrationResult = await approvalService.processOrphanedStagingRecords(user.id);
+
+      console.log(
+        `[AI Reviews] Migration completed: ${migrationResult.processedCount} processed, ` +
+        `${migrationResult.errorCount} errors`
+      );
+    } catch (migrationError) {
+      console.error('[AI Reviews] Failed to migrate staged orders:', migrationError);
+      // Don't fail the whole request if migration fails - the format is still approved
+    }
+
     return NextResponse.json({
       success: true,
       review: result.updatedReview,
@@ -222,7 +244,7 @@ export async function PUT(
       },
       mappingCount: result.mappingCount,
       metadataCount: result.metadataCount,
-      message: approve ? 'Mappings approved successfully' : 'Mappings corrected successfully'
+      message: result.updatedReview.adminReviewStatus === 'CORRECTED' ? 'Mappings corrected and approved successfully' : 'Mappings approved successfully'
     });
 
   } catch (error) {

@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     title: 'Subscription Management API',
     version: '1.0.0',
     description: 'Comprehensive API for managing user subscriptions, payments, and premium features',
-    baseUrl: process.env.NEXTAUTH_URL || 'http://localhost:3000',
+    baseUrl: process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL,
     
     endpoints: {
       // Subscription Management

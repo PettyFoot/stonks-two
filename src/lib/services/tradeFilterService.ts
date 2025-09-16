@@ -136,15 +136,15 @@ export class TradeFilterService {
    * Debug logging for filter consistency
    */
   static logFilters(context: string, filters: TradeFilters): void {
-    console.log(`\n=== ${context.toUpperCase()} FILTERS ===`);
-    console.log('UserId:', filters.userId);
-    console.log('Symbol:', filters.symbol || 'all');
-    console.log('Side:', filters.side || 'all');
-    console.log('Date From:', filters.dateFrom || 'none');
-    console.log('Date To:', filters.dateTo || 'none');
-    console.log('Tags:', filters.tags || 'none');
-    console.log('Duration:', filters.duration || 'all');
-    console.log('Show Open Trades:', filters.showOpenTrades || false);
-    console.log(`=====================================\n`);
+
+
+
+
+
+
+
+
+
+
   }
 }

@@ -105,10 +105,10 @@ export class DemoProvider implements MarketDataProvider {
       const lastCandle = new Date(ohlc[ohlc.length - 1].timestamp);
       const timeSpan = (lastCandle.getTime() - firstCandle.getTime()) / (1000 * 60 * 60);
       
-      console.log(`Demo data generated for ${symbol}:`);
-      console.log(`  - ${ohlc.length} candles from ${firstCandle.toLocaleTimeString()} to ${lastCandle.toLocaleTimeString()}`);
-      console.log(`  - Time span: ${timeSpan.toFixed(2)} hours`);
-      console.log(`  - Price range: $${Math.min(...ohlc.map(c => c.low)).toFixed(2)} - $${Math.max(...ohlc.map(c => c.high)).toFixed(2)}`);
+
+
+
+
     }
     
     return ohlc;

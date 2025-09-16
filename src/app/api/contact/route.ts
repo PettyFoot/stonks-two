@@ -2,17 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as nodemailer from 'nodemailer';
 
 export async function POST(request: NextRequest) {
-  console.log('Contact API called');
+
   
   try {
     const body = await request.json();
     const { name, email, subject, message, category, recaptchaToken } = body;
 
-    console.log('Form data received:', { name, email, subject, category, hasRecaptcha: !!recaptchaToken });
+
 
     // Validate required fields - only message is required
     if (!message) {
-      console.log('Missing required message field');
+
       return NextResponse.json(
         { error: 'Message is required' },
         { status: 400 }
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     if (email) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        console.log('Invalid email format');
+
         return NextResponse.json(
           { error: 'Invalid email address' },
           { status: 400 }
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     // Verify reCAPTCHA (only if configured)
     if (process.env.RECAPTCHA_SECRET_KEY) {
       if (!recaptchaToken) {
-        console.log('Missing reCAPTCHA token');
+
         return NextResponse.json(
           { error: 'reCAPTCHA verification is required' },
           { status: 400 }
@@ -53,16 +53,16 @@ export async function POST(request: NextRequest) {
       const recaptchaResult = await recaptchaResponse.json();
       
       if (!recaptchaResult.success) {
-        console.log('reCAPTCHA verification failed:', recaptchaResult);
+
         return NextResponse.json(
           { error: 'reCAPTCHA verification failed. Please try again.' },
           { status: 400 }
         );
       }
 
-      console.log('reCAPTCHA verified successfully');
+
     } else {
-      console.log('reCAPTCHA not configured, skipping verification');
+
     }
 
     // Check environment variables
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('Creating email transporter...');
+
 
     // Create transporter for sending emails
     const transporter = nodemailer.createTransport({
@@ -89,9 +89,9 @@ export async function POST(request: NextRequest) {
     });
 
     // Test transporter configuration
-    console.log('Testing transporter connection...');
+
     await transporter.verify();
-    console.log('Transporter verified successfully');
+
 
     // Email content
     const emailContent = `
@@ -109,7 +109,7 @@ ${message}
 Sent from Trade Voyager Analytics Contact Form
     `.trim();
 
-    console.log('Sending email...');
+
 
     // Send email
     const mailOptions: any = {
@@ -126,7 +126,7 @@ Sent from Trade Voyager Analytics Contact Form
 
     const result = await transporter.sendMail(mailOptions);
 
-    console.log('Email sent successfully:', result.messageId);
+
 
     return NextResponse.json(
       { success: true, message: 'Message sent successfully' },

@@ -8,6 +8,18 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, X } from 'lucide-react';
 import { toast } from 'sonner';
 
+interface DeletionLog {
+  action: string;
+  createdAt: string;
+}
+
+interface AccountDeletionData {
+  logs?: DeletionLog[];
+  status: {
+    isDeletionRequested: boolean;
+  };
+}
+
 export default function WelcomeBackBanner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -61,11 +73,11 @@ export default function WelcomeBackBanner() {
       try {
         const response = await fetch('/api/account/delete');
         if (response.ok) {
-          const data = await response.json();
-          
+          const data: AccountDeletionData = await response.json();
+
           // Check if user was recently auto-reactivated (within last 5 minutes)
-          const recentLogs = data.logs?.filter((log: any) => 
-            log.action === 'REACTIVATED' && 
+          const recentLogs = data.logs?.filter((log: DeletionLog) =>
+            log.action === 'REACTIVATED' &&
             new Date(log.createdAt).getTime() > Date.now() - (5 * 60 * 1000)
           ) || [];
 

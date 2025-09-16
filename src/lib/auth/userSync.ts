@@ -36,7 +36,7 @@ export async function syncUserToDatabase(user: Claims) {
         }
       });
       
-      console.log('Created new user in database:', newUser.id);
+
       return { user: newUser, wasReactivated: false };
     } else {
       // Update existing user info if needed
@@ -49,7 +49,7 @@ export async function syncUserToDatabase(user: Claims) {
         }
       });
       
-      console.log('Updated existing user in database:', existingUser.id);
+
 
       // Check if account was marked for deletion and reactivate if possible
       let wasReactivated = false;
@@ -61,7 +61,7 @@ export async function syncUserToDatabase(user: Claims) {
           );
           
           if (wasReactivated) {
-            console.log('Account automatically reactivated during sync:', existingUser.id);
+
           }
         } catch (reactivationError) {
           console.error('Failed to reactivate account during sync:', reactivationError);

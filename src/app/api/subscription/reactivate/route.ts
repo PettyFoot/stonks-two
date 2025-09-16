@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     const { metadata = {} } = validationResult.data;
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] POST /api/subscription/reactivate - User: ${user.id}`);
+
     }
 
     // Get current subscription
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
 
     // Log successful reactivation
     if (process.env.NODE_ENV === 'production') {
-      console.log(`[SUBSCRIPTION] User ${user.id} reactivated subscription ${currentSubscription.stripeSubscriptionId}`);
+
     }
 
     const response = {
@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] POST /api/subscription/reactivate completed in ${Date.now() - startTime}ms`);
+
     }
 
     return NextResponse.json(response);

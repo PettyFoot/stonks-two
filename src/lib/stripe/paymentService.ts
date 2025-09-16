@@ -289,7 +289,7 @@ export class PaymentService {
         });
         
         // Log successful payment attribution for audit trail
-        console.log(`[AUDIT] Payment ${paymentIntent.id} attributed to user ${userId} (${user.email})`);
+
         
         return payment;
       });

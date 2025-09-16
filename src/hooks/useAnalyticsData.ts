@@ -300,7 +300,7 @@ export const useAnalyticsData = (standardTimeframe: StandardTimeframe, filters: 
       }
       
       // Debug: Log the API response to understand what data we're getting
-      console.log('Analytics API Response:', {
+      console.log('[ANALYTICS] API response data structure:', {
         performance: result.performance,
         statistics: result.statistics,
         volumeAnalysis: (result as ApiResponse & { volumeAnalysis?: unknown }).volumeAnalysis,

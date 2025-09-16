@@ -288,7 +288,7 @@ export class TradeBuilder {
     // Get unprocessed orders
     const orders = await ordersRepo.getUnprocessedOrders(userId);
     
-    console.log(`Processing ${orders.length} unprocessed orders for user ${userId}`);
+
 
     // Process each order in chronological order
     for (const order of orders) {
@@ -298,7 +298,7 @@ export class TradeBuilder {
     // Create trades for any remaining open positions
     await this.createTradesForOpenPositions();
 
-    console.log(`Created ${this.newTrades.length} new trades`);
+
     return this.newTrades;
   }
 
@@ -309,7 +309,7 @@ export class TradeBuilder {
     for (const [symbol, position] of this.openPositions.entries()) {
       // Skip if this position already has a trade in the database
       if (position.existingTradeId) {
-        console.log(`Skipping existing open trade for ${symbol} (ID: ${position.existingTradeId})`);
+
         continue;
       }
       

@@ -27,14 +27,14 @@ export async function GET(request: NextRequest) {
     const client = getSnapTradeClient();
 
     // Call SnapTrade listUserAccounts API
-    console.log('Calling SnapTrade listUserAccounts API...');
+
     
     const accountsResponse = await client.accountInformation.listUserAccounts({
       userId: credentials.snapTradeUserId,
       userSecret: credentials.snapTradeUserSecret,
     });
 
-    console.log('SnapTrade listUserAccounts API Response:', accountsResponse.data);
+
 
     return NextResponse.json({
       success: true,

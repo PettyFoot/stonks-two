@@ -1,17 +1,19 @@
 'use client';
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, lazy, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import TopBar from '@/components/TopBar';
 import FilterPanel from '@/components/FilterPanel';
 import KPICards from '@/components/KPICards';
-import EquityChart from '@/components/charts/EquityChart';
-import CustomPieChart from '@/components/charts/PieChart';
-import DistributionCharts from '@/components/charts/DistributionCharts';
-import TradeDistributionChart from '@/components/charts/TradeDistributionChart';
-import GaugeChart from '@/components/charts/GaugeChart';
-import LargestGainLossGauge from '@/components/charts/LargestGainLossGauge';
+
+// Lazy load chart components for better code splitting
+const EquityChart = lazy(() => import('@/components/charts/EquityChart'));
+const CustomPieChart = lazy(() => import('@/components/charts/PieChart'));
+const DistributionCharts = lazy(() => import('@/components/charts/DistributionCharts'));
+const TradeDistributionChart = lazy(() => import('@/components/charts/TradeDistributionChart'));
+const GaugeChart = lazy(() => import('@/components/charts/GaugeChart'));
+const LargestGainLossGauge = lazy(() => import('@/components/charts/LargestGainLossGauge'));
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
 import { Upload, FileText } from 'lucide-react';
@@ -22,6 +24,15 @@ import WelcomeBackBanner from '@/components/WelcomeBackBanner';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 import { CHART_HEIGHTS } from '@/constants/chartHeights';
+
+// Chart loading fallback component
+const ChartSkeleton = ({ height = CHART_HEIGHTS.MD }: { height?: number }) => (
+  <div className="w-full bg-gray-100 dark:bg-gray-800 rounded animate-pulse" style={{ height }}>
+    <div className="flex items-center justify-center h-full text-gray-400">
+      Loading chart...
+    </div>
+  </div>
+);
 
 // Helper formatters
 const formatDuration = (seconds: number): string => {
@@ -51,7 +62,6 @@ export default function DashboardComponent() {
   // Simple redirect logic - only redirect if we know for certain the user is unauthenticated
   useEffect(() => {
     if (authState.type === 'unauthenticated') {
-      console.log('Dashboard: Redirecting unauthenticated user to login');
       router.push('/login');
     }
   }, [authState.type, router]);
@@ -242,31 +252,37 @@ export default function DashboardComponent() {
           {/* Row 1: Main P&L Chart and Key Metrics */}
           {/* Cumulative P&L - Reduced Width */}
           <div className="col-span-1 lg:col-span-6 xl2:col-span-4 xl2:row-span-2">
-            <EquityChart 
-              data={performanceData}
-              title="Cumulative P&L"
-              height={CHART_HEIGHTS.LG}
-              useConditionalColors={true}
-            />
+            <Suspense fallback={<ChartSkeleton height={CHART_HEIGHTS.LG} />}>
+              <EquityChart
+                data={performanceData}
+                title="Cumulative P&L"
+                height={CHART_HEIGHTS.LG}
+                useConditionalColors={true}
+              />
+            </Suspense>
           </div>
 
           {/* Winning vs Losing Trades - Pie Chart */}
           <div className="col-span-1 lg:col-span-6 xl2:col-span-1 flex flex-col justify-center">
-            <CustomPieChart 
-              data={winLossData}
-              title="Winning vs Losing Trades"
-              height={CHART_HEIGHTS.SM}
-            />
+            <Suspense fallback={<ChartSkeleton height={CHART_HEIGHTS.SM} />}>
+              <CustomPieChart
+                data={winLossData}
+                title="Winning vs Losing Trades"
+                height={CHART_HEIGHTS.SM}
+              />
+            </Suspense>
           </div>
 
           {/* Largest Gain vs Largest Loss Gauge */}
           <div className="col-span-1 lg:col-span-6 xl2:col-span-1 flex flex-col justify-center">
-            <LargestGainLossGauge
-              title="Largest Gain vs Largest Loss"
-              largestGain={metrics.largestGain}
-              largestLoss={metrics.largestLoss}
-              height={CHART_HEIGHTS.SM}
-            />
+            <Suspense fallback={<ChartSkeleton height={CHART_HEIGHTS.SM} />}>
+              <LargestGainLossGauge
+                title="Largest Gain vs Largest Loss"
+                largestGain={metrics.largestGain}
+                largestLoss={metrics.largestLoss}
+                height={CHART_HEIGHTS.SM}
+              />
+            </Suspense>
           </div>
 
           {/* Second Row - Fill gap under Cumulative P&L */}

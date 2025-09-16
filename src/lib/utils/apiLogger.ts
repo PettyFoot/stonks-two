@@ -116,18 +116,18 @@ export class APILogger {
       );
       
       if (entry.message) {
-        console.log(`  Message: ${entry.message}`);
+        console.log(`        Message: ${entry.message}`);
       }
-      
+
       if (entry.error) {
-        console.log(`  Error: ${entry.error.message}`);
+        console.log(`        Error: ${entry.error.message}`);
         if (entry.error.stack && entry.level === LogLevel.ERROR) {
-          console.log(`  Stack: ${entry.error.stack}`);
+          console.log(`        Stack: ${entry.error.stack}`);
         }
       }
-      
+
       if (entry.metadata && Object.keys(entry.metadata).length > 0) {
-        console.log(`  Metadata:`, entry.metadata);
+        console.log(`        Metadata: ${JSON.stringify(entry.metadata, null, 2)}`);
       }
     } else {
       // JSON output for production (easier for log aggregation)

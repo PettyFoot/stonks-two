@@ -28,7 +28,7 @@ interface DayData {
 
 const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export default function CalendarContent() {
+const CalendarContent = React.memo(() => {
   const { user, isLoading: authLoading, isDemo } = useAuth();
   const { setCustomDateRange } = useGlobalFilters();
   const searchParams = useSearchParams();
@@ -568,4 +568,8 @@ export default function CalendarContent() {
       </div>
     </div>
   );
-}
+});
+
+CalendarContent.displayName = 'CalendarContent';
+
+export default CalendarContent;

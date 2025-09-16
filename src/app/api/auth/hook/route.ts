@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
         }
       });
       
-      console.log('Created new user:', newUser.id);
+
     } else {
       // Update existing user info if needed
       await prisma.user.update({
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
         }
       });
       
-      console.log('Updated existing user:', existingUser.id);
+
 
       // Check if account was marked for deletion and reactivate if possible
       try {
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
         );
         
         if (wasReactivated) {
-          console.log('Account reactivated on login:', existingUser.id);
+
         }
       } catch (reactivationError) {
         console.error('Failed to reactivate account on login:', reactivationError);

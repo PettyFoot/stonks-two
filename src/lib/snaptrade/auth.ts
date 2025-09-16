@@ -91,7 +91,7 @@ export async function createBrokerConnection(
       // Use existing credentials (decrypt the stored secret)
       snapTradeUserId = existingUser.snapTradeUserId;
       snapTradeUserSecret = decrypt(existingUser.snapTradeUserSecret);
-      console.log('Using existing SnapTrade credentials for user:', request.userId);
+
     } else {
       // Generate unique SnapTrade user ID
       snapTradeUserId = uuidv4();
@@ -120,11 +120,11 @@ export async function createBrokerConnection(
         },
       });
 
-      console.log('Stored new SnapTrade credentials for user:', request.userId);
+
     }
 
     // Get authorization URL from SnapTrade for the connection portal
-    console.log('Calling SnapTrade loginSnapTradeUser with:', {
+    console.log('[SNAPTRADE_AUTH] Generating auth URL:', {
       userId: snapTradeUserId,
       userSecret: snapTradeUserSecret ? '[REDACTED]' : 'undefined',
       redirectUri: request.redirectUri
@@ -139,8 +139,8 @@ export async function createBrokerConnection(
     const loginResponse = authResponse.data as any;
     const redirectUri = loginResponse.redirectURI || loginResponse.redirectUri || loginResponse.redirectURL || loginResponse.authenticationLoginURL;
     
-    console.log('SnapTrade login response:', loginResponse);
-    console.log('Available response keys:', Object.keys(loginResponse));
+
+
 
     if (!redirectUri) {
       console.error('No redirect URI found in response. Full response:', JSON.stringify(loginResponse, null, 2));
@@ -196,7 +196,7 @@ export async function completeBrokerAuth(
     // Get the most recent authorization (last one in the list)
     const latestAuth = authorizations[authorizations.length - 1];
     
-    console.log('Latest authorization:', latestAuth);
+
 
     // Get accounts for this authorization
     const accountsResponse = await client.accountInformation.listUserAccounts({
@@ -289,7 +289,7 @@ export function validateWebhookSignature(
       .update(payload, 'utf8')
       .digest('hex');
     
-    console.log('Webhook signature validation:', {
+    console.log('[SNAPTRADE_AUTH] Signature verification:', {
       receivedSignature: cleanSignature,
       expectedSignature: expectedSignature,
       payloadLength: payload.length
@@ -387,7 +387,7 @@ export async function deleteSnapTradeUser(userId: string) {
       await client.authentication.deleteSnapTradeUser({
         userId: credentials.snapTradeUserId,
       });
-      console.log('Successfully deleted SnapTrade user:', credentials.snapTradeUserId);
+
     } catch (error) {
       console.warn('Failed to delete SnapTrade user:', error);
       throw error;

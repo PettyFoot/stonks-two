@@ -4,6 +4,8 @@ import { tradesRepo } from '@/lib/repositories/tradesRepo';
 import { ordersRepo } from '@/lib/repositories/ordersRepo';
 import { prisma } from '@/lib/prisma';
 import { ExecutionOrder } from '@/components/ExecutionsTable';
+import { recordsQuerySchema, createRecordsSchema } from '@/lib/schemas/records';
+import { ERROR_MESSAGES, HTTP_STATUS, DATE_FORMATS, DEFAULTS } from '@/constants/app';
 
 export async function GET(request: Request) {
   let user;
@@ -12,15 +14,22 @@ export async function GET(request: Request) {
   
   try {
     const { searchParams } = new URL(request.url);
-    date = searchParams.get('date');
-    tradeId = searchParams.get('tradeId'); // Get optional trade ID
-    
-    console.log(`[RECORDS API] GET request:`, {
-      date,
-      tradeId,
-      url: request.url,
-      timestamp: new Date().toISOString()
-    });
+
+    // Validate query parameters using Zod
+    const queryParams = {
+      date: searchParams.get('date') || undefined,
+      tradeId: searchParams.get('tradeId') || undefined
+    };
+
+    const validationResult = recordsQuerySchema.safeParse(queryParams);
+    if (!validationResult.success) {
+      return NextResponse.json({
+        error: ERROR_MESSAGES.INVALID_QUERY_PARAMETERS,
+        details: validationResult.error.issues
+      }, { status: HTTP_STATUS.BAD_REQUEST });
+    }
+
+    const { date, tradeId } = validationResult.data;
 
     // Get current user (handles both demo and Auth0)
     user = await getCurrentUser();
@@ -31,12 +40,6 @@ export async function GET(request: Request) {
       );
     }
 
-    if (!date) {
-      return NextResponse.json(
-        { error: 'Date parameter is required' },
-        { status: 400 }
-      );
-    }
 
     const recordsDate = new Date(date);
 
@@ -44,7 +47,7 @@ export async function GET(request: Request) {
     let trades;
     if (tradeId) {
       // Get specific trade by ID
-      console.log(`[RECORDS API] Fetching trade by ID: ${tradeId} for user: ${user.id}`);
+
       const specificTrade = await tradesRepo.getTradeById(user.id, tradeId);
       
       if (!specificTrade) {
@@ -59,7 +62,7 @@ export async function GET(request: Request) {
         );
       }
       
-      console.log(`[RECORDS API] Found trade: ${specificTrade.id} (${specificTrade.symbol})`);
+
       trades = [specificTrade];
     } else {
       // Get all trades for the date
@@ -317,14 +320,17 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { date, notes, chartImage } = body;
 
-    if (!date) {
-      return NextResponse.json(
-        { error: 'Date is required' },
-        { status: 400 }
-      );
+    // Validate request body using Zod
+    const validationResult = createRecordsSchema.safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json({
+        error: 'Invalid records data',
+        details: validationResult.error.issues
+      }, { status: 400 });
     }
+
+    const { date, notes, chartImage } = validationResult.data;
 
     const recordsDate = new Date(date);
 

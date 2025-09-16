@@ -6,7 +6,7 @@ import type { DemoSession } from './src/lib/demo/demoSession';
 
 // Define session options (must match demoSession.ts)
 const sessionOptions = {
-  password: process.env.DEMO_SESSION_SECRET || 'complex_password_at_least_32_characters_long_demo_key',
+  password: process.env.DEMO_SESSION_SECRET!,
   cookieName: 'demo-session',
   cookieOptions: {
     secure: process.env.NODE_ENV === 'production',

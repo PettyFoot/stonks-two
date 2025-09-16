@@ -60,13 +60,13 @@ export default function Trades() {
     return `${fromDate.toLocaleDateString('en-US', options)} - ${toDate.toLocaleDateString('en-US', options)}`;
   };
 
-  console.log('=== TRADES PAGE RENDER ===');
-  console.log('Demo mode:', isDemo);
-  console.log('Loading:', loading);
-  console.log('Error:', error);
-  console.log('Raw tradesData:', tradesData);
-  console.log('Trades array:', tradesData?.trades);
-  console.log('Trades count:', tradesData?.trades?.length);
+
+
+
+
+
+
+
 
   const calculateTrades = async () => {
     setCalculating(true);
@@ -97,7 +97,7 @@ export default function Trades() {
 
   const handleTradeSelect = (trade: Trade) => {
     // Handle trade selection - could open a modal or navigate to trade detail
-    console.log('Selected trade:', trade);
+
   };
 
   const handleColumnsChange = (columns: ColumnConfiguration[]) => {
@@ -108,8 +108,8 @@ export default function Trades() {
   const trades = tradesData?.trades || [];
   const filteredTrades = trades;
 
-  console.log('Final trades for display:', trades);
-  console.log('Final filteredTrades for display:', filteredTrades);
+
+
 
   // Show loading state
   if (loading) {

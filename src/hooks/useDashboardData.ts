@@ -82,7 +82,7 @@ export function useDashboardData() {
       if (!response.ok) {
         // If it's a 401 error and we haven't exceeded max retries, retry after delay
         if (response.status === 401 && retryCount < maxRetries) {
-          console.log(`Authentication failed, retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/${maxRetries + 1})`);
+
           setTimeout(() => {
             fetchData(options, retryCount + 1);
           }, retryDelay);
@@ -114,7 +114,7 @@ export function useDashboardData() {
       
       // If it's a network error and we haven't exceeded max retries, retry after delay
       if (retryCount < maxRetries && (err instanceof TypeError || (err instanceof Error && err.message.includes('fetch')))) {
-        console.log(`Network error, retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/${maxRetries + 1})`);
+
         setTimeout(() => {
           fetchData(options, retryCount + 1);
         }, retryDelay);

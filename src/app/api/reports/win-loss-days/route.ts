@@ -80,13 +80,13 @@ export async function GET(request: NextRequest) {
       take: 10
     });
 
-    console.log('\n=== WIN-LOSS-DAYS API DEBUG ===');
-    console.log('User ID:', userId);
-    console.log('Filters:', filters);
-    console.log('Raw Recent Trades:', JSON.stringify(rawTrades, null, 2));
-    console.log('Winning Days Metrics:', JSON.stringify(dayMetrics.winningDays, null, 2));
-    console.log('Losing Days Metrics:', JSON.stringify(dayMetrics.losingDays, null, 2));
-    console.log('================================\n');
+
+
+
+
+
+
+
 
     // Prepare response with debug info
     const response: WinLossDaysResponse & { debug?: Record<string, unknown> } = {
@@ -147,15 +147,15 @@ async function calculateDayMetrics(filters: {
     }
   });
 
-  console.log('\n=== WIN VS LOSS DAYS API DEBUG ===');
-  console.log('User ID:', filters.userId);
-  console.log('TradeFilterService whereClause:', JSON.stringify(whereClause, null, 2));
-  console.log(`Found ${filteredTrades.length} filtered trades for win/loss analysis`);
-  console.log('Filtered trades details:');
+
+
+
+
+
   filteredTrades.forEach((trade, index) => {
-    console.log(`  ${index + 1}. ${trade.symbol} | ExitDate: ${trade.exitDate?.toISOString().split('T')[0] || 'N/A'} | PnL: ${trade.pnl} | Quantity: ${trade.quantity}`);
+
   });
-  console.log('=====================================\n');
+
 
   // Group by day to calculate daily P&L
   const dailyPnlMap = new Map<string, { daily_pnl: number; daily_volume: number; trade_count: number }>();
@@ -180,9 +180,9 @@ async function calculateDayMetrics(filters: {
     trade_count: data.trade_count
   })).sort((a, b) => a.trade_date.getTime() - b.trade_date.getTime());
 
-  console.log('Daily P&L Result (grouped by exitDate):');
+
   dailyPnlResult.forEach(day => {
-    console.log(`  Date: ${day.trade_date.toISOString().split('T')[0]} | P&L: ${day.daily_pnl} | Trades: ${day.trade_count} | Volume: ${day.daily_volume}`);
+
   });
 
   // Separate winning and losing days
@@ -194,8 +194,8 @@ async function calculateDayMetrics(filters: {
     .filter(day => Number(day.daily_pnl) <= 0)
     .map(day => day.trade_date);
 
-  console.log('Winning Dates:', winningDates);
-  console.log('Losing Dates:', losingDates);
+
+
 
   // Convert Decimal types to numbers for the metrics calculation
   const convertedTrades = filteredTrades.map(trade => ({
@@ -253,7 +253,7 @@ async function calculateMetricsForDays(
     return dateStrings.includes(tradeDateString);
   });
 
-  console.log(`Using ${trades.length} pre-filtered trades for specific dates:`, dateStrings);
+
 
   if (trades.length === 0) {
     return createEmptyMetrics();

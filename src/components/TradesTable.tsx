@@ -28,12 +28,12 @@ const PRIORITY_COLUMNS = {
   desktop: 'all'
 };
 
-export default function TradesTable({ 
-  trades, 
-  showCheckboxes = true, 
+const TradesTable = React.memo<TradesTableProps>(({
+  trades,
+  showCheckboxes = true,
   onTradeSelect,
   columnConfig = []
-}: TradesTableProps) {
+}) => {
   const router = useRouter();
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
   const [sortField, setSortField] = useState<SortField>('time');
@@ -586,4 +586,8 @@ export default function TradesTable({
       )}
     </div>
   );
-}
+});
+
+TradesTable.displayName = 'TradesTable';
+
+export default TradesTable;

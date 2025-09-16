@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('=== Starting SnapTrade Integration Test ===');
+
 
     // Get the actual database user ID from Auth0 ID
     const dbUser = await prisma.user.findUnique({
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log(`Found database user: ${dbUser.id} (${dbUser.email})`);
+
 
     // Get user's SnapTrade credentials
     const credentials = await getSnapTradeCredentials(session.user.sub);
@@ -47,14 +47,14 @@ export async function GET(request: NextRequest) {
     const client = getSnapTradeClient();
 
     // Step 1: Get user accounts
-    console.log('Step 1: Fetching user accounts...');
+
     const accountsResponse = await client.accountInformation.listUserAccounts({
       userId: credentials.snapTradeUserId,
       userSecret: credentials.snapTradeUserSecret,
     });
 
     const accounts = accountsResponse.data || [];
-    console.log(`Found ${accounts.length} accounts:`, accounts.map(acc => ({ id: acc.id, name: acc.name })));
+
 
     if (accounts.length === 0) {
       return NextResponse.json(
@@ -65,10 +65,10 @@ export async function GET(request: NextRequest) {
 
     // Step 2: Use first account for testing
     const testAccount = accounts[0];
-    console.log(`Using account for testing:`, { id: testAccount.id, name: testAccount.name });
+
 
     // Step 3: Get activities with hardcoded parameters
-    console.log('Step 2: Fetching activities with test parameters...');
+
     const testParams = {
       startDate: '2010-01-01',
       endDate: '2025-09-02', 
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
       type: 'BUY,SELL'
     };
 
-    console.log('Test parameters:', testParams);
+
 
     await RateLimitHelper.checkRateLimit();
     const activitiesResponse = await client.accountInformation.getAccountActivities({
@@ -89,17 +89,17 @@ export async function GET(request: NextRequest) {
       type: testParams.type
     });
 
-    console.log('Raw SnapTrade API Response:', JSON.stringify(activitiesResponse.data, null, 2));
+
 
     const activitiesData = activitiesResponse.data;
     const activities: AccountUniversalActivity[] = (activitiesData && 'data' in activitiesData) 
       ? (activitiesData.data || []) 
       : [];
 
-    console.log(`Step 3: Found ${activities.length} activities`);
-    console.log('Activities details:');
+
+
     activities.forEach((activity, index: number) => {
-      console.log(`Activity ${index + 1}:`, {
+      console.log(`[SNAPTRADE_TEST] Activity ${index + 1}:`, {
         id: activity.id,
         type: activity.type,
         symbol: activity.symbol?.symbol,
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Step 4: Test process activities through new test method
-    console.log('Step 4: Testing activity processing with fetched activities...');
+
     
     const processor = new SnapTradeActivityProcessor();
     const testResult = await processor.testProcessActivities(
@@ -124,17 +124,17 @@ export async function GET(request: NextRequest) {
       dbUser.id, // Use the proper database user ID
       dbUser.id, // connectionId (using database user ID)
       (progress, message) => {
-        console.log(`Test processing progress: ${progress}% - ${message}`);
+
       }
     );
 
-    console.log('Test processing result:', testResult);
+
 
     // Step 5: Note - orders are NOT saved to database in test mode
-    console.log('Step 5: Test complete - no orders saved to database');
-    console.log(`${testResult.ordersWouldBeCreated} orders would be created in production mode`);
 
-    console.log('=== SnapTrade Integration Test Complete ===');
+
+
+
 
     return NextResponse.json({
       success: true,

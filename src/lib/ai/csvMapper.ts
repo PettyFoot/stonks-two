@@ -158,7 +158,7 @@ Example response format:
         usedTargets.add(mapping.targetColumn);
       } else {
         // Log skipped duplicate for debugging
-        console.log(`AI Mapper: Skipped duplicate mapping ${mapping.sourceColumn} -> ${mapping.targetColumn} (already mapped)`);
+
       }
     }
     

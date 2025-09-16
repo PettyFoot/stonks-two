@@ -43,15 +43,11 @@ export class TradeCalculationService {
 
     // Fetch all valid orders
     const orders = await this.fetchValidOrders(userId);
-    
-    console.log(`Found ${orders.length} unprocessed orders for user ${userId}`);
-    
+
     // Process each order in chronological order
     for (const order of orders) {
       await this.processOrder(order);
     }
-
-    console.log(`Generated ${this.completedTrades.length} new completed trades`);
 
     // Store calculated trades in database
     await this.storeTrades(userId);

@@ -43,7 +43,12 @@ model User {
   adminReviews          AiIngestToCheck[] @relation("AdminReviews")
   dailyUploadCounts     DailyUploadCount[]
   userPreferences       UserPreferences?
+  approvedFormats       BrokerCsvFormat[] @relation("ApprovedFormats")
+  orderStaging          OrderStaging[]
 
+  @@index([email, createdAt])
+  @@index([subscriptionTier, subscriptionStatus])
+  @@index([isAdmin, deletedAt])
   @@map("users")
 }
 
@@ -130,6 +135,9 @@ model Trade {
   @@index([userId, exitDate])
   @@index([userId, status, date])
   @@index([userId, date, status])
+  @@index([userId, pnl])
+  @@index([userId, createdAt])
+  @@index([userId, symbol, date])
   @@map("trades")
 }
 
@@ -167,6 +175,7 @@ model Order {
   snapTradeActivityId String?       @unique
   importBatch         ImportBatch?  @relation(fields: [importBatchId], references: [id])
   user                User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stagingRecords      OrderStaging[] @relation("StagingToOrder")
 
   @@unique([orderId, brokerType])
   @@index([userId, symbol])
@@ -176,6 +185,8 @@ model Order {
   @@index([userId, snapTradeActivityId])
   @@index([userId, activityHash])
   @@index([userId, brokerType, orderExecutedTime])
+  @@index([userId, orderPlacedTime])
+  @@index([userId, orderStatus, orderPlacedTime])
   @@map("orders")
 }
 
@@ -228,6 +239,7 @@ model ImportBatch {
   orders              Order[]
   trades              Trade[]
   aiIngestCheck       AiIngestToCheck?
+  orderStaging        OrderStaging[]
 
   @@index([userId, status])
   @@index([userId, importType])
@@ -409,15 +421,21 @@ model BrokerCsvFormat {
   lastUsed          DateTime?
   successRate       Float     @default(1.0)
   createdBy         String?
+  isApproved        Boolean   @default(false)
+  approvedBy        String?
+  approvedAt        DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   broker            Broker    @relation(fields: [brokerId], references: [id], onDelete: Cascade)
+  approvedByUser    User?     @relation("ApprovedFormats", fields: [approvedBy], references: [id])
   aiIngestChecks    AiIngestToCheck[]
+  orderStaging      OrderStaging[]
 
   @@unique([brokerId, headerFingerprint])
   @@index([headerFingerprint])
   @@index([brokerId])
   @@index([brokerId, usageCount])
+  @@index([isApproved])
   @@map("broker_csv_formats")
 }
 
@@ -458,6 +476,8 @@ model ApiUsage {
   @@index([userId, endpoint, timestamp(sort: Desc)], map: "idx_api_usage_endpoint_analytics")
   @@index([userId, timestamp(sort: Desc)], map: "idx_api_usage_errors")
   @@index([apiProvider, userId, timestamp(sort: Desc)], map: "idx_api_usage_provider")
+  @@index([timestamp(sort: Desc)], map: "idx_api_usage_cleanup")
+  @@index([createdAt(sort: Desc)], map: "idx_api_usage_created_cleanup")
   @@map("api_usage")
 }
 
@@ -533,20 +553,73 @@ model DailyUploadCount {
   @@map("daily_upload_counts")
 }
 
-model day_data {
-  id          String   @id
-  userId      String
-  date        DateTime
-  pnl         Float
-  trades      Int
-  volume      Int
-  winRate     Float?
-  commissions Float?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime
+model OrderStaging {
+  id                String           @id @default(cuid())
+  userId            String
+  importBatchId     String
+  brokerCsvFormatId String
 
-  @@unique([userId, date])
-  @@index([userId, date])
+  // Raw data storage (JSON for compatibility)
+  rawCsvRow         Json
+  rowIndex          Int
+  initialMappedData Json?
+  processingErrors  String[]         @default([])
+
+  // Migration tracking
+  migrationStatus   MigrationStatus  @default(PENDING)
+  approvedBy        String?
+  approvedAt        DateTime?
+  migratedAt        DateTime?
+  orderId           String?          // Link to created Order after migration
+
+  // Performance metrics
+  processingDurationMs Int?
+  retryCount          Int           @default(0)
+  lastRetryAt         DateTime?
+
+  // Timestamps
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  retentionDate     DateTime         @default(dbgenerated("NOW() + INTERVAL '30 days'"))
+
+  // Relations
+  user              User             @relation(fields: [userId], references: [id])
+  importBatch       ImportBatch      @relation(fields: [importBatchId], references: [id])
+  brokerCsvFormat   BrokerCsvFormat  @relation(fields: [brokerCsvFormatId], references: [id])
+  order             Order?           @relation("StagingToOrder", fields: [orderId], references: [id])
+
+  // Optimized indexes
+  @@unique([importBatchId, rowIndex])
+  @@index([userId, migrationStatus, createdAt])
+  @@index([brokerCsvFormatId, migrationStatus])
+  @@index([migrationStatus, createdAt])
+  @@index([createdAt, migrationStatus])
+  @@index([retentionDate])
+  @@map("order_staging")
+}
+
+model StagingAuditLog {
+  id              String   @id @default(cuid())
+  stagingId       String
+  action          String
+  performedBy     String
+  previousState   Json
+  newState        Json
+  timestamp       DateTime @default(now())
+
+  @@index([stagingId, timestamp])
+  @@map("staging_audit_logs")
+}
+
+enum MigrationStatus {
+  PENDING
+  APPROVED
+  MIGRATING
+  MIGRATED
+  FAILED
+  REJECTED
+
+  @@map("migration_status")
 }
 
 enum SubscriptionTier {
@@ -646,13 +719,6 @@ enum TimeInForce {
   @@map("time_in_force")
 }
 
-enum LiquidityFlag {
-  MAKER
-  TAKER
-  UNKNOWN
-
-  @@map("liquidity_flag")
-}
 
 enum MarketSession {
   PRE_MARKET

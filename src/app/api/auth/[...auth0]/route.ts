@@ -2,7 +2,7 @@ import { handleAuth, handleLogin, handleLogout, handleCallback, Session } from '
 import { NextRequest } from 'next/server';
 import { clearDemoSession } from '@/lib/demo/demoSession';
 
-const baseURL = process.env.AUTH0_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3002';
+const baseURL = process.env.AUTH0_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL;
 
 export const GET = handleAuth({
   login: handleLogin({
@@ -25,12 +25,12 @@ export const GET = handleAuth({
   }),
   callback: handleCallback({
     afterCallback: async (req: NextRequest, session: Session) => {
-      console.log('Auth0 callback: User authenticated, clearing any demo data');
+
       
       // Clear demo session directly (more reliable than API calls)
       try {
         await clearDemoSession();
-        console.log('Demo session cleared successfully during auth callback');
+
       } catch (error) {
         console.warn('Error clearing demo session during auth callback:', error);
       }

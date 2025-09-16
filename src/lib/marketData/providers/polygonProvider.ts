@@ -31,7 +31,6 @@ export class PolygonProvider implements MarketDataProvider {
   private baseUrl = 'https://api.polygon.io';
 
   constructor() {
-    console.log('🟣 Polygon.io provider initialized');
   }
 
   /**
@@ -65,7 +64,7 @@ export class PolygonProvider implements MarketDataProvider {
       const fromDate = this.formatDateForPolygon(timeWindow.start);
       const toDate = this.formatDateForPolygon(timeWindow.end);
 
-      console.log(`🟣 Polygon API request:`, {
+      console.log('[POLYGON_PROVIDER] Request parameters:', {
         symbol,
         multiplier,
         timespan,
@@ -87,7 +86,6 @@ export class PolygonProvider implements MarketDataProvider {
 
       const fullUrl = `${url}?${params.toString()}`;
 
-      console.log(`🟣 Fetching from Polygon: ${fullUrl.replace(apiKey, 'API_KEY_HIDDEN')}`);
 
       const response = await fetch(fullUrl);
 
@@ -106,7 +104,7 @@ export class PolygonProvider implements MarketDataProvider {
 
       const data: PolygonAggregateResponse = await response.json();
 
-      console.log(`🟣 Polygon API response:`, {
+      console.log('[POLYGON_PROVIDER] API response summary:', {
         status: data.status,
         resultsCount: data.resultsCount,
         queryCount: data.queryCount,
@@ -127,7 +125,7 @@ export class PolygonProvider implements MarketDataProvider {
       // Convert Polygon results to our OHLCData format
       const ohlcData = this.convertPolygonDataToOHLC(data.results);
 
-      console.log(`🟣 Successfully converted ${ohlcData.length} candles from Polygon`, {
+      console.log('[POLYGON_PROVIDER] Processed OHLC data:', {
         symbol,
         dateRange: ohlcData.length > 0 ? {
           first: new Date(ohlcData[0].timestamp).toLocaleString(),
@@ -212,7 +210,6 @@ export class PolygonProvider implements MarketDataProvider {
       const response = await fetch(url);
       
       if (response.ok) {
-        console.log('🟣 Polygon connection test successful');
         return true;
       } else {
         console.warn('🟣 Polygon connection test failed:', response.status, response.statusText);

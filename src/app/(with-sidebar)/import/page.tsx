@@ -77,7 +77,6 @@ export default function EnhancedImportPage() {
       if (response.ok) {
         const limits = await response.json();
         setUploadLimitStatus(limits);
-        console.log('📊 Upload limits:', limits);
       } else {
         console.error('Failed to fetch upload limits');
       }
@@ -111,7 +110,7 @@ export default function EnhancedImportPage() {
   if (!user) return null;
 
   const handleUploadComplete = (result: Record<string, unknown>) => {
-    console.log('Upload completed:', result);
+
     
     // Prevent any form of page refresh or navigation
     // Stay on the import page - no redirect
@@ -123,7 +122,7 @@ export default function EnhancedImportPage() {
   };
 
   const handleMappingRequired = (result: Record<string, unknown>) => {
-    console.log('Mapping required:', result);
+
     
     setMappingModal({
       isOpen: true,

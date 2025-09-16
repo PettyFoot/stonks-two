@@ -25,7 +25,7 @@ export function DemoRedirect({ to }: DemoRedirectProps) {
           // Set demo mode in localStorage immediately
           if (data.setDemoMode) {
             localStorage.setItem('demo-mode', 'true');
-            console.log('Set demo mode in localStorage before navigation');
+
           }
           
           // Add a small delay to ensure cookies are set, then use hard navigation

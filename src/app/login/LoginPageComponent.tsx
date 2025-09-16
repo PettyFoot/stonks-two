@@ -17,7 +17,7 @@ export default function LoginPageComponent() {
 
   const clearDemoData = async () => {
     try {
-      console.log('Clearing demo data before login...');
+
       
       // Clear demo session cookies client-side
       if (typeof window !== 'undefined') {
@@ -32,7 +32,7 @@ export default function LoginPageComponent() {
         headers: { 'Cache-Control': 'no-cache' }
       }).catch(err => console.warn('Server cleanup warning:', err));
       
-      console.log('Demo data cleared before login');
+
     } catch (error) {
       console.warn('Error clearing demo data:', error);
     }

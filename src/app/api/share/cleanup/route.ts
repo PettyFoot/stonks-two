@@ -59,9 +59,9 @@ export async function POST(request: Request) {
       }
     });
 
-    console.log(`[CLEANUP] Deleted ${deleteResult.count} expired shared trades`);
-    console.log(`[CLEANUP] Remaining active shares: ${remainingCount}`);
-    console.log(`[CLEANUP] Shares expiring in next 24h: ${nearExpiryCount}`);
+
+
+
 
     return NextResponse.json({
       message: `Successfully deleted ${deleteResult.count} expired shared trades`,

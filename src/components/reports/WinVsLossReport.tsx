@@ -184,8 +184,8 @@ export default function WinVsLossReport({ trades, loading, error }: WinVsLossRep
   const data = useMemo((): WinLossDaysData | null => {
     if (!trades || trades.length === 0) return null;
 
-    console.log('\n=== WIN VS LOSS CLIENT-SIDE CALCULATION ===');
-    console.log(`Processing ${trades.length} trades:`, trades);
+
+
 
     // Group trades by date to calculate daily P&L
     const dailyPnlMap = new Map<string, { daily_pnl: number; daily_volume: number; trades: Trade[] }>();
@@ -213,21 +213,21 @@ export default function WinVsLossReport({ trades, loading, error }: WinVsLossRep
       trades: data.trades
     }));
 
-    console.log('Daily P&L Results:', dailyResults);
+
 
     // Separate winning and losing days
     const winningDays = dailyResults.filter(day => day.daily_pnl > 0);
     const losingDays = dailyResults.filter(day => day.daily_pnl <= 0);
 
-    console.log(`Winning Days: ${winningDays.length}, Losing Days: ${losingDays.length}`);
+
 
     // Calculate metrics for winning days
     const winningDaysMetrics = calculateMetrics(winningDays.flatMap(day => day.trades));
     const losingDaysMetrics = calculateMetrics(losingDays.flatMap(day => day.trades));
 
-    console.log('Winning Days Metrics:', winningDaysMetrics);
-    console.log('Losing Days Metrics:', losingDaysMetrics);
-    console.log('===========================================\n');
+
+
+
 
     return {
       winningDays: winningDaysMetrics,

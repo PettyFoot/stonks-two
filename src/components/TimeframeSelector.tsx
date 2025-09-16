@@ -21,7 +21,7 @@ const timeframeOptions: TimeframeOption[] = [
   { value: 'last-year', label: 'Last Year', days: 365, description: 'Previous 365 days' },
 ];
 
-export default function TimeframeSelector({ value, onValueChange, className }: TimeframeSelectorProps) {
+const TimeframeSelector = React.memo<TimeframeSelectorProps>(({ value, onValueChange, className }) => {
   // Only show the value if it's a valid FilterTimeframe option
   const selectValue = value && timeframeOptions.some(option => option.value === value) ? value : '';
   
@@ -49,7 +49,11 @@ export default function TimeframeSelector({ value, onValueChange, className }: T
       </Select>
     </div>
   );
-}
+});
+
+TimeframeSelector.displayName = 'TimeframeSelector';
+
+export default TimeframeSelector;
 
 // Export the options for use in other components
 export { timeframeOptions };

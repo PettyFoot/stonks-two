@@ -46,8 +46,6 @@ export async function POST(request: NextRequest) {
       }, { status: 404 });
     }
 
-    console.log(`📝 Processing mapping feedback for AiIngestCheck ${aiIngestCheckId}`);
-    console.log(`🔧 User corrections: ${Object.keys(correctedMappings).length} mappings`);
 
     // Get the original AI mappings from the import batch
     const originalMappings = aiIngestCheck.importBatch.columnMappings as any;
@@ -113,7 +111,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log(`✅ Feedback processed: ${feedbackItems.length} corrections recorded`);
+
 
     return NextResponse.json({
       success: true,

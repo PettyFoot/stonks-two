@@ -125,7 +125,7 @@ export async function withAuth(
 
     // Log request if enabled
     if (logRequests && process.env.NODE_ENV === 'development') {
-      console.log(`[MIDDLEWARE] Request authenticated for user ${user.id} in ${Date.now() - startTime}ms`);
+
     }
 
     return { user: enhancedUser };
@@ -322,7 +322,7 @@ export function withMiddleware(config: MiddlewareConfig = {}) {
 
         // Log request processing time in development
         if (process.env.NODE_ENV === 'development') {
-          console.log(`[MIDDLEWARE] Request processed in ${Date.now() - startTime}ms`);
+
         }
 
         // Call the actual handler

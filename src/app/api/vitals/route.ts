@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
     
     // In production, you might want to send this to an analytics service
     // For now, we'll just log it
-    console.log('Web Vital:', metric);
+
     
     // You can send this to your preferred analytics service:
     // - Google Analytics 4

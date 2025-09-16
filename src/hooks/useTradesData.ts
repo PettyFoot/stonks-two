@@ -41,7 +41,7 @@ export function useTradesData(
   // Clear data when transitioning from demo to authenticated user
   useEffect(() => {
     if (previousDemo === true && isDemo === false && user && !authLoading) {
-      console.log('useTradesData: Detected demo to auth transition, clearing data');
+
       setData(null);
       setError(null);
       // Force a fresh fetch by not setting loading to false here
@@ -83,10 +83,10 @@ export function useTradesData(
         
         const filters = toFilterOptions();
         
-        console.log('=== useTradesData FETCH START ===');
-        console.log('Demo mode:', isDemo);
-        console.log('Filters:', filters);
-        console.log('Should use complex filtering:', shouldUseComplexFiltering);
+
+
+
+
 
         if (shouldUseComplexFiltering) {
           // Use the new filtered endpoint for complex filtering
@@ -106,8 +106,8 @@ export function useTradesData(
             } : undefined
           };
 
-          console.log('Using FILTERED endpoint with tradeFilters:', tradeFilters);
-          console.log('Request payload:', { filters: tradeFilters, page, limit, demo: isDemo });
+
+
 
           const response = await fetch('/api/trades/filtered', {
             method: 'POST',
@@ -120,14 +120,14 @@ export function useTradesData(
             })
           });
 
-          console.log('Filtered API response status:', response.status);
+
 
           if (!response.ok) {
             throw new Error('Failed to fetch filtered trades data');
           }
           
           const result = await response.json();
-          console.log('Filtered API raw result:', result);
+
           setData({
             trades: result.trades,
             count: result.pagination?.total,
@@ -146,16 +146,16 @@ export function useTradesData(
           if (filters.duration) params.append('duration', filters.duration);
           if (filters.showOpenTrades) params.append('showOpenTrades', 'true');
           
-          console.log('Using SIMPLE endpoint with params:', params.toString());
+
           
           const response = await fetch(`/api/trades?${params}`);
-          console.log('Simple API response status:', response.status);
+
           
           if (!response.ok) {
             throw new Error('Failed to fetch trades data');
           }
           const result = await response.json();
-          console.log('Simple API raw result:', result);
+
           setData({
             trades: result.trades,
             count: result.count,
@@ -166,7 +166,7 @@ export function useTradesData(
       } catch (err) {
         // If it's a network error and we haven't exceeded max retries, retry after delay
         if (retryCount < maxRetries && (err instanceof TypeError || (err instanceof Error && err.message.includes('fetch')))) {
-          console.log(`Trades network error, retrying in ${retryDelay}ms... (attempt ${retryCount + 1}/${maxRetries + 1})`);
+
           setTimeout(() => {
             fetchData(retryCount + 1);
           }, retryDelay);
@@ -178,7 +178,7 @@ export function useTradesData(
       } finally {
         // Only set loading to false if we're not retrying (when we've reached max retries or succeeded)
         setLoading(false);
-        console.log('=== useTradesData FETCH COMPLETE ===');
+
       }
     }
 
@@ -189,7 +189,7 @@ export function useTradesData(
   useEffect(() => {
     // If we have no data yet and demo mode just became true, refetch
     if (isDemo && !data && !loading) {
-      console.log('Demo mode detected without data, refetching...');
+
       const fetchData = async () => {
         try {
           setLoading(true);

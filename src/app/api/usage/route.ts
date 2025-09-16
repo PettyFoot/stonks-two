@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     const feature = searchParams.get('feature');
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] GET /api/usage - User: ${user.id}, Period: ${period}, Feature: ${feature}`);
+
     }
 
     // Get user's current subscription
@@ -224,7 +224,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] GET /api/usage completed in ${Date.now() - startTime}ms`);
+
     }
 
     return NextResponse.json(response);
@@ -289,7 +289,7 @@ export async function POST(request: NextRequest) {
     const { feature, quantity, metadata = {} } = validationResult.data;
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] POST /api/usage/track - User: ${user.id}, Feature: ${feature}, Quantity: ${quantity}`);
+
     }
 
     // Get user's current subscription for limits checking
@@ -343,7 +343,7 @@ export async function POST(request: NextRequest) {
       if (feature === 'data_export') {
         // This would check against a usage tracking table if implemented
         // For now, we'll allow it but log for future implementation
-        console.log(`[USAGE_TRACKING] User ${user.id} used data export feature`);
+
       }
 
       // Check report generation limits
@@ -374,7 +374,9 @@ export async function POST(request: NextRequest) {
 
     // Log usage for analytics (in production, this might go to a separate analytics service)
     if (process.env.NODE_ENV === 'production') {
-      console.log(`[FEATURE_USAGE] User ${user.id} used ${feature} (quantity: ${quantity})`, {
+      console.log('[USAGE] Tracking feature usage:', {
+        feature,
+        userId: user.id,
         subscriptionTier,
         timestamp: new Date().toISOString(),
         metadata,

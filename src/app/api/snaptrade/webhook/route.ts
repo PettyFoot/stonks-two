@@ -18,11 +18,11 @@ export async function POST(request: NextRequest) {
     const body = await request.text();
     const webhookSecret = process.env.SNAPTRADE_WEBHOOK_SECRET;
 
-    console.log('=== SnapTrade Webhook Debug ===');
-    console.log('Timestamp:', new Date().toISOString());
-    console.log('Headers:', JSON.stringify(Object.fromEntries(request.headers.entries()), null, 2));
-    console.log('Body length:', body.length);
-    console.log('Webhook secret configured:', !!webhookSecret);
+
+
+
+
+
 
     if (!webhookSecret) {
       console.error('SNAPTRADE_WEBHOOK_SECRET not configured');
@@ -44,12 +44,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('Received SnapTrade webhook:', payload.eventType || payload.type);
-    console.log('Webhook ID:', payload.webhookId);
-    console.log('User ID:', payload.userId);
-    console.log('Client ID:', payload.clientId);
-    console.log('Event Timestamp:', payload.eventTimestamp);
-    console.log('Payload data:', payload.data ? JSON.stringify(payload.data, null, 2) : 'No data');
+
+
+
+
+
+
     
     // Validate webhook authenticity using webhookSecret field in payload
     if (!payload.webhookSecret) {
@@ -92,13 +92,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`Processing webhook for user: ${user.id}, event: ${eventType}`);
+
 
     // Handle different webhook types
     switch (eventType) {
       case 'connection.disconnected':
       case 'CONNECTION_DISCONNECTED':
-        console.log(`Connection disconnected for user ${user.id}`);
+
         
         // Clear SnapTrade data from user
         await prisma.user.update({
@@ -110,17 +110,17 @@ export async function POST(request: NextRequest) {
           }
         });
 
-        console.log(`Cleared SnapTrade data for user ${user.id}`);
+
         break;
 
       case 'trades.placed':
       case 'TRADES_PLACED':
-        console.log(`Trades placed for user ${user.id}`);
+
         
         // Trigger sync for this user
         try {
           const syncResults = await syncAllConnectionsForUser(user.id);
-          console.log(`Sync completed for user ${user.id}:`, syncResults);
+
         } catch (syncError) {
           console.error(`Failed to sync trades for user ${user.id}:`, syncError);
           // Don't fail the webhook for sync errors
@@ -129,14 +129,14 @@ export async function POST(request: NextRequest) {
 
       case 'connection.established':
       case 'CONNECTION_ESTABLISHED':
-        console.log(`Connection established for user ${user.id}`);
+
         
         // Connection is already established via the redirect flow
         // Just log this event
         break;
 
       default:
-        console.log(`Unhandled webhook event type: ${eventType}`);
+
     }
 
     // Return success response

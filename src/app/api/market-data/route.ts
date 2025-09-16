@@ -55,7 +55,6 @@ function generateDummyMarketData(symbol: string, date: string, interval: string)
     currentPrice = close;
   }
   
-  console.log(`📊 Generated ${candles.length} dummy candles for ${symbol}, price range: $${Math.min(...candles.map(c => c.low)).toFixed(2)} - $${Math.max(...candles.map(c => c.high)).toFixed(2)}`);
   
   return {
     symbol,
@@ -115,7 +114,6 @@ export async function GET(request: Request) {
     
     // Check if this is a demo user and return dummy data
     if (user && isDemoUser(user.id)) {
-      console.log(`📊 Demo user detected, generating dummy market data for ${symbol}`);
       const dummyData = generateDummyMarketData(symbol, date, interval);
       return NextResponse.json(dummyData);
     }
@@ -137,20 +135,16 @@ export async function GET(request: Request) {
       // Check rate limits for authenticated users (skip for shared requests)
       // Now checks ALL providers (not provider-specific)
       if (user) {
-        console.log(`🔒 Checking rate limits for user ${user.id}`);
         rateLimitInfo = await enforceMarketDataRateLimit(user.id);
-        console.log(`✅ Rate limit check passed: ${rateLimitInfo.callsMade} calls made (all providers), ${rateLimitInfo.callsRemaining || 'unlimited'} remaining`);
+
       }
 
       // Use the market data service to fetch data
-      console.log(`📊 Fetching market data for ${symbol} on ${date} (${interval})`);
       const response = await marketDataService.fetchMarketData(tradeContext, interval);
       
       // Log cache vs API usage
       if (response.cached) {
-        console.log(`📋 Server cache HIT for ${symbol} on ${date} - saved API call`);
       } else {
-        console.log(`🌐 Fresh API call made for ${symbol} on ${date} from ${response.source}`);
       }
       
       // Record the API call for usage tracking (only for authenticated users and non-cached responses)
@@ -166,14 +160,12 @@ export async function GET(request: Request) {
             responseSizeBytes: JSON.stringify(response).length
           }
         );
-        console.log(`📝 Recorded API usage: ${response.source} call for user ${user.id}`);
       } else if (user && response.cached) {
-        console.log(`📋 Using server cache for ${symbol} - not counting against API usage limit`);
       }
       
       // Log the result for debugging
       if (response.success) {
-        console.log(`✅ Successfully fetched ${response.ohlc.length} candles from ${response.source}`);
+
       } else {
         console.error(`❌ Market data fetch failed: ${response.error}`);
         responseStatusCode = 500;

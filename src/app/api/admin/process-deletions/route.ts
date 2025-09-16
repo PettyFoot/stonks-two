@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] POST /api/admin/process-deletions - User: ${user.id}`);
+
     }
 
     // Process scheduled deletions
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] POST /api/admin/process-deletions completed in ${Date.now() - startTime}ms`);
+
     }
 
     return NextResponse.json(response);

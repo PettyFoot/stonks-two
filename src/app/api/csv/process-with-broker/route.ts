@@ -38,8 +38,6 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log(`🔄 Processing import batch ${importBatchId} with broker: ${brokerName}`);
-    console.log(`📊 Batch contains ${importBatch.totalRecords} records`);
     
     // Check if we have temporary file content stored
     if (!importBatch.tempFileContent) {
@@ -49,14 +47,13 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('✅ Found stored file content, proceeding with processing...');
+
 
     // Create ingestion service
     const { CsvIngestionService } = await import('@/lib/csvIngestion');
     const ingestionService = new CsvIngestionService();
 
     try {
-      console.log('🚀 Processing existing batch with AI mappings...');
       
       // Use the new method to process the existing batch instead of creating a new one
       const result = await ingestionService.processExistingBatchWithAiMappings(
@@ -68,9 +65,7 @@ export async function POST(request: NextRequest) {
       // Don't clear tempFileContent yet - we need it for finalize-mappings
       // The file content will be cleared after user approves the mappings
       
-      console.log('🎉 AI mapping generation completed!');
-      console.log(`📊 Generated mappings for ${result.totalRecords} records`);
-      console.log('⏸️ Waiting for user to review and approve mappings...');
+
       
       // Don't increment upload count yet - that happens after user approval
 

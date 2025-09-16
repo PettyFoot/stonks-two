@@ -35,18 +35,18 @@ export class MarketDataService {
     const alphaVantage = new AlphaVantageProvider();
     if (alphaVantage.isAvailable()) {
       this.providers.push(alphaVantage);
-      console.log('✅ Alpha Vantage provider initialized (primary, free tier available)');
+
     } else {
-      console.log('❌ Alpha Vantage provider not available (no API key)');
+
     }
     
     // Fallback: Polygon.io (premium data, paid subscription)
     const polygon = new PolygonProvider();
     if (polygon.isAvailable()) {
       this.providers.push(polygon);
-      console.log('✅ Polygon.io provider initialized (fallback, premium subscription required)');
+
     } else {
-      console.log('❌ Polygon.io provider not available (no API key or disabled)');
+
     }
     
     // REMOVED: Demo provider - never use fake data in production
@@ -88,7 +88,7 @@ export class MarketDataService {
         if (!provider.isAvailable()) continue;
         
         try {
-          console.log(`Attempting to fetch ${tradeContext.symbol} data from ${provider.name}`);
+
           
           const ohlcData = await provider.fetchOHLC(
             tradeContext.symbol,
@@ -121,7 +121,7 @@ export class MarketDataService {
               this.saveToCache(cacheKey, response);
             }
             
-            console.log(`Successfully fetched ${ohlcData.length} candles from ${provider.name}`);
+
             return response;
           }
           

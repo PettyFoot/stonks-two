@@ -94,24 +94,20 @@ export class OpenAiMappingService {
    * Analyze CSV headers and map them to Order table fields using OpenAI
    */
   async analyzeHeaders(request: MappingRequest): Promise<OpenAiMappingResult> {
-    console.log('🤖 OpenAI analyzeHeaders called');
-    console.log('📊 Request:', { 
-      headers: request.csvHeaders, 
+    console.log('[OPENAI_MAPPING] Analyzing headers:', {
+      headers: request.csvHeaders,
       brokerName: request.brokerName,
-      sampleDataRows: request.sampleData?.length || 0 
+      sampleDataRows: request.sampleData?.length || 0
     });
     
     if (!this.isConfigured) {
-      console.log('⚠️ OpenAI not configured, falling back to heuristics');
+
       return this.fallbackToHeuristics(request);
     }
 
     try {
-      console.log('🔨 Building OpenAI prompt...');
       const prompt = this.buildMappingPrompt(request);
-      console.log('📝 Prompt length:', prompt.length, 'characters');
       
-      console.log('🚀 Calling OpenAI API...');
       const response = await this.client.chat.completions.create({
         model: 'gpt-4',
         messages: [
@@ -134,12 +130,10 @@ export class OpenAiMappingService {
         throw new Error('No response from OpenAI');
       }
 
-      console.log('✅ OpenAI API call successful');
-      console.log('📝 Response length:', content.length, 'characters');
-      console.log('🔍 Response preview:', content.substring(0, 200) + '...');
+
 
       const result = this.parseOpenAiResponse(content, request.csvHeaders);
-      console.log('✨ Parsed result:', {
+      console.log('[OPENAI_MAPPING] Analysis complete:', {
         mappingsCount: Object.keys(result.mappings).length,
         overallConfidence: result.overallConfidence,
         brokerMetadataFieldsCount: result.brokerMetadataFields.length,
@@ -283,7 +277,7 @@ ${csvHeaders.map((header, i) => `${i + 1}. "${header}"`).join('\n')}`;
 
     } catch (error) {
       console.error('Failed to parse OpenAI response:', error);
-      console.log('Raw response:', content);
+
       
       // Return empty result that will trigger heuristic fallback
       return {

@@ -56,7 +56,7 @@ class AccountDeletionServiceImpl implements AccountDeletionService {
 
       // Cancel any active sessions (would need session management)
       // This is a placeholder - implement based on your session strategy
-      console.log(`[ACCOUNT_DELETION] Soft deleted user ${userId}`);
+
     });
   }
 
@@ -79,7 +79,7 @@ class AccountDeletionServiceImpl implements AccountDeletionService {
     }
 
     if (user.anonymizedAt) {
-      console.log(`[ACCOUNT_DELETION] User ${userId} already anonymized`);
+
       return;
     }
 
@@ -150,7 +150,7 @@ class AccountDeletionServiceImpl implements AccountDeletionService {
         }
       });
 
-      console.log(`[ACCOUNT_DELETION] Anonymized user ${userId} -> ${anonymousId}`);
+
     });
   }
 
@@ -248,7 +248,7 @@ class AccountDeletionServiceImpl implements AccountDeletionService {
         where: { id: userId }
       });
 
-      console.log(`[ACCOUNT_DELETION] Hard deleted user ${userId} (${originalEmail})`);
+
     });
   }
 
@@ -320,7 +320,7 @@ class AccountDeletionServiceImpl implements AccountDeletionService {
       });
     });
 
-    console.log(`[ACCOUNT_DELETION] Successfully reactivated account ${userId} via login`);
+
     return true;
   }
 
@@ -416,7 +416,7 @@ class AccountDeletionServiceImpl implements AccountDeletionService {
       }
     }
 
-    console.log(`[SCHEDULED_DELETION] Processed ${usersNeedingSoftDelete.length} soft deletes, ${usersNeedingAnonymization.length} anonymizations, ${usersNeedingHardDelete.length} hard deletes`);
+
   }
 
   /**

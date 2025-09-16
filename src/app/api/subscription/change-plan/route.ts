@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     const { newPriceId, prorationBehavior, metadata = {} } = validationResult.data;
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] POST /api/subscription/change-plan - User: ${user.id}, NewPriceId: ${newPriceId}`);
+
     }
 
     // Get current active subscription
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
 
     // Log successful plan change
     if (process.env.NODE_ENV === 'production') {
-      console.log(`[SUBSCRIPTION] User ${user.id} changed plan from ${currentSubscription.stripePriceId} to ${newPriceId}`);
+
     }
 
     const response = {
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] POST /api/subscription/change-plan completed in ${Date.now() - startTime}ms`);
+
     }
 
     return NextResponse.json(response);

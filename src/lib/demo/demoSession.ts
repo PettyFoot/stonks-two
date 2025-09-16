@@ -22,7 +22,7 @@ export interface DemoSession {
 }
 
 const sessionOptions: SessionOptions = {
-  password: process.env.DEMO_SESSION_SECRET || 'complex_password_at_least_32_characters_long_demo_key',
+  password: process.env.DEMO_SESSION_SECRET!,
   cookieName: 'demo-session',
   cookieOptions: {
     secure: process.env.NODE_ENV === 'production',

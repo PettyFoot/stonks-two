@@ -167,7 +167,6 @@ export class MarketDataUsageTracker {
   async cleanupOldRecords(): Promise<void> {
     try {
       await prisma.$queryRaw`SELECT cleanup_old_api_usage()`;
-      console.log('🧹 API usage cleanup completed');
     } catch (error) {
       console.error('Error cleaning up old API usage records:', error);
     }

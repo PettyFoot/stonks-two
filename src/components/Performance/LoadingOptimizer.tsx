@@ -43,18 +43,18 @@ export function usePerformanceMonitor() {
       for (const entry of list.getEntries()) {
         // Log Core Web Vitals metrics
         if (entry.entryType === 'largest-contentful-paint') {
-          console.log('LCP:', entry.startTime);
+
         }
         if (entry.entryType === 'first-input') {
           // Type assertion for first input entry
           const fidEntry = entry as PerformanceEventTiming;
-          console.log('FID:', fidEntry.processingStart - fidEntry.startTime);
+
         }
         if (entry.entryType === 'layout-shift') {
           // Type assertion for layout shift entry
           const clsEntry = entry as any;
           if (!clsEntry.hadRecentInput) {
-            console.log('CLS:', clsEntry.value);
+
           }
         }
       }

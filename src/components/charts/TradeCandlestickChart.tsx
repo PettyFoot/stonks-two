@@ -136,7 +136,6 @@ export default function TradeCandlestickChart({
       
       // Prevent duplicate requests
       if (requestInProgressRef.current) {
-        console.log('🚫 Request already in progress, skipping duplicate');
         return;
       }
       
@@ -151,11 +150,9 @@ export default function TradeCandlestickChart({
           const remainingTime = cooldownTime - timeSinceLastRateLimit;
           if (isDailyLimit) {
             const hoursLeft = Math.ceil(remainingTime / (1000 * 60 * 60));
-            console.log(`🚫 Daily limit cooldown active, ${hoursLeft}h remaining`);
             setError(`Daily API limit reached. Please try again in ${hoursLeft} hours or upgrade your plan.`);
           } else {
             const secondsLeft = Math.ceil(remainingTime / 1000);
-            console.log(`🚫 Rate limit cooldown active, waiting ${secondsLeft}s more`);
             setError(`Rate limit active. Please wait ${secondsLeft} seconds before retrying.`);
           }
           return;
@@ -192,7 +189,6 @@ export default function TradeCandlestickChart({
 
       // Check if it's a weekend before making API calls
       if (isWeekend(chartDate)) {
-        console.log(`📅 Weekend detected for ${chartDate}, skipping API call`);
         setError(null); // Clear any previous errors
         setMarketData({
           symbol,
@@ -210,7 +206,7 @@ export default function TradeCandlestickChart({
       }
       
       // Log execution data for debugging
-      console.log('📊 Chart initialization:', {
+      console.log('Fetching market data', {
         symbol,
         tradeDate,
         chartDate,
@@ -230,18 +226,17 @@ export default function TradeCandlestickChart({
       setError(null);
       
       try {
-        console.log(`🔍 Fetching market data for ${symbol} on ${chartDate} (${timeInterval})`);
         
         // Check client-side cache first (unless bypassed)
         const bypassCache = new URLSearchParams(window.location.search).get('nocache') === 'true' || retryCount > 0;
         if (!bypassCache) {
           const cached = MarketDataCache.get(symbol, chartDate, timeInterval, tradeTime);
           if (cached) {
-            console.log(`📋 Using cached data for ${symbol}:`, {
+            console.log('Using cached market data', {
               source: cached.source,
               candleCount: cached.ohlc?.length || 0,
-              dateRange: cached.ohlc?.length ? 
-                `${new Date(cached.ohlc[0].timestamp).toLocaleString()} to ${new Date(cached.ohlc[cached.ohlc.length - 1].timestamp).toLocaleString()}` : 
+              dateRange: cached.ohlc?.length ?
+                `${new Date(cached.ohlc[0].timestamp).toLocaleString()} to ${new Date(cached.ohlc[cached.ohlc.length - 1].timestamp).toLocaleString()}` :
                 'No candles'
             });
             
@@ -251,7 +246,6 @@ export default function TradeCandlestickChart({
               const requestedDate = new Date(chartDate).toDateString();
               if (firstCandleDate !== requestedDate) {
                 console.warn(`⚠️  Cache date mismatch: requested ${requestedDate}, cached data is from ${firstCandleDate}`);
-                console.log('💀 Clearing stale cache and fetching fresh data...');
                 MarketDataCache.clearSymbol(symbol);
               } else {
                 setMarketData(cached);
@@ -278,10 +272,8 @@ export default function TradeCandlestickChart({
               return;
             }
           } else {
-            console.log(`📥 No cache found for ${symbol} on ${chartDate}`);
           }
         } else {
-          console.log(`🚫 Cache bypass enabled via ?nocache=true`);
         }
         
         // Convert date to ISO format (YYYY-MM-DD) for API
@@ -309,7 +301,6 @@ export default function TradeCandlestickChart({
         };
 
         const isoDate = convertToISODate(chartDate);
-        console.log(`📅 Date conversion: "${chartDate}" -> "${isoDate}"`);
 
         // Build simple API URL with just symbol, date, and interval
         const params = new URLSearchParams({
@@ -327,8 +318,6 @@ export default function TradeCandlestickChart({
           signal: abortControllerRef.current?.signal
         });
         
-        console.log(`📡 API request sent: /api/market-data?${params.toString()}`);
-        console.log(`🔗 Response status: ${response.status} ${response.statusText}`);
         
         // Always read the response body first, even for non-ok responses
         const data: MarketDataResponse = await response.json();
@@ -346,8 +335,8 @@ export default function TradeCandlestickChart({
         if (!response.ok) {
           throw new Error(data.error || `Failed to fetch market data: ${response.status} ${response.statusText}`);
         }
-        
-        console.log(`📊 API Response for ${symbol}:`, {
+
+        console.log('Market data API response', {
           success: data.success,
           source: data.source,
           cached: data.cached,
@@ -362,8 +351,8 @@ export default function TradeCandlestickChart({
             const firstCandle = new Date(data.ohlc[0].timestamp);
             const lastCandle = new Date(data.ohlc[data.ohlc.length - 1].timestamp);
             const requestedDate = new Date(chartDate);
-            
-            console.log(`📈 Data analysis:`, {
+
+            console.log('Market data quality check', {
               requestedDate: requestedDate.toDateString(),
               actualDataDate: firstCandle.toDateString(),
               dateMatch: firstCandle.toDateString() === requestedDate.toDateString(),
@@ -396,7 +385,6 @@ export default function TradeCandlestickChart({
       } catch (err) {
         // Don't handle aborted requests as errors
         if (err instanceof Error && err.name === 'AbortError') {
-          console.log('📡 Request was aborted');
           return;
         }
         
@@ -415,10 +403,8 @@ export default function TradeCandlestickChart({
           // For daily limits, set a longer cooldown (24 hours)
           if (errorMsg.includes('ALPHA_VANTAGE_DAILY_LIMIT') || errorMsg.includes('daily limit')) {
             setLastRateLimitError(Date.now());
-            console.log('🚫 Daily limit error detected, requests blocked until tomorrow');
           } else {
             setLastRateLimitError(Date.now());
-            console.log('🚫 Rate limit error detected, starting cooldown period');
           }
         }
         
@@ -467,8 +453,8 @@ export default function TradeCandlestickChart({
       
       // Calculate data span in hours
       const dataSpanHours = (maxTimestamp - minTimestamp) / (1000 * 60 * 60);
-      
-      console.log(`📊 Chart range calculation:`, {
+
+      console.log('Data validation completed', {
         firstDataDate: firstCandleDate.toDateString(),
         requestedDate: requestedDate.toDateString(),
         dataSpanHours: dataSpanHours.toFixed(2),
@@ -489,7 +475,6 @@ export default function TradeCandlestickChart({
       max: rangeEnd.getTime()
     };
     
-    console.log(`📏 Focusing on requested date range: ${new Date(range.min).toLocaleString()} to ${new Date(range.max).toLocaleString()}`);
     return range;
   }, [marketData, chartDate]);
 
@@ -530,8 +515,8 @@ export default function TradeCandlestickChart({
       
       return withinTimeRange && withinPriceRange;
     });
-    
-    console.log(`📍 Filtering ${executions.length} executions -> ${visibleExecutions.length} visible`, {
+
+    console.log('Chart display range and executions', {
       timeRange: `${new Date(xAxisRange.min).toLocaleTimeString()} - ${new Date(xAxisRange.max).toLocaleTimeString()}`,
       priceRange: `$${priceRange.min.toFixed(2)} - $${priceRange.max.toFixed(2)}`,
       chartDate,
@@ -576,25 +561,25 @@ export default function TradeCandlestickChart({
         execution: execution
       }));
 
-    console.log(`🎯 Created execution data:`, {
+    console.log('Execution data for chart overlay', {
       buyExecutions: buyExecutions.length,
       sellExecutions: sellExecutions.length,
       chartDate,
-      buyData: buyExecutions.map(e => ({ 
-        timestamp: e.x, 
-        dateTime: new Date(e.x).toLocaleString(), 
+      buyData: buyExecutions.map(e => ({
+        timestamp: e.x,
+        dateTime: new Date(e.x).toLocaleString(),
         dateOnly: new Date(e.x).toDateString(),
         timeOnly: new Date(e.x).toLocaleTimeString(),
-        price: e.y, 
-        qty: e.quantity 
+        price: e.y,
+        qty: e.quantity
       })),
-      sellData: sellExecutions.map(e => ({ 
-        timestamp: e.x, 
-        dateTime: new Date(e.x).toLocaleString(), 
+      sellData: sellExecutions.map(e => ({
+        timestamp: e.x,
+        dateTime: new Date(e.x).toLocaleString(),
         dateOnly: new Date(e.x).toDateString(),
         timeOnly: new Date(e.x).toLocaleTimeString(),
-        price: e.y, 
-        qty: e.quantity 
+        price: e.y,
+        qty: e.quantity
       }))
     });
 
@@ -640,7 +625,7 @@ export default function TradeCandlestickChart({
       },
       events: {
         dataPointSelection: (event, chartContext, config) => {
-          console.log('Data point clicked:', config);
+
           // Handle execution marker clicks (scatter series are at index 1 and 2)
           if (config.seriesIndex >= 1) {
             const isBuyExecution = config.seriesIndex === 1;

@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     } = validationResult.data;
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] POST /api/subscription/create - User: ${user.id}, PriceId: ${priceId}`);
+
     }
 
     // Check if user already has an active subscription
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
 
     // Log subscription creation attempt
     if (process.env.NODE_ENV === 'production') {
-      console.log(`[SUBSCRIPTION] User ${user.id} initiated subscription creation with price ${priceId}`);
+
     }
 
     const response = {
@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] POST /api/subscription/create completed in ${Date.now() - startTime}ms`);
+
     }
 
     return NextResponse.json(response, { status: 201 });

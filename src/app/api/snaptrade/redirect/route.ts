@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     
     // Log all parameters for debugging
-    console.log('SnapTrade OAuth redirect parameters:', Object.fromEntries(searchParams.entries()));
+
     
     // Check for various SnapTrade-specific parameters that might indicate success
     const success = searchParams.get('success');
@@ -81,8 +81,8 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const code = searchParams.get('code'); // OAuth code parameter
     
-    console.log('SnapTrade redirect - all search parameters:', Object.fromEntries(searchParams.entries()));
-    console.log('SnapTrade redirect analysis:', {
+
+    console.log('[SNAPTRADE_REDIRECT] Processing redirect parameters:', {
       success,
       error,
       brokerAuthorizationId,
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
     }
     // Handle successful authorization - check multiple possible success indicators
     else if (success === 'true' || brokerAuthorizationId || connectionComplete === 'true' || authComplete === 'true' || status === 'complete' || code) {
-      console.log('SnapTrade OAuth success detected, sending success message to parent');
+
       messageType = 'SUCCESS';
       messageData = {
         authorizationId: brokerAuthorizationId || code || 'success',
@@ -191,9 +191,9 @@ export async function GET(request: NextRequest) {
     </div>
     
     <script>
-        console.log('SnapTrade redirect page loaded');
-        console.log('Message type:', '${messageType}');
-        console.log('Message data:', ${JSON.stringify(messageData)});
+
+
+
         
         // Send message to parent window
         const messageToParent = {
@@ -201,23 +201,23 @@ export async function GET(request: NextRequest) {
             ...${JSON.stringify(messageData)}
         };
         
-        console.log('Sending message to parent:', messageToParent);
+
         
         // Try to send to parent window (handles popup case)
         if (window.opener) {
             window.opener.postMessage(messageToParent, window.location.origin);
-            console.log('Message sent to opener');
+
         }
         
         // Also try parent (handles iframe case)
         if (window.parent && window.parent !== window) {
             window.parent.postMessage(messageToParent, window.location.origin);
-            console.log('Message sent to parent');
+
         }
         
         // Close window after a short delay
         setTimeout(() => {
-            console.log('Attempting to close window');
+
             if (window.opener) {
                 window.close();
             } else {

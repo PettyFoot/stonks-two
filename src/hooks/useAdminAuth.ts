@@ -2,10 +2,18 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
+interface UserData {
+  id: string;
+  name: string;
+  email: string;
+  picture?: string | null;
+  isAdmin?: boolean;
+}
+
 interface UseAdminAuthReturn {
   isAdmin: boolean | null; // null = loading, boolean = determined
   isLoading: boolean;
-  user: any | null;
+  user: UserData | null;
 }
 
 /**

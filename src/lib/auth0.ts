@@ -55,7 +55,7 @@ export async function getCurrentUser() {
             );
             
             if (wasReactivated) {
-              console.log('Account automatically reactivated for user:', user.id);
+
               // Refresh user data after reactivation
               user = await prisma.user.findUnique({
                 where: { id: user.id },

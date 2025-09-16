@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     // Log request for monitoring
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] GET /api/subscription - User: ${user.id}`);
+
     }
 
     // Get subscription data with optimized single query using relations
@@ -180,7 +180,7 @@ export async function GET(request: NextRequest) {
     };
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] GET /api/subscription completed in ${Date.now() - startTime}ms`);
+
     }
 
     // Generate CSRF token for future POST requests
@@ -273,7 +273,7 @@ export async function POST(request: NextRequest) {
     const { action, planId, cancelAtPeriodEnd, metadata } = validationResult.data;
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] POST /api/subscription - User: ${user.id}, Action: ${action}`);
+
     }
 
     // Get current subscription
@@ -352,7 +352,7 @@ export async function POST(request: NextRequest) {
 
     // Log successful action
     if (process.env.NODE_ENV === 'production') {
-      console.log(`[SUBSCRIPTION] User ${user.id} performed ${action} on subscription ${currentSubscription.stripeSubscriptionId}`);
+
     }
 
     const response = {

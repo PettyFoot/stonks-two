@@ -45,14 +45,14 @@ export class WebhookService {
       });
 
       if (existingEvent?.processed) {
-        console.log(`[WEBHOOK] Event ${event.id} (${event.type}) already processed, skipping`);
+
         return {
           success: true,
           data: { processed: true, eventType: event.type },
         };
       }
 
-      console.log(`[WEBHOOK] Processing new event: ${event.id} (${event.type})`);
+
 
       // Save webhook event
       await this.saveWebhookEvent(event);
@@ -139,7 +139,7 @@ export class WebhookService {
           break;
 
         default:
-          console.log(`Unhandled event type: ${event.type}`);
+
       }
     } catch (error) {
       console.error(`Error handling webhook event ${event.type}:`, error);
@@ -159,7 +159,7 @@ export class WebhookService {
 
       // If user not found by customer ID, try to find by metadata userId
       if (!user && subscription.metadata?.userId) {
-        console.log(`User not found by customer ID ${subscription.customer}, trying metadata userId: ${subscription.metadata.userId}`);
+
         
         user = await prisma.user.findUnique({
           where: { id: subscription.metadata.userId },
@@ -167,7 +167,7 @@ export class WebhookService {
 
         // If found, update user with the customer ID
         if (user && !user.stripeCustomerId) {
-          console.log(`Updating user ${user.id} with stripeCustomerId: ${subscription.customer}`);
+
           user = await prisma.user.update({
             where: { id: user.id },
             data: { stripeCustomerId: subscription.customer as string },
@@ -186,7 +186,7 @@ export class WebhookService {
       });
 
       if (existingSubscription) {
-        console.log(`Subscription ${subscription.id} already exists, updating instead`);
+
         await this.handleSubscriptionUpdated(subscription);
         return;
       }
@@ -228,7 +228,7 @@ export class WebhookService {
       // Update user subscription status
       await this.updateUserSubscriptionStatus(user.id);
 
-      console.log(`[WEBHOOK] Subscription created successfully for user ${user.id}: ${subscription.id}, tier: ${tier}, status: ${STRIPE_TO_DB_STATUS[subscription.status]}`);
+
     } catch (error) {
       console.error('[WEBHOOK] Error handling subscription created:', error);
       console.error('[WEBHOOK] Subscription details:', {
@@ -281,7 +281,7 @@ export class WebhookService {
       // Update user subscription status
       await this.updateUserSubscriptionStatus(updatedSubscription.userId);
 
-      console.log(`Subscription updated: ${subscription.id}`);
+
     } catch (error) {
       console.error('Error handling subscription updated:', error);
       throw error;
@@ -305,7 +305,7 @@ export class WebhookService {
       // Update user subscription status
       await this.updateUserSubscriptionStatus(updatedSubscription.userId);
 
-      console.log(`Subscription deleted: ${subscription.id}`);
+
     } catch (error) {
       console.error('Error handling subscription deleted:', error);
       throw error;
@@ -328,7 +328,7 @@ export class WebhookService {
         await this.paymentService.processSuccessfulPayment(paymentIntent);
       }
 
-      console.log(`Invoice payment succeeded: ${invoice.id}`);
+
     } catch (error) {
       console.error('Error handling invoice payment succeeded:', error);
       throw error;
@@ -357,7 +357,7 @@ export class WebhookService {
         }
       }
 
-      console.log(`Invoice payment failed: ${invoice.id}`);
+
     } catch (error) {
       console.error('Error handling invoice payment failed:', error);
       throw error;
@@ -399,7 +399,7 @@ export class WebhookService {
             },
             data: { stripeCustomerId: customer.id },
           });
-          console.log(`[WEBHOOK] Successfully linked customer ${customer.id} to user ${userId}`);
+
         } catch (updateError) {
           console.error(`[WEBHOOK] Failed to update user ${userId} with customer ID ${customer.id}:`, updateError);
           // Don't throw, this is not critical for webhook processing
@@ -408,7 +408,7 @@ export class WebhookService {
         console.warn(`[WEBHOOK] Customer created without userId in metadata: ${customer.id}`);
       }
 
-      console.log(`[WEBHOOK] Customer created: ${customer.id}`);
+
     } catch (error) {
       console.error('[WEBHOOK] Error handling customer created:', error);
       throw error;
@@ -457,10 +457,10 @@ export class WebhookService {
           },
         });
         
-        console.log(`Customer email updated: ${customer.id} -> ${customer.email}`);
+
       }
 
-      console.log(`Customer updated: ${customer.id}`);
+
     } catch (error) {
       console.error('Error handling customer updated:', error);
       // Don't throw for customer updates as they're not critical
@@ -473,7 +473,7 @@ export class WebhookService {
   private async handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent): Promise<void> {
     try {
       await this.paymentService.processSuccessfulPayment(paymentIntent);
-      console.log(`Payment intent succeeded: ${paymentIntent.id}`);
+
     } catch (error) {
       console.error('Error handling payment intent succeeded:', error);
       throw error;
@@ -486,7 +486,7 @@ export class WebhookService {
   private async handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent): Promise<void> {
     try {
       await this.paymentService.processFailedPayment(paymentIntent);
-      console.log(`Payment intent failed: ${paymentIntent.id}`);
+
     } catch (error) {
       console.error('Error handling payment intent failed:', error);
       throw error;
@@ -500,7 +500,7 @@ export class WebhookService {
     try {
       // Only process subscription mode sessions
       if (session.mode !== 'subscription' || !session.subscription) {
-        console.log(`[WEBHOOK] Skipping non-subscription checkout session: ${session.id}`);
+
         return;
       }
       
@@ -511,7 +511,7 @@ export class WebhookService {
         return;
       }
 
-      console.log(`[WEBHOOK] Processing checkout session completed for user ${userId}: ${session.id}`);
+
 
       // Verify user exists
       const user = await prisma.user.findUnique({
@@ -529,7 +529,7 @@ export class WebhookService {
           where: { id: userId },
           data: { stripeCustomerId: session.customer as string },
         });
-        console.log(`[WEBHOOK] Updated user ${userId} with customer ID: ${session.customer}`);
+
       }
       
       // Get full subscription from Stripe
@@ -542,7 +542,7 @@ export class WebhookService {
       });
 
       if (existingSubscription) {
-        console.log(`[WEBHOOK] Subscription ${subscription.id} already exists from checkout session, skipping creation`);
+
         return;
       }
 
@@ -580,7 +580,7 @@ export class WebhookService {
       // Update user subscription status immediately
       await this.updateUserSubscriptionStatus(userId);
 
-      console.log(`[WEBHOOK] Checkout session completed successfully for user ${userId}: ${subscription.id}, tier: ${tier}, status: ${subscription.status}`);
+
     } catch (error) {
       console.error('[WEBHOOK] Error handling checkout session completed:', error);
       throw error;
