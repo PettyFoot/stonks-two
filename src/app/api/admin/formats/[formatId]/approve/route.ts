@@ -4,8 +4,14 @@ import { requireAdmin } from '@/lib/middleware/requireAdmin';
 import { FormatApprovalService } from '@/lib/services/FormatApprovalService';
 import { RateLimiter } from '@/lib/security/InputValidator';
 
+interface RouteParams {
+  params: Promise<{
+    formatId: string;
+  }>;
+}
+
 const ApprovalSchema = z.object({
-  correctedMappings: z.record(z.any()).optional(),
+  correctedMappings: z.record(z.string(), z.any()).optional(),
   idempotencyKey: z.string().optional(),
   reason: z.string().optional()
 });
@@ -16,9 +22,11 @@ const ApprovalSchema = z.object({
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { formatId: string } }
+  { params }: RouteParams
 ) {
   try {
+    const { formatId } = await params;
+
     // Verify admin authentication
     const adminResult = await requireAdmin(request);
     if (adminResult instanceof NextResponse) {
@@ -42,7 +50,7 @@ export async function POST(
       return NextResponse.json(
         {
           error: 'Invalid request data',
-          details: validation.error.errors
+          details: validation.error.issues
         },
         { status: 400 }
       );
@@ -51,19 +59,19 @@ export async function POST(
     const { correctedMappings, idempotencyKey, reason } = validation.data;
 
     // Validate formatId
-    if (!params.formatId || typeof params.formatId !== 'string') {
+    if (!formatId || typeof formatId !== 'string') {
       return NextResponse.json(
         { error: 'Format ID is required' },
         { status: 400 }
       );
     }
 
-    console.log(`[API] Admin ${admin.email} approving format ${params.formatId}`);
+    console.log(`[API] Admin ${admin.email} approving format ${formatId}`);
 
     // Approve format and migrate orders
     const approvalService = new FormatApprovalService();
     const result = await approvalService.approveFormatAndMigrateOrders(
-      params.formatId,
+      formatId,
       admin.id,
       correctedMappings,
       idempotencyKey
@@ -74,20 +82,20 @@ export async function POST(
         {
           error: 'Format approval failed',
           details: result.errors,
-          formatId: params.formatId
+          formatId: formatId
         },
         { status: 500 }
       );
     }
 
     console.log(
-      `[API] Format ${params.formatId} approved successfully: ` +
+      `[API] Format ${formatId} approved successfully: ` +
       `${result.migratedCount} orders migrated in ${result.duration}ms`
     );
 
     return NextResponse.json({
       success: true,
-      formatId: params.formatId,
+      formatId: formatId,
       formatName: result.format.formatName,
       migratedCount: result.migratedCount,
       failedCount: result.failedCount,
@@ -139,9 +147,11 @@ export async function POST(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { formatId: string } }
+  { params }: RouteParams
 ) {
   try {
+    const { formatId } = await params;
+
     // Verify admin authentication
     const adminResult = await requireAdmin(request);
     if (adminResult instanceof NextResponse) {
@@ -154,28 +164,28 @@ export async function DELETE(
     const reason = body.reason || 'Format rejected by admin';
 
     // Validate formatId
-    if (!params.formatId || typeof params.formatId !== 'string') {
+    if (!formatId || typeof formatId !== 'string') {
       return NextResponse.json(
         { error: 'Format ID is required' },
         { status: 400 }
       );
     }
 
-    console.log(`[API] Admin ${admin.email} rejecting format ${params.formatId}`);
+    console.log(`[API] Admin ${admin.email} rejecting format ${formatId}`);
 
     // Reject format
     const approvalService = new FormatApprovalService();
     const result = await approvalService.rejectFormat(
-      params.formatId,
+      formatId,
       admin.id,
       reason
     );
 
-    console.log(`[API] Format ${params.formatId} rejected: ${result.rejectedCount} orders rejected`);
+    console.log(`[API] Format ${formatId} rejected: ${result.rejectedCount} orders rejected`);
 
     return NextResponse.json({
       success: true,
-      formatId: params.formatId,
+      formatId: formatId,
       rejectedCount: result.rejectedCount,
       reason,
       message: `Format rejected. ${result.rejectedCount} staged orders marked as rejected.`

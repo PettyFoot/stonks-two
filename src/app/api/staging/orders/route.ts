@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Invalid query parameters',
-          details: validation.error.errors
+          details: validation.error.issues
         },
         { status: 400 }
       );
@@ -62,14 +62,14 @@ export async function GET(request: NextRequest) {
       },
       // Extract key fields from raw CSV data for preview
       preview: {
-        symbol: order.rawCsvRow?.symbol || order.rawCsvRow?.Symbol || order.rawCsvRow?.Instrument || 'N/A',
-        quantity: order.rawCsvRow?.quantity || order.rawCsvRow?.Quantity || order.rawCsvRow?.Qty || 'N/A',
-        side: order.rawCsvRow?.side || order.rawCsvRow?.Side || order.rawCsvRow?.Action || 'N/A',
-        price: order.rawCsvRow?.price || order.rawCsvRow?.Price || order.rawCsvRow?.LimitPrice || 'N/A',
-        date: order.rawCsvRow?.date || order.rawCsvRow?.Date || order.rawCsvRow?.ExecutedTime || 'N/A'
+        symbol: (order.rawCsvRow as any)?.symbol || (order.rawCsvRow as any)?.Symbol || (order.rawCsvRow as any)?.Instrument || 'N/A',
+        quantity: (order.rawCsvRow as any)?.quantity || (order.rawCsvRow as any)?.Quantity || (order.rawCsvRow as any)?.Qty || 'N/A',
+        side: (order.rawCsvRow as any)?.side || (order.rawCsvRow as any)?.Side || (order.rawCsvRow as any)?.Action || 'N/A',
+        price: (order.rawCsvRow as any)?.price || (order.rawCsvRow as any)?.Price || (order.rawCsvRow as any)?.LimitPrice || 'N/A',
+        date: (order.rawCsvRow as any)?.date || (order.rawCsvRow as any)?.Date || (order.rawCsvRow as any)?.ExecutedTime || 'N/A'
       },
       // Include confidence from initial mapping
-      mappingConfidence: order.initialMappedData?.confidence || 0.5
+      mappingConfidence: (order.initialMappedData as any)?.confidence || 0.5
     }));
 
     return NextResponse.json({

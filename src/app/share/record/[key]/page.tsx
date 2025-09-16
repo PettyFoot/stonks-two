@@ -92,7 +92,7 @@ export default function SharedTradePage() {
     return `${diffDays} days remaining`;
   };
 
-  const isRecordsShare = data?.metadata?.isRecordsShare;
+  const isRecordsShare = (data?.metadata as any)?.isRecordsShare;
 
   if (loading) {
     return (
@@ -149,11 +149,11 @@ export default function SharedTradePage() {
     ? trade.trades!.reduce((sum: number, t: Trade) => sum + (t.pnl || 0), 0)
     : trade.pnl || 0;
 
-  const totalTrades = isMultipleTrades ? trade.trades.length : 1;
-  const totalVolume = isMultipleTrades ? trade.quantity : trade.quantity || 0;
+  const totalTrades = isMultipleTrades ? trade.trades?.length || 0 : 1;
+  const totalVolume = isMultipleTrades ? (trade as any).quantity : (trade as any).quantity || 0;
   const totalExecutions = isMultipleTrades
     ? trade.trades!.reduce((sum: number, t: Trade) => sum + (t.executions || 0), 0)
-    : trade.executions || orders.length;
+    : (trade as any).executions || orders.length;
 
   // Group orders by symbol for chart display
   const ordersBySymbol = orders.reduce((acc: Record<string, ExecutionOrder[]>, order: ExecutionOrder) => {
@@ -182,7 +182,7 @@ export default function SharedTradePage() {
             <BarChart3 className="h-6 w-6 text-blue-600" />
             <div>
               <h1 className="text-xl font-semibold text-gray-900">
-                {isRecordsShare ? `Trading Record - ${formatDate(trade.date)}` : `Trade: ${trade.symbol}`}
+                {isRecordsShare ? `Trading Record - ${formatDate((trade as any).date)}` : `Trade: ${(trade as any).symbol}`}
               </h1>
               <p className="text-sm text-gray-500">
                 Shared via <Link href="/" className="text-blue-600 hover:text-blue-800 transition-colors">Trade Voyager Analytics</Link>
@@ -260,7 +260,7 @@ export default function SharedTradePage() {
                   limitPrice: order.limitPrice || null,
                   stopPrice: order.stopPrice || null
                 }))}
-                tradeDate={isRecordsShare ? trade.date : formatDate(trade.date)}
+                tradeDate={isRecordsShare ? (trade as any).date : formatDate((trade as any).date)}
                 height={400}
                 onExecutionSelect={() => {}} // No interaction in shared view
                 isShared={true}

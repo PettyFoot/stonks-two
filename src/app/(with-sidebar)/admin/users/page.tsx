@@ -80,7 +80,7 @@ export default function AdminUsersPage() {
   };
 
   const handleToggleAdmin = async (userId: string, currentIsAdmin: boolean) => {
-    if (userId === currentUser.id) {
+    if (currentUser && userId === currentUser.id) {
       toast.error("You cannot change your own admin status");
       return;
     }
@@ -270,7 +270,7 @@ export default function AdminUsersPage() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
                               onClick={() => handleToggleAdmin(user.id, user.isAdmin)}
-                              disabled={user.id === currentUser.id}
+                              disabled={currentUser ? user.id === currentUser.id : false}
                             >
                               {user.isAdmin ? (
                                 <>
