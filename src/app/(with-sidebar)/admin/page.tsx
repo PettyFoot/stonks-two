@@ -13,7 +13,6 @@ import {
   AlertTriangle,
   Database,
   TrendingUp,
-  Settings,
   Shield,
   Activity,
 } from 'lucide-react';

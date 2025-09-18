@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import TopBar from '@/components/TopBar';
 import { PageTriangleLoader } from '@/components/ui/TriangleLoader';
@@ -71,14 +71,7 @@ export default function SnapTradeAdminPage() {
   const [syncing, setSyncing] = useState(false);
   const [configChanged, setConfigChanged] = useState(false);
 
-  // Load initial data
-  useEffect(() => {
-    if (isAdmin && !isLoading) {
-      loadData();
-    }
-  }, [isAdmin, isLoading]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       await Promise.all([
@@ -91,7 +84,14 @@ export default function SnapTradeAdminPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Load initial data
+  useEffect(() => {
+    if (isAdmin && !isLoading) {
+      loadData();
+    }
+  }, [isAdmin, isLoading, loadData]);
 
   const loadConfig = async () => {
     const response = await fetch('/api/admin/snaptrade/config');

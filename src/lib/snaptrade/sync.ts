@@ -1,8 +1,7 @@
-import { getSnapTradeClient, handleSnapTradeError, RateLimitHelper } from './client';
+import { handleSnapTradeError } from './client';
 import { prisma } from '@/lib/prisma';
-import { SyncRequest, SyncResult, SnapTradeActivity, ConnectionStatus, SyncStatus, SyncType } from './types';
+import { SyncRequest, SyncResult, SyncStatus, SyncType } from './types';
 import { SnapTradeActivityProcessor } from './activityProcessor';
-import { ImportSource } from '@prisma/client';
 
 /**
  * Get sync configuration from database or create default
@@ -140,7 +139,7 @@ export async function updateSyncConfig(config: {
   limit?: number;
   activityTypes?: string;
 }) {
-  let existingConfig = await prisma.snapTradeSyncConfig.findFirst();
+  const existingConfig = await prisma.snapTradeSyncConfig.findFirst();
 
   if (!existingConfig) {
     // Create new config

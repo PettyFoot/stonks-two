@@ -35,7 +35,7 @@ export default function CookieSettingsTab() {
     functional: false,
     analytics: false,
   });
-  const [consentStatus, setConsentStatus] = useState<any>(null);
+  const [consentStatus, setConsentStatus] = useState<'granted' | 'denied' | null>(null);
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 

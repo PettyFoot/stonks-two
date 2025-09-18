@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { useRouter } from 'next/navigation';
 import TopBar from '@/components/TopBar';
@@ -69,7 +69,7 @@ export default function EnhancedImportPage() {
   const [activeTab, setActiveTab] = useState('broker');
 
   // Fetch upload limits when CSV tab becomes active
-  const fetchUploadLimits = async () => {
+  const fetchUploadLimits = useCallback(async () => {
     if (!user) return;
     
     try {
@@ -83,14 +83,14 @@ export default function EnhancedImportPage() {
     } catch (error) {
       console.error('Error fetching upload limits:', error);
     }
-  };
+  }, [user]);
 
   // Fetch limits when component mounts and when CSV tab is selected
   useEffect(() => {
     if (activeTab === 'csv') {
       fetchUploadLimits();
     }
-  }, [activeTab, user]);
+  }, [activeTab, user, fetchUploadLimits]);
 
   // Redirect if not authenticated
   React.useEffect(() => {

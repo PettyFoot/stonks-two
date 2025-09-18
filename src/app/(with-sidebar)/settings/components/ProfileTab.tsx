@@ -223,12 +223,12 @@ export default function ProfileTab() {
                   )}
                   {!isEditing && (
                     <p className="text-xs text-muted-foreground">
-                      Email changes will update your profile but not your authentication email. You'll need to verify through your authentication provider to change your login email.
+                      Email changes will update your profile but not your authentication email. You&apos;ll need to verify through your authentication provider to change your login email.
                     </p>
                   )}
                   {isEditing && (
                     <p className="text-xs text-muted-foreground">
-                      Changing your email will update your profile. To change your login email, you'll need to verify the new address through your authentication provider.
+                      Changing your email will update your profile. To change your login email, you&apos;ll need to verify the new address through your authentication provider.
                     </p>
                   )}
                 </div>

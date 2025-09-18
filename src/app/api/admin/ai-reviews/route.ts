@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const filter = searchParams.get('filter') || 'all';
 
-    const where: any = {};
+    const where: { adminReviewStatus?: string | { in: string[] } } = {};
     
     switch (filter) {
       case 'pending':
