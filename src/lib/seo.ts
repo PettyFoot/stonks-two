@@ -6,7 +6,7 @@ export const SEO_CONFIG = {
   siteDescription: 'Professional trade analytics platform for serious traders. Advanced trade analysis, real-time performance tracking, and comprehensive trade metrics to optimize your trading strategy.',
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://tradevoyageranalytics.com',
   twitterHandle: '@tradinganalytics',
-  defaultImage: '/og-image.png',
+  defaultImage: '/trade-voyager-logo.png',
   supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'tradevoyageranalyticssup@gmail.com',
   keywords: {
     primary: ['trade analytics', 'trading analytics', 'trade analysis', 'trade metrics', 'trading performance', 'trader tools'],

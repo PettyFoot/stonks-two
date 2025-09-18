@@ -1,21 +1,54 @@
 import { getSnapTradeClient, handleSnapTradeError, RateLimitHelper } from './client';
 import { prisma } from '@/lib/prisma';
 import { SyncRequest, SyncResult, SnapTradeActivity, ConnectionStatus, SyncStatus, SyncType } from './types';
-import { mapSnapTradeActivityToTrade } from './mapper';
+import { SnapTradeActivityProcessor } from './activityProcessor';
 import { ImportSource } from '@prisma/client';
 
 /**
+ * Get sync configuration from database or create default
+ */
+async function getSyncConfig() {
+  let config = await prisma.snapTradeSyncConfig.findFirst();
+
+  if (!config) {
+    // Create default config if none exists
+    config = await prisma.snapTradeSyncConfig.create({
+      data: {
+        startDate: '2015-01-01',
+        endDate: null, // Use current date
+        limit: 500,
+        activityTypes: 'BUY,SELL'
+      }
+    });
+  }
+
+  return config;
+}
+
+/**
  * Sync trades from SnapTrade for a specific broker connection
+ * Now uses SnapTradeActivityProcessor for proper activity processing
  */
 export async function syncTradesForConnection(
   request: SyncRequest
 ): Promise<SyncResult> {
+  // Get sync configuration
+  const config = await getSyncConfig();
+
+  // Calculate date range
+  const startDate = new Date(config.startDate);
+  const endDate = config.endDate ? new Date(config.endDate) : new Date();
+
   const syncLog = await prisma.snapTradeSync.create({
     data: {
       userId: request.userId,
       connectionId: request.connectionId,
       syncType: request.syncType || SyncType.MANUAL,
       status: SyncStatus.PENDING,
+      dateRange: {
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0]
+      }
     },
   });
 
@@ -26,7 +59,7 @@ export async function syncTradesForConnection(
       data: { status: SyncStatus.RUNNING },
     });
 
-    // Get the user's SnapTrade credentials
+    // Verify user has SnapTrade credentials
     const user = await prisma.user.findUnique({
       where: { id: request.userId },
       select: {
@@ -34,171 +67,98 @@ export async function syncTradesForConnection(
         snapTradeUserSecret: true,
       },
     });
-    
+
     if (!user?.snapTradeUserId || !user?.snapTradeUserSecret) {
       throw new Error('SnapTrade credentials not found for user');
     }
 
-    await RateLimitHelper.checkRateLimit();
-    const client = getSnapTradeClient();
-    const decryptedSecret = user.snapTradeUserSecret;
+    // Use the SnapTradeActivityProcessor for proper processing
+    const processor = new SnapTradeActivityProcessor();
 
-    // Get accounts for this connection
-    const accountsResponse = await client.accountInformation.listUserAccounts({
-      userId: user.snapTradeUserId,
-      userSecret: decryptedSecret,
-    });
-
-    const accounts = accountsResponse.data || [];
-    let totalTradesImported = 0;
-    let totalTradesUpdated = 0;
-    let totalTradesSkipped = 0;
-    const errors: string[] = [];
-
-    // Sync activities for each account
-    for (const account of accounts) {
-      try {
-        // Get activities (trades) for this account (default to 30 days ago)
-        const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-
-        await RateLimitHelper.checkRateLimit();
-        
-        // Get account activities for this account
-        const activitiesResponse = await client.accountInformation.getAccountActivities({
-          userId: user.snapTradeUserId,
-          userSecret: decryptedSecret,
-          accountId: account.id,
-          startDate: startDate.toISOString().split('T')[0], // Format: YYYY-MM-DD
-        });
-
-        const activitiesData = activitiesResponse.data;
-        const activities: SnapTradeActivity[] = (activitiesData && 'activities' in activitiesData) 
-          ? (activitiesData.activities || []) 
-          : [];
-        
-        // Filter for trade activities
-        const tradeActivities = activities.filter((activity: SnapTradeActivity) => 
-          ['BUY', 'SELL', 'DIV', 'INT'].includes(activity.type?.toUpperCase() || '')
-        );
-
-        // Process each trade activity
-        for (const activity of tradeActivities) {
-          try {
-            const result = await processTradeActivity(
-              activity,
-              request.userId,
-              request.connectionId,
-              account.id
-            );
-
-            if (result.imported) totalTradesImported++;
-            else if (result.updated) totalTradesUpdated++;
-            else totalTradesSkipped++;
-
-          } catch (error) {
-            const errorMsg = `Failed to process activity ${activity.id}: ${handleSnapTradeError(error)}`;
-            errors.push(errorMsg);
-            console.error(errorMsg, error);
-          }
+    const result = await processor.processActivities(
+      request.connectionId,
+      request.userId,
+      {
+        dateFrom: startDate,
+        dateTo: endDate,
+        onProgress: (progress, message) => {
+          console.log(`[SNAPTRADE_SYNC] ${request.userId}: ${progress}% - ${message}`);
         }
-      } catch (error) {
-        const errorMsg = `Failed to sync account ${account.id}: ${handleSnapTradeError(error)}`;
-        errors.push(errorMsg);
-        console.error(errorMsg, error);
       }
-    }
+    );
 
-    // Note: Connection status updates removed since brokerConnection model no longer exists
+    // Get the created order IDs from the processor result
+    const orderIds = result.createdOrderIds || [];
 
-    // Update sync log
+    // Update sync log with results
     await prisma.snapTradeSync.update({
       where: { id: syncLog.id },
       data: {
-        status: SyncStatus.COMPLETED,
-        ordersCreated: totalTradesImported,
-        activitiesFound: totalTradesImported + totalTradesUpdated + totalTradesSkipped,
-        errors: errors.length > 0 ? errors : undefined,
+        status: result.success ? SyncStatus.COMPLETED : SyncStatus.FAILED,
+        ordersCreated: result.ordersCreated,
+        activitiesFound: result.activitiesFound,
+        orderIds: orderIds,
+        dataReturned: result.activitiesFound > 0,
+        errors: result.errors.length > 0 ? result.errors : undefined,
         completedAt: new Date(),
       },
     });
 
     return {
-      tradesImported: totalTradesImported,
-      tradesUpdated: totalTradesUpdated,
-      tradesSkipped: totalTradesSkipped,
-      errors,
-      success: errors.length === 0,
+      tradesImported: result.ordersCreated,
+      tradesUpdated: 0, // ActivityProcessor doesn't track updates separately
+      tradesSkipped: result.duplicatesSkipped,
+      errors: result.errors,
+      success: result.success,
     };
 
   } catch (error) {
     const errorMsg = handleSnapTradeError(error);
-    
+
     // Update sync log with error
     await prisma.snapTradeSync.update({
       where: { id: syncLog.id },
       data: {
         status: SyncStatus.FAILED,
         errors: [errorMsg],
+        dataReturned: false,
         completedAt: new Date(),
       },
     });
-
-    // Note: Connection status updates removed since brokerConnection model no longer exists
 
     throw new Error(errorMsg);
   }
 }
 
+
 /**
- * Process a single trade activity from SnapTrade
+ * Update sync configuration
  */
-async function processTradeActivity(
-  activity: SnapTradeActivity,
-  userId: string,
-  connectionId: string,
-  accountId: string
-): Promise<{ imported: boolean; updated: boolean }> {
-  // Check if this trade already exists
-  const existingTrade = await prisma.trade.findFirst({
-    where: {
-      userId,
-      snapTradeId: activity.id,
-    },
-  });
+export async function updateSyncConfig(config: {
+  startDate?: string;
+  endDate?: string | null;
+  limit?: number;
+  activityTypes?: string;
+}) {
+  let existingConfig = await prisma.snapTradeSyncConfig.findFirst();
 
-  if (existingTrade) {
-    // Trade already exists, skip it
-    return { imported: false, updated: false };
-  }
-
-  // Map SnapTrade activity to our trade format
-  const tradeData = mapSnapTradeActivityToTrade(activity, userId, connectionId, accountId);
-
-  // Separate the order data from trade data
-  const { orderData, ...cleanTradeData } = tradeData;
-
-  // Create the trade
-  const trade = await prisma.trade.create({
-    data: {
-      ...cleanTradeData,
-      importSource: ImportSource.SNAPTRADE_API,
-      snapTradeId: activity.id,
-    },
-  });
-
-  // Create the corresponding order if order data exists
-  if (orderData) {
-    await prisma.order.create({
+  if (!existingConfig) {
+    // Create new config
+    return await prisma.snapTradeSyncConfig.create({
       data: {
-        ...orderData,
-        userId,
-        tradeId: trade.id,
-        importBatchId: connectionId, // Use connection ID as import batch reference
-      },
+        startDate: config.startDate || '2015-01-01',
+        endDate: config.endDate,
+        limit: config.limit || 500,
+        activityTypes: config.activityTypes || 'BUY,SELL'
+      }
+    });
+  } else {
+    // Update existing config
+    return await prisma.snapTradeSyncConfig.update({
+      where: { id: existingConfig.id },
+      data: config
     });
   }
-
-  return { imported: true, updated: false };
 }
 
 /**

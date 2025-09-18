@@ -18,6 +18,7 @@ export interface ProcessResult {
   duplicatesSkipped: number;
   errors: string[];
   success: boolean;
+  createdOrderIds?: string[];
 }
 
 /**
@@ -314,17 +315,26 @@ export class SnapTradeActivityProcessor {
 
       onProgress?.(90, 'Saving orders to database');
 
-      // Batch insert orders
+      // Batch insert orders and collect IDs
+      const createdOrderIds: string[] = [];
       if (uniqueOrders.length > 0) {
         for (let i = 0; i < uniqueOrders.length; i += this.BATCH_SIZE) {
           const batch = uniqueOrders.slice(i, i + this.BATCH_SIZE);
-          
-          await prisma.order.createMany({
-            data: batch,
-            skipDuplicates: true
-          });
 
-          ordersCreated += batch.length;
+          // Use individual creates to get back the IDs (createMany doesn't return IDs)
+          for (const orderData of batch) {
+            try {
+              const createdOrder = await prisma.order.create({
+                data: orderData,
+                select: { id: true }
+              });
+              createdOrderIds.push(createdOrder.id);
+              ordersCreated++;
+            } catch (error) {
+              // Skip duplicates
+              console.warn('Skipped duplicate order:', error);
+            }
+          }
         }
       }
 
@@ -335,7 +345,8 @@ export class SnapTradeActivityProcessor {
         ordersCreated,
         duplicatesSkipped,
         errors,
-        success: errors.length === 0
+        success: errors.length === 0,
+        createdOrderIds
       };
 
     } catch (error) {
@@ -347,7 +358,8 @@ export class SnapTradeActivityProcessor {
         ordersCreated,
         duplicatesSkipped,
         errors,
-        success: false
+        success: false,
+        createdOrderIds: []
       };
     } finally {
       // Reset date counters for next run

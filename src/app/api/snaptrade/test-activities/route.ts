@@ -70,8 +70,8 @@ export async function GET(request: NextRequest) {
     // Step 3: Get activities with hardcoded parameters
 
     const testParams = {
-      startDate: '2010-01-01',
-      endDate: '2025-09-02', 
+      startDate: '2015-01-01',
+      endDate: new Date().toISOString().split('T')[0], // Current date in YYYY-MM-DD format
       limit: 10,
       type: 'BUY,SELL'
     };
