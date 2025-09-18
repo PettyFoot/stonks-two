@@ -35,7 +35,13 @@ export default function CookieSettingsTab() {
     functional: false,
     analytics: false,
   });
-  const [consentStatus, setConsentStatus] = useState<'granted' | 'denied' | null>(null);
+  const [consentStatus, setConsentStatus] = useState<{
+    hasConsented: boolean;
+    needsUpdate: boolean;
+    consentDate: string | undefined;
+    preferences: CookiePreferences;
+    version: string | undefined;
+  } | null>(null);
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 

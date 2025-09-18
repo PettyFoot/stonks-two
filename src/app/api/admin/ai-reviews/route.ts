@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth } from '@/lib/auth0';
 import { prisma } from '@/lib/prisma';
+import { AdminReviewStatus } from '@prisma/client';
 
 export async function GET(req: NextRequest) {
   try {
@@ -9,15 +10,15 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const filter = searchParams.get('filter') || 'all';
 
-    const where: { adminReviewStatus?: string | { in: string[] } } = {};
+    const where: { adminReviewStatus?: AdminReviewStatus | { in: AdminReviewStatus[] } } = {};
     
     switch (filter) {
       case 'pending':
-        where.adminReviewStatus = 'PENDING';
+        where.adminReviewStatus = AdminReviewStatus.PENDING;
         break;
       case 'reviewed':
         where.adminReviewStatus = {
-          in: ['APPROVED', 'CORRECTED', 'DISMISSED']
+          in: [AdminReviewStatus.APPROVED, AdminReviewStatus.CORRECTED, AdminReviewStatus.DISMISSED]
         };
         break;
     }
