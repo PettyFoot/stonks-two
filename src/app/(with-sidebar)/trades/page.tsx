@@ -11,12 +11,10 @@ import { useTradesData } from '@/hooks/useTradesData';
 import { PageTriangleLoader, FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
-import { RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import AdSense from '@/components/AdSense';
 
 export default function Trades() {
-  const [calculating, setCalculating] = useState(false);
   const [columnConfig, setColumnConfig] = useState<ColumnConfiguration[]>([]);
   
   const { isDemo } = useAuth();
@@ -68,31 +66,6 @@ export default function Trades() {
 
 
 
-  const calculateTrades = async () => {
-    setCalculating(true);
-    try {
-      const response = await fetch('/api/trades/calculate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        toast.success(`Successfully calculated ${data.tradesCalculated} trades`);
-        // Refresh the trades data
-        if (refetch) refetch();
-      } else {
-        toast.error('Failed to calculate trades');
-      }
-    } catch (error) {
-      console.error('Error calculating trades:', error);
-      toast.error('Failed to calculate trades');
-    } finally {
-      setCalculating(false);
-    }
-  };
 
 
   const handleTradeSelect = (trade: Trade) => {
@@ -154,17 +127,6 @@ export default function Trades() {
             
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-              <Button
-                onClick={calculateTrades}
-                disabled={calculating}
-                size="sm"
-                className="bg-[var(--theme-green)] hover:bg-[var(--theme-green)]/80 text-white"
-              >
-                <RefreshCw className={`mr-2 h-4 w-4 ${calculating ? 'animate-spin' : ''}`} />
-                {calculating ? 'Calculating...' : 'Calculate Trades'}
-              </Button>
-
-              
               <ColumnSettingsModal onColumnsChange={handleColumnsChange} />
             </div>
           </div>
