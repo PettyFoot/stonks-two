@@ -566,14 +566,14 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
 
                 {/* Upgrade Message for Free Users */}
                 {showUpgradeMessage && !hasPremiumAccess && (
-                  <div className="mt-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
+                  <div className="mt-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
                       <Crown className="h-5 w-5 text-amber-600" />
                       <p className="text-sm font-medium text-amber-800">
                         Broker connection is a Voyager Pro service
                       </p>
                     </div>
-                    <Link href="/settings/subscription">
+                    <Link href="/settings">
                       <Button
                         variant="outline"
                         className="mt-2 border-amber-300 text-amber-700 hover:bg-amber-100"
