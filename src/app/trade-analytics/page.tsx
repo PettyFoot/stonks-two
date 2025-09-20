@@ -1,5 +1,4 @@
 import { Metadata } from 'next';
-import { generateMetadata as genMetadata } from '@/lib/seo';
 import TradeAnalyticsComponent from './TradeAnalyticsComponent';
 
 export const metadata: Metadata = {

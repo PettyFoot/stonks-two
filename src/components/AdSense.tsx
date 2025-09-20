@@ -28,16 +28,6 @@ export default function AdSense({
   const [adLoaded, setAdLoaded] = useState(false);
   const [adError, setAdError] = useState<string | null>(null);
 
-  // Don't show ads for premium users
-  if (hasPremiumAccess) {
-    return null;
-  }
-
-  // Don't show ads while checking subscription status
-  if (subscriptionLoading) {
-    return null;
-  }
-
   useEffect(() => {
     // Prevent double initialization in React StrictMode
     if (initializedRef.current) {
@@ -122,6 +112,16 @@ export default function AdSense({
       observer.disconnect();
     };
   }, [slot]); // Re-run if slot changes
+
+  // Don't show ads for premium users
+  if (hasPremiumAccess) {
+    return null;
+  }
+
+  // Don't show ads while checking subscription status
+  if (subscriptionLoading) {
+    return null;
+  }
 
   // Show error state in development
   if (adError && process.env.NODE_ENV === 'development') {
