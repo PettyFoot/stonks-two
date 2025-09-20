@@ -56,6 +56,15 @@ export interface SyncResult {
   tradesSkipped: number;
   errors: string[];
   success: boolean;
+  // Trade processing results
+  tradeProcessing?: {
+    newTradesCreated: number;
+    completedTrades: number;
+    openTrades: number;
+    totalPnL: number;
+    errors: string[];
+    success: boolean;
+  };
 }
 
 export interface CreateConnectionRequest {

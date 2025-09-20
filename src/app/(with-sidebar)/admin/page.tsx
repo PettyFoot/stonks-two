@@ -30,7 +30,7 @@ interface AdminStats {
 
 export default function AdminDashboardPage() {
   const router = useRouter();
-  const { isAdmin, isLoading, user } = useAdminAuth();
+  const { isAdmin, isLoading } = useAdminAuth();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
 

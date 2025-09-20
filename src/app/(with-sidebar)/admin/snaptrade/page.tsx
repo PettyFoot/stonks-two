@@ -15,13 +15,11 @@ import {
   Users,
   Activity,
   RefreshCw,
-  Calendar,
-  Database,
   AlertCircle,
   CheckCircle,
   Clock,
   Play,
-  FileText,
+  Calculator,
 } from 'lucide-react';
 
 interface SyncConfig {
@@ -37,6 +35,7 @@ interface SnapTradeUser {
   email: string;
   hasSnapTradeConnection: boolean;
   snapTradeUserId: string;
+  autoSyncEnabled: boolean;
   lastSync: {
     status: string;
     startedAt: string;
@@ -61,14 +60,47 @@ interface SyncLog {
   duration: number | null;
 }
 
+interface AllUser {
+  id: string;
+  email: string;
+  createdAt: string;
+  hasSnapTradeConnection: boolean;
+  snapTradeUserId: string | null;
+  autoSyncEnabled: boolean;
+  statistics: {
+    totalOrders: number;
+    totalTrades: number;
+    unprocessedOrders: number;
+    openTrades: number;
+    completedTrades: number;
+    totalPnL: number;
+    lastTradeCalculation: string | null;
+  };
+}
+
+interface TradeCalculationResult {
+  userId: string;
+  email: string;
+  success: boolean;
+  tradesCreated: number;
+  completedTrades: number;
+  openTrades: number;
+  totalPnL: number;
+  ordersProcessed: number;
+  errors: string[];
+}
+
 export default function SnapTradeAdminPage() {
   const { isAdmin, isLoading } = useAdminAuth();
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState<SyncConfig | null>(null);
   const [users, setUsers] = useState<SnapTradeUser[]>([]);
+  const [allUsers, setAllUsers] = useState<AllUser[]>([]);
   const [logs, setLogs] = useState<SyncLog[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [selectedForCalc, setSelectedForCalc] = useState<Set<string>>(new Set());
   const [syncing, setSyncing] = useState(false);
+  const [calculating, setCalculating] = useState(false);
   const [configChanged, setConfigChanged] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -77,6 +109,7 @@ export default function SnapTradeAdminPage() {
       await Promise.all([
         loadConfig(),
         loadUsers(),
+        loadAllUsers(),
         loadLogs()
       ]);
     } catch (error) {
@@ -106,6 +139,14 @@ export default function SnapTradeAdminPage() {
     if (response.ok) {
       const data = await response.json();
       setUsers(data.users);
+    }
+  };
+
+  const loadAllUsers = async () => {
+    const response = await fetch('/api/admin/users/all');
+    if (response.ok) {
+      const data = await response.json();
+      setAllUsers(data.users);
     }
   };
 
@@ -157,10 +198,23 @@ export default function SnapTradeAdminPage() {
 
       const data = await response.json();
 
+      // Log full response for debugging
+      console.log('[ADMIN_SYNC] Full sync response:', data);
+
       if (response.ok) {
-        alert(`Sync completed! ${data.successful}/${data.processed} users synced successfully. ${data.totalTradesImported} total trades imported.`);
+        // Check if there were any failures and show detailed errors
+        if (data.failed > 0 && data.results) {
+          const failedUsers = data.results.filter((r: any) => !r.success);
+          const errorDetails = failedUsers.map((user: any) =>
+            `${user.email}: ${user.errors?.join(', ') || 'Unknown error'}`
+          ).join('\n');
+
+          alert(`Sync completed with errors!\n\nSUCCESS: ${data.successful}/${data.processed} users synced successfully\nTRADES: ${data.totalTradesImported} total trades imported\n\nFAILED USERS:\n${errorDetails}`);
+        } else {
+          alert(`Sync completed! ${data.successful}/${data.processed} users synced successfully. ${data.totalTradesImported} total trades imported.`);
+        }
         setSelectedUsers(new Set());
-        await Promise.all([loadUsers(), loadLogs()]);
+        await Promise.all([loadUsers(), loadAllUsers(), loadLogs()]);
       } else {
         alert(`Sync failed: ${data.error}`);
       }
@@ -172,6 +226,93 @@ export default function SnapTradeAdminPage() {
     }
   };
 
+  const syncAllUsers = async () => {
+    try {
+      setSyncing(true);
+      const allUserIds = users.map(user => user.id);
+      const response = await fetch('/api/admin/snaptrade/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userIds: allUserIds
+        })
+      });
+
+      const data = await response.json();
+
+      // Log full response for debugging
+      console.log('[ADMIN_SYNC_ALL] Full sync response:', data);
+
+      if (response.ok) {
+        // Check if there were any failures and show detailed errors
+        if (data.failed > 0 && data.results) {
+          const failedUsers = data.results.filter((r: any) => !r.success);
+          const errorDetails = failedUsers.map((user: any) =>
+            `${user.email}: ${user.errors?.join(', ') || 'Unknown error'}`
+          ).join('\n');
+
+          alert(`Sync All completed with errors!\n\nSUCCESS: ${data.successful}/${data.processed} users synced successfully\nTRADES: ${data.totalTradesImported} total trades imported\n\nFAILED USERS:\n${errorDetails}`);
+        } else {
+          alert(`Sync All completed! ${data.successful}/${data.processed} users synced successfully. ${data.totalTradesImported} total trades imported.`);
+        }
+        await Promise.all([loadUsers(), loadAllUsers(), loadLogs()]);
+      } else {
+        alert(`Sync All failed: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Error syncing all users:', error);
+      alert('Error syncing all users');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const toggleAutoSync = async (userId: string, enabled: boolean) => {
+    try {
+      const response = await fetch('/api/admin/users/auto-sync', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, autoSyncEnabled: enabled })
+      });
+
+      if (response.ok) {
+        // Update local state
+        setUsers(prev => prev.map(user =>
+          user.id === userId ? { ...user, autoSyncEnabled: enabled } : user
+        ));
+      } else {
+        const error = await response.json();
+        alert(`Failed to update auto-sync: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error toggling auto-sync:', error);
+      alert('Error updating auto-sync setting');
+    }
+  };
+
+  const testConnection = async (userId: string, email: string) => {
+    try {
+      const response = await fetch('/api/snaptrade/test-connection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+
+      const data = await response.json();
+      console.log('[ADMIN_TEST] Test connection response:', data);
+
+      if (response.ok && data.success) {
+        alert(`✅ Connection Test SUCCESS for ${email}!\n\nAccounts found: ${data.accounts.length}\nMessage: ${data.message}`);
+      } else {
+        const errorDetails = data.details ? JSON.stringify(data.details, null, 2) : data.error;
+        alert(`❌ Connection Test FAILED for ${email}!\n\nError: ${errorDetails}`);
+      }
+    } catch (error) {
+      console.error('Error testing connection:', error);
+      alert(`❌ Test failed for ${email}: ${error}`);
+    }
+  };
+
   const toggleUserSelection = (userId: string) => {
     const newSelection = new Set(selectedUsers);
     if (newSelection.has(userId)) {
@@ -180,6 +321,101 @@ export default function SnapTradeAdminPage() {
       newSelection.add(userId);
     }
     setSelectedUsers(newSelection);
+  };
+
+  const toggleCalcSelection = (userId: string) => {
+    const newSelection = new Set(selectedForCalc);
+    if (newSelection.has(userId)) {
+      newSelection.delete(userId);
+    } else {
+      newSelection.add(userId);
+    }
+    setSelectedForCalc(newSelection);
+  };
+
+  const calculateTrades = async () => {
+    if (selectedForCalc.size === 0) {
+      alert('Please select at least one user to calculate trades');
+      return;
+    }
+
+    try {
+      setCalculating(true);
+      const response = await fetch('/api/admin/trades/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userIds: Array.from(selectedForCalc)
+        })
+      });
+
+      const data = await response.json();
+
+      console.log('[ADMIN_CALC] Full calculation response:', data);
+
+      if (response.ok) {
+        // Check if there were any failures and show detailed results
+        if (data.failed > 0 && data.results) {
+          const failedUsers = data.results.filter((r: TradeCalculationResult) => !r.success);
+          const errorDetails = failedUsers.map((user: TradeCalculationResult) =>
+            `${user.email}: ${user.errors?.join(', ') || 'Unknown error'}`
+          ).join('\n');
+
+          alert(`Trade Calculation completed with errors!\n\nSUCCESS: ${data.successful}/${data.processed} users processed\nTRADES CREATED: ${data.summary.totalTradesCreated}\nTOTAL P&L: $${data.summary.totalPnL.toFixed(2)}\nORDERS PROCESSED: ${data.summary.totalOrdersProcessed}\n\nFAILED USERS:\n${errorDetails}`);
+        } else {
+          alert(`Trade Calculation completed!\n\n${data.successful}/${data.processed} users processed successfully\nTRADES CREATED: ${data.summary.totalTradesCreated}\nCOMPLETED TRADES: ${data.summary.totalCompletedTrades}\nOPEN TRADES: ${data.summary.totalOpenTrades}\nTOTAL P&L: $${data.summary.totalPnL.toFixed(2)}\nORDERS PROCESSED: ${data.summary.totalOrdersProcessed}`);
+        }
+        setSelectedForCalc(new Set());
+        await loadAllUsers(); // Refresh user statistics
+      } else {
+        alert(`Trade calculation failed: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Error calculating trades:', error);
+      alert('Error calculating trades');
+    } finally {
+      setCalculating(false);
+    }
+  };
+
+  const calculateAllTrades = async () => {
+    try {
+      setCalculating(true);
+      const allUserIds = allUsers.map(user => user.id);
+      const response = await fetch('/api/admin/trades/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userIds: allUserIds
+        })
+      });
+
+      const data = await response.json();
+
+      console.log('[ADMIN_CALC_ALL] Full calculation response:', data);
+
+      if (response.ok) {
+        // Check if there were any failures and show detailed results
+        if (data.failed > 0 && data.results) {
+          const failedUsers = data.results.filter((r: TradeCalculationResult) => !r.success);
+          const errorDetails = failedUsers.map((user: TradeCalculationResult) =>
+            `${user.email}: ${user.errors?.join(', ') || 'Unknown error'}`
+          ).join('\n');
+
+          alert(`Calculate All completed with errors!\n\nSUCCESS: ${data.successful}/${data.processed} users processed\nTRADES CREATED: ${data.summary.totalTradesCreated}\nTOTAL P&L: $${data.summary.totalPnL.toFixed(2)}\nORDERS PROCESSED: ${data.summary.totalOrdersProcessed}\n\nFAILED USERS:\n${errorDetails}`);
+        } else {
+          alert(`Calculate All completed!\n\n${data.successful}/${data.processed} users processed successfully\nTRADES CREATED: ${data.summary.totalTradesCreated}\nCOMPLETED TRADES: ${data.summary.totalCompletedTrades}\nOPEN TRADES: ${data.summary.totalOpenTrades}\nTOTAL P&L: $${data.summary.totalPnL.toFixed(2)}\nORDERS PROCESSED: ${data.summary.totalOrdersProcessed}`);
+        }
+        await loadAllUsers(); // Refresh user statistics
+      } else {
+        alert(`Calculate All failed: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Error calculating all trades:', error);
+      alert('Error calculating all trades');
+    } finally {
+      setCalculating(false);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -308,21 +544,35 @@ export default function SnapTradeAdminPage() {
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
                 Users with SnapTrade Connections ({users.length})
-                {selectedUsers.size > 0 && (
+                <div className="ml-auto flex gap-2">
                   <Button
-                    onClick={triggerSync}
+                    onClick={() => syncAllUsers()}
                     disabled={syncing}
-                    className="ml-auto"
+                    variant="outline"
                     size="sm"
                   >
                     {syncing ? (
                       <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                     ) : (
-                      <Play className="w-4 h-4 mr-2" />
+                      <RefreshCw className="w-4 h-4 mr-2" />
                     )}
-                    Sync Selected ({selectedUsers.size})
+                    Sync All
                   </Button>
-                )}
+                  {selectedUsers.size > 0 && (
+                    <Button
+                      onClick={triggerSync}
+                      disabled={syncing}
+                      size="sm"
+                    >
+                      {syncing ? (
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Play className="w-4 h-4 mr-2" />
+                      )}
+                      Sync Selected ({selectedUsers.size})
+                    </Button>
+                  )}
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -338,20 +588,133 @@ export default function SnapTradeAdminPage() {
                       <div className="text-sm text-gray-500">
                         SnapTrade ID: {user.snapTradeUserId}
                       </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Checkbox
+                          checked={user.autoSyncEnabled}
+                          onCheckedChange={(checked) => toggleAutoSync(user.id, !!checked)}
+                        />
+                        <span className="text-xs text-gray-600">Auto-sync enabled</span>
+                      </div>
+                    </div>
+                    <div className="text-right flex items-center gap-2">
+                      <div>
+                        {user.lastSync ? (
+                          <div className="space-y-1">
+                            {getStatusBadge(user.lastSync.status)}
+                            <div className="text-xs text-gray-500">
+                              {user.lastSync.activitiesFound} activities, {user.lastSync.ordersCreated} orders
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {new Date(user.lastSync.startedAt).toLocaleDateString()}
+                            </div>
+                          </div>
+                        ) : (
+                          <Badge variant="secondary">Never synced</Badge>
+                        )}
+                      </div>
+                      <Button
+                        onClick={() => testConnection(user.id, user.email)}
+                        variant="outline"
+                        size="sm"
+                        className="ml-2"
+                      >
+                        Test
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Trade Calculation for All Users */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calculator className="h-5 w-5" />
+                Trade Calculation - All Users ({allUsers.length})
+                <div className="ml-auto flex gap-2">
+                  <Button
+                    onClick={calculateAllTrades}
+                    disabled={calculating}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {calculating ? (
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Calculator className="w-4 h-4 mr-2" />
+                    )}
+                    Calculate All
+                  </Button>
+                  {selectedForCalc.size > 0 && (
+                    <Button
+                      onClick={calculateTrades}
+                      disabled={calculating}
+                      size="sm"
+                    >
+                      {calculating ? (
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Play className="w-4 h-4 mr-2" />
+                      )}
+                      Calculate Selected ({selectedForCalc.size})
+                    </Button>
+                  )}
+                </div>
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Process orders into trades for users. This will analyze unprocessed orders and create complete or incomplete trades.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {allUsers.map((user) => (
+                  <div key={user.id} className="flex items-center gap-4 p-3 border rounded-lg">
+                    <Checkbox
+                      checked={selectedForCalc.has(user.id)}
+                      onCheckedChange={() => toggleCalcSelection(user.id)}
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium">{user.email}</div>
+                      <div className="text-sm text-gray-500">
+                        {user.hasSnapTradeConnection && (
+                          <Badge variant="secondary" className="mr-2">SnapTrade</Badge>
+                        )}
+                        Joined: {new Date(user.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-center">
+                      <div>
+                        <div className="text-sm font-medium">{user.statistics.unprocessedOrders}</div>
+                        <div className="text-xs text-gray-500">Unprocessed Orders</div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium">{user.statistics.totalTrades}</div>
+                        <div className="text-xs text-gray-500">Total Trades</div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium">{user.statistics.openTrades}</div>
+                        <div className="text-xs text-gray-500">Open</div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium">{user.statistics.completedTrades}</div>
+                        <div className="text-xs text-gray-500">Completed</div>
+                      </div>
+                      <div>
+                        <div className={`text-sm font-medium ${user.statistics.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          ${user.statistics.totalPnL.toFixed(2)}
+                        </div>
+                        <div className="text-xs text-gray-500">Total P&L</div>
+                      </div>
                     </div>
                     <div className="text-right">
-                      {user.lastSync ? (
-                        <div className="space-y-1">
-                          {getStatusBadge(user.lastSync.status)}
-                          <div className="text-xs text-gray-500">
-                            {user.lastSync.activitiesFound} activities, {user.lastSync.ordersCreated} orders
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {new Date(user.lastSync.startedAt).toLocaleDateString()}
-                          </div>
+                      {user.statistics.lastTradeCalculation ? (
+                        <div className="text-xs text-gray-500">
+                          Last calc: {new Date(user.statistics.lastTradeCalculation).toLocaleDateString()}
                         </div>
                       ) : (
-                        <Badge variant="secondary">Never synced</Badge>
+                        <Badge variant="secondary">Never calculated</Badge>
                       )}
                     </div>
                   </div>

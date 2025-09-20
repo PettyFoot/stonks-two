@@ -1,11 +1,13 @@
 import { getSnapTradeClient, handleSnapTradeError, RateLimitHelper } from './client';
 import { prisma } from '@/lib/prisma';
-import { 
+import {
   CreateConnectionRequest,
   CreateConnectionResponse,
   AuthCompleteRequest,
   AuthCompleteResponse,
 } from './types';
+import { syncTradesForConnection } from './sync';
+import { SyncType } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 
@@ -207,8 +209,8 @@ export async function completeBrokerAuth(
     const accounts = accountsResponse.data || [];
     const primaryAccount = accounts[0]; // Use first account as primary
 
-    // Connection successful - return broker info from SnapTrade
-    return {
+    // Connection successful - trigger initial sync in background
+    const connectionResult = {
       success: true,
       connection: {
         id: latestAuth.id || '',
@@ -227,6 +229,24 @@ export async function completeBrokerAuth(
         })),
       },
     };
+
+    // Trigger initial sync in background (don't await to avoid blocking the response)
+    setImmediate(async () => {
+      try {
+        console.log(`[SNAPTRADE_AUTH] Triggering initial sync for user ${request.userId} after successful connection`);
+        await syncTradesForConnection({
+          userId: request.userId,
+          connectionId: latestAuth.id || request.userId,
+          syncType: SyncType.AUTOMATIC,
+        });
+        console.log(`[SNAPTRADE_AUTH] Initial sync completed for user ${request.userId}`);
+      } catch (syncError) {
+        console.error(`[SNAPTRADE_AUTH] Initial sync failed for user ${request.userId}:`, syncError);
+        // Don't throw error since connection was successful
+      }
+    });
+
+    return connectionResult;
   } catch (error) {
     console.error('Error completing broker auth:', error);
     return {

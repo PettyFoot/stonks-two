@@ -26,13 +26,13 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { 
-  Home, 
-  Calendar, 
-  BarChart3, 
-  TrendingUp, 
-  BookOpen, 
-  Plus, 
+import {
+  Home,
+  Calendar,
+  BarChart3,
+  TrendingUp,
+  BookOpen,
+  Plus,
   Search,
   Settings,
   Import,
@@ -43,7 +43,8 @@ import {
   Palette,
   Shield,
   Users,
-  AlertTriangle
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Theme } from '@/lib/themes';
@@ -62,6 +63,7 @@ const navigation = [
 const adminNavigation = [
   { name: 'Admin Dashboard', href: '/admin', icon: Shield },
   { name: 'User Management', href: '/admin/users', icon: Users },
+  { name: 'SnapTrade Sync', href: '/admin/snaptrade', icon: RefreshCw },
   { name: 'AI Reviews', href: '/admin/ai-reviews', icon: AlertTriangle },
   { name: 'Import History', href: '/import/history', icon: Import },
 ];

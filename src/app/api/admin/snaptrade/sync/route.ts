@@ -68,19 +68,31 @@ export async function POST(request: NextRequest) {
           syncType: SyncType.MANUAL
         });
 
-        results.push({
-          userId: user.id,
-          email: user.email,
+        console.log(`[ADMIN_SYNC] Sync result for user ${user.email}:`, {
           success: result.success,
           tradesImported: result.tradesImported,
           tradesSkipped: result.tradesSkipped,
           errors: result.errors
         });
 
-        console.log(`[ADMIN_SYNC] Completed sync for user ${user.email}: ${result.tradesImported} trades imported`);
+        results.push({
+          userId: user.id,
+          email: user.email,
+          success: result.success,
+          tradesImported: result.tradesImported,
+          tradesSkipped: result.tradesSkipped,
+          errors: result.errors,
+          tradeProcessing: result.tradeProcessing
+        });
+
+        if (result.success) {
+          console.log(`[ADMIN_SYNC] Successfully completed sync for user ${user.email}: ${result.tradesImported} trades imported`);
+        } else {
+          console.log(`[ADMIN_SYNC] Sync failed for user ${user.email}. Errors: ${result.errors?.join(', ')}`);
+        }
 
       } catch (error) {
-        console.error(`[ADMIN_SYNC] Failed to sync user ${user.email}:`, error);
+        console.error(`[ADMIN_SYNC] Exception during sync for user ${user.email}:`, error);
 
         results.push({
           userId: user.id,
@@ -88,7 +100,8 @@ export async function POST(request: NextRequest) {
           success: false,
           tradesImported: 0,
           tradesSkipped: 0,
-          errors: [error instanceof Error ? error.message : 'Unknown error']
+          errors: [error instanceof Error ? error.message : 'Unknown error'],
+          tradeProcessing: undefined
         });
       }
     }
@@ -96,12 +109,47 @@ export async function POST(request: NextRequest) {
     const successCount = results.filter(r => r.success).length;
     const totalTradesImported = results.reduce((sum, r) => sum + r.tradesImported, 0);
 
+    // Calculate trade processing summary
+    const totalNewTrades = results.reduce((sum, r) => sum + (r.tradeProcessing?.newTradesCreated || 0), 0);
+    const totalCompletedTrades = results.reduce((sum, r) => sum + (r.tradeProcessing?.completedTrades || 0), 0);
+    const totalOpenTrades = results.reduce((sum, r) => sum + (r.tradeProcessing?.openTrades || 0), 0);
+    const totalPnL = results.reduce((sum, r) => sum + (r.tradeProcessing?.totalPnL || 0), 0);
+    const tradeProcessingErrors = results.filter(r => r.tradeProcessing && !r.tradeProcessing.success).length;
+
+    console.log(`[ADMIN_SYNC] Final summary:`, {
+      processed: results.length,
+      successful: successCount,
+      failed: results.length - successCount,
+      totalTradesImported,
+      tradeProcessing: {
+        totalNewTrades,
+        totalCompletedTrades,
+        totalOpenTrades,
+        totalPnL: totalPnL.toFixed(2),
+        errors: tradeProcessingErrors
+      },
+      results: results.map(r => ({
+        email: r.email,
+        success: r.success,
+        tradesImported: r.tradesImported,
+        tradeProcessing: r.tradeProcessing,
+        errors: r.errors
+      }))
+    });
+
     return NextResponse.json({
       success: true,
       processed: results.length,
       successful: successCount,
       failed: results.length - successCount,
       totalTradesImported,
+      tradeProcessing: {
+        totalNewTrades,
+        totalCompletedTrades,
+        totalOpenTrades,
+        totalPnL,
+        errors: tradeProcessingErrors
+      },
       results
     });
 

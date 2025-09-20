@@ -27,6 +27,7 @@ model User {
   snapTradeRegisteredAt DateTime?
   snapTradeUserId       String?              @unique
   snapTradeUserSecret   String?
+  autoSyncEnabled       Boolean              @default(true)
   accountDeletionLogs   AccountDeletionLog[]
   apiUsage              ApiUsage[]
   csvUploadLogs         CsvUploadLog[]
@@ -773,6 +774,23 @@ enum BrokerType {
   CHARLES_SCHWAB
   FIDELITY
   ROBINHOOD
+  ALPACA
+  BINANCE
+  CHASE
+  COINBASE
+  DEGIRO
+  KRAKEN
+  PUBLIC
+  QUESTRADE
+  STAKE
+  TASTYTRADE
+  TRADIER
+  TRADING212
+  VANGUARD
+  WEALTHSIMPLE
+  WEBULL
+  ZERODHA
+  AJ_BELL
   GENERIC_CSV
 
   @@map("broker_type")

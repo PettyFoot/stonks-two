@@ -5,8 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   SubscriptionManagement,
   PricingCards,
-  SubscriptionStatus,
-  UpgradePrompt
+  SubscriptionStatus
 } from '@/components/subscription';
 import { SubscriptionErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -14,7 +13,6 @@ import { SubscriptionTier } from '@prisma/client';
 import {
   Crown,
   TrendingUp,
-  Settings as SettingsIcon,
   Loader2
 } from 'lucide-react';
 
@@ -34,7 +32,6 @@ function SubscriptionTabInternal() {
   }
 
   const currentTier = subscription?.tier || SubscriptionTier.FREE;
-  const isFree = currentTier === SubscriptionTier.FREE;
   const isPremium = currentTier === SubscriptionTier.PREMIUM;
 
   return (

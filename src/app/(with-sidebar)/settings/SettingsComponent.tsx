@@ -17,7 +17,6 @@ import {
   Shield,
   Settings as SettingsIcon,
   Cookie,
-  Loader2,
   Mail
 } from 'lucide-react';
 import { FullPageTriangleLoader } from '@/components/ui/TriangleLoader';

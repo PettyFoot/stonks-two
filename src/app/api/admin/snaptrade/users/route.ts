@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
         email: true,
         createdAt: true,
         snapTradeUserId: true,
+        autoSyncEnabled: true,
         // Get latest sync info
         snapTradeSyncs: {
           take: 1,
@@ -59,6 +60,7 @@ export async function GET(request: NextRequest) {
         createdAt: user.createdAt,
         hasSnapTradeConnection: !!user.snapTradeUserId,
         snapTradeUserId: user.snapTradeUserId,
+        autoSyncEnabled: user.autoSyncEnabled,
         lastSync: latestSync ? {
           id: latestSync.id,
           status: latestSync.status,

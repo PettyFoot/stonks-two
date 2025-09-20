@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useSubscription } from '@/hooks/useSubscription';
 
 declare global {
   interface Window {
@@ -15,16 +16,27 @@ interface AdSenseProps {
   responsive?: boolean;
 }
 
-export default function AdSense({ 
-  className = '', 
-  slot = '1234567890', 
+export default function AdSense({
+  className = '',
+  slot = '1234567890',
   format = 'auto',
-  responsive = true 
+  responsive = true
 }: AdSenseProps) {
+  const { hasPremiumAccess, isLoading: subscriptionLoading } = useSubscription();
   const adRef = useRef<HTMLModElement>(null);
   const initializedRef = useRef(false);
   const [adLoaded, setAdLoaded] = useState(false);
   const [adError, setAdError] = useState<string | null>(null);
+
+  // Don't show ads for premium users
+  if (hasPremiumAccess) {
+    return null;
+  }
+
+  // Don't show ads while checking subscription status
+  if (subscriptionLoading) {
+    return null;
+  }
 
   useEffect(() => {
     // Prevent double initialization in React StrictMode

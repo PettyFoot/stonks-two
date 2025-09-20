@@ -25,18 +25,8 @@ export async function GET(request: NextRequest) {
     const users = await prisma.user.findMany({
       where: {
         snapTradeUserId: { not: null },
-        // You might want to add an autoSyncEnabled field to User model
-        // autoSyncEnabled: true,
+        autoSyncEnabled: true,
       },
-      include: {
-        // You'll need to add brokerConnections relation to User model
-        // brokerConnections: {
-        //   where: {
-        //     status: 'ACTIVE',
-        //     autoSyncEnabled: true
-        //   }
-        // }
-      }
     });
 
 

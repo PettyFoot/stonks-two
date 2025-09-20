@@ -1,25 +1,29 @@
 import { Snaptrade } from 'snaptrade-typescript-sdk';
 import { SnapTradeConfig } from './types';
 
-let snapTradeClient: Snaptrade | null = null;
+let snapTradeClientCache: { client: Snaptrade; timestamp: number } | null = null;
+const CLIENT_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 export function initializeSnapTrade(config: SnapTradeConfig): Snaptrade {
   if (!config.clientId || !config.consumerKey) {
     throw new Error('SnapTrade client ID and consumer key are required');
   }
 
-  snapTradeClient = new Snaptrade({
+  const client = new Snaptrade({
     clientId: config.clientId,
     consumerKey: config.consumerKey,
+    timestamp: Math.floor(Date.now() / 1000).toString(), // Unix timestamp in seconds as string
     basePath: config.baseUrl || 'https://api.snaptrade.com/api/v1',
   });
 
-  return snapTradeClient;
+  return client;
 }
 
 export function getSnapTradeClient(): Snaptrade {
-  if (!snapTradeClient) {
-    // Initialize with environment variables if not already initialized
+  const now = Date.now();
+
+  // Check if we need to create a new client (first time or cache expired)
+  if (!snapTradeClientCache || (now - snapTradeClientCache.timestamp) > CLIENT_REFRESH_INTERVAL) {
     const config: SnapTradeConfig = {
       clientId: process.env.SNAPTRADE_CLIENT_ID || '',
       consumerKey: process.env.SNAPTRADE_CONSUMER_KEY || '',
@@ -31,10 +35,16 @@ export function getSnapTradeClient(): Snaptrade {
       throw new Error('SnapTrade configuration is missing. Please check environment variables.');
     }
 
-    snapTradeClient = initializeSnapTrade(config);
+    const client = initializeSnapTrade(config);
+    snapTradeClientCache = {
+      client,
+      timestamp: now
+    };
+
+    console.log(`[SNAPTRADE] Created new client with fresh timestamp: ${Math.floor(Date.now() / 1000)}`);
   }
 
-  return snapTradeClient;
+  return snapTradeClientCache.client;
 }
 
 export function isSnapTradeConfigured(): boolean {

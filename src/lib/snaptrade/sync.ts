@@ -2,6 +2,7 @@ import { handleSnapTradeError } from './client';
 import { prisma } from '@/lib/prisma';
 import { SyncRequest, SyncResult, SyncStatus, SyncType } from './types';
 import { SnapTradeActivityProcessor } from './activityProcessor';
+import { processUserOrders, ProcessedTrade } from '../tradeBuilder';
 
 /**
  * Get sync configuration from database or create default
@@ -89,6 +90,50 @@ export async function syncTradesForConnection(
     // Get the created order IDs from the processor result
     const orderIds = result.createdOrderIds || [];
 
+    // Process orders into trades if any orders were created
+    let tradeProcessingResult: SyncResult['tradeProcessing'] = undefined;
+
+    if (result.success && result.ordersCreated > 0) {
+      try {
+        console.log(`[SNAPTRADE_SYNC] Processing ${result.ordersCreated} orders into trades for user ${request.userId}`);
+
+        const processedTrades = await processUserOrders(request.userId);
+
+        const completedTrades = processedTrades.filter(t => t.status === 'CLOSED');
+        const openTrades = processedTrades.filter(t => t.status === 'OPEN');
+        const totalPnL = completedTrades.reduce((sum, t) => sum + t.pnl, 0);
+
+        tradeProcessingResult = {
+          newTradesCreated: processedTrades.length,
+          completedTrades: completedTrades.length,
+          openTrades: openTrades.length,
+          totalPnL,
+          errors: [],
+          success: true
+        };
+
+        console.log(`[SNAPTRADE_SYNC] Trade processing completed for user ${request.userId}:`, {
+          newTradesCreated: processedTrades.length,
+          completedTrades: completedTrades.length,
+          openTrades: openTrades.length,
+          totalPnL: totalPnL.toFixed(2)
+        });
+
+      } catch (tradeError) {
+        const tradeErrorMsg = tradeError instanceof Error ? tradeError.message : String(tradeError);
+        console.error(`[SNAPTRADE_SYNC] Trade processing failed for user ${request.userId}:`, tradeErrorMsg);
+
+        tradeProcessingResult = {
+          newTradesCreated: 0,
+          completedTrades: 0,
+          openTrades: 0,
+          totalPnL: 0,
+          errors: [tradeErrorMsg],
+          success: false
+        };
+      }
+    }
+
     // Update sync log with results
     await prisma.snapTradeSync.update({
       where: { id: syncLog.id },
@@ -109,6 +154,7 @@ export async function syncTradesForConnection(
       tradesSkipped: result.duplicatesSkipped,
       errors: result.errors,
       success: result.success,
+      tradeProcessing: tradeProcessingResult,
     };
 
   } catch (error) {

@@ -1,7 +1,9 @@
 import { getSnapTradeClient, handleSnapTradeError, RateLimitHelper } from './client';
+import { getDecryptedSecret } from './auth';
 import { prisma } from '@/lib/prisma';
 import { SnapTradeActivity, SyncStatus, SyncType } from './types';
 import { mapBrokerType } from './mapper';
+import { lookupBrokerType } from './brokerLookup';
 import { DatePrecision, OrderSide, OrderType, OrderStatus, TimeInForce } from '@prisma/client';
 import { createHash } from 'crypto';
 import { AccountUniversalActivity } from 'snaptrade-typescript-sdk';
@@ -132,7 +134,7 @@ export class SnapTradeActivityProcessor {
   /**
    * Convert SnapTrade activity to Order format
    */
-  private mapActivityToOrder(
+  private async mapActivityToOrder(
     activity: SnapTradeActivity,
     userId: string,
     connectionId: string,
@@ -142,6 +144,9 @@ export class SnapTradeActivityProcessor {
     const adjustedTime = this.adjustTimeForBroker(activity, broker);
     const datePrecision = this.getDatePrecision(broker);
     const activityHash = this.createActivityHash(activity);
+
+    // Use new broker lookup service to get proper broker type
+    const brokerType = await lookupBrokerType(activity.institution || '');
 
     // Determine order side
     const isBuy = activity.type === 'BUY' || (activity.quantity && activity.quantity > 0);
@@ -160,8 +165,8 @@ export class SnapTradeActivityProcessor {
       orderPlacedTime: adjustedTime,
       orderExecutedTime: adjustedTime,
       accountId: activity.account?.id,
-      brokerType: mapBrokerType(broker),
-      
+      brokerType,
+
       // SnapTrade-specific fields
       snapTradeActivityId: activity.id,
       datePrecision,
@@ -233,12 +238,21 @@ export class SnapTradeActivityProcessor {
       }
 
       onProgress?.(10, 'Connecting to SnapTrade API');
-      
+
       await RateLimitHelper.checkRateLimit();
       const client = getSnapTradeClient();
-      const decryptedSecret = user.snapTradeUserSecret;
+      const decryptedSecret = getDecryptedSecret(user.snapTradeUserSecret);
+
+      // Debug logging for authentication
+      console.log(`[SNAPTRADE_DEBUG] User ${userId} authentication details:`, {
+        snapTradeUserId: user.snapTradeUserId,
+        hasUserSecret: !!user.snapTradeUserSecret,
+        decryptedSecretLength: decryptedSecret.length,
+        decryptedSecretStart: decryptedSecret.substring(0, 10) + '...'
+      });
 
       // Get accounts for this connection
+      console.log(`[SNAPTRADE_DEBUG] Calling listUserAccounts for user ${userId}`);
       const accountsResponse = await client.accountInformation.listUserAccounts({
         userId: user.snapTradeUserId,
         userSecret: decryptedSecret,
@@ -273,10 +287,21 @@ export class SnapTradeActivityProcessor {
             endDate: endDate.toISOString().split('T')[0],
           });
 
+          console.log(`[SNAPTRADE_DEBUG] Activities response structure for account ${account.id}:`, {
+            hasData: !!activitiesResponse.data,
+            dataType: typeof activitiesResponse.data,
+            isArray: Array.isArray(activitiesResponse.data),
+            dataLength: Array.isArray(activitiesResponse.data) ? activitiesResponse.data.length : 'N/A',
+            hasDataProperty: activitiesResponse.data && 'data' in activitiesResponse.data,
+            hasPagination: activitiesResponse.data && 'pagination' in activitiesResponse.data
+          });
+
           const activitiesData = activitiesResponse.data;
-          const rawActivities: AccountUniversalActivity[] = (activitiesData && 'data' in activitiesData) 
-            ? (activitiesData.data || []) 
-            : [];
+          const rawActivities: AccountUniversalActivity[] = Array.isArray(activitiesData)
+            ? activitiesData
+            : (activitiesData && 'data' in activitiesData)
+              ? (activitiesData.data || [])
+              : [];
 
           // Convert AccountUniversalActivity to SnapTradeActivity format
           const activities: SnapTradeActivity[] = rawActivities.map(activity => 
@@ -291,8 +316,10 @@ export class SnapTradeActivityProcessor {
           activitiesFound += tradeActivities.length;
 
           // Convert activities to orders with sequence numbers
-          const orders = tradeActivities.map((activity, index) =>
-            this.mapActivityToOrder(activity, userId, connectionId, index)
+          const orders = await Promise.all(
+            tradeActivities.map((activity, index) =>
+              this.mapActivityToOrder(activity, userId, connectionId, index)
+            )
           );
 
           allOrders.push(...orders);
@@ -426,8 +453,10 @@ export class SnapTradeActivityProcessor {
       onProgress?.(50, 'Converting activities to order format');
 
       // Convert activities to orders with sequence numbers - same logic as processActivities
-      const orders = tradeActivities.map((activity, index) =>
-        this.mapActivityToOrder(activity, userId, connectionId, index)
+      const orders = await Promise.all(
+        tradeActivities.map((activity, index) =>
+          this.mapActivityToOrder(activity, userId, connectionId, index)
+        )
       );
 
 
@@ -522,7 +551,7 @@ export class SnapTradeActivityProcessor {
 
       await RateLimitHelper.checkRateLimit();
       const client = getSnapTradeClient();
-      const decryptedSecret = user.snapTradeUserSecret;
+      const decryptedSecret = getDecryptedSecret(user.snapTradeUserSecret);
 
       const accountsResponse = await client.accountInformation.listUserAccounts({
         userId: user.snapTradeUserId,
@@ -546,9 +575,15 @@ export class SnapTradeActivityProcessor {
         });
 
         const activitiesData = activitiesResponse.data;
-        const activities: SnapTradeActivity[] = (activitiesData && 'activities' in activitiesData) 
-          ? (activitiesData.activities || []) 
-          : [];
+        const rawActivities: AccountUniversalActivity[] = Array.isArray(activitiesData)
+          ? activitiesData
+          : (activitiesData && 'data' in activitiesData)
+            ? (activitiesData.data || [])
+            : [];
+
+        const activities: SnapTradeActivity[] = rawActivities.map(activity =>
+          adaptAccountActivity(activity, { id: sampleAccount.id, name: sampleAccount.name || '', number: sampleAccount.number })
+        );
 
         const tradeActivities = activities.filter(activity => 
           ['BUY', 'SELL'].includes(activity.type?.toUpperCase() || '')

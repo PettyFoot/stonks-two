@@ -5,13 +5,11 @@ import TopBar from '@/components/TopBar';
 import FilterPanel from '@/components/FilterPanel';
 import TradesTable from '@/components/TradesTable';
 import ColumnSettingsModal from '@/components/ColumnSettingsModal';
-import { Button } from '@/components/ui/button';
 import { Trade, ColumnConfiguration } from '@/types';
 import { useTradesData } from '@/hooks/useTradesData';
-import { PageTriangleLoader, FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
+import { FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
-import { toast } from 'sonner';
 import AdSense from '@/components/AdSense';
 
 export default function Trades() {
@@ -19,7 +17,7 @@ export default function Trades() {
   
   const { isDemo } = useAuth();
   const { filters } = useGlobalFilters();
-  const { data: tradesData, loading, error, refetch } = useTradesData();
+  const { data: tradesData, loading, error } = useTradesData();
   
 
   // Calculate effective date range for display
@@ -68,7 +66,7 @@ export default function Trades() {
 
 
 
-  const handleTradeSelect = (trade: Trade) => {
+  const handleTradeSelect = (_trade: Trade) => {
     // Handle trade selection - could open a modal or navigate to trade detail
 
   };
