@@ -94,6 +94,30 @@ export default function SharedTradePage() {
 
   const isRecordsShare = (data?.metadata as any)?.isRecordsShare;
 
+  // Extract proper date for records shares
+  const getTradeDate = () => {
+    if (isRecordsShare) {
+      // For records shares, get date from metadata or extract from trade ID
+      const shareDate = (data?.metadata as any)?.shareDate;
+      if (shareDate) {
+        return new Date(shareDate).toISOString().split('T')[0]; // YYYY-MM-DD format
+      }
+      // Fallback: extract from trade ID format "records_YYYY-MM-DD"
+      const tradeId = (trade as any).id;
+      if (typeof tradeId === 'string' && tradeId.startsWith('records_')) {
+        return tradeId.replace('records_', '');
+      }
+    }
+    // For single trades, use the trade date
+    if ((trade as any).date) {
+      return new Date((trade as any).date).toISOString().split('T')[0];
+    }
+    // Fallback to today's date
+    return new Date().toISOString().split('T')[0];
+  };
+
+  const chartDate = getTradeDate();
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -182,7 +206,7 @@ export default function SharedTradePage() {
             <BarChart3 className="h-6 w-6 text-blue-600" />
             <div>
               <h1 className="text-xl font-semibold text-gray-900">
-                {isRecordsShare ? `Trading Record - ${formatDate((trade as any).date)}` : `Trade: ${(trade as any).symbol}`}
+                {isRecordsShare ? `Trading Record - ${formatDate(chartDate)}` : `Trade: ${(trade as any).symbol}`}
               </h1>
               <p className="text-sm text-gray-500">
                 Shared via <Link href="/" className="text-blue-600 hover:text-blue-800 transition-colors">Trade Voyager Analytics</Link>
@@ -260,7 +284,7 @@ export default function SharedTradePage() {
                   limitPrice: order.limitPrice || null,
                   stopPrice: order.stopPrice || null
                 }))}
-                tradeDate={isRecordsShare ? (trade as any).date : formatDate((trade as any).date)}
+                tradeDate={chartDate}
                 height={400}
                 onExecutionSelect={() => {}} // No interaction in shared view
                 isShared={true}

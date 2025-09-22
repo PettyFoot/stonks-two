@@ -22,7 +22,7 @@ export default function Footer() {
               <span className="text-xl font-bold text-[var(--theme-primary-text)]">Trade Voyager Analytics</span>
             </Link>
             <p className="text-gray-600 mb-4 max-w-md">
-              Professional trade analytics platform for serious traders. 
+              Professional trade analytics platform for all traders. 
               Advanced trade analytics, real-time performance tracking, and comprehensive trading insights.
             </p>
             <div className="flex space-x-4">
@@ -45,12 +45,6 @@ export default function Footer() {
             <nav className="space-y-2">
               <Link href="/about" className="block text-gray-600 hover:text-[var(--theme-tertiary)] transition-colors">
                 About Us
-              </Link>
-              <Link href="/features" className="block text-gray-600 hover:text-[var(--theme-tertiary)] transition-colors">
-                Features
-              </Link>
-              <Link href="/pricing" className="block text-gray-600 hover:text-[var(--theme-tertiary)] transition-colors">
-                Pricing
               </Link>
               <Link href="/contact" className="block text-gray-600 hover:text-[var(--theme-tertiary)] transition-colors">
                 Contact
