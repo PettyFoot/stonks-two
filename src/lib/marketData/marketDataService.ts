@@ -91,7 +91,7 @@ export class MarketDataService {
 
           if (ohlcData && ohlcData.length > 0) {
             // Since we only use Polygon.io now, source is always polygon
-            const source: 'polygon' = 'polygon';
+            const source = 'polygon' as const;
 
             const response: MarketDataResponse = {
               symbol: tradeContext.symbol,
