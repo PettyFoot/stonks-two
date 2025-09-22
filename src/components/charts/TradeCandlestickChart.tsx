@@ -509,25 +509,28 @@ export default function TradeCandlestickChart({
     const visibleExecutions = executions.filter(execution => {
       const executionTime = execution.orderExecutedTime ? new Date(execution.orderExecutedTime).getTime() : null;
       const executionPrice = Number(execution.limitPrice) || 0;
-      
-      // STRICT DATE FILTERING: Only show executions on the exact same date as chart
+
+      // DATE FILTERING: Show executions on the chart date (or if no execution time, assume it's on chart date)
       let withinTimeRange = false;
       if (executionTime) {
         // Parse dates consistently by extracting just the date portion
         const executionDate = new Date(executionTime).toLocaleDateString('en-CA'); // Returns YYYY-MM-DD
-        const chartDateForComparison = /^\d{4}-\d{2}-\d{2}$/.test(chartDate) 
-          ? chartDate 
+        const chartDateForComparison = /^\d{4}-\d{2}-\d{2}$/.test(chartDate)
+          ? chartDate
           : new Date(chartDate + 'T12:00:00').toLocaleDateString('en-CA');
-        
+
         // Only allow executions that are on the exact same date as the chart
         withinTimeRange = (executionDate === chartDateForComparison);
+      } else {
+        // If no execution time, assume it's on the chart date
+        withinTimeRange = true;
       }
-      
+
       // Check if execution price is within chart's price range (with 10% padding for safety)
       const priceBuffer = (priceRange.max - priceRange.min) * 0.10;
-      const withinPriceRange = executionPrice >= (priceRange.min - priceBuffer) && 
+      const withinPriceRange = executionPrice >= (priceRange.min - priceBuffer) &&
         executionPrice <= (priceRange.max + priceBuffer);
-      
+
       return withinTimeRange && withinPriceRange;
     });
 
@@ -550,8 +553,12 @@ export default function TradeCandlestickChart({
     });
 
     const parseExecutionTime = (executionTime: Date | null): number => {
-      if (!executionTime) return Date.now();
-      
+      if (!executionTime) {
+        // Use chart date at market open (9:30 AM) as fallback
+        const fallbackDate = new Date(chartDate + 'T13:30:00'); // 9:30 AM EST in UTC
+        return fallbackDate.getTime();
+      }
+
       return new Date(executionTime).getTime();
     };
 
@@ -608,10 +615,37 @@ export default function TradeCandlestickChart({
     stroke: {
       width: 1  // Thin wick lines
     },
+    markers: {
+      size: [0, 8, 8], // Hide markers for candlestick (0), show for scatter series (8px)
+      colors: ['transparent', '#3b82f6', '#9333ea'], // Transparent for candlestick, blue for buy, purple for sell
+      strokeColors: ['transparent', '#ffffff', '#ffffff'], // White border for scatter markers
+      strokeWidth: [0, 2, 2], // No border for candlestick, 2px border for scatter
+      hover: {
+        size: [0, 10, 10] // Hover effect for scatter markers
+      },
+      discrete: []
+    },
+    states: {
+      hover: {
+        filter: {
+          type: 'none'  // Prevents color change on hover
+        }
+      },
+      active: {
+        filter: {
+          type: 'none'  // Prevents color change on click/active
+        }
+      }
+    },
     chart: {
       type: 'line', // Changed to line to support mixed series
       height: height,
       background: 'transparent',
+      animations: {
+        animateGradually: {
+          enabled: false // Disable gradual animations to prevent z-index issues
+        }
+      },
       toolbar: {
         show: true,
         offsetX: 0,
@@ -798,15 +832,6 @@ export default function TradeCandlestickChart({
         executionId: e.executionId,
         quantity: e.quantity
       })),
-      marker: {
-        size: 16,
-        shape: 'line',
-        strokeWidth: 4,
-        strokeColors: '#ffffff',
-        hover: {
-          size: 18
-        }
-      },
       showInLegend: true
     },
     {
@@ -818,15 +843,6 @@ export default function TradeCandlestickChart({
         executionId: e.executionId,
         quantity: e.quantity
       })),
-      marker: {
-        size: 16,
-        shape: 'line',
-        strokeWidth: 4,
-        strokeColors: '#ffffff',
-        hover: {
-          size: 18
-        }
-      },
       showInLegend: true
     }
   ];
@@ -1032,19 +1048,20 @@ export default function TradeCandlestickChart({
               // Filter executions to only show ones that occurred on the same date as the chart
               const visibleExecutions = executions.filter(execution => {
                 const executionTime = execution.orderExecutedTime ? new Date(execution.orderExecutedTime).getTime() : null;
-                
+
                 if (executionTime) {
                   // Parse dates consistently by extracting just the date portion
                   const executionDate = new Date(executionTime).toLocaleDateString('en-CA'); // Returns YYYY-MM-DD
-                  const chartDateForComparison = /^\d{4}-\d{2}-\d{2}$/.test(chartDate) 
-                    ? chartDate 
+                  const chartDateForComparison = /^\d{4}-\d{2}-\d{2}$/.test(chartDate)
+                    ? chartDate
                     : new Date(chartDate + 'T12:00:00').toLocaleDateString('en-CA');
-                  
+
                   // Only allow executions that are on the exact same date as the chart
                   return executionDate === chartDateForComparison;
+                } else {
+                  // If no execution time, assume it's on the chart date
+                  return true;
                 }
-                
-                return false;
               });
 
               return visibleExecutions.length > 0 && (

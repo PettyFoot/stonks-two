@@ -71,6 +71,19 @@
   transform: scale(1.2) !important;
 }
 
+/* Force scatter plot markers to stay on top of candlesticks */
+.apexcharts-series[seriesName="Buy"] circle,
+.apexcharts-series[seriesName="Sell"] circle {
+  z-index: 10 !important;
+  pointer-events: all !important;
+}
+
+/* Ensure scatter markers are always visible during hover states */
+.apexcharts-series-scatter circle {
+  z-index: 999 !important;
+  pointer-events: all !important;
+}
+
 /* Grid line customization for dark theme */
 .apexcharts-gridline {
   stroke: var(--theme-chart-grid) !important;
