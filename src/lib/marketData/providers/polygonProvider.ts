@@ -1,4 +1,4 @@
-import { MarketDataProvider, OHLCData, TimeWindow, TradeContext } from '../types';
+import { MarketDataProvider, OHLCData, TimeWindow, TradeContext, ProviderResponse } from '../types';
 
 interface PolygonAggregateResult {
   o: number;   // Open price
@@ -49,7 +49,7 @@ export class PolygonProvider implements MarketDataProvider {
     symbol: string,
     timeWindow: TimeWindow,
     tradeContext?: TradeContext
-  ): Promise<OHLCData[]> {
+  ): Promise<ProviderResponse> {
     if (!this.isAvailable()) {
       throw new Error('Polygon.io provider not available - API key not configured');
     }
@@ -113,13 +113,18 @@ export class PolygonProvider implements MarketDataProvider {
         hasResults: !!data.results?.length
       });
 
-      if (data.status !== 'OK') {
+      // Log if data is delayed
+      if (data.status === 'DELAYED') {
+        console.log('[POLYGON_PROVIDER] Data is delayed (15-minute delay due to subscription tier)');
+      }
+
+      if (data.status !== 'OK' && data.status !== 'DELAYED') {
         throw new Error(`Polygon API returned status: ${data.status}`);
       }
 
       if (!data.results || data.results.length === 0) {
         console.warn(`🟣 No data returned from Polygon for ${symbol} on ${fromDate} to ${toDate}`);
-        return [];
+        return { data: [], delayed: data.status === 'DELAYED' };
       }
 
       // Convert Polygon results to our OHLCData format
@@ -131,10 +136,15 @@ export class PolygonProvider implements MarketDataProvider {
           first: new Date(ohlcData[0].timestamp).toLocaleString(),
           last: new Date(ohlcData[ohlcData.length - 1].timestamp).toLocaleString()
         } : 'No data',
-        sampleCandle: ohlcData[0] || null
+        sampleCandle: ohlcData[0] || null,
+        delayed: data.status === 'DELAYED'
       });
 
-      return ohlcData;
+      // Return data with metadata about delay status
+      return {
+        data: ohlcData,
+        delayed: data.status === 'DELAYED'
+      };
 
     } catch (error) {
       console.error(`🟣 Polygon provider error for ${symbol}:`, error);

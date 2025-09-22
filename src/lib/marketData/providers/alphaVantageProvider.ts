@@ -1,4 +1,4 @@
-import { MarketDataProvider, OHLCData, TimeWindow, TradeContext } from '../types';
+import { MarketDataProvider, OHLCData, TimeWindow, TradeContext, ProviderResponse } from '../types';
 
 /**
  * Alpha Vantage provider for market data
@@ -33,10 +33,10 @@ export class AlphaVantageProvider implements MarketDataProvider {
    * Fetch OHLC data from Alpha Vantage
    */
   async fetchOHLC(
-    symbol: string, 
-    timeWindow: TimeWindow, 
+    symbol: string,
+    timeWindow: TimeWindow,
     _tradeContext?: TradeContext
-  ): Promise<OHLCData[]> {
+  ): Promise<ProviderResponse> {
     try {
       // Rate limiting: max 5 requests per minute
       await this.enforceRateLimit();
@@ -193,7 +193,11 @@ export class AlphaVantageProvider implements MarketDataProvider {
 
       }
       
-      return ohlcData;
+      // Alpha Vantage provides real-time data, so never delayed
+      return {
+        data: ohlcData,
+        delayed: false
+      };
       
     } catch (error) {
       console.error(`❌ Alpha Vantage error for ${symbol}:`, error);

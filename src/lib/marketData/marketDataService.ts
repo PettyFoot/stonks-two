@@ -90,12 +90,16 @@ export class MarketDataService {
         try {
 
           
-          const ohlcData = await provider.fetchOHLC(
+          const result = await provider.fetchOHLC(
             tradeContext.symbol,
             timeWindow,
             tradeContext
           );
-          
+
+          // Handle both old format (OHLCData[]) and new format (ProviderResponse)
+          const ohlcData = Array.isArray(result) ? result : result.data;
+          const isDelayed = Array.isArray(result) ? false : result.delayed || false;
+
           if (ohlcData && ohlcData.length > 0) {
             // Determine the appropriate source identifier based on provider name
             let source: 'alpha_vantage' | 'polygon';
@@ -113,7 +117,8 @@ export class MarketDataService {
               ohlc: ohlcData,
               success: true,
               source,
-              cached: false
+              cached: false,
+              delayed: isDelayed
             };
             
             // Cache successful response

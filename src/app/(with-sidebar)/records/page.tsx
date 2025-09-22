@@ -258,62 +258,58 @@ function RecordsContent() {
         </div>
 
         <div className="space-y-6">
-          {/* Row 1: Chart (left) + Stats (right) */}
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-            {/* Chart - Takes up ~8 columns on desktop */}
-            <div className="xl:col-span-8">
-              {mostActiveSymbol ? (
-                <TradeCandlestickChart
-                  symbol={mostActiveSymbol}
-                  executions={chartExecutions}
-                  tradeDate={recordsData.date}
-                  height={400}
-                  onExecutionSelect={(execution) => {
+          {/* Row 1: Chart (full width) */}
+          <div>
+            {mostActiveSymbol ? (
+              <TradeCandlestickChart
+                symbol={mostActiveSymbol}
+                executions={chartExecutions}
+                tradeDate={recordsData.date}
+                height={400}
+                onExecutionSelect={(execution) => {
 
-                    // TODO: Highlight the execution in the table
-                  }}
-                  onMarketDataUpdate={(marketData) => {
-                    setChartMarketData(marketData);
-                  }}
-                />
-              ) : (
-                <Card className="bg-surface border-default">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base font-medium text-primary">Chart</CardTitle>
-                  </CardHeader>
-                  <CardContent className="h-96">
-                    <div className="w-full h-full bg-gray-100 rounded flex items-center justify-center">
-                      <div className="text-center text-muted">
-                        <div className="text-sm">No executions available for chart display</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-
-            {/* Stats - Takes up ~4 columns on desktop */}
-            <div className="xl:col-span-4">
-              <Card className="bg-surface border-default h-full">
+                  // TODO: Highlight the execution in the table
+                }}
+                onMarketDataUpdate={(marketData) => {
+                  setChartMarketData(marketData);
+                }}
+              />
+            ) : (
+              <Card className="bg-surface border-default">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base font-medium text-primary">Stats</CardTitle>
+                  <CardTitle className="text-base font-medium text-primary">Chart</CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col h-full">
-                  <StatsGrid
-                    totalExecutions={executionMetrics.totalExecutions}
-                    symbol={mostActiveSymbol || undefined}
-                    totalVolume={executionMetrics.totalVolume}
-                    mfeRatio={tradeMetrics?.mfeRatio}
-                    commissions={recordsData.commissions}
-                    netPnl={recordsData.netPnl || recordsData.pnl}
-                    className="flex-1"
-                  />
+                <CardContent className="h-96">
+                  <div className="w-full h-full bg-gray-100 rounded flex items-center justify-center">
+                    <div className="text-center text-muted">
+                      <div className="text-sm">No executions available for chart display</div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </div>
+            )}
           </div>
 
-          {/* Row 2: Notes Section (full width) */}
+          {/* Row 2: Stats (full width) */}
+          <div>
+            <Card className="bg-surface border-default">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-medium text-primary">Stats</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <StatsGrid
+                  totalExecutions={executionMetrics.totalExecutions}
+                  symbol={mostActiveSymbol || undefined}
+                  totalVolume={executionMetrics.totalVolume}
+                  mfeRatio={tradeMetrics?.mfeRatio}
+                  commissions={recordsData.commissions}
+                  netPnl={recordsData.netPnl || recordsData.pnl}
+                />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Row 3: Notes Section (full width) */}
           <Card className="bg-surface border-default">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-medium text-primary">Notes</CardTitle>
@@ -331,7 +327,7 @@ function RecordsContent() {
             </CardContent>
           </Card>
 
-          {/* Row 3: Orders/Executions Table (full width) */}
+          {/* Row 4: Orders/Executions Table (full width) */}
           <ExecutionsTable 
             executions={recordsData.executions}
             loading={false}

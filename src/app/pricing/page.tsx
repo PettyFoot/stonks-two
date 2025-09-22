@@ -10,23 +10,18 @@ import {
   ArrowRight, 
   Star,
   Zap,
-  Shield,
   Users,
   BarChart3
 } from 'lucide-react';
 import Footer from '@/components/Footer';
 import { FAQStructuredData } from '@/components/SEO/FAQStructuredData';
 import { generateMetadata as generateSEOMetadata } from '@/lib/seo';
-import { BreadcrumbNavigation } from '@/components/SEO/BreadcrumbNavigation';
 import { BreadcrumbStructuredData } from '@/components/SEO/StructuredData';
 import { OptimizePerformanceHowTo } from '@/components/SEO/HowToStructuredData';
 
 export const metadata: Metadata = generateSEOMetadata('pricing');
 
 export default function Pricing() {
-  const breadcrumbItems = [
-    { name: 'Pricing', url: '/pricing' }
-  ];
 
   const plans = [
     {
@@ -86,10 +81,6 @@ export default function Pricing() {
     {
       question: "Can I cancel anytime?",
       answer: "Yes, you can cancel your subscription at any time. You'll continue to have access until the end of your billing period."
-    },
-    {
-      question: "Do you offer discounts for annual billing?",
-      answer: "Yes! Annual subscribers save 20% compared to monthly billing. Contact us for more details."
     }
   ];
 
@@ -128,10 +119,6 @@ export default function Pricing() {
         </div>
       </nav>
 
-      {/* Breadcrumb */}
-      <div className="max-w-7xl mx-auto px-6 pt-4">
-        <BreadcrumbNavigation items={breadcrumbItems} />
-      </div>
 
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-6 py-16 text-center">
@@ -235,7 +222,7 @@ export default function Pricing() {
           Why Choose Trade Voyager Analytics?
         </h2>
         
-        <div className="grid md:grid-cols-4 gap-8">
+        <div className="grid md:grid-cols-3 gap-8">
           <div className="text-center">
             <div className="p-4 bg-[var(--theme-tertiary)]/10 rounded-lg mb-4 inline-block">
               <BarChart3 className="h-8 w-8 text-[var(--theme-tertiary)]" />
@@ -244,19 +231,7 @@ export default function Pricing() {
               Professional Analytics
             </h3>
             <p className="text-gray-600">
-              Advanced trading analytics trusted by professional traders worldwide.
-            </p>
-          </div>
-          
-          <div className="text-center">
-            <div className="p-4 bg-[var(--theme-tertiary)]/10 rounded-lg mb-4 inline-block">
-              <Shield className="h-8 w-8 text-[var(--theme-tertiary)]" />
-            </div>
-            <h3 className="text-xl font-semibold text-[var(--theme-primary-text)] mb-2">
-              Bank-Level Security
-            </h3>
-            <p className="text-gray-600">
-              Your trading data is protected with enterprise-grade security measures.
+              Advanced trading analytics to optimize your performance and maximize your profits.
             </p>
           </div>
           
@@ -268,7 +243,7 @@ export default function Pricing() {
               Easy Integration
             </h3>
             <p className="text-gray-600">
-              Connect your broker accounts in minutes with our seamless integrations.
+              Connect your broker accounts in minutes with seamless integrations or AI-powered CSV upload.
             </p>
           </div>
           
@@ -343,7 +318,7 @@ export default function Pricing() {
       </section>
 
       <OptimizePerformanceHowTo />
-      <BreadcrumbStructuredData items={breadcrumbItems} />
+      <BreadcrumbStructuredData items={[{ name: 'Pricing', url: '/pricing' }]} />
       <FAQStructuredData faqs={faqs} />
       <Footer />
     </div>

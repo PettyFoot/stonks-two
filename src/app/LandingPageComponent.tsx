@@ -169,7 +169,7 @@ export default function LandingPageComponent() {
         <div className="relative flex-1 flex items-center justify-center z-30 pointer-events-none" aria-labelledby="hero-heading">
           <div className="text-center space-y-6 sm:space-y-8 md:space-y-10 lg:space-y-12 max-w-4xl mx-auto px-4 sm:px-6">
             <h1 id="hero-heading" className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-oswald text-white mb-4 sm:mb-6 md:mb-9 leading-tight">
-              <span className="text-black">Voyage Beyond the Market Depths</span>
+              <span className="text-black" style={{textShadow: '0 0 1px #fff, 0 0 2px #fff'}}>Voyage Beyond the Market Depths</span>
             </h1>
             <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl text-black/90 mb-6 sm:mb-8 md:mb-10 lg:mb-12 max-w-3xl mx-auto">
               Explore deeper insights, chart smarter strategies, and trade with true direction.

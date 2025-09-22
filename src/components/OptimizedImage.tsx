@@ -46,12 +46,12 @@ const LOGO_CONFIG = {
 };
 
 // Logo component with multiple sizes
-export function OptimizedLogo({ 
-  className, 
+export function OptimizedLogo({
+  className,
   size = 'medium',
-  priority = false 
-}: { 
-  className?: string; 
+  priority = false
+}: {
+  className?: string;
   size?: 'small' | 'medium' | 'large' | 'xlarge' | 'xxlarge';
   priority?: boolean;
 }) {

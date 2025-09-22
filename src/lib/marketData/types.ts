@@ -16,6 +16,7 @@ export interface MarketDataResponse {
   error?: string;
   source: 'alpha_vantage' | 'polygon';  // Track data source
   cached?: boolean;          // Whether data came from cache
+  delayed?: boolean;         // Whether data is delayed (15-minute delay)
   rateLimitInfo?: RateLimitInfo;  // Rate limit information when applicable
 }
 
@@ -37,14 +38,19 @@ export interface TradeContext {
   side: 'long' | 'short';
 }
 
+export interface ProviderResponse {
+  data: OHLCData[];
+  delayed?: boolean;
+}
+
 export interface MarketDataProvider {
   name: string;
   isAvailable(): boolean;
   fetchOHLC(
-    symbol: string, 
-    timeWindow: TimeWindow, 
+    symbol: string,
+    timeWindow: TimeWindow,
     tradeContext?: TradeContext
-  ): Promise<OHLCData[]>;
+  ): Promise<OHLCData[] | ProviderResponse>;
 }
 
 export interface CacheEntry {

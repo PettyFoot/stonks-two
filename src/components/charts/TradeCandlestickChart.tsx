@@ -249,7 +249,11 @@ export default function TradeCandlestickChart({
                 MarketDataCache.clearSymbol(symbol);
               } else {
                 setMarketData(cached);
-                setDataSource(`${getSourceDisplayName(cached.source)} (cached)`);
+                let cachedSourceDisplay = `${getSourceDisplayName(cached.source)} (cached)`;
+                if (cached.delayed) {
+                  cachedSourceDisplay += ' (15-min delayed)';
+                }
+                setDataSource(cachedSourceDisplay);
                 
                 // Notify parent component of cached market data
                 if (onMarketDataUpdate) {
@@ -261,7 +265,11 @@ export default function TradeCandlestickChart({
               }
             } else {
               setMarketData(cached);
-              setDataSource(`${getSourceDisplayName(cached.source)} (cached)`);
+              let cachedSourceDisplay = `${getSourceDisplayName(cached.source)} (cached)`;
+              if (cached.delayed) {
+                cachedSourceDisplay += ' (15-min delayed)';
+              }
+              setDataSource(cachedSourceDisplay);
               
               // Notify parent component of cached market data
               if (onMarketDataUpdate) {
@@ -357,17 +365,24 @@ export default function TradeCandlestickChart({
               actualDataDate: firstCandle.toDateString(),
               dateMatch: firstCandle.toDateString() === requestedDate.toDateString(),
               timeRange: `${firstCandle.toLocaleTimeString()} to ${lastCandle.toLocaleTimeString()}`,
-              priceRange: `$${Math.min(...data.ohlc.map(c => c.low)).toFixed(2)} - $${Math.max(...data.ohlc.map(c => c.high)).toFixed(2)}`
+              priceRange: `$${Math.min(...data.ohlc.map(c => c.low)).toFixed(2)} - $${Math.max(...data.ohlc.map(c => c.high)).toFixed(2)}`,
+              delayed: data.delayed
             });
-            
+
             // Warn about date mismatches
             if (firstCandle.toDateString() !== requestedDate.toDateString()) {
               console.warn(`⚠️  Date mismatch detected! This may cause chart rendering issues.`);
             }
           }
-          
+
           setMarketData(data);
-          setDataSource(data.cached ? `${getSourceDisplayName(data.source)} (cached)` : getSourceDisplayName(data.source));
+
+          // Update data source display to include delayed status
+          let sourceDisplay = data.cached ? `${getSourceDisplayName(data.source)} (cached)` : getSourceDisplayName(data.source);
+          if (data.delayed) {
+            sourceDisplay += ' (15-min delayed)';
+          }
+          setDataSource(sourceDisplay);
           
           // Notify parent component of market data update
           if (onMarketDataUpdate) {
@@ -463,12 +478,12 @@ export default function TradeCandlestickChart({
       });
     }
     
-    // Always focus on the requested chart date from 4:00 AM to 8:00 PM
+    // Always focus on the requested chart date from 4:00 AM to 4:00 PM (market close)
     const rangeStart = new Date(requestedDate.getFullYear(), requestedDate.getMonth(), requestedDate.getDate());
     rangeStart.setHours(4, 0, 0, 0); // 4:00 AM of the requested date
-    
+
     const rangeEnd = new Date(requestedDate.getFullYear(), requestedDate.getMonth(), requestedDate.getDate());
-    rangeEnd.setHours(20, 0, 0, 0); // 8:00 PM of the requested date
+    rangeEnd.setHours(16, 0, 0, 0); // 4:00 PM (market close) of the requested date
     
     const range = {
       min: rangeStart.getTime(),
@@ -589,6 +604,10 @@ export default function TradeCandlestickChart({
   const xAxisRange = getXAxisRange();
 
   const chartOptions: ApexOptions = {
+    colors: ['#000000', '#3b82f6', '#9333ea'], // Candlestick (black), Buy (blue), Sell (purple)
+    stroke: {
+      width: 1  // Thin wick lines
+    },
     chart: {
       type: 'line', // Changed to line to support mixed series
       height: height,
@@ -647,20 +666,11 @@ export default function TradeCandlestickChart({
           downward: 'var(--theme-red)'
         },
         wick: {
-          useFillColor: true
+          useFillColor: true  // Wicks match candle colors (green/red)
         }
       },
       bar: {
-        columnWidth: '60%' // Make candlesticks thinner
-      }
-    },
-    markers: {
-      size: 8,
-      shape: 'triangle',
-      strokeWidth: 2,
-      strokeColors: '#ffffff',
-      hover: {
-        size: 10
+        columnWidth: '40%' // Optimal candlestick width for visibility
       }
     },
     xaxis: {
@@ -760,8 +770,8 @@ export default function TradeCandlestickChart({
         colors: 'var(--theme-primary-text)'
       },
       markers: {
-        size: 12,
-        shape: 'triangle'
+        size: 20,
+        shape: 'line'
       }
     },
     theme: {
@@ -785,26 +795,38 @@ export default function TradeCandlestickChart({
       data: executionData.buyExecutions.map(e => ({
         x: e.x,
         y: e.y,
-        fillColor: '#3b82f6', // Blue for buy orders
-        strokeColor: '#ffffff',
-        strokeWidth: 2,
         executionId: e.executionId,
         quantity: e.quantity
       })),
+      marker: {
+        size: 16,
+        shape: 'line',
+        strokeWidth: 4,
+        strokeColors: '#ffffff',
+        hover: {
+          size: 18
+        }
+      },
       showInLegend: true
     },
     {
-      name: 'Sell', 
+      name: 'Sell',
       type: 'scatter',
       data: executionData.sellExecutions.map(e => ({
         x: e.x,
         y: e.y,
-        fillColor: '#9333ea', // Purple for sell orders
-        strokeColor: '#ffffff', 
-        strokeWidth: 2,
         executionId: e.executionId,
         quantity: e.quantity
       })),
+      marker: {
+        size: 16,
+        shape: 'line',
+        strokeWidth: 4,
+        strokeColors: '#ffffff',
+        hover: {
+          size: 18
+        }
+      },
       showInLegend: true
     }
   ];
@@ -990,7 +1012,21 @@ export default function TradeCandlestickChart({
               type="line"
               height={height}
             />
-            
+
+            {/* Delayed data info banner */}
+            {marketData.delayed && (
+              <div className="mt-3 mb-3 flex justify-start">
+                <div className="inline-flex items-center px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <svg className="h-4 w-4 text-yellow-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-sm font-medium text-yellow-800">
+                    15-minute delayed data
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Execution markers legend - only show executions that match the chart date */}
             {(() => {
               // Filter executions to only show ones that occurred on the same date as the chart
@@ -1021,9 +1057,9 @@ export default function TradeCandlestickChart({
                         variant={selectedExecution === execution.id ? "default" : "outline"}
                         size="sm"
                         className={`text-xs h-7 ${
-                          execution.side === 'BUY' 
-                            ? 'border-[var(--theme-green)] text-[var(--theme-green)] hover:bg-[var(--theme-green)]/10' 
-                            : 'border-[var(--theme-red)] text-[var(--theme-red)] hover:bg-[var(--theme-red)]/10'
+                          execution.side === 'BUY'
+                            ? 'border-blue-500 text-blue-500 hover:bg-blue-500/10'
+                            : 'border-purple-600 text-purple-600 hover:bg-purple-600/10'
                         }`}
                         onClick={() => handleExecutionClick(execution)}
                       >

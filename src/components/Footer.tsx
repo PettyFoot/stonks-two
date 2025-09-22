@@ -46,6 +46,12 @@ export default function Footer() {
               <Link href="/about" className="block text-gray-600 hover:text-[var(--theme-tertiary)] transition-colors">
                 About Us
               </Link>
+              <Link href="/features" className="block text-gray-600 hover:text-[var(--theme-tertiary)] transition-colors">
+                Features
+              </Link>
+              <Link href="/pricing" className="block text-gray-600 hover:text-[var(--theme-tertiary)] transition-colors">
+                Pricing
+              </Link>
               <Link href="/contact" className="block text-gray-600 hover:text-[var(--theme-tertiary)] transition-colors">
                 Contact
               </Link>

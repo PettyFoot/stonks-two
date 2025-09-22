@@ -54,8 +54,9 @@ async function testAlphaVantageAPI() {
     console.log(`   Requesting: HOOD from ${timeWindow.start.toISOString()} to ${timeWindow.end.toISOString()}`);
     console.log(`   Interval: ${timeWindow.interval}`);
     
-    const ohlcData = await provider.fetchOHLC('HOOD', timeWindow);
-    
+    const result = await provider.fetchOHLC('HOOD', timeWindow);
+    const ohlcData = result.data;
+
     if (ohlcData && ohlcData.length > 0) {
       console.log(`   ✅ SUCCESS: Retrieved ${ohlcData.length} candles`);
       console.log(`   📊 Data Range: ${new Date(ohlcData[0].timestamp).toLocaleString()} to ${new Date(ohlcData[ohlcData.length - 1].timestamp).toLocaleString()}`);
@@ -67,6 +68,9 @@ async function testAlphaVantageAPI() {
         close: ohlcData[0].close,
         volume: ohlcData[0].volume
       });
+      if (result.delayed) {
+        console.log(`   ⏰ Data is delayed (15-minute delay)`);
+      }
     } else {
       console.log('   ⚠️  No data returned (this might be expected for future dates or non-trading days)');
     }

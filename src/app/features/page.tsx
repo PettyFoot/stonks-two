@@ -15,16 +15,12 @@ import {
 } from 'lucide-react';
 import Footer from '@/components/Footer';
 import { generateMetadata as generateSEOMetadata } from '@/lib/seo';
-import { BreadcrumbNavigation } from '@/components/SEO/BreadcrumbNavigation';
 import { BreadcrumbStructuredData } from '@/components/SEO/StructuredData';
 import { GettingStartedHowTo } from '@/components/SEO/HowToStructuredData';
 
 export const metadata: Metadata = generateSEOMetadata('features');
 
 export default function Features() {
-  const breadcrumbItems = [
-    { name: 'Features', url: '/features' }
-  ];
 
   const coreFeatures = [
     {
@@ -55,7 +51,7 @@ export default function Features() {
       icon: <Database className="h-8 w-8" />,
       title: "Broker Integration",
       description: "Connect with major brokers for seamless data import and automated trade tracking.",
-      features: ["Interactive Brokers", "TD Ameritrade", "CSV import", "API connectivity"]
+      features: ["AI-powered CSV import", "Direct broker connectivity", "Multi-broker support"]
     },
     {
       icon: <Share2 className="h-8 w-8" />,
@@ -96,10 +92,6 @@ export default function Features() {
         </div>
       </nav>
 
-      {/* Breadcrumb */}
-      <div className="max-w-7xl mx-auto px-6 pt-4">
-        <BreadcrumbNavigation items={breadcrumbItems} />
-      </div>
 
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-6 py-16 text-center">
@@ -178,7 +170,7 @@ export default function Features() {
       </section>
 
       <GettingStartedHowTo />
-      <BreadcrumbStructuredData items={breadcrumbItems} />
+      <BreadcrumbStructuredData items={[{ name: 'Features', url: '/features' }]} />
       <Footer />
     </div>
   );
