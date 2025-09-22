@@ -621,7 +621,7 @@ export default function TradeCandlestickChart({
       strokeColors: ['transparent', '#ffffff', '#ffffff'], // White border for scatter markers
       strokeWidth: [0, 2, 2], // No border for candlestick, 2px border for scatter
       hover: {
-        size: [0, 10, 10] // Hover effect for scatter markers
+        sizeOffset: 0  // Prevent size increase on hover
       },
       discrete: []
     },
