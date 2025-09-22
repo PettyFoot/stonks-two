@@ -1,11 +1,10 @@
 import { MarketDataProvider, MarketDataResponse, TimeWindow, TradeContext, MarketDataConfig, CacheEntry } from './types';
 import { TimeInterval } from '../timeIntervals';
-import { AlphaVantageProvider } from './providers/alphaVantageProvider';
 import { PolygonProvider } from './providers/polygonProvider';
 import { TimeWindowCalculator } from './timeWindowCalculator';
 
 /**
- * Main market data service that orchestrates data fetching from multiple providers
+ * Main market data service that fetches data from Polygon.io
  */
 export class MarketDataService {
   private providers: MarketDataProvider[] = [];
@@ -28,32 +27,22 @@ export class MarketDataService {
   }
   
   /**
-   * Initialize data providers in order of preference
+   * Initialize data providers - using only Polygon.io
    */
   private initializeProviders() {
-    // Primary: Alpha Vantage (free tier available)
-    const alphaVantage = new AlphaVantageProvider();
-    if (alphaVantage.isAvailable()) {
-      this.providers.push(alphaVantage);
-
-    } else {
-
-    }
-    
-    // Fallback: Polygon.io (premium data, paid subscription)
+    // Primary: Polygon.io (premium data, paid subscription)
     const polygon = new PolygonProvider();
     if (polygon.isAvailable()) {
       this.providers.push(polygon);
-
     } else {
-
+      console.warn('⚠️ Polygon.io provider not available - API key not configured');
     }
-    
-    // REMOVED: Demo provider - never use fake data in production
-    // All requests should either succeed with real data or fail with clear error messages
-    
+
+    // NOTE: Alpha Vantage has been disabled to avoid inconsistent candlestick data
+    // Only Polygon.io is used for reliable market data
+
     if (this.providers.length === 0) {
-      console.error('❌ No market data providers available! Please configure at least one provider.');
+      console.error('❌ No market data providers available! Please configure Polygon.io API key.');
     }
   }
   
@@ -101,14 +90,8 @@ export class MarketDataService {
           const isDelayed = Array.isArray(result) ? false : result.delayed || false;
 
           if (ohlcData && ohlcData.length > 0) {
-            // Determine the appropriate source identifier based on provider name
-            let source: 'alpha_vantage' | 'polygon';
-            if (provider.name.toLowerCase().includes('alpha')) {
-              source = 'alpha_vantage';
-            } else {
-              // Default to polygon for any other provider (should only be polygon now)
-              source = 'polygon';
-            }
+            // Since we only use Polygon.io now, source is always polygon
+            const source: 'polygon' = 'polygon';
 
             const response: MarketDataResponse = {
               symbol: tradeContext.symbol,
@@ -150,7 +133,7 @@ export class MarketDataService {
         ohlc: [],
         success: false,
         error: error instanceof Error ? error.message : 'Market data not available',
-        source: 'alpha_vantage' as const,
+        source: 'polygon' as const,
         cached: false
       };
     }

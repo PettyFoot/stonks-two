@@ -257,7 +257,7 @@ export async function GET(request: Request) {
       { 
         error: error instanceof Error ? error.message : 'Failed to fetch market data',
         success: false,
-        source: 'alpha_vantage',
+        source: 'polygon',
         symbol: '',
         date: '',
         interval: '',
