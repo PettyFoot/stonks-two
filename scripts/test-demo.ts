@@ -9,6 +9,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+//
 async function testDemoSetup() {
   console.log('🧪 Testing Demo Account Setup...\n');
   
