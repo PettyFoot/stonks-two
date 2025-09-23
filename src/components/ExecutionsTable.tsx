@@ -328,6 +328,7 @@ export default function ExecutionsTable({
   const formatTime = (dateTime: Date | null) => {
     if (!dateTime) return '-';
     return new Date(dateTime).toLocaleTimeString('en-US', {
+      timeZone: 'America/New_York',
       hour12: false,
       hour: '2-digit',
       minute: '2-digit',
