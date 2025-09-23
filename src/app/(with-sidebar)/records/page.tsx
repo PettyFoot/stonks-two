@@ -19,11 +19,8 @@ import ShareButton from '@/components/ShareButton';
 import { FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
 import { calculateTradeMetrics } from '@/lib/tradeMetrics';
 import { MarketDataResponse } from '@/lib/marketData/types';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
 
 function RecordsContent() {
-  const { user } = useAuth();
   const searchParams = useSearchParams();
   const selectedDate = searchParams.get('date');
   const selectedTradeId = searchParams.get('tradeId'); // Get specific trade ID if provided

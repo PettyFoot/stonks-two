@@ -533,45 +533,72 @@ export default function TradeCandlestickChart({
     return date.getTime();
   };
 
+  // Calculate Y-axis range from OHLC data with padding
+  const yAxisRange = useMemo(() => {
+    if (!marketData?.ohlc?.length) return null;
+
+    const prices = marketData.ohlc.flatMap(c => [c.open, c.high, c.low, c.close]);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    const padding = (maxPrice - minPrice) * 0.05; // 5% padding
+
+    return {
+      min: Math.max(0, minPrice - padding),
+      max: maxPrice + padding
+    };
+  }, [marketData?.ohlc]);
+
   // Process executions for scatter series overlay
   const executionData = useMemo(() => {
-    if (!executions.length || !marketData?.ohlc?.length) return { buyExecutions: [], sellExecutions: [] };
-    
+    if (!executions.length || !marketData?.ohlc?.length || !yAxisRange) return { buyExecutions: [], sellExecutions: [] };
+
     const xAxisRange = getXAxisRange();
-    
+
     // Get price range from current market data
-    const priceRange = {
-      min: Math.min(...marketData.ohlc.map(c => c.low)),
-      max: Math.max(...marketData.ohlc.map(c => c.high))
-    };
+    const priceRange = yAxisRange;
     
     // Filter executions to only show ones that occurred on the same date as the chart
     const visibleExecutions = executions.filter(execution => {
       const executionTime = execution.orderExecutedTime ? new Date(execution.orderExecutedTime).getTime() : null;
-      const executionPrice = Number(execution.limitPrice) || 0;
+      const executionPrice = Number(execution.limitPrice);
+
+      // PRICE VALIDATION: Filter out invalid prices (NaN, 0, negative, or extreme values)
+      if (!executionPrice || isNaN(executionPrice) || executionPrice <= 0) {
+        console.warn('Filtering out execution with invalid price:', { id: execution.id, price: execution.limitPrice });
+        return false;
+      }
+
+      // Filter out extremely unrealistic prices (more than 10x away from market range)
+      const marketRange = priceRange.max - priceRange.min;
+      const maxReasonablePrice = priceRange.max + (marketRange * 10);
+      const minReasonablePrice = Math.max(0.01, priceRange.min - (marketRange * 10));
+
+      if (executionPrice > maxReasonablePrice || executionPrice < minReasonablePrice) {
+        console.warn('Filtering out execution with unrealistic price:', {
+          id: execution.id,
+          price: executionPrice,
+          marketRange: `${priceRange.min}-${priceRange.max}`
+        });
+        return false;
+      }
 
       // DATE FILTERING: Show executions on the chart date (or if no execution time, assume it's on chart date)
       let withinTimeRange = false;
       if (executionTime) {
-        // Parse dates consistently in UTC by extracting just the date portion
-        const executionDate = new Date(executionTime).toISOString().split('T')[0]; // Returns YYYY-MM-DD in UTC
+        // Parse dates consistently by extracting just the date portion
+        const executionDate = new Date(executionTime).toLocaleDateString('en-CA'); // Returns YYYY-MM-DD
         const chartDateForComparison = /^\d{4}-\d{2}-\d{2}$/.test(chartDate)
           ? chartDate
-          : new Date(chartDate + 'T00:00:00Z').toISOString().split('T')[0];
+          : new Date(chartDate + 'T12:00:00').toLocaleDateString('en-CA');
 
-        // Only allow executions that are on the exact same date as the chart (in UTC)
+        // Only allow executions that are on the exact same date as the chart
         withinTimeRange = (executionDate === chartDateForComparison);
       } else {
         // If no execution time, assume it's on the chart date
         withinTimeRange = true;
       }
 
-      // Check if execution price is within chart's price range (with 10% padding for safety)
-      const priceBuffer = (priceRange.max - priceRange.min) * 0.10;
-      const withinPriceRange = executionPrice >= (priceRange.min - priceBuffer) &&
-        executionPrice <= (priceRange.max + priceBuffer);
-
-      return withinTimeRange && withinPriceRange;
+      return withinTimeRange;
     });
 
     console.log('Chart display range and executions', {
@@ -592,65 +619,42 @@ export default function TradeCandlestickChart({
       }))
     });
 
-    const parseExecutionTime = (executionTime: Date | string | null): number => {
+    const parseExecutionTime = (executionTime: Date | null): number => {
       if (!executionTime) {
-        // Use chart date at market open (9:30 AM EST) as fallback
-        const fallbackDate = new Date(chartDate + 'T13:30:00Z'); // 9:30 AM EST in UTC (13:30 UTC)
-        // Apply timezone offset compensation for the fallback as well
-        const timezoneOffsetMs = new Date().getTimezoneOffset() * 60 * 1000;
-        const adjustedFallback = fallbackDate.getTime() + timezoneOffsetMs;
-        return roundToInterval(adjustedFallback, timeInterval);
+        // Use chart date at market open (9:30 AM) as fallback
+        const fallbackDate = new Date(chartDate + 'T13:30:00'); // 9:30 AM EST in UTC
+        return roundToInterval(fallbackDate.getTime(), timeInterval);
       }
 
-      // Handle both Date objects and strings
-      let dateObj: Date;
-
-      if (typeof executionTime === 'string') {
-        // If it's a string, parse it as UTC by ensuring it has 'Z' suffix
-        const dateString = executionTime.includes('Z') || executionTime.includes('+') || executionTime.includes('-')
-          ? executionTime
-          : executionTime + 'Z';
-        dateObj = new Date(dateString);
-      } else {
-        // It's already a Date object
-        dateObj = executionTime;
-      }
-
-      // Convert to ISO string and parse as UTC to ensure consistent timezone handling
-      const isoString = dateObj.toISOString();
-      const utcTimestamp = new Date(isoString).getTime();
-
-      // Since the chart displays in local time but our execution times are in UTC,
-      // we need to compensate for the timezone offset so markers appear at the correct position
-      // getTimezoneOffset() returns minutes difference from UTC (positive for behind UTC)
-      // We ADD the offset because the chart thinks our UTC timestamp is local time
-      const timezoneOffsetMs = new Date().getTimezoneOffset() * 60 * 1000;
-      const adjustedTimestamp = utcTimestamp + timezoneOffsetMs;
-
-      // Round down to the nearest interval boundary for alignment with candlesticks
-      return roundToInterval(adjustedTimestamp, timeInterval);
+      return roundToInterval(new Date(executionTime).getTime(), timeInterval);
     };
 
     // Separate buy and sell executions for different series
     const buyExecutions = visibleExecutions
       .filter(e => e.side === 'BUY')
-      .map(execution => ({
-        x: parseExecutionTime(execution.orderExecutedTime),
-        y: Number(execution.limitPrice) || 0,
-        executionId: execution.id,
-        quantity: execution.orderQuantity,
-        execution: execution
-      }));
-    
+      .map(execution => {
+        const price = Number(execution.limitPrice);
+        return {
+          x: parseExecutionTime(execution.orderExecutedTime),
+          y: price, // Already validated in visibleExecutions filter
+          executionId: execution.id,
+          quantity: execution.orderQuantity,
+          execution: execution
+        };
+      });
+
     const sellExecutions = visibleExecutions
       .filter(e => e.side === 'SELL')
-      .map(execution => ({
-        x: parseExecutionTime(execution.orderExecutedTime),
-        y: Number(execution.limitPrice) || 0,
-        executionId: execution.id,
-        quantity: execution.orderQuantity,
-        execution: execution
-      }));
+      .map(execution => {
+        const price = Number(execution.limitPrice);
+        return {
+          x: parseExecutionTime(execution.orderExecutedTime),
+          y: price, // Already validated in visibleExecutions filter
+          executionId: execution.id,
+          quantity: execution.orderQuantity,
+          execution: execution
+        };
+      });
 
     console.log('Execution data for chart overlay', {
       buyExecutions: buyExecutions.length,
@@ -675,12 +679,12 @@ export default function TradeCandlestickChart({
     });
 
     return { buyExecutions, sellExecutions };
-  }, [executions, selectedExecution, marketData, getXAxisRange, chartDate, timeInterval]);
+  }, [executions, selectedExecution, marketData, getXAxisRange, chartDate, timeInterval, yAxisRange]);
 
   const xAxisRange = getXAxisRange();
 
-  // Price chart options (top panel)
-  const priceChartOptions: ApexOptions = {
+  // Price chart options (top panel) - memoized to prevent unnecessary re-renders
+  const priceChartOptions: ApexOptions = useMemo(() => ({
     colors: ['#000000', '#3b82f6', '#9333ea'], // Candlestick (black), Buy (blue), Sell (purple)
     stroke: {
       width: 1  // Thin wick lines
@@ -714,8 +718,12 @@ export default function TradeCandlestickChart({
       height: Math.floor(height * 0.7), // 70% of total height for price chart
       background: 'transparent',
       animations: {
+        enabled: false, // Completely disable all animations
         animateGradually: {
-          enabled: false // Disable gradual animations to prevent z-index issues
+          enabled: false
+        },
+        dynamicAnimation: {
+          enabled: false
         }
       },
       toolbar: {
@@ -797,6 +805,10 @@ export default function TradeCandlestickChart({
     },
     yaxis: {
       opposite: true, // Position on right side
+      ...(yAxisRange && {
+        min: yAxisRange.min,
+        max: yAxisRange.max
+      }),
       tooltip: {
         enabled: true
       },
@@ -830,34 +842,75 @@ export default function TradeCandlestickChart({
     tooltip: {
       theme: 'dark',
       custom: ({ seriesIndex, dataPointIndex, w }) => {
-        // Only show custom tooltip for candlestick series (index 0)
-        if (seriesIndex !== 0) return '';
+        // Handle candlestick series (index 0)
+        if (seriesIndex === 0) {
+          // Check if candlestick data exists for this series and data point
+          if (!w.globals.seriesCandleO || !w.globals.seriesCandleO[seriesIndex] || !w.globals.seriesCandleO[seriesIndex][dataPointIndex]) {
+            return '';
+          }
 
-        // Check if candlestick data exists for this series and data point
-        if (!w.globals.seriesCandleO || !w.globals.seriesCandleO[seriesIndex] || !w.globals.seriesCandleO[seriesIndex][dataPointIndex]) {
-          return '';
+          const ohlc = marketData?.ohlc?.[dataPointIndex];
+          if (!ohlc) return '';
+
+          return `
+            <div class="apex-tooltip-candlestick" style="background: rgba(40, 40, 40, 0.5); border: 1px solid #555; border-radius: 6px; padding: 8px; color: #e5e5e5; font-family: system-ui, -apple-system, sans-serif;">
+              <div class="apex-tooltip-title" style="color: #ffffff; font-weight: 600; font-size: 12px; margin-bottom: 6px; text-align: center;">
+                <span style="color: #ffffff;">${new Date(ohlc.timestamp).toLocaleTimeString('en-US', {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}</span>
+              </div>
+              <div class="apex-tooltip-body" style="font-size: 11px; line-height: 1.4;">
+                <div style="color: #e5e5e5; margin-bottom: 2px;">Open: <span class="value" style="color: #ffffff; font-weight: 500;">$${ohlc.open.toFixed(2)}</span></div>
+                <div style="color: #e5e5e5; margin-bottom: 2px;">High: <span class="value" style="color: #10b981; font-weight: 500;">$${ohlc.high.toFixed(2)}</span></div>
+                <div style="color: #e5e5e5; margin-bottom: 2px;">Low: <span class="value" style="color: #ef4444; font-weight: 500;">$${ohlc.low.toFixed(2)}</span></div>
+                <div style="color: #e5e5e5; margin-bottom: 2px;">Close: <span class="value" style="color: #ffffff; font-weight: 500;">$${ohlc.close.toFixed(2)}</span></div>
+                ${ohlc.volume ? `<div style="color: #e5e5e5;">Volume: <span class="value" style="color: #a3a3a3; font-weight: 500;">${ohlc.volume.toLocaleString()}</span></div>` : ''}
+              </div>
+            </div>
+          `;
         }
 
-        const ohlc = marketData?.ohlc?.[dataPointIndex];
-        if (!ohlc) return '';
+        // Handle Buy executions (index 1)
+        if (seriesIndex === 1) {
+          const execution = executionData?.buyExecutions?.[dataPointIndex];
+          if (!execution) return '';
 
-        return `
-          <div class="apex-tooltip-candlestick" style="background: rgba(40, 40, 40, 0.5); border: 1px solid #555; border-radius: 6px; padding: 8px; color: #e5e5e5; font-family: system-ui, -apple-system, sans-serif;">
-            <div class="apex-tooltip-title" style="color: #ffffff; font-weight: 600; font-size: 12px; margin-bottom: 6px; text-align: center;">
-              <span style="color: #ffffff;">${new Date(ohlc.timestamp).toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit'
-              })}</span>
+          return `
+            <div class="apex-tooltip-execution" style="background: rgba(40, 40, 40, 0.5); border: 1px solid #3b82f6; border-radius: 6px; padding: 8px; color: #e5e5e5; font-family: system-ui, -apple-system, sans-serif;">
+              <div class="apex-tooltip-title" style="color: #3b82f6; font-weight: 600; font-size: 12px; margin-bottom: 6px; text-align: center;">
+                BUY Execution
+              </div>
+              <div class="apex-tooltip-body" style="font-size: 11px; line-height: 1.4;">
+                <div style="color: #e5e5e5; margin-bottom: 2px;">Price: <span class="value" style="color: #ffffff; font-weight: 500;">$${execution.y.toFixed(2)}</span></div>
+                <div style="color: #e5e5e5; margin-bottom: 2px;">Quantity: <span class="value" style="color: #ffffff; font-weight: 500;">${execution.quantity}</span></div>
+                <div style="color: #e5e5e5;">Time: <span class="value" style="color: #a3a3a3; font-weight: 500;">${new Date(execution.x).toLocaleTimeString()}</span></div>
+              </div>
             </div>
-            <div class="apex-tooltip-body" style="font-size: 11px; line-height: 1.4;">
-              <div style="color: #e5e5e5; margin-bottom: 2px;">Open: <span class="value" style="color: #ffffff; font-weight: 500;">$${ohlc.open.toFixed(2)}</span></div>
-              <div style="color: #e5e5e5; margin-bottom: 2px;">High: <span class="value" style="color: #10b981; font-weight: 500;">$${ohlc.high.toFixed(2)}</span></div>
-              <div style="color: #e5e5e5; margin-bottom: 2px;">Low: <span class="value" style="color: #ef4444; font-weight: 500;">$${ohlc.low.toFixed(2)}</span></div>
-              <div style="color: #e5e5e5; margin-bottom: 2px;">Close: <span class="value" style="color: #ffffff; font-weight: 500;">$${ohlc.close.toFixed(2)}</span></div>
-              ${ohlc.volume ? `<div style="color: #e5e5e5;">Volume: <span class="value" style="color: #a3a3a3; font-weight: 500;">${ohlc.volume.toLocaleString()}</span></div>` : ''}
+          `;
+        }
+
+        // Handle Sell executions (index 2)
+        if (seriesIndex === 2) {
+          const execution = executionData?.sellExecutions?.[dataPointIndex];
+          if (!execution) return '';
+
+          return `
+            <div class="apex-tooltip-execution" style="background: rgba(40, 40, 40, 0.5); border: 1px solid #9333ea; border-radius: 6px; padding: 8px; color: #e5e5e5; font-family: system-ui, -apple-system, sans-serif;">
+              <div class="apex-tooltip-title" style="color: #9333ea; font-weight: 600; font-size: 12px; margin-bottom: 6px; text-align: center;">
+                SELL Execution
+              </div>
+              <div class="apex-tooltip-body" style="font-size: 11px; line-height: 1.4;">
+                <div style="color: #e5e5e5; margin-bottom: 2px;">Price: <span class="value" style="color: #ffffff; font-weight: 500;">$${execution.y.toFixed(2)}</span></div>
+                <div style="color: #e5e5e5; margin-bottom: 2px;">Quantity: <span class="value" style="color: #ffffff; font-weight: 500;">${execution.quantity}</span></div>
+                <div style="color: #e5e5e5;">Time: <span class="value" style="color: #a3a3a3; font-weight: 500;">${new Date(execution.x).toLocaleTimeString()}</span></div>
+              </div>
             </div>
-          </div>
-        `;
+          `;
+        }
+
+        // Return empty string for any other series
+        return '';
       }
     },
     legend: {
@@ -866,10 +919,10 @@ export default function TradeCandlestickChart({
     theme: {
       mode: 'dark'
     }
-  };
+  }), [xAxisRange, yAxisRange, executionData, height]);
 
-  // Volume chart options (bottom panel)
-  const volumeChartOptions: ApexOptions = {
+  // Volume chart options (bottom panel) - memoized to prevent unnecessary re-renders
+  const volumeChartOptions: ApexOptions = useMemo(() => ({
     chart: {
       id: 'volume-chart',
       group: 'synchronized-charts',
@@ -958,7 +1011,7 @@ export default function TradeCandlestickChart({
     theme: {
       mode: 'dark'
     }
-  };
+  }), [xAxisRange, height]);
 
   // Price chart series (candlesticks + execution markers)
   const priceChartSeries = [
@@ -1192,7 +1245,7 @@ export default function TradeCandlestickChart({
           </div>
         )}
         
-        {isLoading ? (
+        {isLoading || !marketData ? (
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
