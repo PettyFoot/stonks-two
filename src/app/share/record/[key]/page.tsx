@@ -95,7 +95,7 @@ export default function SharedTradePage() {
   const isRecordsShare = (data?.metadata as any)?.isRecordsShare;
 
   // Extract proper date for records shares
-  const getTradeDate = () => {
+  const getTradeDate = (tradeData: any) => {
     if (isRecordsShare) {
       // For records shares, get date from metadata or extract from trade ID
       const shareDate = (data?.metadata as any)?.shareDate;
@@ -103,20 +103,18 @@ export default function SharedTradePage() {
         return new Date(shareDate).toISOString().split('T')[0]; // YYYY-MM-DD format
       }
       // Fallback: extract from trade ID format "records_YYYY-MM-DD"
-      const tradeId = (trade as any).id;
+      const tradeId = tradeData?.id;
       if (typeof tradeId === 'string' && tradeId.startsWith('records_')) {
         return tradeId.replace('records_', '');
       }
     }
     // For single trades, use the trade date
-    if ((trade as any).date) {
-      return new Date((trade as any).date).toISOString().split('T')[0];
+    if (tradeData?.date) {
+      return new Date(tradeData.date).toISOString().split('T')[0];
     }
     // Fallback to today's date
     return new Date().toISOString().split('T')[0];
   };
-
-  const chartDate = getTradeDate();
 
   if (loading) {
     return (
@@ -163,6 +161,8 @@ export default function SharedTradePage() {
   }
 
   const { trade, orders } = data;
+
+  const chartDate = getTradeDate(trade);
 
   // For records shares, show multiple trades, for single trade shares show single trade
   const isMultipleTrades = isRecordsShare && trade.trades && trade.trades.length > 0;
