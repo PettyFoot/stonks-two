@@ -498,6 +498,41 @@ export default function TradeCandlestickChart({
     return range;
   }, [marketData, chartDate]);
 
+  // Helper function to round timestamp down to the nearest interval boundary
+  const roundToInterval = (timestamp: number, interval: TimeInterval): number => {
+    const date = new Date(timestamp);
+
+    switch (interval) {
+      case '1m':
+        // Round down to nearest minute
+        date.setSeconds(0, 0);
+        break;
+      case '5m':
+        // Round down to nearest 5-minute boundary
+        const minutes5 = Math.floor(date.getMinutes() / 5) * 5;
+        date.setMinutes(minutes5, 0, 0);
+        break;
+      case '15m':
+        // Round down to nearest 15-minute boundary
+        const minutes15 = Math.floor(date.getMinutes() / 15) * 15;
+        date.setMinutes(minutes15, 0, 0);
+        break;
+      case '1h':
+        // Round down to nearest hour
+        date.setMinutes(0, 0, 0);
+        break;
+      case '1d':
+        // Round down to start of day
+        date.setHours(0, 0, 0, 0);
+        break;
+      default:
+        // Fallback: no rounding
+        break;
+    }
+
+    return date.getTime();
+  };
+
   // Process executions for scatter series overlay
   const executionData = useMemo(() => {
     if (!executions.length || !marketData?.ohlc?.length) return { buyExecutions: [], sellExecutions: [] };
@@ -518,13 +553,13 @@ export default function TradeCandlestickChart({
       // DATE FILTERING: Show executions on the chart date (or if no execution time, assume it's on chart date)
       let withinTimeRange = false;
       if (executionTime) {
-        // Parse dates consistently by extracting just the date portion
-        const executionDate = new Date(executionTime).toLocaleDateString('en-CA'); // Returns YYYY-MM-DD
+        // Parse dates consistently in UTC by extracting just the date portion
+        const executionDate = new Date(executionTime).toISOString().split('T')[0]; // Returns YYYY-MM-DD in UTC
         const chartDateForComparison = /^\d{4}-\d{2}-\d{2}$/.test(chartDate)
           ? chartDate
-          : new Date(chartDate + 'T12:00:00').toLocaleDateString('en-CA');
+          : new Date(chartDate + 'T00:00:00Z').toISOString().split('T')[0];
 
-        // Only allow executions that are on the exact same date as the chart
+        // Only allow executions that are on the exact same date as the chart (in UTC)
         withinTimeRange = (executionDate === chartDateForComparison);
       } else {
         // If no execution time, assume it's on the chart date
@@ -557,14 +592,43 @@ export default function TradeCandlestickChart({
       }))
     });
 
-    const parseExecutionTime = (executionTime: Date | null): number => {
+    const parseExecutionTime = (executionTime: Date | string | null): number => {
       if (!executionTime) {
-        // Use chart date at market open (9:30 AM) as fallback
-        const fallbackDate = new Date(chartDate + 'T13:30:00'); // 9:30 AM EST in UTC
-        return fallbackDate.getTime();
+        // Use chart date at market open (9:30 AM EST) as fallback
+        const fallbackDate = new Date(chartDate + 'T13:30:00Z'); // 9:30 AM EST in UTC (13:30 UTC)
+        // Apply timezone offset compensation for the fallback as well
+        const timezoneOffsetMs = new Date().getTimezoneOffset() * 60 * 1000;
+        const adjustedFallback = fallbackDate.getTime() + timezoneOffsetMs;
+        return roundToInterval(adjustedFallback, timeInterval);
       }
 
-      return new Date(executionTime).getTime();
+      // Handle both Date objects and strings
+      let dateObj: Date;
+
+      if (typeof executionTime === 'string') {
+        // If it's a string, parse it as UTC by ensuring it has 'Z' suffix
+        const dateString = executionTime.includes('Z') || executionTime.includes('+') || executionTime.includes('-')
+          ? executionTime
+          : executionTime + 'Z';
+        dateObj = new Date(dateString);
+      } else {
+        // It's already a Date object
+        dateObj = executionTime;
+      }
+
+      // Convert to ISO string and parse as UTC to ensure consistent timezone handling
+      const isoString = dateObj.toISOString();
+      const utcTimestamp = new Date(isoString).getTime();
+
+      // Since the chart displays in local time but our execution times are in UTC,
+      // we need to compensate for the timezone offset so markers appear at the correct position
+      // getTimezoneOffset() returns minutes difference from UTC (positive for behind UTC)
+      // We ADD the offset because the chart thinks our UTC timestamp is local time
+      const timezoneOffsetMs = new Date().getTimezoneOffset() * 60 * 1000;
+      const adjustedTimestamp = utcTimestamp + timezoneOffsetMs;
+
+      // Round down to the nearest interval boundary for alignment with candlesticks
+      return roundToInterval(adjustedTimestamp, timeInterval);
     };
 
     // Separate buy and sell executions for different series
@@ -611,7 +675,7 @@ export default function TradeCandlestickChart({
     });
 
     return { buyExecutions, sellExecutions };
-  }, [executions, selectedExecution, marketData, getXAxisRange, chartDate]);
+  }, [executions, selectedExecution, marketData, getXAxisRange, chartDate, timeInterval]);
 
   const xAxisRange = getXAxisRange();
 
@@ -966,6 +1030,7 @@ export default function TradeCandlestickChart({
     setSelectedExecution(execution.id === selectedExecution ? null : execution.id);
     onExecutionSelect?.(execution);
   };
+
 
   return (
     <Card className="bg-surface border-default">

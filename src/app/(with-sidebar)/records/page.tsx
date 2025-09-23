@@ -19,19 +19,23 @@ import ShareButton from '@/components/ShareButton';
 import { FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
 import { calculateTradeMetrics } from '@/lib/tradeMetrics';
 import { MarketDataResponse } from '@/lib/marketData/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 
 function RecordsContent() {
+  const { user } = useAuth();
   const searchParams = useSearchParams();
   const selectedDate = searchParams.get('date');
   const selectedTradeId = searchParams.get('tradeId'); // Get specific trade ID if provided
-  
+
   // const { isDemo } = useAuth(); // Currently not used but may be needed for demo features
-  
+
   // Use real records data instead of mock data
   const { data: recordsData, loading, error } = useRecordsData(selectedDate, selectedTradeId);
-  
+
   // Get trades data for the default view when no specific trade is selected
   const { data: tradesData, loading: tradesLoading } = useTradesData();
+
 
   // State for market data from the chart component
   const [chartMarketData, setChartMarketData] = useState<MarketDataResponse | null>(null);
@@ -113,8 +117,7 @@ function RecordsContent() {
   }, [recordsData, targetTrade, setNotes]);
 
 
-
-  // All executions for this records entry - memoized to prevent unnecessary recalculations  
+  // All executions for this records entry - memoized to prevent unnecessary recalculations
   const { mostActiveSymbol, chartExecutions } = useMemo(() => {
     const allExecutions = recordsData?.executions || [];
 
@@ -247,7 +250,7 @@ function RecordsContent() {
             </div>
 
             <div className="flex items-center gap-2">
-              <ShareButton 
+              <ShareButton
                 date={selectedDate || undefined}
                 tradeId={selectedTradeId || undefined}
                 variant="button"
