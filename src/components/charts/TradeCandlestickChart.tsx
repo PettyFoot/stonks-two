@@ -610,7 +610,8 @@ export default function TradeCandlestickChart({
 
   const xAxisRange = getXAxisRange();
 
-  const chartOptions: ApexOptions = {
+  // Price chart options (top panel)
+  const priceChartOptions: ApexOptions = {
     colors: ['#000000', '#3b82f6', '#9333ea'], // Candlestick (black), Buy (blue), Sell (purple)
     stroke: {
       width: 1  // Thin wick lines
@@ -638,8 +639,10 @@ export default function TradeCandlestickChart({
       }
     },
     chart: {
-      type: 'line', // Changed to line to support mixed series
-      height: height,
+      id: 'price-chart',
+      group: 'synchronized-charts',
+      type: 'line',
+      height: Math.floor(height * 0.7), // 70% of total height for price chart
       background: 'transparent',
       animations: {
         animateGradually: {
@@ -678,13 +681,12 @@ export default function TradeCandlestickChart({
       },
       events: {
         dataPointSelection: (event, chartContext, config) => {
-
           // Handle execution marker clicks (scatter series are at index 1 and 2)
           if (config.seriesIndex >= 1) {
             const isBuyExecution = config.seriesIndex === 1;
             const executionArray = isBuyExecution ? executionData.buyExecutions : executionData.sellExecutions;
             const clickedExecution = executionArray[config.dataPointIndex];
-            
+
             if (clickedExecution) {
               setSelectedExecution(clickedExecution.executionId === selectedExecution ? null : clickedExecution.executionId);
               onExecutionSelect?.(clickedExecution.execution);
@@ -715,22 +717,17 @@ export default function TradeCandlestickChart({
         enabled: false
       },
       labels: {
-        style: {
-          colors: 'var(--theme-primary-text)'
-        },
-        datetimeUTC: false,
-        datetimeFormatter: {
-          hour: 'HH:mm'
-        }
+        show: false // Hide x-axis labels on top chart
       },
       axisBorder: {
-        color: 'var(--theme-primary-text)'
+        show: false
       },
       axisTicks: {
-        color: 'var(--theme-primary-text)'
+        show: false
       }
     },
     yaxis: {
+      opposite: true, // Position on right side
       tooltip: {
         enabled: true
       },
@@ -766,21 +763,21 @@ export default function TradeCandlestickChart({
       custom: ({ seriesIndex, dataPointIndex, w }) => {
         // Only show custom tooltip for candlestick series (index 0)
         if (seriesIndex !== 0) return '';
-        
+
         // Check if candlestick data exists for this series and data point
         if (!w.globals.seriesCandleO || !w.globals.seriesCandleO[seriesIndex] || !w.globals.seriesCandleO[seriesIndex][dataPointIndex]) {
           return '';
         }
-        
+
         const ohlc = marketData?.ohlc?.[dataPointIndex];
         if (!ohlc) return '';
-        
+
         return `
           <div class="apex-tooltip-candlestick" style="background: rgba(40, 40, 40, 0.5); border: 1px solid #555; border-radius: 6px; padding: 8px; color: #e5e5e5; font-family: system-ui, -apple-system, sans-serif;">
             <div class="apex-tooltip-title" style="color: #ffffff; font-weight: 600; font-size: 12px; margin-bottom: 6px; text-align: center;">
-              <span style="color: #ffffff;">${new Date(ohlc.timestamp).toLocaleTimeString('en-US', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
+              <span style="color: #ffffff;">${new Date(ohlc.timestamp).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
               })}</span>
             </div>
             <div class="apex-tooltip-body" style="font-size: 11px; line-height: 1.4;">
@@ -795,25 +792,107 @@ export default function TradeCandlestickChart({
       }
     },
     legend: {
-      show: false,
-      position: 'bottom',
-      horizontalAlign: 'center',
-      floating: false,
-      offsetY: 10,
-      labels: {
-        colors: 'var(--theme-primary-text)'
-      },
-      markers: {
-        size: 20,
-        shape: 'line'
-      }
+      show: false
     },
     theme: {
       mode: 'dark'
     }
   };
 
-  const chartSeries = [
+  // Volume chart options (bottom panel)
+  const volumeChartOptions: ApexOptions = {
+    chart: {
+      id: 'volume-chart',
+      group: 'synchronized-charts',
+      type: 'bar',
+      height: Math.floor(height * 0.3), // 30% of total height for volume chart
+      background: 'transparent',
+      toolbar: {
+        show: false // Hide toolbar on volume chart
+      },
+      stacked: true // Stack the two volume series
+    },
+    colors: ['var(--theme-green)', 'var(--theme-red)'], // Green for up, red for down
+    dataLabels: {
+      enabled: false // Hide value labels on volume bars
+    },
+    plotOptions: {
+      bar: {
+        columnWidth: '40%' // Match candlestick width for alignment
+      }
+    },
+    xaxis: {
+      type: 'datetime',
+      min: xAxisRange.min,
+      max: xAxisRange.max,
+      labels: {
+        style: {
+          colors: 'var(--theme-primary-text)'
+        },
+        datetimeUTC: false,
+        datetimeFormatter: {
+          hour: 'HH:mm'
+        }
+      },
+      axisBorder: {
+        color: 'var(--theme-primary-text)'
+      },
+      axisTicks: {
+        color: 'var(--theme-primary-text)'
+      }
+    },
+    yaxis: {
+      opposite: true, // Position on right side
+      labels: {
+        style: {
+          colors: 'var(--theme-primary-text)'
+        },
+        formatter: (value) => {
+          if (value >= 1000000) {
+            return `${(value / 1000000).toFixed(1)}M`;
+          } else if (value >= 1000) {
+            return `${(value / 1000).toFixed(0)}k`;
+          }
+          return value.toString();
+        }
+      },
+      axisBorder: {
+        color: 'var(--theme-primary-text)'
+      },
+      axisTicks: {
+        color: 'var(--theme-primary-text)'
+      }
+    },
+    grid: {
+      borderColor: 'var(--theme-chart-grid)',
+      strokeDashArray: 1,
+      xaxis: {
+        lines: {
+          show: true
+        }
+      },
+      yaxis: {
+        lines: {
+          show: true
+        }
+      }
+    },
+    tooltip: {
+      theme: 'dark',
+      y: {
+        formatter: (value) => value.toLocaleString()
+      }
+    },
+    legend: {
+      show: false
+    },
+    theme: {
+      mode: 'dark'
+    }
+  };
+
+  // Price chart series (candlesticks + execution markers)
+  const priceChartSeries = [
     {
       name: symbol,
       type: 'candlestick',
@@ -846,6 +925,37 @@ export default function TradeCandlestickChart({
       showInLegend: true
     }
   ];
+
+  // Volume chart series (colored based on candlestick direction)
+  // Create two separate series for green and red volumes to ensure proper coloring
+  const volumeChartSeries = [
+    {
+      name: 'Volume Up',
+      data: marketData?.ohlc?.map(d => ({
+        x: d.timestamp,
+        y: d.close >= d.open ? (d.volume || 0) : null
+      })) || []
+    },
+    {
+      name: 'Volume Down',
+      data: marketData?.ohlc?.map(d => ({
+        x: d.timestamp,
+        y: d.close < d.open ? (d.volume || 0) : null
+      })) || []
+    }
+  ];
+
+  // Debug: Log data alignment
+  if (marketData?.ohlc?.length) {
+    console.log('Chart data alignment check:', {
+      candlestickCount: priceChartSeries[0].data.length,
+      volumeBarCount: volumeChartSeries[0].data.length,
+      firstCandle: priceChartSeries[0].data[0],
+      firstVolume: volumeChartSeries[0].data[0],
+      lastCandle: priceChartSeries[0].data[priceChartSeries[0].data.length - 1],
+      lastVolume: volumeChartSeries[0].data[volumeChartSeries[0].data.length - 1]
+    });
+  }
 
   const handleExecutionClick = (execution: ExecutionOrder) => {
     setSelectedExecution(execution.id === selectedExecution ? null : execution.id);
@@ -1021,12 +1131,24 @@ export default function TradeCandlestickChart({
           </div>
         ) : marketData && marketData.ohlc.length > 0 ? (
           <div className="relative">
+            {/* Price Chart (Top Panel) */}
+            <div style={{ marginBottom: '-40px' }}>
+              <Chart
+                key={`price-${symbol}-${timeInterval}-${executions.length}-${chartDate}`}
+                options={priceChartOptions}
+                series={priceChartSeries}
+                type="line"
+                height={Math.floor(height * 0.7)}
+              />
+            </div>
+
+            {/* Volume Chart (Bottom Panel) */}
             <Chart
-              key={`${symbol}-${timeInterval}-${executions.length}-${chartDate}`}
-              options={chartOptions}
-              series={chartSeries}
-              type="line"
-              height={height}
+              key={`volume-${symbol}-${timeInterval}-${executions.length}-${chartDate}`}
+              options={volumeChartOptions}
+              series={volumeChartSeries}
+              type="bar"
+              height={Math.floor(height * 0.3)}
             />
 
             {/* Delayed data info banner */}
