@@ -5,6 +5,7 @@ import { TradeContext } from '@/lib/marketData/types';
 import { enforceMarketDataRateLimit, RateLimitExceededError } from '@/lib/marketData/rateLimiter';
 import { recordMarketDataApiCall } from '@/lib/marketData/usageTracking';
 import { isDemoUser } from '@/lib/demo/demoSession';
+import { prisma } from '@/lib/prisma';
 
 // Generate dummy market data for demo mode
 function generateDummyMarketData(symbol: string, date: string, interval: string) {
@@ -111,7 +112,56 @@ export async function GET(request: Request) {
         );
       }
     }
-    
+
+    // For shared requests, track and limit API calls
+    let sharedUsageInfo = null;
+    if (shared) {
+      const shareKey = searchParams.get('shareKey');
+      if (!shareKey) {
+        return NextResponse.json(
+          { error: 'Share key required for shared access' },
+          { status: 400 }
+        );
+      }
+
+      // Use secure database function to increment counter
+      try {
+        const result = await prisma.$queryRaw`
+          SELECT * FROM increment_shared_api_calls(${shareKey}::TEXT, 10)
+        ` as any[];
+
+        const { success, current_count, remaining_calls, should_delete, error_message } = result[0];
+
+        if (!success) {
+          if (should_delete) {
+            // Record has been or will be deleted
+            return NextResponse.json({
+              error: 'This shared link has expired due to API usage limits',
+              expired: true
+            }, { status: 410 }); // 410 Gone
+          }
+
+          // Rate limit or other error
+          return NextResponse.json({
+            error: error_message,
+            remaining_calls,
+            retry_after: error_message.includes('per minute') ? 60 : null
+          }, { status: 429 });
+        }
+
+        // Store for adding to response headers
+        sharedUsageInfo = {
+          current_count,
+          remaining_calls
+        };
+      } catch (dbError) {
+        console.error('Database error during shared API tracking:', dbError);
+        return NextResponse.json({
+          error: 'Unable to process shared request at this time'
+        }, { status: 500 });
+      }
+    }
+
     // Check if this is a demo user and return dummy data
     if (user && isDemoUser(user.id)) {
       const dummyData = generateDummyMarketData(symbol, date, interval);
@@ -172,19 +222,26 @@ export async function GET(request: Request) {
         errorMessage = response.error;
       }
       
-      // Add rate limit headers for authenticated users
+      // Add rate limit headers for authenticated users and shared usage headers
       const headers: Record<string, string> = {};
       if (rateLimitInfo && user) {
         headers['X-RateLimit-Tier'] = rateLimitInfo.subscriptionTier;
         headers['X-RateLimit-Calls-Made'] = rateLimitInfo.callsMade.toString();
-        
+
         if (rateLimitInfo.subscriptionTier === 'FREE') {
           headers['X-RateLimit-Limit'] = '10';
           headers['X-RateLimit-Remaining'] = (rateLimitInfo.callsRemaining || 0).toString();
           headers['X-RateLimit-Reset'] = Math.ceil(rateLimitInfo.resetAt.getTime() / 1000).toString();
         }
       }
-      
+
+      // Add shared usage headers for shared requests
+      if (sharedUsageInfo) {
+        headers['X-Shared-API-Calls-Used'] = sharedUsageInfo.current_count.toString();
+        headers['X-Shared-API-Calls-Remaining'] = sharedUsageInfo.remaining_calls.toString();
+        headers['X-Shared-API-Max-Calls'] = '200'; // Default max calls
+      }
+
       return NextResponse.json(response, { headers });
 
     } catch (error) {

@@ -26,6 +26,7 @@ interface TradeCandlestickChartProps {
   onExecutionSelect?: (execution: ExecutionOrder) => void;
   onMarketDataUpdate?: (marketData: MarketDataResponse) => void;
   isShared?: boolean;
+  shareKey?: string;
 }
 
 type TimeInterval = '1m' | '5m' | '15m' | '1h' | '1d';
@@ -47,7 +48,8 @@ export default function TradeCandlestickChart({
   height = 400,
   onExecutionSelect,
   onMarketDataUpdate,
-  isShared = false
+  isShared = false,
+  shareKey
 }: TradeCandlestickChartProps) {
   const [marketData, setMarketData] = useState<MarketDataResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -320,6 +322,9 @@ export default function TradeCandlestickChart({
         // Add shared parameter if this is a shared view
         if (isShared) {
           params.set('shared', 'true');
+          if (shareKey) {
+            params.set('shareKey', shareKey);
+          }
         }
         
         const response = await fetch(`/api/market-data?${params.toString()}`, {
@@ -967,7 +972,7 @@ export default function TradeCandlestickChart({
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-medium text-primary">
-            {symbol} Price Chart
+            {symbol}
             <span className="ml-2 text-xs font-normal text-muted">
               ({executions.length} execution{executions.length !== 1 ? 's' : ''})
               {dataSource && ` • ${dataSource}`}

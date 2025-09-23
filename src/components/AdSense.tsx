@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useSubscription } from '@/hooks/useSubscription';
+import { SubscriptionTier, SubscriptionStatus } from '@prisma/client';
 
 declare global {
   interface Window {
@@ -22,13 +23,45 @@ export default function AdSense({
   format = 'auto',
   responsive = true
 }: AdSenseProps) {
-  const { hasPremiumAccess, isLoading: subscriptionLoading } = useSubscription();
+  const { hasPremiumAccess, isLoading: subscriptionLoading, subscription } = useSubscription();
   const adRef = useRef<HTMLModElement>(null);
   const initializedRef = useRef(false);
   const [adLoaded, setAdLoaded] = useState(false);
   const [adError, setAdError] = useState<string | null>(null);
 
+  // Debug logging for premium access status
   useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('AdSense Debug:', {
+        hasPremiumAccess,
+        subscriptionLoading,
+        subscription: subscription ? {
+          tier: subscription.tier,
+          status: subscription.status,
+          inTrial: subscription.inTrial
+        } : null
+      });
+    }
+  }, [hasPremiumAccess, subscriptionLoading, subscription]);
+
+  useEffect(() => {
+    // Don't initialize ads for premium users
+    const isPremiumUser = hasPremiumAccess ||
+      (subscription?.tier === SubscriptionTier.PREMIUM &&
+       (subscription?.status === SubscriptionStatus.ACTIVE || subscription?.status === SubscriptionStatus.TRIALING));
+
+    if (isPremiumUser) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('AdSense: Skipping initialization for premium user');
+      }
+      return;
+    }
+
+    // Don't initialize while subscription is still loading
+    if (subscriptionLoading) {
+      return;
+    }
+
     // Prevent double initialization in React StrictMode
     if (initializedRef.current) {
       return;
@@ -111,15 +144,26 @@ export default function AdSense({
       clearTimeout(timeoutId);
       observer.disconnect();
     };
-  }, [slot]); // Re-run if slot changes
+  }, [slot, hasPremiumAccess, subscriptionLoading, subscription?.tier, subscription?.status]); // Re-run if subscription or slot changes
+
+  // Enhanced premium user detection with multiple checks
+  const isPremiumUser = hasPremiumAccess ||
+    (subscription?.tier === SubscriptionTier.PREMIUM &&
+     (subscription?.status === SubscriptionStatus.ACTIVE || subscription?.status === SubscriptionStatus.TRIALING));
 
   // Don't show ads for premium users
-  if (hasPremiumAccess) {
+  if (isPremiumUser) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('AdSense: Blocking ad for premium user');
+    }
     return null;
   }
 
-  // Don't show ads while checking subscription status
+  // Don't show ads while checking subscription status to prevent flashing
   if (subscriptionLoading) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('AdSense: Waiting for subscription status');
+    }
     return null;
   }
 

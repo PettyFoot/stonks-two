@@ -348,21 +348,43 @@ model AccountDeletionLog {
 }
 
 model SharedTrade {
-  id            String   @id @default(cuid())
-  shareKey      String   @unique
-  userId        String
-  tradeSnapshot Json
-  orderSnapshot Json
-  metadata      Json?
-  expiresAt     DateTime
-  accessCount   Int      @default(0)
-  createdAt     DateTime @default(now())
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                  String    @id @default(cuid())
+  shareKey            String    @unique
+  userId              String
+  tradeSnapshot       Json
+  orderSnapshot       Json
+  metadata            Json?
+  expiresAt           DateTime
+  accessCount         Int       @default(0)
+  apiCallCount        Int       @default(0)
+  maxApiCalls         Int       @default(200)
+  lastApiCallAt       DateTime?
+  apiCallsPerMinute   Int       @default(0)
+  minuteWindowStart   DateTime?
+  createdAt           DateTime  @default(now())
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([shareKey])
   @@index([userId, expiresAt])
   @@index([expiresAt])
+  @@index([apiCallCount, maxApiCalls])
   @@map("shared_trades")
+}
+
+model SharedTradeDeletion {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shareKey         String
+  userId           String
+  deletedAt        DateTime @default(now())
+  deletionReason   String
+  finalApiCount    Int?
+  accessCount      Int?
+  createdAt        DateTime @default(now())
+
+  @@index([userId])
+  @@index([deletedAt])
+  @@index([shareKey])
+  @@map("shared_trade_deletions")
 }
 
 model SnapTradeSyncConfig {

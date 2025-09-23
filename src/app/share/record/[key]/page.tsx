@@ -28,6 +28,14 @@ interface SharedTradeData {
   metadata: SharedTradeMetadata;
   expiresAt: string;
   createdAt: string;
+  apiUsage?: {
+    used: number;
+    remaining: number;
+    total: number;
+    percentage: number;
+    level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    lastApiCall?: string;
+  };
 }
 
 export default function SharedTradePage() {
@@ -266,12 +274,47 @@ export default function SharedTradePage() {
           </Card>
         </div>
 
+        {/* API Usage Warning */}
+        {data.apiUsage && (
+          <>
+            {data.apiUsage.level === 'CRITICAL' && data.apiUsage.remaining <= 10 && (
+              <Alert className="mb-4 border-red-200 bg-red-50">
+                <AlertCircle className="h-4 w-4 text-red-600" />
+                <AlertDescription className="text-red-800">
+                  🚨 <strong>Critical:</strong> Only {data.apiUsage.remaining} chart refreshes remaining before this link expires
+                </AlertDescription>
+              </Alert>
+            )}
+            {data.apiUsage.level === 'HIGH' && data.apiUsage.remaining > 10 && data.apiUsage.remaining <= 50 && (
+              <Alert className="mb-4 border-orange-200 bg-orange-50">
+                <AlertCircle className="h-4 w-4 text-orange-600" />
+                <AlertDescription className="text-orange-800">
+                  ⚠️ <strong>Warning:</strong> {data.apiUsage.remaining} chart refreshes remaining for this shared link
+                </AlertDescription>
+              </Alert>
+            )}
+            {data.apiUsage.level === 'MEDIUM' && data.apiUsage.remaining > 50 && (
+              <Alert className="mb-4 border-blue-200 bg-blue-50">
+                <AlertCircle className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800">
+                  ℹ️ {data.apiUsage.remaining} chart refreshes remaining ({data.apiUsage.used}/{data.apiUsage.total} used)
+                </AlertDescription>
+              </Alert>
+            )}
+          </>
+        )}
+
         {/* Chart Section */}
         {mostActiveSymbol && chartExecutions.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">
-                Price Chart - {mostActiveSymbol}
+                {mostActiveSymbol}
+                {data.apiUsage && (
+                  <span className="ml-2 text-sm font-normal text-gray-500">
+                    ({data.apiUsage.used}/{data.apiUsage.total} API calls used)
+                  </span>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -288,6 +331,7 @@ export default function SharedTradePage() {
                 height={400}
                 onExecutionSelect={() => {}} // No interaction in shared view
                 isShared={true}
+                shareKey={typeof key === 'string' ? key : undefined}
               />
             </CardContent>
           </Card>
