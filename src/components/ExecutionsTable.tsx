@@ -327,11 +327,14 @@ export default function ExecutionsTable({
 
   const formatTime = (dateTime: Date | null) => {
     if (!dateTime) return '-';
-    return new Date(dateTime).toLocaleTimeString('en-US', {
+    const date = new Date(dateTime);
+    // Format as UTC time to keep consistent with database values
+    return date.toLocaleTimeString('en-US', {
       hour12: false,
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit'
+      second: '2-digit',
+      timeZone: 'UTC'
     });
   };
 
