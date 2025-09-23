@@ -15,22 +15,20 @@ export async function GET(
       );
     }
 
-    // Use secure function to get shared trade with usage statistics
-    const result = await prisma.$queryRaw`
-      SELECT * FROM get_shared_trade_with_usage(${key}::TEXT)
-    ` as any[];
+    // Use Prisma's native methods instead of raw SQL function
+    const sharedTrade = await prisma.sharedTrade.findUnique({
+      where: { shareKey: key }
+    });
 
-    if (!result || result.length === 0) {
+    if (!sharedTrade) {
       return NextResponse.json(
         { error: 'Shared trade not found' },
         { status: 404 }
       );
     }
 
-    const sharedTrade = result[0];
-
     // Check if the share has expired
-    if (new Date() > new Date(sharedTrade.expires_at)) {
+    if (new Date() > sharedTrade.expiresAt) {
       return NextResponse.json(
         { error: 'This shared trade link has expired' },
         { status: 410 } // Gone
@@ -47,26 +45,31 @@ export async function GET(
       }
     });
 
-    // Calculate usage level for the frontend
-    const usageLevel = sharedTrade.usage_percentage >= 90 ? 'CRITICAL' :
-                      sharedTrade.usage_percentage >= 70 ? 'HIGH' :
-                      sharedTrade.usage_percentage >= 50 ? 'MEDIUM' : 'LOW';
+    // Calculate usage statistics
+    const remainingCalls = sharedTrade.maxApiCalls - sharedTrade.apiCallCount;
+    const usagePercentage = sharedTrade.maxApiCalls > 0
+      ? Math.round((sharedTrade.apiCallCount / sharedTrade.maxApiCalls) * 100 * 100) / 100
+      : 0;
+
+    const usageLevel = usagePercentage >= 90 ? 'CRITICAL' :
+                      usagePercentage >= 70 ? 'HIGH' :
+                      usagePercentage >= 50 ? 'MEDIUM' : 'LOW';
 
     // Return the trade and order data with usage statistics
     return NextResponse.json({
-      trade: sharedTrade.trade_snapshot,
-      orders: sharedTrade.order_snapshot,
+      trade: sharedTrade.tradeSnapshot,
+      orders: sharedTrade.orderSnapshot,
       metadata: sharedTrade.metadata,
-      expiresAt: sharedTrade.expires_at,
-      createdAt: sharedTrade.created_at,
+      expiresAt: sharedTrade.expiresAt,
+      createdAt: sharedTrade.createdAt,
       // Add API usage information
       apiUsage: {
-        used: sharedTrade.api_call_count,
-        remaining: sharedTrade.remaining_calls,
-        total: sharedTrade.max_api_calls,
-        percentage: sharedTrade.usage_percentage,
+        used: sharedTrade.apiCallCount,
+        remaining: remainingCalls,
+        total: sharedTrade.maxApiCalls,
+        percentage: usagePercentage,
         level: usageLevel,
-        lastApiCall: sharedTrade.last_api_call_at
+        lastApiCall: sharedTrade.lastApiCallAt
       },
       success: true
     });
