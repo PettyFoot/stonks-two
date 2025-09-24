@@ -265,7 +265,7 @@ function RecordsContent() {
                 symbol={mostActiveSymbol}
                 executions={chartExecutions}
                 tradeDate={recordsData.date}
-                height={400}
+                height={600}
                 onExecutionSelect={(execution) => {
 
                   // TODO: Highlight the execution in the table

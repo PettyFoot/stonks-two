@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { getSession } from '@auth0/nextjs-auth0';
 import { getDemoSessionFromCookies } from './demo/demoSession';
 import { accountDeletionService } from './services/accountDeletion';
+import { emailService } from './email/emailService';
 
 export async function getCurrentUser() {
   try {
@@ -45,6 +46,19 @@ export async function getCurrentUser() {
             deletedAt: true
           }
         });
+
+        // Send email notification for new user signup
+        try {
+          await emailService.sendNewUserNotification({
+            name: user.name,
+            email: user.email,
+            auth0Id: user.auth0Id,
+            signupTime: user.createdAt,
+          });
+        } catch (emailError) {
+          console.error('Failed to send new user notification email:', emailError);
+          // Don't fail user creation if email fails
+        }
       } else {
         // Check if account was marked for deletion and reactivate if possible
         if (user.deletionRequestedAt || user.deletedAt) {

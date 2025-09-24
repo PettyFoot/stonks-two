@@ -7,12 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Mail, MessageSquare, HelpCircle, Clock } from 'lucide-react';
+import { Mail, MessageSquare, HelpCircle, Clock, Users } from 'lucide-react';
 import { SEO_CONFIG } from '@/lib/seo';
 import Footer from '@/components/Footer';
 import ReCAPTCHA from 'react-google-recaptcha';
 
-export default function ContactPageComponent() {
+interface ContactPageComponentProps {
+  discordInvite?: string;
+}
+
+export default function ContactPageComponent({ discordInvite }: ContactPageComponentProps) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -308,6 +312,49 @@ export default function ContactPageComponent() {
                 </Link>
               </CardContent>
             </Card>
+
+            {/* Discord Community */}
+            {discordInvite && (
+              <Card className="bg-gradient-to-r from-blue-500/10 to-purple-600/10 border-blue-500/30">
+                <CardHeader>
+                  <CardTitle className="text-xl text-[var(--theme-primary-text)] flex items-center">
+                    <Users className="h-5 w-5 mr-2 text-blue-500" />
+                    Join Our Community
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <p className="text-sm text-gray-700">
+                      Connect with other traders, share strategies, get real-time help, and stay updated with the latest features.
+                    </p>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <span>✓</span>
+                        <span>Real-time trading discussions</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <span>✓</span>
+                        <span>Feature updates & announcements</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <span>✓</span>
+                        <span>Direct support from the team</span>
+                      </div>
+                    </div>
+                    <a
+                      href={discordInvite}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block"
+                    >
+                      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                        Join Discord Community
+                      </Button>
+                    </a>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </main>
