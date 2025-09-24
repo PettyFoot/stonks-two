@@ -82,7 +82,9 @@ export async function GET(request: Request) {
         where.date.gte = new Date(dateFrom);
       }
       if (dateTo) {
-        where.date.lte = new Date(dateTo);
+        const endDate = new Date(dateTo);
+        endDate.setHours(23, 59, 59, 999);
+        where.date.lte = endDate;
       }
     }
 

@@ -842,75 +842,78 @@ export default function TradeCandlestickChart({
     tooltip: {
       theme: 'dark',
       custom: ({ seriesIndex, dataPointIndex, w }) => {
-        // Handle candlestick series (index 0)
-        if (seriesIndex === 0) {
-          // Check if candlestick data exists for this series and data point
-          if (!w.globals.seriesCandleO || !w.globals.seriesCandleO[seriesIndex] || !w.globals.seriesCandleO[seriesIndex][dataPointIndex]) {
-            return '';
+        try {
+          // Defensive null checks to prevent ttItems error
+          if (!w?.globals || !marketData?.ohlc) return '';
+
+          // Handle candlestick series (index 0)
+          if (seriesIndex === 0) {
+            const ohlc = marketData.ohlc[dataPointIndex];
+            if (!ohlc) return '';
+
+            return `
+              <div class="apex-tooltip-candlestick" style="background: rgba(40, 40, 40, 0.5); border: 1px solid #555; border-radius: 6px; padding: 8px; color: #e5e5e5; font-family: system-ui, -apple-system, sans-serif;">
+                <div class="apex-tooltip-title" style="color: #ffffff; font-weight: 600; font-size: 12px; margin-bottom: 6px; text-align: center;">
+                  <span style="color: #ffffff;">${new Date(ohlc.timestamp).toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}</span>
+                </div>
+                <div class="apex-tooltip-body" style="font-size: 11px; line-height: 1.4;">
+                  <div style="color: #e5e5e5; margin-bottom: 2px;">Open: <span class="value" style="color: #ffffff; font-weight: 500;">$${ohlc.open.toFixed(2)}</span></div>
+                  <div style="color: #e5e5e5; margin-bottom: 2px;">High: <span class="value" style="color: #10b981; font-weight: 500;">$${ohlc.high.toFixed(2)}</span></div>
+                  <div style="color: #e5e5e5; margin-bottom: 2px;">Low: <span class="value" style="color: #ef4444; font-weight: 500;">$${ohlc.low.toFixed(2)}</span></div>
+                  <div style="color: #e5e5e5; margin-bottom: 2px;">Close: <span class="value" style="color: #ffffff; font-weight: 500;">$${ohlc.close.toFixed(2)}</span></div>
+                  ${ohlc.volume ? `<div style="color: #e5e5e5;">Volume: <span class="value" style="color: #a3a3a3; font-weight: 500;">${ohlc.volume.toLocaleString()}</span></div>` : ''}
+                </div>
+              </div>
+            `;
           }
 
-          const ohlc = marketData?.ohlc?.[dataPointIndex];
-          if (!ohlc) return '';
+          // Handle Buy executions (index 1)
+          if (seriesIndex === 1) {
+            const execution = executionData?.buyExecutions?.[dataPointIndex];
+            if (!execution) return '';
 
-          return `
-            <div class="apex-tooltip-candlestick" style="background: rgba(40, 40, 40, 0.5); border: 1px solid #555; border-radius: 6px; padding: 8px; color: #e5e5e5; font-family: system-ui, -apple-system, sans-serif;">
-              <div class="apex-tooltip-title" style="color: #ffffff; font-weight: 600; font-size: 12px; margin-bottom: 6px; text-align: center;">
-                <span style="color: #ffffff;">${new Date(ohlc.timestamp).toLocaleTimeString('en-US', {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}</span>
+            return `
+              <div class="apex-tooltip-execution" style="background: rgba(40, 40, 40, 0.5); border: 1px solid #3b82f6; border-radius: 6px; padding: 8px; color: #e5e5e5; font-family: system-ui, -apple-system, sans-serif;">
+                <div class="apex-tooltip-title" style="color: #3b82f6; font-weight: 600; font-size: 12px; margin-bottom: 6px; text-align: center;">
+                  BUY Execution
+                </div>
+                <div class="apex-tooltip-body" style="font-size: 11px; line-height: 1.4;">
+                  <div style="color: #e5e5e5; margin-bottom: 2px;">Price: <span class="value" style="color: #ffffff; font-weight: 500;">$${execution.y.toFixed(2)}</span></div>
+                  <div style="color: #e5e5e5; margin-bottom: 2px;">Quantity: <span class="value" style="color: #ffffff; font-weight: 500;">${execution.quantity}</span></div>
+                  <div style="color: #e5e5e5;">Time: <span class="value" style="color: #a3a3a3; font-weight: 500;">${new Date(execution.x).toLocaleTimeString()}</span></div>
+                </div>
               </div>
-              <div class="apex-tooltip-body" style="font-size: 11px; line-height: 1.4;">
-                <div style="color: #e5e5e5; margin-bottom: 2px;">Open: <span class="value" style="color: #ffffff; font-weight: 500;">$${ohlc.open.toFixed(2)}</span></div>
-                <div style="color: #e5e5e5; margin-bottom: 2px;">High: <span class="value" style="color: #10b981; font-weight: 500;">$${ohlc.high.toFixed(2)}</span></div>
-                <div style="color: #e5e5e5; margin-bottom: 2px;">Low: <span class="value" style="color: #ef4444; font-weight: 500;">$${ohlc.low.toFixed(2)}</span></div>
-                <div style="color: #e5e5e5; margin-bottom: 2px;">Close: <span class="value" style="color: #ffffff; font-weight: 500;">$${ohlc.close.toFixed(2)}</span></div>
-                ${ohlc.volume ? `<div style="color: #e5e5e5;">Volume: <span class="value" style="color: #a3a3a3; font-weight: 500;">${ohlc.volume.toLocaleString()}</span></div>` : ''}
+            `;
+          }
+
+          // Handle Sell executions (index 2)
+          if (seriesIndex === 2) {
+            const execution = executionData?.sellExecutions?.[dataPointIndex];
+            if (!execution) return '';
+
+            return `
+              <div class="apex-tooltip-execution" style="background: rgba(40, 40, 40, 0.5); border: 1px solid #9333ea; border-radius: 6px; padding: 8px; color: #e5e5e5; font-family: system-ui, -apple-system, sans-serif;">
+                <div class="apex-tooltip-title" style="color: #9333ea; font-weight: 600; font-size: 12px; margin-bottom: 6px; text-align: center;">
+                  SELL Execution
+                </div>
+                <div class="apex-tooltip-body" style="font-size: 11px; line-height: 1.4;">
+                  <div style="color: #e5e5e5; margin-bottom: 2px;">Price: <span class="value" style="color: #ffffff; font-weight: 500;">$${execution.y.toFixed(2)}</span></div>
+                  <div style="color: #e5e5e5; margin-bottom: 2px;">Quantity: <span class="value" style="color: #ffffff; font-weight: 500;">${execution.quantity}</span></div>
+                  <div style="color: #e5e5e5;">Time: <span class="value" style="color: #a3a3a3; font-weight: 500;">${new Date(execution.x).toLocaleTimeString()}</span></div>
+                </div>
               </div>
-            </div>
-          `;
+            `;
+          }
+
+          // Return empty for any other series
+          return '';
+        } catch (error) {
+          // Fail silently to prevent chart crashes
+          return '';
         }
-
-        // Handle Buy executions (index 1)
-        if (seriesIndex === 1) {
-          const execution = executionData?.buyExecutions?.[dataPointIndex];
-          if (!execution) return '';
-
-          return `
-            <div class="apex-tooltip-execution" style="background: rgba(40, 40, 40, 0.5); border: 1px solid #3b82f6; border-radius: 6px; padding: 8px; color: #e5e5e5; font-family: system-ui, -apple-system, sans-serif;">
-              <div class="apex-tooltip-title" style="color: #3b82f6; font-weight: 600; font-size: 12px; margin-bottom: 6px; text-align: center;">
-                BUY Execution
-              </div>
-              <div class="apex-tooltip-body" style="font-size: 11px; line-height: 1.4;">
-                <div style="color: #e5e5e5; margin-bottom: 2px;">Price: <span class="value" style="color: #ffffff; font-weight: 500;">$${execution.y.toFixed(2)}</span></div>
-                <div style="color: #e5e5e5; margin-bottom: 2px;">Quantity: <span class="value" style="color: #ffffff; font-weight: 500;">${execution.quantity}</span></div>
-                <div style="color: #e5e5e5;">Time: <span class="value" style="color: #a3a3a3; font-weight: 500;">${new Date(execution.x).toLocaleTimeString()}</span></div>
-              </div>
-            </div>
-          `;
-        }
-
-        // Handle Sell executions (index 2)
-        if (seriesIndex === 2) {
-          const execution = executionData?.sellExecutions?.[dataPointIndex];
-          if (!execution) return '';
-
-          return `
-            <div class="apex-tooltip-execution" style="background: rgba(40, 40, 40, 0.5); border: 1px solid #9333ea; border-radius: 6px; padding: 8px; color: #e5e5e5; font-family: system-ui, -apple-system, sans-serif;">
-              <div class="apex-tooltip-title" style="color: #9333ea; font-weight: 600; font-size: 12px; margin-bottom: 6px; text-align: center;">
-                SELL Execution
-              </div>
-              <div class="apex-tooltip-body" style="font-size: 11px; line-height: 1.4;">
-                <div style="color: #e5e5e5; margin-bottom: 2px;">Price: <span class="value" style="color: #ffffff; font-weight: 500;">$${execution.y.toFixed(2)}</span></div>
-                <div style="color: #e5e5e5; margin-bottom: 2px;">Quantity: <span class="value" style="color: #ffffff; font-weight: 500;">${execution.quantity}</span></div>
-                <div style="color: #e5e5e5;">Time: <span class="value" style="color: #a3a3a3; font-weight: 500;">${new Date(execution.x).toLocaleTimeString()}</span></div>
-              </div>
-            </div>
-          `;
-        }
-
-        // Return empty string for any other series
-        return '';
       }
     },
     legend: {
@@ -925,12 +928,21 @@ export default function TradeCandlestickChart({
   const volumeChartOptions: ApexOptions = useMemo(() => ({
     chart: {
       id: 'volume-chart',
-      group: 'synchronized-charts',
+      group: 'synchronized-charts', // Link with price chart for synchronized zoom/pan
       type: 'bar',
       height: Math.floor(height * 0.3), // 30% of total height for volume chart
       background: 'transparent',
+      animations: {
+        enabled: false, // Disable animations for better sync performance
+        animateGradually: {
+          enabled: false
+        },
+        dynamicAnimation: {
+          enabled: false
+        }
+      },
       toolbar: {
-        show: false // Hide toolbar on volume chart
+        show: false // Hide toolbar on volume chart but keep zoom sync enabled
       },
       stacked: true // Stack the two volume series
     },
@@ -1055,14 +1067,14 @@ export default function TradeCandlestickChart({
       name: 'Volume Up',
       data: marketData?.ohlc?.map(d => ({
         x: d.timestamp,
-        y: d.close >= d.open ? (d.volume || 0) : null
+        y: d.close >= d.open ? (d.volume || 0) : 0
       })) || []
     },
     {
       name: 'Volume Down',
       data: marketData?.ohlc?.map(d => ({
         x: d.timestamp,
-        y: d.close < d.open ? (d.volume || 0) : null
+        y: d.close < d.open ? (d.volume || 0) : 0
       })) || []
     }
   ];
@@ -1102,15 +1114,17 @@ export default function TradeCandlestickChart({
             </span>
           </CardTitle>
           <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={chartDate}
-              onChange={(e) => setChartDate(e.target.value)}
-              className="w-36 h-9 px-3 py-2 text-sm border border-input rounded-md bg-white shadow-xs outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-              title="Chart Date (independent of trade date)"
-            />
-            <select 
-              value={timeInterval} 
+            {!isShared && (
+              <input
+                type="date"
+                value={chartDate}
+                onChange={(e) => setChartDate(e.target.value)}
+                className="w-36 h-9 px-3 py-2 text-sm border border-input rounded-md bg-white shadow-xs outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                title="Chart Date (independent of trade date)"
+              />
+            )}
+            <select
+              value={timeInterval}
               onChange={(e) => setTimeInterval(e.target.value as TimeInterval)}
               className="w-20 h-9 px-3 py-2 text-sm border border-input rounded-md bg-white shadow-xs outline-none focus:ring-2 focus:ring-ring focus:border-ring"
             >

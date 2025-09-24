@@ -16,45 +16,29 @@ export default function Trades() {
   const [columnConfig, setColumnConfig] = useState<ColumnConfiguration[]>([]);
   
   const { isDemo } = useAuth();
-  const { filters } = useGlobalFilters();
+  const { filters, toFilterOptions } = useGlobalFilters();
   const { data: tradesData, loading, error } = useTradesData();
   
 
-  // Calculate effective date range for display
-  const getEffectiveDateRange = useCallback(() => {
-    // If custom dates are set, use those
-    if (filters.customDateRange?.from && filters.customDateRange?.to) {
-      return {
-        from: filters.customDateRange.from,
-        to: filters.customDateRange.to
-      };
-    }
-    
-    // Otherwise use default 30-day range
-    const today = new Date();
-    const thirtyDaysAgo = new Date(today);
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    return {
-      from: thirtyDaysAgo.toISOString().split('T')[0],
-      to: today.toISOString().split('T')[0]
-    };
-  }, [filters.customDateRange]);
+  // Format date range for display using actual filter dates
+  const formatDateRange = useCallback(() => {
+    const filterOptions = toFilterOptions();
 
-  // Format date range for display
-  const formatDateRange = () => {
-    const range = getEffectiveDateRange();
-    const fromDate = new Date(range.from);
-    const toDate = new Date(range.to);
-    
-    const options: Intl.DateTimeFormatOptions = { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    };
-    
-    return `${fromDate.toLocaleDateString('en-US', options)} - ${toDate.toLocaleDateString('en-US', options)}`;
-  };
+    if (filterOptions.dateFrom && filterOptions.dateTo) {
+      const fromDate = new Date(filterOptions.dateFrom);
+      const toDate = new Date(filterOptions.dateTo);
+
+      const options: Intl.DateTimeFormatOptions = {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      };
+
+      return `${fromDate.toLocaleDateString('en-US', options)} - ${toDate.toLocaleDateString('en-US', options)}`;
+    }
+
+    return '30 Days'; // Fallback
+  }, [toFilterOptions]);
 
 
 

@@ -65,41 +65,6 @@ export default function FilterPanel({
     setShowAdvancedPanel(false);
   };
 
-  // Calculate effective date range for display
-  const getEffectiveDateRange = () => {
-    // If custom dates are set, use those
-    if (filters.customDateRange?.from && filters.customDateRange?.to) {
-      return {
-        from: filters.customDateRange.from,
-        to: filters.customDateRange.to
-      };
-    }
-    
-    // Otherwise use default 30-day range
-    const today = new Date();
-    const thirtyDaysAgo = new Date(today);
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    return {
-      from: thirtyDaysAgo.toISOString().split('T')[0],
-      to: today.toISOString().split('T')[0]
-    };
-  };
-
-  // Format date range for display
-  const formatDateRange = () => {
-    const range = getEffectiveDateRange();
-    const fromDate = new Date(range.from);
-    const toDate = new Date(range.to);
-    
-    const options: Intl.DateTimeFormatOptions = { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    };
-    
-    return `${fromDate.toLocaleDateString('en-US', options)} - ${toDate.toLocaleDateString('en-US', options)}`;
-  };
   
   // Calculate active filter count for summary
   const activeFilterCount = [

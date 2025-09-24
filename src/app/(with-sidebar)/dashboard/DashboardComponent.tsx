@@ -66,7 +66,7 @@ export default function DashboardComponent() {
     }
   }, [authState.type, router]);
 
-  // Format the filter date range for display
+  // Format the filter date range for display using actual filter dates
   const getDateRangeDisplay = useMemo(() => {
     const filterOptions = toFilterOptions();
     if (filterOptions.dateFrom && filterOptions.dateTo) {
@@ -75,9 +75,9 @@ export default function DashboardComponent() {
       const formatOptions: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
       return `${fromDate.toLocaleDateString('en-US', formatOptions)} - ${toDate.toLocaleDateString('en-US', formatOptions)}`;
     }
-    // Default to showing the time range label if no custom dates
-    return filters.timeRange?.label || '30 Days';
-  }, [filters, toFilterOptions]);
+
+    return '30 Days'; // Fallback
+  }, [toFilterOptions]);
 
   // Show loading while auth state is being determined
   if (isLoading || loading) {

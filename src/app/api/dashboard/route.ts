@@ -56,7 +56,11 @@ export async function GET(request: Request) {
       showOpenTrades?: boolean;
     } = {};
     if (dateFrom) filters.dateFrom = new Date(dateFrom);
-    if (dateTo) filters.dateTo = new Date(dateTo);
+    if (dateTo) {
+      const endDate = new Date(dateTo);
+      endDate.setHours(23, 59, 59, 999);
+      filters.dateTo = endDate;
+    }
     if (symbol && symbol !== 'all') filters.symbol = symbol;
     if (side && side !== 'all') filters.side = side.toUpperCase() as 'LONG' | 'SHORT';
     if (tags && tags.length > 0) filters.tags = tags;

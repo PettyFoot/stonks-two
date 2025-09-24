@@ -60,19 +60,19 @@ const TIME_RANGES: Record<string, TimeRange> = {
   '30': {
     value: '30',
     label: '30 Days',
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    startDate: new Date(Date.now() - 29 * 24 * 60 * 60 * 1000), // 29 days ago to include today = 30 days total
     endDate: new Date()
   },
   '60': {
     value: '60',
     label: '60 Days',
-    startDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
+    startDate: new Date(Date.now() - 59 * 24 * 60 * 60 * 1000), // 59 days ago to include today = 60 days total
     endDate: new Date()
   },
   '90': {
     value: '90',
     label: '90 Days',
-    startDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
+    startDate: new Date(Date.now() - 89 * 24 * 60 * 60 * 1000), // 89 days ago to include today = 90 days total
     endDate: new Date()
   }
 };
@@ -307,9 +307,13 @@ export function GlobalFilterProvider({ children }: GlobalFilterProviderProps) {
   }, []);
 
   const toFilterOptions = useCallback((): FilterOptions => {
-    const effectiveDateRange = state.customDateRange || {
-      from: state.timeRange.startDate.toISOString().split('T')[0],
-      to: state.timeRange.endDate.toISOString().split('T')[0]
+    // Always provide complete date range by filling in missing dates with defaults
+    const defaultFromDate = state.timeRange.startDate.toISOString().split('T')[0];
+    const defaultToDate = state.timeRange.endDate.toISOString().split('T')[0];
+
+    const effectiveDateRange = {
+      from: state.customDateRange?.from || defaultFromDate,
+      to: state.customDateRange?.to || defaultToDate
     };
 
     return {
