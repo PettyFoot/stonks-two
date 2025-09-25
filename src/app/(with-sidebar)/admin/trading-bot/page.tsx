@@ -289,7 +289,7 @@ export default function AdminTradingBotPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Last Trade:</span>
                   <span className="text-xs text-gray-500">
-                    {formatDateTime(tradingState?.lastTradeAt)}
+                    {formatDateTime(tradingState?.lastTradeAt || null)}
                   </span>
                 </div>
               </CardContent>
