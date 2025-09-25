@@ -18,7 +18,7 @@ class EmailService {
       }
 
       // Create transporter for sending emails
-      this.transporter = nodemailer.createTransporter({
+      this.transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
           user: process.env.EMAIL_FROM,
@@ -28,14 +28,14 @@ class EmailService {
 
       // Test transporter configuration
       try {
-        await this.transporter.verify();
+        await this.transporter!.verify();
       } catch (error) {
         console.error('Email transporter verification failed:', error);
         throw new Error('Failed to configure email service');
       }
     }
 
-    return this.transporter;
+    return this.transporter!;
   }
 
   async sendEmail(options: EmailOptions): Promise<void> {

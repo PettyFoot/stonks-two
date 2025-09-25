@@ -134,7 +134,7 @@ export abstract class BaseStrategy {
     if (stopCheckResult.shouldClose) {
       console.log(`[STRATEGY_${this.config.name}] Stop/target triggered: ${stopCheckResult.reason}`);
 
-      const closeResult = await this.positionManager.closePosition(stopCheckResult.reason);
+      const closeResult = await this.positionManager.closePosition(stopCheckResult.reason || 'Unknown reason');
       if (closeResult.success) {
         return {
           success: true,

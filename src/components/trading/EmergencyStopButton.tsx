@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -38,9 +38,9 @@ export function EmergencyStopButton({ onEmergencyStop, disabled = false }: Emerg
   const [lastResult, setLastResult] = useState<EmergencyStopResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const holdTimer = useRef<NodeJS.Timeout>();
-  const progressTimer = useRef<NodeJS.Timeout>();
-  const holdStartTime = useRef<number>();
+  const holdTimer = useRef<NodeJS.Timeout | undefined>(undefined);
+  const progressTimer = useRef<NodeJS.Timeout | undefined>(undefined);
+  const holdStartTime = useRef<number | undefined>(undefined);
 
   const HOLD_DURATION = 3000; // 3 seconds
   const PROGRESS_UPDATE_INTERVAL = 50; // 50ms for smooth progress

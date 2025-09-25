@@ -176,28 +176,28 @@ export class PositionManager {
           action: params.side === 'LONG' ? 'BUY' : 'SELL',
           universal_symbol_id: params.symbolId,
           order_type: 'Market', // Using market orders for simplicity
-          time_in_force: 'DAY',
+          time_in_force: 'Day',
           units: params.quantity
         });
 
         console.log(`[POSITION_MANAGER] Order impact check completed`);
-        console.log(`[POSITION_MANAGER] - Estimated commission: $${impact.trade.estimated_commission}`);
-        console.log(`[POSITION_MANAGER] - Trade ID: ${impact.trade.id}`);
+        console.log(`[POSITION_MANAGER] - Estimated commission: $${impact.data.trade?.estimated_commission}`);
+        console.log(`[POSITION_MANAGER] - Trade ID: ${impact.data.trade?.id}`);
 
         // Create order record with estimated fees
         const orderRecord = await tx.botOrder.create({
           data: {
             userId: this.userId,
             accountId: this.accountId,
-            snapTradeTradeId: impact.trade.id,
+            snapTradeTradeId: impact.data.trade?.id,
             universalSymbolId: params.symbolId,
             symbol: params.symbol,
             action: params.side === 'LONG' ? 'BUY' : 'SELL',
             orderType: 'Market',
             timeInForce: 'DAY',
             quantity: params.quantity,
-            estimatedCommission: impact.trade.estimated_commission || 0,
-            estimatedFees: impact.trade.estimated_forex_fees || 0,
+            estimatedCommission: impact.data.trade?.estimated_commission || 0,
+            estimatedFees: impact.data.trade?.estimated_forex_fees || 0,
             userSecret: this.userSecret,
             status: 'PENDING'
           }
@@ -207,25 +207,25 @@ export class PositionManager {
 
         // Step 2: Place the validated order (within 5-minute expiry)
         const placedOrder = await snapTradeClient.trading.placeOrder({
-          tradeId: impact.trade.id,
+          tradeId: impact.data.trade?.id || '',
           userId: this.userId,
           userSecret: this.userSecret,
           wait_to_confirm: true // Wait for broker confirmation
         });
 
         console.log(`[POSITION_MANAGER] Order placed successfully`);
-        console.log(`[POSITION_MANAGER] - Broker order ID: ${placedOrder.brokerage_order_id}`);
+        console.log(`[POSITION_MANAGER] - Broker order ID: ${placedOrder.data.brokerage_order_id}`);
 
         // Update order record with broker details
         const updatedOrder = await tx.botOrder.update({
           where: { id: orderRecord.id },
           data: {
-            brokerOrderId: placedOrder.brokerage_order_id,
-            fillPrice: placedOrder.price || 0,
-            status: placedOrder.state === 'FILLED' ? 'FILLED' : 'PLACED',
-            filledAt: placedOrder.state === 'FILLED' ? new Date() : null,
-            actualCommission: placedOrder.commission || placedOrder.estimated_commission,
-            actualFees: placedOrder.fees || placedOrder.estimated_forex_fees
+            brokerOrderId: placedOrder.data.brokerage_order_id,
+            fillPrice: placedOrder.data.price || 0,
+            status: placedOrder.data.state === 'FILLED' ? 'FILLED' : 'PLACED',
+            filledAt: placedOrder.data.state === 'FILLED' ? new Date() : null,
+            actualCommission: placedOrder.data.commission || placedOrder.data.estimated_commission,
+            actualFees: placedOrder.data.fees || placedOrder.data.estimated_forex_fees
           }
         });
 
@@ -238,7 +238,7 @@ export class PositionManager {
             symbol: params.symbol,
             quantity: params.quantity,
             side: params.side,
-            entryPrice: placedOrder.price || 0,
+            entryPrice: placedOrder.data.price || 0,
             entryOrderId: orderRecord.id,
             stopLoss: params.stopLoss,
             takeProfit: params.takeProfit,
@@ -269,7 +269,7 @@ export class PositionManager {
         console.log(`[POSITION_MANAGER] - Symbol: ${params.symbol}`);
         console.log(`[POSITION_MANAGER] - Side: ${params.side}`);
         console.log(`[POSITION_MANAGER] - Quantity: ${params.quantity}`);
-        console.log(`[POSITION_MANAGER] - Entry Price: $${placedOrder.price}`);
+        console.log(`[POSITION_MANAGER] - Entry Price: $${placedOrder.data.price}`);
 
         return {
           success: true,
@@ -325,12 +325,12 @@ export class PositionManager {
         account_id: position.accountId,
         action: position.side === 'LONG' ? 'SELL' : 'BUY',
         order_type: 'Market',
-        time_in_force: 'DAY',
+        time_in_force: 'Day',
         universal_symbol_id: position.universalSymbolId,
         units: position.quantity
       });
 
-      console.log(`[POSITION_MANAGER] Close order placed: ${closeOrder.brokerage_order_id}`);
+      console.log(`[POSITION_MANAGER] Close order placed: ${closeOrder.data.brokerage_order_id}`);
 
       // Update records in transaction
       const result = await prisma.$transaction(async (tx) => {
@@ -339,18 +339,18 @@ export class PositionManager {
           data: {
             userId: this.userId,
             accountId: this.accountId,
-            brokerOrderId: closeOrder.brokerage_order_id,
+            brokerOrderId: closeOrder.data.brokerage_order_id,
             universalSymbolId: position.universalSymbolId,
             symbol: position.symbol,
             action: position.side === 'LONG' ? 'SELL' : 'BUY',
             orderType: 'Market',
             timeInForce: 'DAY',
             quantity: position.quantity,
-            fillPrice: closeOrder.price || 0,
-            status: closeOrder.state === 'FILLED' ? 'FILLED' : 'PLACED',
-            filledAt: closeOrder.state === 'FILLED' ? new Date() : null,
-            actualCommission: closeOrder.commission,
-            actualFees: closeOrder.fees,
+            fillPrice: closeOrder.data.price || 0,
+            status: closeOrder.data.state === 'FILLED' ? 'FILLED' : 'PLACED',
+            filledAt: closeOrder.data.state === 'FILLED' ? new Date() : null,
+            actualCommission: closeOrder.data.commission,
+            actualFees: closeOrder.data.fees,
             userSecret: this.userSecret
           }
         });
@@ -361,7 +361,7 @@ export class PositionManager {
           data: {
             status: 'CLOSED',
             closedAt: new Date(),
-            currentPrice: closeOrder.price || position.entryPrice
+            currentPrice: closeOrder.data.price || position.entryPrice
           }
         });
 
@@ -428,11 +428,11 @@ export class PositionManager {
         userSecret: this.userSecret,
         accountId: this.accountId,
         symbols: position.universalSymbolId,
-        use_ticker: false
+        useTicker: false
       });
 
-      if (quotes.length > 0) {
-        const quote = quotes[0];
+      if (quotes.data.length > 0) {
+        const quote = quotes.data[0];
         const currentPrice = quote.last_trade_price || quote.bid_price || position.entryPrice;
 
         // Calculate unrealized P&L
