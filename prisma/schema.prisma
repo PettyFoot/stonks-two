@@ -46,6 +46,11 @@ model User {
   userPreferences       UserPreferences?
   approvedFormats       BrokerCsvFormat[] @relation("ApprovedFormats")
   orderStaging          OrderStaging[]
+  tradingState          TradingState?
+  botPositions          BotPosition[]
+  botOrders             BotOrder[]
+  emergencyStops        EmergencyStop[]
+  botStrategies         BotStrategy[]
 
   @@index([email, createdAt])
   @@index([subscriptionTier, subscriptionStatus])
@@ -914,4 +919,161 @@ enum AdminReviewStatus {
   ESCALATED
 
   @@map("admin_review_status")
+}
+
+// ============================================================================
+// TRADING BOT MODELS - Single Position Trading System
+// ============================================================================
+
+model TradingState {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  isActive          Boolean   @default(false)
+  hasOpenPosition   Boolean   @default(false)
+  currentStrategy   String?
+  lastTradeAt       DateTime?
+  totalTrades       Int       @default(0)
+  winningTrades     Int       @default(0)
+  losingTrades      Int       @default(0)
+  totalPnL          Decimal   @default(0) @db.Decimal(10, 2)
+  dailyPnL          Decimal   @default(0) @db.Decimal(10, 2)
+  maxDrawdown       Decimal   @default(0) @db.Decimal(10, 2)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([isActive])
+  @@index([hasOpenPosition])
+  @@map("trading_states")
+}
+
+model BotPosition {
+  id                String    @id @default(cuid())
+  userId            String
+  accountId         String
+  universalSymbolId String
+  symbol            String
+  quantity          Int
+  side              String    // 'LONG' or 'SHORT'
+  entryPrice        Decimal   @db.Decimal(10, 4)
+  entryOrderId      String
+  stopLoss          Decimal?  @db.Decimal(10, 4)
+  takeProfit        Decimal?  @db.Decimal(10, 4)
+  currentPrice      Decimal?  @db.Decimal(10, 4)
+  unrealizedPnL     Decimal?  @db.Decimal(10, 2)
+  status            String    @default("OPEN") // 'OPEN', 'CLOSING', 'CLOSED', 'EMERGENCY_CLOSED'
+  openedAt          DateTime  @default(now())
+  closedAt          DateTime?
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Enforce only one open position per user at a time
+  @@unique([userId, status])
+  @@index([status])
+  @@index([userId, status])
+  @@index([openedAt])
+  @@map("bot_positions")
+}
+
+model BotOrder {
+  id                  String    @id @default(cuid())
+  userId              String
+  accountId           String
+  brokerOrderId       String?   @unique
+  snapTradeTradeId    String?   // From getOrderImpact
+  universalSymbolId   String
+  symbol              String
+  action              String    // 'BUY' or 'SELL'
+  orderType           String    // 'Market', 'Limit', 'Stop', 'StopLimit'
+  timeInForce         String    // 'DAY', 'GTC', 'FOK', 'IOC'
+  quantity            Int
+  limitPrice          Decimal?  @db.Decimal(10, 4)
+  stopPrice           Decimal?  @db.Decimal(10, 4)
+  estimatedCommission Decimal?  @db.Decimal(10, 2)
+  estimatedFees       Decimal?  @db.Decimal(10, 2)
+  actualCommission    Decimal?  @db.Decimal(10, 2)
+  actualFees          Decimal?  @db.Decimal(10, 2)
+  fillPrice           Decimal?  @db.Decimal(10, 4)
+  status              String    @default("PENDING") // 'PENDING', 'PLACED', 'FILLED', 'CANCELLED', 'REJECTED'
+  cancelReason        String?
+  userSecret          String?   // For SnapTrade API calls
+  placedAt            DateTime  @default(now())
+  filledAt            DateTime?
+  cancelledAt         DateTime?
+
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([userId, status])
+  @@index([symbol])
+  @@index([placedAt])
+  @@map("bot_orders")
+}
+
+model EmergencyStop {
+  id                String    @id @default(cuid())
+  triggeredBy       String
+  triggeredAt       DateTime  @default(now())
+  reason            String
+  positionsClosed   Int       @default(0)
+  ordersCancelled   Int       @default(0)
+  totalLoss         Decimal?  @db.Decimal(10, 2)
+  metadata          Json?
+  resolved          Boolean   @default(false)
+  resolvedAt        DateTime?
+  resolvedBy        String?
+
+  user              User      @relation(fields: [triggeredBy], references: [id], onDelete: Cascade)
+
+  @@index([triggeredAt])
+  @@index([triggeredBy])
+  @@map("emergency_stops")
+}
+
+model BotStrategy {
+  id                  String    @id @default(cuid())
+  userId              String
+  name                String
+  description         String?
+  type                String    // 'momentum', 'mean_reversion', 'scalping', etc.
+  parameters          Json
+  riskLimits          Json?
+  isActive            Boolean   @default(false)
+  isEmergencyStopped  Boolean   @default(false)
+  maxPositionSize     Int       @default(100)
+  maxDailyLoss        Decimal?  @default(100.00) @db.Decimal(10, 2)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  marketAnalyses      MarketAnalysis[]
+
+  @@unique([userId, name])
+  @@index([isActive])
+  @@index([userId, isActive])
+  @@map("bot_strategies")
+}
+
+model MarketAnalysis {
+  id            String    @id @default(cuid())
+  userId        String?
+  strategyId    String?
+  symbol        String
+  timeframe     String
+  analysisType  String    // 'technical', 'sentiment', 'combined'
+  signal        String?   // 'STRONG_BUY', 'BUY', 'NEUTRAL', 'SELL', 'STRONG_SELL'
+  confidence    Decimal?  @db.Decimal(3, 2) // 0.00 to 1.00
+  indicators    Json?
+  recommendation String?
+  metadata      Json?
+  createdAt     DateTime  @default(now())
+  expiresAt     DateTime
+
+  strategy      BotStrategy? @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@index([symbol])
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@map("market_analyses")
 }

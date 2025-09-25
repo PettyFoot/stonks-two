@@ -177,16 +177,15 @@ export default function EnhancedImportPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <TopBar title="Import Trades" showTimeRangeFilters={false} />
+      <TopBar title="Import" showTimeRangeFilters={false} />
       
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-6xl mx-auto space-y-8">
           
           {/* Header Section */}
           <div className="text-center space-y-4">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Trade Data Import</h1>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Import your trading data either by connecting your broker directly or uploading CSV files 
+              Import your trading data either by connecting your broker directly or uploading CSV files
               with AI-powered column mapping and real-time validation.
             </p>
           </div>
@@ -196,7 +195,7 @@ export default function EnhancedImportPage() {
             <TabsList className="grid w-full grid-cols-2 mb-8">
               <TabsTrigger value="broker" className="flex items-center gap-2">
                 <Building2 className="h-4 w-4" />
-                Connect Broker
+                Broker Connect
               </TabsTrigger>
               <TabsTrigger value="csv" className="flex items-center gap-2">
                 <Upload className="h-4 w-4" />
