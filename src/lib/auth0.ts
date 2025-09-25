@@ -50,7 +50,7 @@ export async function getCurrentUser() {
         // Send email notification for new user signup
         try {
           await emailService.sendNewUserNotification({
-            name: user.name,
+            name: user.name || 'Unknown User',
             email: user.email,
             auth0Id: user.auth0Id,
             signupTime: user.createdAt,

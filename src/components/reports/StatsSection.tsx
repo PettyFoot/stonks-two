@@ -127,9 +127,8 @@ export default function StatsSection({ stats }: StatsSectionProps) {
     { label: 'Number of Scratch Trades', value: currentStats.scratchTrades, formatter: 'number' },
     { label: 'Max Consecutive Wins', value: currentStats.maxConsecutiveWins, formatter: 'number' },
     { label: 'Max Consecutive Losses', value: currentStats.maxConsecutiveLosses, formatter: 'number' },
-    
+
     // Volume & Cost Metrics
-    { label: 'Avg Daily Volume', value: currentStats.avgDailyVolume, formatter: 'volume' },
     { label: 'Trade P&L Standard Deviation', value: currentStats.tradePnlStdDev, formatter: 'currency', colorCode: 'positive' },
     { label: 'Profit Factor', value: currentStats.profitFactor, formatter: 'number' },
     { label: 'Total Commissions', value: currentStats.totalCommissions, formatter: 'currency', colorCode: 'positive' },
