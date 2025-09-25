@@ -80,8 +80,8 @@ export default function LoginPageComponent() {
             {/* Triangle Apex - Header/Logo Section */}
             <header className="text-center space-y-4 mb-6 sm:mb-12 max-w-2xl flex-shrink-0">
               <div className="flex flex-col items-center justify-center space-y-4 mb-4 sm:mb-6">
-                <Image 
-                  src="/trade-voyager-logo.png" 
+                <Image
+                  src="/trade-voyager-logo.png?v=2"
                   alt="Trade Voyager Analytics - Professional Trading Analytics Platform Logo" 
                   width={150} 
                   height={150} 
