@@ -109,13 +109,6 @@ export default function RootLayout({
         {/* Google AdSense verification meta tag */}
         <meta name="google-adsense-account" content="ca-pub-7836991491773203" />
         
-        {/* Google AdSense script for site verification */}
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7836991491773203"
-          crossOrigin="anonymous"
-        />
-        
         {/* Structured Data for Organization and Software Application */}
         <OrganizationStructuredData />
         <SoftwareApplicationStructuredData />
@@ -142,7 +135,8 @@ export default function RootLayout({
         
         {/* Conditional Analytics */}
         <ConditionalAnalytics />
-        
+
+
         {/* Vercel Speed Insights */}
         <SpeedInsights />
         

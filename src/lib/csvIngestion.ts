@@ -1307,13 +1307,18 @@ export class CsvIngestionService {
       mappingResult = await this.aiMapper.analyzeAndMapColumns(headers, records.slice(0, 10) as CustomCsvRow[]);
     }
 
-    // Create import batch
+    // Create import batch with proper broker type detection
+    let brokerType: BrokerType = BrokerType.GENERIC_CSV;
+    if (detectedFormat?.brokerName) {
+      brokerType = this.getBrokerTypeFromName(detectedFormat.brokerName);
+    }
+
     const importBatch = await prisma.importBatch.create({
       data: {
         userId,
         filename: fileName,
         fileSize,
-        brokerType: detectedFormat ? this.getBrokerTypeFromFormat(detectedFormat) : BrokerType.GENERIC_CSV,
+        brokerType,
         importType: 'CUSTOM',
         status: 'PROCESSING',
         totalRecords: records.length,
@@ -1417,7 +1422,13 @@ export class CsvIngestionService {
     try {
       // Check if this is an order format (has orderId field mapping)
       const isOrderFormat = mappingResult.mappings.some(m => 'tradeVoyagerField' in m && (m as any).tradeVoyagerField === 'orderId');
-      const brokerType = detectedFormat ? this.getBrokerTypeFromFormat(detectedFormat!) : BrokerType.GENERIC_CSV;
+
+      // Use proper broker type detection based on detected format or name
+      let brokerType: BrokerType = BrokerType.GENERIC_CSV;
+      const formatBrokerName = detectedFormat?.brokerName || '';
+      if (formatBrokerName) {
+        brokerType = this.getBrokerTypeFromName(formatBrokerName);
+      }
       
       if (isOrderFormat) {
         // Process as orders
@@ -1623,13 +1634,19 @@ export class CsvIngestionService {
     if (!brokerName) {
       
       try {
+        // Determine broker type from provided broker name
+        let brokerType: BrokerType = BrokerType.GENERIC_CSV;
+        if (brokerName) {
+          brokerType = this.getBrokerTypeFromName(brokerName);
+        }
+
         // Create a temporary import batch for later processing
         const importBatch = await prisma.importBatch.create({
           data: {
             userId,
             filename: fileName,
             fileSize,
-            brokerType: BrokerType.GENERIC_CSV,
+            brokerType,
             importType: 'CUSTOM',
             status: 'PENDING',
             totalRecords: records.length,
@@ -1782,7 +1799,12 @@ export class CsvIngestionService {
           const orderExecutedTime = this.getOrderExecutedTime(mappedData, aiResult.mappings);
           const symbol = String(mappedData.symbol || '');
           const orderQuantity = Number(mappedData.orderQuantity) || 0;
-          const brokerType = BrokerType.GENERIC_CSV;
+
+          // Use proper broker type detection
+          let brokerType: BrokerType = BrokerType.GENERIC_CSV;
+          if (brokerName) {
+            brokerType = this.getBrokerTypeFromName(brokerName!);
+          }
 
           // Check for duplicate
           const limitPrice = mappedData.limitPrice ? Number(mappedData.limitPrice) : null;
@@ -1971,7 +1993,7 @@ export class CsvIngestionService {
    */
   private getBrokerTypeFromName(brokerName: string): BrokerType {
     const normalized = brokerName.toLowerCase();
-    
+
     if (normalized.includes('interactive') || normalized.includes('ibkr')) {
       return BrokerType.INTERACTIVE_BROKERS;
     } else if (normalized.includes('schwab') || normalized.includes('charles')) {
@@ -1986,6 +2008,75 @@ export class CsvIngestionService {
       return BrokerType.ROBINHOOD;
     } else {
       return BrokerType.GENERIC_CSV;
+    }
+  }
+
+  /**
+   * Get broker ID from database based on detected format or broker name
+   */
+  private async getBrokerIdFromDetectedFormat(detectedFormat?: CsvFormat, brokerName?: string): Promise<string | null> {
+    let searchName = brokerName;
+
+    // If we have a detected format, use its broker name
+    if (detectedFormat?.brokerName) {
+      searchName = detectedFormat.brokerName;
+    }
+
+    if (!searchName) return null;
+
+    try {
+      // First try to find broker by exact name
+      let broker = await prisma.broker.findFirst({
+        where: {
+          name: {
+            equals: searchName,
+            mode: 'insensitive'
+          }
+        }
+      });
+
+      // If not found, try to find by alias
+      if (!broker) {
+        const brokerAlias = await prisma.brokerAlias.findFirst({
+          where: {
+            alias: {
+              equals: searchName,
+              mode: 'insensitive'
+            }
+          },
+          include: {
+            broker: true
+          }
+        });
+
+        if (brokerAlias) {
+          broker = brokerAlias.broker;
+        }
+      }
+
+      // If still not found, try fuzzy matching with common variations
+      if (!broker) {
+        const normalized = searchName.toLowerCase();
+
+        if (normalized.includes('interactive') || normalized.includes('ibkr')) {
+          broker = await prisma.broker.findFirst({ where: { name: 'Interactive Brokers' } });
+        } else if (normalized.includes('schwab') || normalized.includes('charles')) {
+          broker = await prisma.broker.findFirst({ where: { name: 'Charles Schwab' } });
+        } else if (normalized.includes('ameritrade') || normalized.includes('thinkorswim')) {
+          broker = await prisma.broker.findFirst({ where: { name: 'TD Direct Investing' } });
+        } else if (normalized.includes('etrade') || normalized.includes('e*trade')) {
+          broker = await prisma.broker.findFirst({ where: { name: 'E*Trade' } });
+        } else if (normalized.includes('fidelity')) {
+          broker = await prisma.broker.findFirst({ where: { name: 'Fidelity' } });
+        } else if (normalized.includes('robinhood')) {
+          broker = await prisma.broker.findFirst({ where: { name: 'Robinhood' } });
+        }
+      }
+
+      return broker?.id || null;
+    } catch (error) {
+      console.error('Error finding broker:', error);
+      return null;
     }
   }
 

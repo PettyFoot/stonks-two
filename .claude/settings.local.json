@@ -114,7 +114,8 @@
       "WebFetch(domain:www.alphavantage.co)",
       "WebFetch(domain:polygon.io)",
       "Bash(npx dotenv -e .env.local -- psql:*)",
-      "Bash(npx dotenv:*)"
+      "Bash(npx dotenv:*)",
+      "Read(//c/Dev/AI/StonksTwo/siteImages/**)"
     ],
     "deny": [],
     "ask": []

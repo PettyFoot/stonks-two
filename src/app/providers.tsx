@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { DemoModeBanner } from '@/components/DemoModeBanner';
 import { DemoWatermark } from '@/components/DemoIndicators';
+import AdSenseScript from '@/components/AdSenseScript';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -17,6 +18,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <DemoModeBanner />
             {children}
             <DemoWatermark />
+            {/* Conditional AdSense Script - only loads for non-premium users */}
+            <AdSenseScript />
             <Toaster position="top-right" richColors />
           </GlobalFilterProvider>
         </ThemeProvider>

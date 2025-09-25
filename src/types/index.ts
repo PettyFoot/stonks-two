@@ -215,6 +215,7 @@ export interface PerformanceMetrics {
   totalCommissions: number;
   totalFees: number;
   avgPerSharePnl: number;
+  avgDailyVolume: number;
 }
 
 export interface AnalyticsData {

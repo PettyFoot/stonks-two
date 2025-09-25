@@ -14,6 +14,7 @@ import {
   Share2
 } from 'lucide-react';
 import Footer from '@/components/Footer';
+import FeatureShowcase from '@/components/FeatureShowcase';
 import { generateMetadata as generateSEOMetadata } from '@/lib/seo';
 import { BreadcrumbStructuredData } from '@/components/SEO/StructuredData';
 import { GettingStartedHowTo } from '@/components/SEO/HowToStructuredData';
@@ -110,6 +111,9 @@ export default function Features() {
           </Link>
         </div>
       </section>
+
+      {/* Feature Showcase Carousel */}
+      <FeatureShowcase />
 
       {/* Core Features Grid */}
       <section className="max-w-7xl mx-auto px-6 py-16">

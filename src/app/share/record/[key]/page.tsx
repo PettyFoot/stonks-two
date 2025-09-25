@@ -72,6 +72,17 @@ export default function SharedTradePage() {
   }, [key]);
 
   const formatDate = (dateString: string) => {
+    // For YYYY-MM-DD format dates, parse without timezone conversion
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = dateString.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    }
+    // For other date formats, use existing logic
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',

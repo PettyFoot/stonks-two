@@ -85,7 +85,8 @@ export default function WinLossStatsTable({
     { label: 'Largest Gain', value: metrics.largestGain, type: 'currency', category: 'basic' },
     { label: 'Largest Loss', value: metrics.largestLoss, type: 'currency', category: 'basic' },
     { label: 'Average Per-share Gain/Loss', value: metrics.avgPerSharePnl, type: 'currency', category: 'basic' },
-    
+    { label: 'Average Daily Volume', value: metrics.avgDailyVolume, type: 'number', category: 'basic' },
+
     // Trading Activity
     { label: 'Total Number of Trades', value: metrics.totalTrades, type: 'number', category: 'basic' },
     { label: 'Number of Winning Trades', value: metrics.winningTrades, type: 'number', category: 'performance' },

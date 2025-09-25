@@ -218,13 +218,9 @@ function RecordsContent() {
 
   return (
     <div className="flex flex-col h-full">
-      <TopBar 
-        title="Records" 
+      <TopBar
+        title="Records"
         showTimeRangeFilters={false}
-      />
-      
-      <FilterPanel 
-        showAdvanced={true}
       />
 
       <div className="flex-1 overflow-auto p-6">

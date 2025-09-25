@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WinLossMetrics } from '@/types';
 
 interface TradingStatistic {
   label: string;
@@ -35,9 +36,10 @@ interface StatsSectionProps {
     totalCommissions: number;
     totalFees: number;
   };
+  winLossStats?: WinLossMetrics;
 }
 
-export default function StatsSection({ stats }: StatsSectionProps) {
+export default function StatsSection({ stats, winLossStats }: StatsSectionProps) {
   // Return early if no stats are provided
   if (!stats) {
     return (
@@ -165,23 +167,413 @@ export default function StatsSection({ stats }: StatsSectionProps) {
   return (
     <div className="mb-6">
       <h3 className="text-lg font-semibold text-theme-primary-text mb-4">Trading Statistics</h3>
-      
-      {/* Frontend Engineer Review Point: Responsive grid layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {statistics.map((stat, index) => (
-          <Card key={index} className="bg-theme-surface border-theme-border hover:shadow-sm transition-shadow">
-            <CardContent className="p-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-theme-secondary-text truncate pr-2">
-                  {stat.label}
-                </span>
-                <span className={`text-sm font-semibold ${getColorClass(stat.value, stat.colorCode)}`}>
-                  {formatValue(stat.value, stat.formatter)}
-                </span>
+
+      {/* Three colored sections layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* Blue Section - Overall Statistics (All Days) */}
+        <div style={{ boxShadow: '0 10px 25px -5px rgba(59, 130, 246, 0.3), 0 4px 6px -2px rgba(59, 130, 246, 0.05)' }}>
+          <Card className="bg-theme-surface border-theme-border">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-medium text-theme-primary-text">
+                Trading Statistics
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <div className="space-y-3">
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Total Gain/Loss</span>
+                  <span className={`text-sm font-semibold ${getColorClass(currentStats.totalGainLoss, 'positive')}`}>
+                    {formatValue(currentStats.totalGainLoss, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Largest Gain</span>
+                  <span className={`text-sm font-semibold ${getColorClass(currentStats.largestGain, 'positive')}`}>
+                    {formatValue(currentStats.largestGain, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Largest Loss</span>
+                  <span className={`text-sm font-semibold ${getColorClass(currentStats.largestLoss, 'positive')}`}>
+                    {formatValue(currentStats.largestLoss, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Daily Gain/Loss</span>
+                  <span className={`text-sm font-semibold ${getColorClass(currentStats.avgDailyGainLoss, 'positive')}`}>
+                    {formatValue(currentStats.avgDailyGainLoss, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Daily Volume</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {formatValue(currentStats.avgDailyVolume, 'volume')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Per-share Gain/Loss</span>
+                  <span className={`text-sm font-semibold ${getColorClass(currentStats.avgPerShareGainLoss, 'positive')}`}>
+                    {formatValue(currentStats.avgPerShareGainLoss, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Win %</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {(() => {
+                      const totalTrades = currentStats.winningTrades + currentStats.losingTrades;
+                      if (totalTrades === 0) return '0.00%';
+                      const winRate = (currentStats.winningTrades / totalTrades) * 100;
+                      return `${winRate.toFixed(2)}%`;
+                    })()}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Total Number of Trades</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {formatValue(currentStats.totalTrades, 'number')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Trades Per Day</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {winLossStats ? formatValue((winLossStats.dayCount.total > 0 ? currentStats.totalTrades / winLossStats.dayCount.total : 0), 'number') : '0'}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Winning Trade</span>
+                  <span className={`text-sm font-semibold ${getColorClass(currentStats.avgWinningTrade, 'positive')}`}>
+                    {formatValue(currentStats.avgWinningTrade, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Losing Trade</span>
+                  <span className={`text-sm font-semibold ${getColorClass(currentStats.avgLosingTrade, 'positive')}`}>
+                    {formatValue(currentStats.avgLosingTrade, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Hold Time (winning trades)</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {formatValue(currentStats.avgHoldTimeWinning, 'time')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Hold Time (losing trades)</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {formatValue(currentStats.avgHoldTimeLosing, 'time')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Profit Factor</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {currentStats.profitFactor === Infinity ? '∞' : formatValue(currentStats.profitFactor, 'number')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Total Commissions</span>
+                  <span className={`text-sm font-semibold ${getColorClass(currentStats.totalCommissions, 'positive')}`}>
+                    {formatValue(currentStats.totalCommissions, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Total Fees</span>
+                  <span className={`text-sm font-semibold ${getColorClass(currentStats.totalFees, 'positive')}`}>
+                    {formatValue(currentStats.totalFees, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Trade P&L Standard Deviation</span>
+                  <span className={`text-sm font-semibold ${getColorClass(currentStats.tradePnlStdDev, 'positive')}`}>
+                    {formatValue(currentStats.tradePnlStdDev, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Hold Time (scratch trades)</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {formatValue(currentStats.avgHoldTimeScratch, 'time')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="text-sm text-theme-secondary-text">Number of Scratch Trades</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {formatValue(currentStats.scratchTrades, 'number')}
+                  </span>
+                </div>
               </div>
             </CardContent>
           </Card>
-        ))}
+        </div>
+
+        {/* Green Section - Winning Days Statistics */}
+        <div style={{ boxShadow: '0 10px 25px -5px rgba(34, 197, 94, 0.3), 0 4px 6px -2px rgba(34, 197, 94, 0.05)' }}>
+          <Card className="bg-theme-surface border-theme-border">
+            <CardHeader className="pb-2 bg-green-50/10">
+              <CardTitle className="text-base font-medium text-green-700">
+                Winning Days Statistics
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <div className="space-y-3">
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Total Gain/Loss</span>
+                  <span className={`text-sm font-semibold ${winLossStats?.winningDays.totalPnl && winLossStats.winningDays.totalPnl !== 0 ? 'text-green-600' : 'text-theme-primary-text'}`}>
+                    {formatValue(winLossStats?.winningDays.totalPnl || 0, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Largest Gain</span>
+                  <span className={`text-sm font-semibold ${winLossStats?.winningDays.largestGain && winLossStats.winningDays.largestGain !== 0 ? 'text-green-600' : 'text-theme-primary-text'}`}>
+                    {formatValue(winLossStats?.winningDays.largestGain || 0, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Largest Loss</span>
+                  <span className={`text-sm font-semibold ${winLossStats?.winningDays.largestLoss && winLossStats.winningDays.largestLoss !== 0 ? 'text-green-600' : 'text-theme-primary-text'}`}>
+                    {formatValue(winLossStats?.winningDays.largestLoss || 0, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Daily Gain/Loss</span>
+                  <span className={`text-sm font-semibold ${winLossStats?.winningDays.avgDailyPnl && winLossStats.winningDays.avgDailyPnl !== 0 ? 'text-green-600' : 'text-theme-primary-text'}`}>
+                    {formatValue(winLossStats?.winningDays.avgDailyPnl || 0, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Daily Volume</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {winLossStats?.winningDays.avgDailyVolume ? formatValue(winLossStats.winningDays.avgDailyVolume, 'volume') : '0'}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Per-share Gain/Loss</span>
+                  <span className={`text-sm font-semibold ${winLossStats?.winningDays.avgPerSharePnl && winLossStats.winningDays.avgPerSharePnl !== 0 ? 'text-green-600' : 'text-theme-primary-text'}`}>
+                    {formatValue(winLossStats?.winningDays.avgPerSharePnl || 0, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Win %</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {(() => {
+                      if (!winLossStats?.winningDays) return '0.00%';
+                      const totalTrades = (winLossStats.winningDays.winningTrades || 0) + (winLossStats.winningDays.losingTrades || 0);
+                      if (totalTrades === 0) return '0.00%';
+                      const winRate = ((winLossStats.winningDays.winningTrades || 0) / totalTrades) * 100;
+                      return `${winRate.toFixed(2)}%`;
+                    })()}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Total Number of Trades</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {winLossStats?.winningDays.totalTrades ? formatValue(winLossStats.winningDays.totalTrades, 'number') : '0'}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Trades Per Day</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {winLossStats && winLossStats.dayCount.winning > 0 ? formatValue((winLossStats.winningDays.totalTrades || 0) / winLossStats.dayCount.winning, 'number') : '0'}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Winning Trade</span>
+                  <span className={`text-sm font-semibold ${winLossStats?.winningDays.avgWin && winLossStats.winningDays.avgWin !== 0 ? 'text-green-600' : 'text-theme-primary-text'}`}>
+                    {formatValue(winLossStats?.winningDays.avgWin || 0, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Losing Trade</span>
+                  <span className={`text-sm font-semibold ${winLossStats?.winningDays.avgLoss && winLossStats.winningDays.avgLoss !== 0 ? 'text-green-600' : 'text-theme-primary-text'}`}>
+                    {formatValue(winLossStats?.winningDays.avgLoss || 0, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Hold Time (winning trades)</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {winLossStats?.winningDays.avgHoldTime ? formatValue(winLossStats.winningDays.avgHoldTime, 'time') : '0s'}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Hold Time (losing trades)</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {winLossStats?.winningDays.avgHoldTime ? formatValue(winLossStats.winningDays.avgHoldTime, 'time') : '0s'}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Profit Factor</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {winLossStats?.winningDays.profitFactor === Infinity ? '∞' : (winLossStats?.winningDays.profitFactor ? formatValue(winLossStats.winningDays.profitFactor, 'number') : '0')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Total Commissions</span>
+                  <span className={`text-sm font-semibold ${winLossStats?.winningDays.totalCommissions && winLossStats.winningDays.totalCommissions !== 0 ? 'text-green-600' : 'text-theme-primary-text'}`}>
+                    {formatValue(winLossStats?.winningDays.totalCommissions || 0, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Total Fees</span>
+                  <span className={`text-sm font-semibold ${winLossStats?.winningDays.totalFees && winLossStats.winningDays.totalFees !== 0 ? 'text-green-600' : 'text-theme-primary-text'}`}>
+                    {formatValue(winLossStats?.winningDays.totalFees || 0, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Trade P&L Standard Deviation</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    $0.00
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Hold Time (scratch trades)</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    0s
+                  </span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="text-sm text-theme-secondary-text">Number of Scratch Trades</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    0
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Red Section - Losing Days Statistics */}
+        <div style={{ boxShadow: '0 10px 25px -5px rgba(239, 68, 68, 0.3), 0 4px 6px -2px rgba(239, 68, 68, 0.05)' }}>
+          <Card className="bg-theme-surface border-theme-border">
+            <CardHeader className="pb-2 bg-red-50/10">
+              <CardTitle className="text-base font-medium text-red-700">
+                Losing Days Statistics
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <div className="space-y-3">
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Total Gain/Loss</span>
+                  <span className={`text-sm font-semibold ${winLossStats?.losingDays.totalPnl && winLossStats.losingDays.totalPnl !== 0 ? 'text-red-600' : 'text-theme-primary-text'}`}>
+                    {formatValue(winLossStats?.losingDays.totalPnl || 0, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Largest Gain</span>
+                  <span className={`text-sm font-semibold ${winLossStats?.losingDays.largestGain && winLossStats.losingDays.largestGain !== 0 ? 'text-red-600' : 'text-theme-primary-text'}`}>
+                    {formatValue(winLossStats?.losingDays.largestGain || 0, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Largest Loss</span>
+                  <span className={`text-sm font-semibold ${winLossStats?.losingDays.largestLoss && winLossStats.losingDays.largestLoss !== 0 ? 'text-red-600' : 'text-theme-primary-text'}`}>
+                    {formatValue(winLossStats?.losingDays.largestLoss || 0, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Daily Gain/Loss</span>
+                  <span className={`text-sm font-semibold ${winLossStats?.losingDays.avgDailyPnl && winLossStats.losingDays.avgDailyPnl !== 0 ? 'text-red-600' : 'text-theme-primary-text'}`}>
+                    {formatValue(winLossStats?.losingDays.avgDailyPnl || 0, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Daily Volume</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {formatValue(winLossStats?.losingDays.avgDailyVolume || 0, 'volume')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Per-share Gain/Loss</span>
+                  <span className={`text-sm font-semibold ${winLossStats?.losingDays.avgPerSharePnl && winLossStats.losingDays.avgPerSharePnl !== 0 ? 'text-red-600' : 'text-theme-primary-text'}`}>
+                    {formatValue(winLossStats?.losingDays.avgPerSharePnl || 0, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Win %</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {(() => {
+                      if (!winLossStats?.losingDays) return '0.00%';
+                      const totalTrades = (winLossStats.losingDays.winningTrades || 0) + (winLossStats.losingDays.losingTrades || 0);
+                      if (totalTrades === 0) return '0.00%';
+                      const winRate = ((winLossStats.losingDays.winningTrades || 0) / totalTrades) * 100;
+                      return `${winRate.toFixed(2)}%`;
+                    })()}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Total Number of Trades</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {formatValue(winLossStats?.losingDays.totalTrades || 0, 'number')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Trades Per Day</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {winLossStats && winLossStats.dayCount.losing > 0 ? formatValue((winLossStats.losingDays.totalTrades || 0) / winLossStats.dayCount.losing, 'number') : '0'}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Winning Trade</span>
+                  <span className={`text-sm font-semibold ${winLossStats?.losingDays.avgWin && winLossStats.losingDays.avgWin !== 0 ? 'text-red-600' : 'text-theme-primary-text'}`}>
+                    {formatValue(winLossStats?.losingDays.avgWin || 0, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Losing Trade</span>
+                  <span className={`text-sm font-semibold ${winLossStats?.losingDays.avgLoss && winLossStats.losingDays.avgLoss !== 0 ? 'text-red-600' : 'text-theme-primary-text'}`}>
+                    {formatValue(winLossStats?.losingDays.avgLoss || 0, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Hold Time (winning trades)</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {formatValue(winLossStats?.losingDays.avgHoldTime || '0s', 'time')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Hold Time (losing trades)</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {formatValue(winLossStats?.losingDays.avgHoldTime || '0s', 'time')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Profit Factor</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    {winLossStats?.losingDays.profitFactor === Infinity ? '∞' : formatValue(winLossStats?.losingDays.profitFactor || 0, 'number')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Total Commissions</span>
+                  <span className={`text-sm font-semibold ${winLossStats?.losingDays.totalCommissions && winLossStats.losingDays.totalCommissions !== 0 ? 'text-red-600' : 'text-theme-primary-text'}`}>
+                    {formatValue(winLossStats?.losingDays.totalCommissions || 0, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Total Fees</span>
+                  <span className={`text-sm font-semibold ${winLossStats?.losingDays.totalFees && winLossStats.losingDays.totalFees !== 0 ? 'text-red-600' : 'text-theme-primary-text'}`}>
+                    {formatValue(winLossStats?.losingDays.totalFees || 0, 'currency')}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Trade P&L Standard Deviation</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    $0.00
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-theme-border/30">
+                  <span className="text-sm text-theme-secondary-text">Average Hold Time (scratch trades)</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    0s
+                  </span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="text-sm text-theme-secondary-text">Number of Scratch Trades</span>
+                  <span className="text-sm font-semibold text-theme-primary-text">
+                    0
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

@@ -101,7 +101,7 @@ const getEffectiveTimeframe = (standardTimeframe: StandardTimeframe, filters: Re
 };
 
 // Helper function to calculate win/loss day metrics
-const calculateWinLossMetrics = (dailyPnlData: Array<{ date: string; value: number }>, overallStats: StatisticsData['overall']): WinLossMetrics => {
+const calculateWinLossMetrics = (dailyPnlData: Array<{ date: string; value: number }>, overallStats: StatisticsData['overall'], totalTrades: number): WinLossMetrics => {
   // Separate days by win/loss
   const winningDays = dailyPnlData.filter(day => day.value > 0);
   const losingDays = dailyPnlData.filter(day => day.value < 0);
@@ -134,23 +134,26 @@ const calculateWinLossMetrics = (dailyPnlData: Array<{ date: string; value: numb
     totalCommissions: 0,
     totalFees: 0,
     avgPerSharePnl: 0,
+    avgDailyVolume: 0,
   });
 
   // Calculate metrics for winning days
+  const estimatedWinningTrades = Math.round((totalTrades || 0) * (winningDays.length / dailyPnlData.length));
+
   const winningDaysMetrics: PerformanceMetrics = winningDays.length > 0 ? {
     totalPnl: winningDays.reduce((sum, day) => sum + day.value, 0),
-    totalTrades: Math.round((overallStats?.totalVolume || 0) * (winningDays.length / dailyPnlData.length)),
+    totalTrades: estimatedWinningTrades,
     winRate: 100, // All days in this group are winning
     lossRate: 0,
     avgWin: winningDays.reduce((sum, day) => sum + day.value, 0) / winningDays.length,
     avgLoss: 0,
     avgDailyPnl: winningDays.reduce((sum, day) => sum + day.value, 0) / winningDays.length,
-    avgTradePnl: winningDays.reduce((sum, day) => sum + day.value, 0) / Math.max(1, Math.round((overallStats?.totalVolume || 0) * (winningDays.length / dailyPnlData.length))),
+    avgTradePnl: winningDays.reduce((sum, day) => sum + day.value, 0) / Math.max(1, estimatedWinningTrades),
     largestGain: Math.max(...winningDays.map(day => day.value)),
     largestLoss: 0,
-    winningTrades: Math.round((overallStats?.totalVolume || 0) * (winningDays.length / dailyPnlData.length)),
+    winningTrades: estimatedWinningTrades,
     losingTrades: 0,
-    totalWins: Math.round((overallStats?.totalVolume || 0) * (winningDays.length / dailyPnlData.length)),
+    totalWins: estimatedWinningTrades,
     totalLosses: 0,
     maxConsecutiveWins: winningDays.length,
     maxConsecutiveLosses: 0,
@@ -162,25 +165,32 @@ const calculateWinLossMetrics = (dailyPnlData: Array<{ date: string; value: numb
     systemQualityNumber: overallStats?.systemQualityNumber || 0,
     totalCommissions: (overallStats?.totalCommissions || 0) * (winningDays.length / dailyPnlData.length),
     totalFees: (overallStats?.totalFees || 0) * (winningDays.length / dailyPnlData.length),
-    avgPerSharePnl: overallStats?.avgPerSharePnl || 0,
+    avgPerSharePnl: (() => {
+      const winningDaysTotalPnl = winningDays.reduce((sum, day) => sum + day.value, 0);
+      const estimatedWinningVolume = (overallStats?.totalVolume || 0) * (winningDays.length / dailyPnlData.length);
+      return estimatedWinningVolume > 0 ? winningDaysTotalPnl / estimatedWinningVolume : 0;
+    })(),
+    avgDailyVolume: (overallStats?.totalVolume || 0) / Math.max(1, winningDays.length),
   } : createDefaultMetrics();
 
   // Calculate metrics for losing days
+  const estimatedLosingTrades = Math.round((totalTrades || 0) * (losingDays.length / dailyPnlData.length));
+
   const losingDaysMetrics: PerformanceMetrics = losingDays.length > 0 ? {
     totalPnl: losingDays.reduce((sum, day) => sum + day.value, 0),
-    totalTrades: Math.round((overallStats?.totalVolume || 0) * (losingDays.length / dailyPnlData.length)),
+    totalTrades: estimatedLosingTrades,
     winRate: 0,
     lossRate: 100, // All days in this group are losing
     avgWin: 0,
     avgLoss: losingDays.reduce((sum, day) => sum + day.value, 0) / losingDays.length,
     avgDailyPnl: losingDays.reduce((sum, day) => sum + day.value, 0) / losingDays.length,
-    avgTradePnl: losingDays.reduce((sum, day) => sum + day.value, 0) / Math.max(1, Math.round((overallStats?.totalVolume || 0) * (losingDays.length / dailyPnlData.length))),
+    avgTradePnl: losingDays.reduce((sum, day) => sum + day.value, 0) / Math.max(1, estimatedLosingTrades),
     largestGain: 0,
     largestLoss: Math.min(...losingDays.map(day => day.value)),
     winningTrades: 0,
-    losingTrades: Math.round((overallStats?.totalVolume || 0) * (losingDays.length / dailyPnlData.length)),
+    losingTrades: estimatedLosingTrades,
     totalWins: 0,
-    totalLosses: Math.round((overallStats?.totalVolume || 0) * (losingDays.length / dailyPnlData.length)),
+    totalLosses: estimatedLosingTrades,
     maxConsecutiveWins: 0,
     maxConsecutiveLosses: losingDays.length,
     avgHoldTime: overallStats?.avgDailyPnl ? '4h' : '0',
@@ -191,7 +201,12 @@ const calculateWinLossMetrics = (dailyPnlData: Array<{ date: string; value: numb
     systemQualityNumber: overallStats?.systemQualityNumber || 0,
     totalCommissions: (overallStats?.totalCommissions || 0) * (losingDays.length / dailyPnlData.length),
     totalFees: (overallStats?.totalFees || 0) * (losingDays.length / dailyPnlData.length),
-    avgPerSharePnl: overallStats?.avgPerSharePnl || 0,
+    avgPerSharePnl: (() => {
+      const losingDaysTotalPnl = losingDays.reduce((sum, day) => sum + day.value, 0);
+      const estimatedLosingVolume = (overallStats?.totalVolume || 0) * (losingDays.length / dailyPnlData.length);
+      return estimatedLosingVolume > 0 ? losingDaysTotalPnl / estimatedLosingVolume : 0;
+    })(),
+    avgDailyVolume: (overallStats?.totalVolume || 0) / Math.max(1, losingDays.length),
   } : createDefaultMetrics();
 
   return {
@@ -431,6 +446,9 @@ export const useAnalyticsData = (standardTimeframe: StandardTimeframe, filters: 
           totalCommissions: result.statistics?.overall?.totalCommissions || 0,
           totalFees: result.statistics?.overall?.totalFees || 0,
           avgPerSharePnl: result.statistics?.overall?.avgPositionSize ? (result.statistics.overall.totalPnl / result.statistics.overall.avgPositionSize) : 0,
+          avgDailyVolume: result.performance?.byDay && result.performance.byDay.length > 0 ?
+            (result.statistics?.overall?.totalVolume || 0) / result.performance.byDay.length :
+            (result.statistics?.overall?.avgPositionSize || 0),
         },
         timeframe: {
           start: new Date(result.metadata.dateRange.start),
@@ -438,14 +456,15 @@ export const useAnalyticsData = (standardTimeframe: StandardTimeframe, filters: 
           period: effectiveTimeframe,
         },
         winLossStats: calculateWinLossMetrics(
-          result.performance?.byDay && result.performance.byDay.length > 0 ? 
+          result.performance?.byDay && result.performance.byDay.length > 0 ?
             result.performance.byDay.map(item => ({
               date: standardizeDateFormat(item.date),
               value: item.pnl
             })) : [
               { date: standardizeDateFormat(new Date()), value: result.statistics?.overall?.totalPnl || 0 }
             ],
-          result.statistics?.overall
+          result.statistics?.overall,
+          result.metadata.totalTrades
         ),
       };
 

@@ -18,6 +18,8 @@ import ChartContainer from '@/components/reports/ChartContainer';
 import WinVsLossReport from '@/components/reports/WinVsLossReport';
 import { FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
 import { useDetailedReportsData } from '@/hooks/useDetailedReportsData';
+import { useAnalyticsData } from '@/hooks/useAnalyticsData';
+import { StandardTimeframe } from '@/types';
 import { 
   aggregateByDayOfWeek, 
   aggregateByHourOfDay, 
@@ -64,6 +66,9 @@ export default function Reports() {
   
   // New enhanced data hook for statistics and new charts
   const { stats, trades, loading: detailedLoading, error: detailedError } = useDetailedReportsData();
+
+  // Analytics data hook for winning/losing days metrics
+  const { data: analyticsData } = useAnalyticsData('30d' as StandardTimeframe, toFilterOptions());
 
   // Calculate average daily P&L for chart display - two bars like Daily Volume
   const dailyPnlData = useMemo(() => {
@@ -278,7 +283,7 @@ export default function Reports() {
             
             {/* STATISTICS SECTION: 22 Trading Metrics */}
             {!detailedLoading && !detailedError && (
-              <StatsSection stats={stats} />
+              <StatsSection stats={stats} winLossStats={analyticsData?.winLossStats} />
             )}
 
             {/* SECOND TAB SYSTEM: New Enhanced Analysis Tabs (Days/Times, Price/Volume, etc.) */}
