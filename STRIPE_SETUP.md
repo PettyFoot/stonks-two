@@ -66,6 +66,10 @@ STRIPE_SECRET_KEY=sk_test_your_secret_key_here
 STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
 STRIPE_PREMIUM_PRICE_ID=price_your_premium_price_id_here
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
+
+# Note: The old NEXT_PUBLIC_STRIPE_PORTAL_LINK_TEST and NEXT_PUBLIC_STRIPE_PORTAL_LINK_LIVE
+# environment variables are no longer needed. The billing portal is now created via
+# Stripe's official API using billingPortal.sessions.create()
 ```
 
 ## Step 3: Database Migration
@@ -102,10 +106,11 @@ Use Stripe's test cards for testing:
 
 ### 5.1 Update Environment Variables
 
-Replace test keys with live keys:
-- Use `pk_live_` and `sk_live_` keys
+Replace test keys with live keys in your Vercel environment variables:
+- Use `pk_live_` and `sk_live_` keys instead of `pk_test_` and `sk_test_`
 - Update webhook endpoint to production URL
 - Update `STRIPE_PREMIUM_PRICE_ID` with live price ID
+- **Remove any old `NEXT_PUBLIC_STRIPE_PORTAL_LINK_*` variables** - they are no longer needed
 
 ### 5.2 Security Considerations
 
