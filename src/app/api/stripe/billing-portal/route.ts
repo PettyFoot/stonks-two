@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession } from '@auth0/nextjs-auth0';
+import { getCurrentUser } from '@/lib/auth0';
 import { createSubscriptionManager } from '@/lib/stripe/utils';
 
 /**
@@ -8,10 +8,10 @@ import { createSubscriptionManager } from '@/lib/stripe/utils';
  */
 export async function POST(request: NextRequest) {
   try {
-    // Get authenticated user
-    const session = await getSession();
-    
-    if (!session?.user) {
+    // Get authenticated user from database
+    const user = await getCurrentUser();
+
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -28,8 +28,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create subscription manager for user
-    const subscriptionManager = createSubscriptionManager(session.user.sub);
+    // Create subscription manager for user using database ID
+    const subscriptionManager = createSubscriptionManager(user.id);
 
     // Create billing portal session
     const portalResult = await subscriptionManager.createBillingPortalSession(returnUrl);
