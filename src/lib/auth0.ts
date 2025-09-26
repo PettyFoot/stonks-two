@@ -4,6 +4,15 @@ import { getDemoSessionFromCookies } from './demo/demoSession';
 import { accountDeletionService } from './services/accountDeletion';
 import { emailService } from './email/emailService';
 
+function getFirstName(fullName: string | null | undefined): string {
+  if (!fullName || fullName.trim() === '') {
+    return 'Trader';
+  }
+
+  const firstName = fullName.trim().split(' ')[0];
+  return firstName || 'Trader';
+}
+
 export async function getCurrentUser() {
   try {
     // First check for Auth0 session (prioritize real users)
@@ -57,6 +66,19 @@ export async function getCurrentUser() {
           });
         } catch (emailError) {
           console.error('Failed to send new user notification email:', emailError);
+          // Don't fail user creation if email fails
+        }
+
+        // Send welcome email to the new user
+        try {
+          await emailService.sendSignupWelcomeEmail({
+            userName: getFirstName(user.name),
+            userEmail: user.email,
+            supportEmail: process.env.EMAIL_FROM || 'support@tradevoyager.com',
+            appUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tradevoyageranalytics.com'
+          });
+        } catch (emailError) {
+          console.error('Failed to send signup welcome email:', emailError);
           // Don't fail user creation if email fails
         }
       } else {

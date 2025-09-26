@@ -1,9 +1,11 @@
 import * as nodemailer from 'nodemailer';
+import { generateWelcomeEmail, WelcomeEmailData, generateSignupWelcomeEmail, SignupWelcomeEmailData } from './templates';
 
 export interface EmailOptions {
   to: string;
   subject: string;
   text: string;
+  html?: string;
   replyTo?: string;
 }
 
@@ -49,6 +51,11 @@ class EmailService {
         text: options.text,
       };
 
+      // Add HTML content if provided
+      if (options.html) {
+        mailOptions.html = options.html;
+      }
+
       // Add reply-to if provided
       if (options.replyTo) {
         mailOptions.replyTo = options.replyTo;
@@ -87,6 +94,56 @@ Automated notification from Trade Voyager Analytics
       subject: `New User Signup: ${userData.name} (${userData.email})`,
       text: emailContent,
     });
+  }
+
+  async sendSubscriptionWelcomeEmail(data: WelcomeEmailData): Promise<void> {
+    try {
+      console.log(`[DEBUG] sendSubscriptionWelcomeEmail called with data:`, {
+        userEmail: data.userEmail,
+        userName: data.userName,
+        subscriptionTier: data.subscriptionTier,
+        supportEmail: data.supportEmail
+      });
+
+      const emailContent = generateWelcomeEmail(data);
+
+      await this.sendEmail({
+        to: data.userEmail,
+        subject: emailContent.subject,
+        text: emailContent.text,
+        html: emailContent.html,
+      });
+
+      console.log('Welcome email sent successfully:', {
+        to: data.userEmail,
+        userName: data.userName,
+        subscriptionTier: data.subscriptionTier
+      });
+    } catch (error) {
+      console.error('Failed to send welcome email:', error);
+      throw new Error('Failed to send welcome email');
+    }
+  }
+
+  async sendSignupWelcomeEmail(data: SignupWelcomeEmailData): Promise<void> {
+    try {
+      const emailContent = generateSignupWelcomeEmail(data);
+
+      await this.sendEmail({
+        to: data.userEmail,
+        subject: emailContent.subject,
+        text: emailContent.text,
+        html: emailContent.html,
+      });
+
+      console.log('Signup welcome email sent successfully:', {
+        to: data.userEmail,
+        userName: data.userName
+      });
+    } catch (error) {
+      console.error('Failed to send signup welcome email:', error);
+      throw new Error('Failed to send signup welcome email');
+    }
   }
 }
 

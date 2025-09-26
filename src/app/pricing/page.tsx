@@ -47,7 +47,7 @@ export default function Pricing() {
     },
     {
       name: "Professional",
-      price: "$10",
+      price: "$9.99",
       period: "month",
       description: "For serious traders who want to improve their performance",
       badge: "Best Value",

@@ -3,6 +3,7 @@ import { prisma } from '../prisma';
 import { SubscriptionService } from './subscriptionService';
 import { PaymentService } from './paymentService';
 import { CustomerService } from './customerService';
+import { emailService } from '../email/emailService';
 import {
   WebhookEventData,
   ServiceResponse,
@@ -12,6 +13,15 @@ import {
 } from './types';
 import { SubscriptionTier, SubscriptionStatus } from '@prisma/client';
 import Stripe from 'stripe';
+
+function getFirstName(fullName: string | null | undefined): string {
+  if (!fullName || fullName.trim() === '') {
+    return 'Trader';
+  }
+
+  const firstName = fullName.trim().split(' ')[0];
+  return firstName || 'Trader';
+}
 
 /**
  * Webhook Service for handling Stripe webhook events
@@ -228,6 +238,8 @@ export class WebhookService {
       // Update user subscription status
       await this.updateUserSubscriptionStatus(user.id);
 
+      // Send welcome email for new premium subscriptions
+      await this.sendWelcomeEmail(user.id, subscription, true);
 
     } catch (error) {
       console.error('[WEBHOOK] Error handling subscription created:', error);
@@ -580,6 +592,8 @@ export class WebhookService {
       // Update user subscription status immediately
       await this.updateUserSubscriptionStatus(userId);
 
+      // Send welcome email for new premium subscriptions
+      await this.sendWelcomeEmail(userId, subscription, true);
 
     } catch (error) {
       console.error('[WEBHOOK] Error handling checkout session completed:', error);
@@ -640,6 +654,98 @@ export class WebhookService {
     } catch (error) {
       console.error('Error updating user subscription status:', error);
       // Don't throw as this is a background operation
+    }
+  }
+
+  /**
+   * Send welcome email for new premium subscription
+   */
+  private async sendWelcomeEmail(userId: string, subscription: Stripe.Subscription, isNewSubscription: boolean = true): Promise<void> {
+    try {
+      // Only send welcome email for premium subscriptions and new subscriptions
+      const priceId = subscription.items.data[0]?.price.id;
+      const isPremium = priceId === STRIPE_CONFIG.PREMIUM_PRICE_ID;
+
+      if (!isPremium || !isNewSubscription) {
+        return;
+      }
+
+      // Get user details
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          email: true,
+          name: true,
+          stripeCustomerId: true
+        }
+      });
+
+      if (!user || !user.email) {
+        console.warn(`Cannot send welcome email: user ${userId} not found or no email`);
+        return;
+      }
+
+      console.log(`[DEBUG] Sending welcome email - User ID: ${userId}, User Email: ${user.email}, User Name: ${user.name}`);
+
+      // Check if this user has had a premium subscription before
+      const previousSubscriptions = await prisma.subscription.count({
+        where: {
+          userId,
+          tier: SubscriptionTier.PREMIUM,
+          createdAt: {
+            lt: new Date()
+          }
+        }
+      });
+
+      // Only send welcome email for first premium subscription
+      if (previousSubscriptions > 1) {
+        console.log(`Skipping welcome email for user ${userId} - not their first premium subscription`);
+        return;
+      }
+
+      // Generate customer portal URL
+      let customerPortalUrl = process.env.NEXT_PUBLIC_SITE_URL + '/settings';
+      if (user.stripeCustomerId) {
+        try {
+          const stripe = getStripe();
+          const portalSession = await stripe.billingPortal.sessions.create({
+            customer: user.stripeCustomerId,
+            return_url: process.env.NEXT_PUBLIC_SITE_URL + '/settings',
+          });
+          customerPortalUrl = portalSession.url;
+        } catch (portalError) {
+          console.warn('Failed to create customer portal URL:', portalError);
+          // Fall back to settings page
+        }
+      }
+
+      // Format trial end date if applicable
+      let trialEndDate: string | undefined;
+      if (subscription.trial_end) {
+        const trialEnd = new Date(subscription.trial_end * 1000);
+        trialEndDate = trialEnd.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+      }
+
+      // Send welcome email
+      await emailService.sendSubscriptionWelcomeEmail({
+        userName: getFirstName(user.name),
+        userEmail: user.email,
+        subscriptionTier: 'Premium',
+        trialEndDate,
+        customerPortalUrl,
+        supportEmail: process.env.EMAIL_FROM || 'support@tradevoyager.com',
+        appUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tradevoyageranalytics.com'
+      });
+
+      console.log(`Welcome email sent successfully to ${user.email} for subscription ${subscription.id}`);
+    } catch (error) {
+      console.error('Error sending welcome email:', error);
+      // Don't throw - email failure shouldn't stop webhook processing
     }
   }
 
