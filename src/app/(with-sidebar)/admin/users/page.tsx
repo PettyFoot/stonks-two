@@ -345,8 +345,15 @@ export default function AdminUsersPage() {
                       <TableCell>
                         {user.lastLoginAt ? (
                           <div className="text-sm">
+                            <div className="text-green-700 font-medium text-xs mb-1">Last Login</div>
                             <div>{format(new Date(user.lastLoginAt), 'MMM dd, yyyy')}</div>
                             <div className="text-gray-600">{format(new Date(user.lastLoginAt), 'h:mm a')}</div>
+                          </div>
+                        ) : user.updatedAt ? (
+                          <div className="text-sm">
+                            <div className="text-blue-600 font-medium text-xs mb-1">Last Active</div>
+                            <div>{format(new Date(user.updatedAt), 'MMM dd, yyyy')}</div>
+                            <div className="text-gray-600">{format(new Date(user.updatedAt), 'h:mm a')}</div>
                           </div>
                         ) : (
                           <span className="text-gray-400 text-sm">Never</span>
