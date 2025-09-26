@@ -21,13 +21,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { 
-  Users, 
+import {
+  Users,
   MoreVertical,
   Shield,
   ShieldOff,
   User,
-  Crown
+  Crown,
+  Gift,
+  Mail,
+  Trophy
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -41,6 +44,7 @@ interface AdminUser {
   subscriptionStatus: string;
   createdAt: string;
   updatedAt: string;
+  lastLoginAt: string | null;
   _count: {
     trades: number;
     orders: number;
@@ -53,6 +57,9 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingUser, setUpdatingUser] = useState<string | null>(null);
+  const [sendingCoupon, setSendingCoupon] = useState<string | null>(null);
+  const [sendingWelcome, setSendingWelcome] = useState<string | null>(null);
+  const [sendingCongrats, setSendingCongrats] = useState<string | null>(null);
 
   // Fetch users
   useEffect(() => {
@@ -90,17 +97,17 @@ export default function AdminUsersPage() {
       const response = await fetch('/api/admin/users', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          userId, 
-          isAdmin: !currentIsAdmin 
+        body: JSON.stringify({
+          userId,
+          isAdmin: !currentIsAdmin
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        setUsers(prev => 
-          prev.map(u => 
-            u.id === userId 
+        setUsers(prev =>
+          prev.map(u =>
+            u.id === userId
               ? { ...u, isAdmin: data.user.isAdmin }
               : u
           )
@@ -116,6 +123,84 @@ export default function AdminUsersPage() {
       toast.error('Failed to update user admin status');
     } finally {
       setUpdatingUser(null);
+    }
+  };
+
+  const handleSendCoupon = async (userId: string, userName: string, userEmail: string) => {
+    setSendingCoupon(userId);
+    try {
+      const response = await fetch('/api/admin/users/send-coupon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(
+          `Coupon email sent successfully to ${userName} (${userEmail})`
+        );
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send coupon email');
+      }
+    } catch (error) {
+      console.error('Error sending coupon email:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to send coupon email');
+    } finally {
+      setSendingCoupon(null);
+    }
+  };
+
+  const handleSendWelcome = async (userId: string, userName: string, userEmail: string) => {
+    setSendingWelcome(userId);
+    try {
+      const response = await fetch('/api/admin/users/send-welcome', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(
+          `Welcome email sent successfully to ${userName} (${userEmail})`
+        );
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send welcome email');
+      }
+    } catch (error) {
+      console.error('Error sending welcome email:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to send welcome email');
+    } finally {
+      setSendingWelcome(null);
+    }
+  };
+
+  const handleSendCongrats = async (userId: string, userName: string, userEmail: string) => {
+    setSendingCongrats(userId);
+    try {
+      const response = await fetch('/api/admin/users/send-premium-congrats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(
+          `Premium congratulations email sent successfully to ${userName} (${userEmail})`
+        );
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send premium congratulations email');
+      }
+    } catch (error) {
+      console.error('Error sending premium congratulations email:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to send premium congratulations email');
+    } finally {
+      setSendingCongrats(null);
     }
   };
 
@@ -217,6 +302,7 @@ export default function AdminUsersPage() {
                     <TableHead>Subscription</TableHead>
                     <TableHead>Activity</TableHead>
                     <TableHead>Joined</TableHead>
+                    <TableHead>Last Login</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -257,12 +343,22 @@ export default function AdminUsersPage() {
                         {format(new Date(user.createdAt), 'MMM dd, yyyy')}
                       </TableCell>
                       <TableCell>
+                        {user.lastLoginAt ? (
+                          <div className="text-sm">
+                            <div>{format(new Date(user.lastLoginAt), 'MMM dd, yyyy')}</div>
+                            <div className="text-gray-600">{format(new Date(user.lastLoginAt), 'h:mm a')}</div>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 text-sm">Never</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button 
-                              variant="ghost" 
+                            <Button
+                              variant="ghost"
                               size="sm"
-                              disabled={updatingUser === user.id}
+                              disabled={updatingUser === user.id || sendingCoupon === user.id || sendingWelcome === user.id || sendingCongrats === user.id}
                             >
                               <MoreVertical className="h-4 w-4" />
                             </Button>
@@ -283,6 +379,27 @@ export default function AdminUsersPage() {
                                   Make Admin
                                 </>
                               )}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleSendCoupon(user.id, user.name || 'User', user.email)}
+                              disabled={sendingCoupon === user.id}
+                            >
+                              <Gift className="h-4 w-4 mr-2" />
+                              {sendingCoupon === user.id ? 'Sending...' : 'Send Coupon'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleSendWelcome(user.id, user.name || 'User', user.email)}
+                              disabled={sendingWelcome === user.id}
+                            >
+                              <Mail className="h-4 w-4 mr-2" />
+                              {sendingWelcome === user.id ? 'Sending...' : 'Send Welcome Email'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleSendCongrats(user.id, user.name || 'User', user.email)}
+                              disabled={sendingCongrats === user.id}
+                            >
+                              <Trophy className="h-4 w-4 mr-2" />
+                              {sendingCongrats === user.id ? 'Sending...' : 'Send Premium Congrats'}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>

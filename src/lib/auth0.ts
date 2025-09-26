@@ -82,6 +82,12 @@ export async function getCurrentUser() {
           // Don't fail user creation if email fails
         }
       } else {
+        // Update last login time for existing user
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { lastLoginAt: new Date() }
+        });
+
         // Check if account was marked for deletion and reactivate if possible
         if (user.deletionRequestedAt || user.deletedAt) {
           try {
@@ -89,7 +95,7 @@ export async function getCurrentUser() {
               user.id,
               user.email
             );
-            
+
             if (wasReactivated) {
 
               // Refresh user data after reactivation

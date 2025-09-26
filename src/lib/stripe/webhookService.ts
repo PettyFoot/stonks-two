@@ -736,7 +736,7 @@ export class WebhookService {
         userName: getFirstName(user.name),
         userEmail: user.email,
         subscriptionTier: 'Premium',
-        trialEndDate,
+        trialEndDate: trialEndDate || '',
         customerPortalUrl,
         supportEmail: process.env.EMAIL_FROM || 'support@tradevoyager.com',
         appUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tradevoyageranalytics.com'

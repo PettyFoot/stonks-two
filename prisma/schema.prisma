@@ -15,6 +15,7 @@ model User {
   isAdmin               Boolean              @default(false)
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
+  lastLoginAt           DateTime?
   stripeCustomerId      String?              @unique
   subscriptionStatus    SubscriptionStatus   @default(INACTIVE)
   subscriptionTier      SubscriptionTier     @default(FREE)

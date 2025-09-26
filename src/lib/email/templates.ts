@@ -19,6 +19,13 @@ export interface SignupWelcomeEmailData {
   appUrl: string;
 }
 
+export interface CouponEmailData {
+  userName: string;
+  userEmail: string;
+  supportEmail: string;
+  appUrl: string;
+}
+
 /**
  * Base HTML email template with logo and styling
  */
@@ -169,7 +176,7 @@ export const getWelcomeEmailContent = (data: WelcomeEmailData): string => {
         <h3 style="margin-top: 0; color: #1a202c;">What you now have access to:</h3>
         <ul>
           <li>Advanced portfolio analytics and performance tracking</li>
-          <li>Real-time market data and professional charts</li>
+          <li>Auto broker sync via Broker Connect</li>
           <li>Unlimited API calls for candlestick charts</li>
           <li>Unlimited daily trade uploads</li>
           <li>Comprehensive trade journaling and analysis</li>
@@ -256,7 +263,7 @@ Your 14-day free trial is now active! You can explore all premium features until
 
 What you now have access to:
 • Advanced portfolio analytics and performance tracking
-• Real-time market data and professional charts
+• Auto broker sync via Broker Connect
 • Unlimited API calls for candlestick charts
 • Unlimited daily trade uploads
 • Comprehensive trade journaling and analysis
@@ -310,12 +317,14 @@ export const getSignupWelcomeEmailContent = (data: SignupWelcomeEmailData): stri
       <p>Your account is now active and you can start using our free features right away.</p>
 
       <div class="benefits">
-        <h3 style="margin-top: 0; color: #1a202c;">What you can do with your free account:</h3>
+        <h3 style="margin-top: 0; color: #1a202c;">What you can do with your account:</h3>
         <ul>
           <li>Trade logging and notes</li>
           <li>Performance overview</li>
           <li>Access to detailed reports</li>
           <li>View trade breakdowns by individual executions</li>
+          <li>Upload CSV files to import trade data</li>
+          <li>Upgrade to premium for auto broker sync via Broker Connect</li>
         </ul>
       </div>
 
@@ -398,11 +407,13 @@ Welcome to Trade Voyager Analytics! We're excited to have you join our community
 
 Your account is now active and you can start using our free features right away.
 
-What you can do with your free account:
+What you can do with your account:
 • Trade logging and notes
 • Performance overview
 • Access to detailed reports
 • View trade breakdowns by individual executions
+• Upload CSV files to import trade data
+• Upgrade to premium for auto broker sync via Broker Connect
 
 Getting Started:
 1. Complete your profile - Add your trading preferences and goals
@@ -424,6 +435,160 @@ Contact support: ${data.supportEmail}
 Need help getting started? Our support team is here to help you make the most of Trade Voyager Analytics. Don't hesitate to reach out!
 
 Happy Trading!
+The Trade Voyager Analytics Team
+
+---
+Trade Voyager Analytics
+Professional Trading Analytics & Portfolio Management
+
+Dashboard: ${data.appUrl}
+Support: ${data.supportEmail}
+Upgrade to Premium: ${data.appUrl}/pricing
+  `.trim();
+};
+
+/**
+ * Welcome gift coupon email for existing users
+ */
+export const getCouponEmailContent = (data: CouponEmailData): string => {
+  const content = `
+    <div class="header">
+      <img src="${data.appUrl}/api/logo" alt="Trade Voyager Analytics Logo" class="logo">
+      <h1>🎁 Welcome Gift - Premium Access!</h1>
+    </div>
+
+    <div class="content">
+      <h2>Hi ${data.userName}!</h2>
+
+      <p>Thank you so much for signing up for Trade Voyager Analytics! As a valued member of our trading community, we wanted to show our appreciation with a special welcome gift.</p>
+
+      <div class="highlight-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; padding: 30px; border-left: none; border-radius: 8px;">
+        <h3 style="margin-top: 0; color: white; font-size: 24px;">🚀 Your Exclusive Coupon Code</h3>
+        <div style="background: rgba(255,255,255,0.9); color: #1a202c; padding: 20px; border-radius: 6px; margin: 20px 0; font-size: 28px; font-weight: bold; letter-spacing: 2px;">
+          VOYAGER25
+        </div>
+        <p style="margin-bottom: 0; font-size: 18px; color: white;">
+          <strong>100% OFF Premium Subscription for 1 Full Year!</strong>
+        </p>
+      </div>
+
+      <p><strong>This is our way of saying thank you for being a valued user!</strong> Your VOYAGER25 coupon gives you complete access to all premium features at no cost for an entire year.</p>
+
+      <div class="benefits">
+        <h3 style="margin-top: 0; color: #1a202c;">What you'll get with Premium:</h3>
+        <ul>
+          <li>Advanced portfolio analytics and performance tracking</li>
+          <li>Real-time market data and professional charts</li>
+          <li>Unlimited API calls for candlestick charts</li>
+          <li>Unlimited daily trade uploads</li>
+          <li>Comprehensive trade journaling and analysis</li>
+          <li>Auto broker sync via Broker Connect</li>
+          <li>Priority customer support</li>
+        </ul>
+      </div>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${data.appUrl}/pricing?coupon=VOYAGER25" class="btn" style="font-size: 16px; padding: 16px 32px;">Claim Your Free Premium Year</a>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 style="color: #1a202c;">How to Use Your Coupon:</h3>
+      <ol style="font-size: 15px; line-height: 1.6;">
+        <li>Click the "Claim Your Free Premium Year" button above</li>
+        <li>Select the Premium plan on our pricing page</li>
+        <li>Enter coupon code <strong>VOYAGER25</strong> at checkout</li>
+        <li>Enjoy a full year of premium features completely free!</li>
+      </ol>
+
+      <div style="background-color: #fef5e7; border-left: 4px solid #f6ad55; padding: 16px; margin: 24px 0; border-radius: 0 4px 4px 0;">
+        <p style="margin: 0; color: #744210; font-weight: 600;">
+          ⏰ <strong>Limited Time Offer:</strong> This coupon is valid for the next 30 days, so be sure to claim it soon!
+        </p>
+      </div>
+
+      <div class="divider"></div>
+
+      <p><strong>Need help with your upgrade?</strong> Our support team is standing by to assist you with any questions about using your coupon or accessing premium features.</p>
+
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="mailto:${data.supportEmail}" class="btn" style="background: #718096;">Contact Support</a>
+        <a href="${data.appUrl}/dashboard" class="btn" style="background: #48bb78;">Visit Dashboard</a>
+      </div>
+
+      <p style="font-style: italic; color: #718096; margin-top: 30px;">
+        Welcome to the premium trading experience!<br>
+        <strong>The Trade Voyager Analytics Team</strong>
+      </p>
+    </div>
+
+    <div class="footer">
+      <p><strong>Trade Voyager Analytics</strong></p>
+      <p>Professional Trading Analytics & Portfolio Management</p>
+      <p>
+        <a href="${data.appUrl}">Visit Dashboard</a> •
+        <a href="mailto:${data.supportEmail}">Support</a> •
+        <a href="${data.appUrl}/pricing">Upgrade to Premium</a>
+      </p>
+      <p style="font-size: 12px; margin-top: 20px;">
+        This email was sent because you have an account with Trade Voyager Analytics.<br>
+        Coupon code VOYAGER25 is valid for 30 days from the date of this email.
+      </p>
+    </div>
+  `;
+
+  return getEmailTemplate(content, 'Welcome Gift - Free Premium Access!');
+};
+
+/**
+ * Generate coupon welcome gift email
+ */
+export const generateCouponEmail = (data: CouponEmailData) => ({
+  subject: 'Welcome Gift: Free Premium Access for 1 Year!',
+  html: getCouponEmailContent(data),
+  text: generateCouponTextEmail(data)
+});
+
+/**
+ * Plain text version of coupon email
+ */
+const generateCouponTextEmail = (data: CouponEmailData): string => {
+  return `
+Welcome Gift - Free Premium Access for 1 Year!
+
+Hi ${data.userName}!
+
+Thank you so much for signing up for Trade Voyager Analytics! As a valued member of our trading community, we wanted to show our appreciation with a special welcome gift.
+
+🚀 YOUR EXCLUSIVE COUPON CODE: VOYAGER25 🚀
+100% OFF Premium Subscription for 1 Full Year!
+
+This is our way of saying thank you for being a valued user! Your VOYAGER25 coupon gives you complete access to all premium features at no cost for an entire year.
+
+What you'll get with Premium:
+• Advanced portfolio analytics and performance tracking
+• Real-time market data and professional charts
+• Unlimited API calls for candlestick charts
+• Unlimited daily trade uploads
+• Comprehensive trade journaling and analysis
+• Auto broker sync via Broker Connect
+• Priority customer support
+
+How to Use Your Coupon:
+1. Visit our pricing page: ${data.appUrl}/pricing?coupon=VOYAGER25
+2. Select the Premium plan
+3. Enter coupon code VOYAGER25 at checkout
+4. Enjoy a full year of premium features completely free!
+
+⏰ LIMITED TIME OFFER: This coupon is valid for the next 30 days, so be sure to claim it soon!
+
+Claim your free premium year: ${data.appUrl}/pricing?coupon=VOYAGER25
+Contact support: ${data.supportEmail}
+Visit dashboard: ${data.appUrl}/dashboard
+
+Need help with your upgrade? Our support team is standing by to assist you with any questions about using your coupon or accessing premium features.
+
+Welcome to the premium trading experience!
 The Trade Voyager Analytics Team
 
 ---

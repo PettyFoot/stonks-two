@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
         subscriptionStatus: true,
         createdAt: true,
         updatedAt: true,
+        lastLoginAt: true,
         _count: {
           select: {
             trades: true,
