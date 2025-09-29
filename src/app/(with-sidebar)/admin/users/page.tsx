@@ -30,10 +30,14 @@ import {
   Crown,
   Gift,
   Mail,
-  Trophy
+  Trophy,
+  Trash2,
+  Activity
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import DeleteUserModal from '@/components/admin/DeleteUserModal';
+import UserActivityModal from '@/components/admin/UserActivityModal';
 
 interface AdminUser {
   id: string;
@@ -60,6 +64,11 @@ export default function AdminUsersPage() {
   const [sendingCoupon, setSendingCoupon] = useState<string | null>(null);
   const [sendingWelcome, setSendingWelcome] = useState<string | null>(null);
   const [sendingCongrats, setSendingCongrats] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
+  const [isDeletingUser, setIsDeletingUser] = useState(false);
+  const [activityModalOpen, setActivityModalOpen] = useState(false);
+  const [activityUser, setActivityUser] = useState<AdminUser | null>(null);
 
   // Fetch users
   useEffect(() => {
@@ -202,6 +211,72 @@ export default function AdminUsersPage() {
     } finally {
       setSendingCongrats(null);
     }
+  };
+
+  const handleDeleteUser = (user: AdminUser) => {
+    if (currentUser && user.id === currentUser.id) {
+      toast.error("You cannot delete your own account");
+      return;
+    }
+    setUserToDelete(user);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    setIsDeletingUser(true);
+    try {
+      const response = await fetch('/api/admin/users/delete-immediate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userToDelete.id,
+          reason: 'Immediate admin deletion via admin panel'
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+
+        // Remove the user from the local state
+        setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
+
+        toast.success(
+          `User ${userToDelete.name || userToDelete.email} has been permanently deleted`
+        );
+
+        // Close modal and reset state
+        setDeleteModalOpen(false);
+        setUserToDelete(null);
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete user');
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to delete user'
+      );
+    } finally {
+      setIsDeletingUser(false);
+    }
+  };
+
+  const closeDeleteModal = () => {
+    if (isDeletingUser) return; // Prevent closing while deletion is in progress
+    setDeleteModalOpen(false);
+    setUserToDelete(null);
+  };
+
+  const handleViewActivity = (user: AdminUser) => {
+    setActivityUser(user);
+    setActivityModalOpen(true);
+  };
+
+  const closeActivityModal = () => {
+    setActivityModalOpen(false);
+    setActivityUser(null);
   };
 
   const getSubscriptionBadge = (tier: string, status: string) => {
@@ -365,12 +440,18 @@ export default function AdminUsersPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              disabled={updatingUser === user.id || sendingCoupon === user.id || sendingWelcome === user.id || sendingCongrats === user.id}
+                              disabled={updatingUser === user.id || sendingCoupon === user.id || sendingWelcome === user.id || sendingCongrats === user.id || isDeletingUser}
                             >
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => handleViewActivity(user)}
+                            >
+                              <Activity className="h-4 w-4 mr-2" />
+                              View Activity
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleToggleAdmin(user.id, user.isAdmin)}
                               disabled={currentUser ? user.id === currentUser.id : false}
@@ -408,6 +489,14 @@ export default function AdminUsersPage() {
                               <Trophy className="h-4 w-4 mr-2" />
                               {sendingCongrats === user.id ? 'Sending...' : 'Send Premium Congrats'}
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteUser(user)}
+                              disabled={currentUser ? user.id === currentUser.id : false || isDeletingUser}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete User
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -419,6 +508,25 @@ export default function AdminUsersPage() {
           </Card>
         </div>
       </div>
+
+      {/* Delete User Modal */}
+      <DeleteUserModal
+        isOpen={deleteModalOpen}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDeleteUser}
+        user={userToDelete}
+        isDeleting={isDeletingUser}
+      />
+
+      {/* User Activity Modal */}
+      {activityUser && (
+        <UserActivityModal
+          isOpen={activityModalOpen}
+          onClose={closeActivityModal}
+          userId={activityUser.id}
+          userName={activityUser.name || activityUser.email}
+        />
+      )}
     </div>
   );
 }

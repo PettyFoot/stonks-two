@@ -18,6 +18,7 @@ import { FAQStructuredData } from '@/components/SEO/FAQStructuredData';
 import { generateMetadata as generateSEOMetadata } from '@/lib/seo';
 import { BreadcrumbStructuredData } from '@/components/SEO/StructuredData';
 import { OptimizePerformanceHowTo } from '@/components/SEO/HowToStructuredData';
+import { ProductStructuredData } from '@/components/SEO/ProductStructuredData';
 
 export const metadata: Metadata = generateSEOMetadata('pricing');
 
@@ -320,6 +321,7 @@ export default function Pricing() {
       <OptimizePerformanceHowTo />
       <BreadcrumbStructuredData items={[{ name: 'Pricing', url: '/pricing' }]} />
       <FAQStructuredData faqs={faqs} />
+      <ProductStructuredData plans={plans} />
       <Footer />
     </div>
   );

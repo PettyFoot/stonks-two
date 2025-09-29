@@ -97,6 +97,7 @@ export default function CookiePolicy() {
                     <ul className="list-disc pl-6 text-gray-700 space-y-1 text-sm">
                       <li><strong>Vercel Analytics</strong> - Privacy-focused website analytics</li>
                       <li><strong>Performance monitoring</strong> - Core Web Vitals and performance metrics</li>
+                      <li><strong>Page navigation tracking</strong> - Records which pages you visit and time spent on each page (route level only, e.g., /settings, not specific tabs or sensitive information)</li>
                       <li><strong>Usage patterns</strong> - Anonymized data about feature usage</li>
                     </ul>
                   </div>

@@ -3,10 +3,12 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { OrganizationStructuredData, SoftwareApplicationStructuredData } from "@/components/SEO";
+import { WebApplicationStructuredData } from "@/components/SEO/ProductStructuredData";
 import { SEO_CONFIG } from "@/lib/seo";
 import { CookieConsent } from "@/components/CookieConsent";
 import { ConditionalAnalytics } from "@/components/ConditionalAnalytics";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { PageTrackingProvider } from "@/components/PageTrackingProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -105,6 +107,21 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link rel="preconnect" href="https://vitals.vercel-insights.com" />
+
+        {/* Additional resource hints for performance */}
+        <link rel="dns-prefetch" href="https://api.tradinganalytics.com" />
+        <link rel="dns-prefetch" href="https://cdn.tradingview.com" />
+        <link rel="preconnect" href="https://www.google-analytics.com" />
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
+
+        {/* Prefetch critical resources */}
+        <link rel="preload" href="/trade-voyager-logo.png" as="image" type="image/png" />
+        <link rel="modulepreload" href="/_next/static/chunks/main.js" />
+
+        {/* Additional meta tags for performance */}
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+        <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="HandheldFriendly" content="true" />
         
         {/* Google AdSense verification meta tag */}
         <meta name="google-adsense-account" content="ca-pub-7836991491773203" />
@@ -112,6 +129,7 @@ export default function RootLayout({
         {/* Structured Data for Organization and Software Application */}
         <OrganizationStructuredData />
         <SoftwareApplicationStructuredData />
+        <WebApplicationStructuredData />
         
         {/* Resource hints for critical CSS */}
       </head>
@@ -125,14 +143,15 @@ export default function RootLayout({
         </a>
         
         <Providers>
+          <PageTrackingProvider />
           <main id="main-content" className="min-h-screen">
             {children}
           </main>
         </Providers>
-        
+
         {/* Cookie Consent Banner */}
         <CookieConsent />
-        
+
         {/* Conditional Analytics */}
         <ConditionalAnalytics />
 

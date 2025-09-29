@@ -1,10 +1,12 @@
 import { prisma } from '@/lib/prisma';
 import { DeletionAction } from '@prisma/client';
+import { auth0ManagementService } from '@/lib/auth0Management';
 
 export interface AccountDeletionService {
   softDelete(userId: string, reason?: string): Promise<void>;
   anonymizeUserData(userId: string): Promise<void>;
   hardDelete(userId: string): Promise<void>;
+  immediateDelete(userId: string, performedBy: string, reason?: string): Promise<void>;
   isWithinGracePeriod(userId: string): Promise<boolean>;
   scheduleBackgroundJobs(): Promise<void>;
 }
@@ -250,6 +252,117 @@ class AccountDeletionServiceImpl implements AccountDeletionService {
 
 
     });
+  }
+
+  /**
+   * Immediately delete user and all associated data (admin only)
+   * This bypasses the normal grace period and deletes everything immediately
+   */
+  async immediateDelete(userId: string, performedBy: string, reason?: string): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        email: true,
+        auth0Id: true,
+        name: true,
+        id: true
+      }
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const originalEmail = user.email;
+    const auth0Id = user.auth0Id;
+
+    await prisma.$transaction(async (tx) => {
+      // Log the immediate deletion FIRST for audit purposes
+      await tx.accountDeletionLog.create({
+        data: {
+          userId,
+          userEmail: originalEmail,
+          action: DeletionAction.HARD_DELETED,
+          performedBy,
+          reason: reason || 'Immediate admin deletion',
+          details: {
+            timestamp: new Date().toISOString(),
+            originalUserId: userId,
+            originalEmail: originalEmail,
+            originalName: user.name,
+            immediateAdminDeletion: true,
+            performedBy
+          },
+          completedAt: new Date()
+        }
+      });
+
+      // Delete all user data in correct order (respecting foreign keys)
+
+      // 1. Delete payment history
+      await tx.paymentHistory.deleteMany({
+        where: { userId }
+      });
+
+      // 2. Delete subscriptions
+      await tx.subscription.deleteMany({
+        where: { userId }
+      });
+
+      // 3. Delete import-related data
+      await tx.csvUploadLog.deleteMany({
+        where: { userId }
+      });
+
+      await tx.importBatch.deleteMany({
+        where: { userId }
+      });
+
+      // 4. Delete trading data
+      await tx.recordsEntry.deleteMany({
+        where: { userId }
+      });
+
+      // Delete orders
+      await tx.order.deleteMany({
+        where: { userId }
+      });
+
+      // Delete trades
+      await tx.trade.deleteMany({
+        where: { userId }
+      });
+
+      // 5. Delete user preferences if they exist
+      await tx.userPreferences.deleteMany({
+        where: { userId }
+      });
+
+      // 6. Delete any other user audit trail (except the immediate deletion log above)
+      await tx.accountDeletionLog.deleteMany({
+        where: {
+          userId,
+          action: { not: DeletionAction.HARD_DELETED }
+        }
+      });
+
+      // 7. Finally, delete the user
+      await tx.user.delete({
+        where: { id: userId }
+      });
+    });
+
+    // Delete from Auth0 after successful database deletion
+    if (auth0Id && auth0ManagementService.isConfigured()) {
+      try {
+        await auth0ManagementService.deleteUser(auth0Id);
+      } catch (error) {
+        console.error(`Failed to delete user from Auth0 (${auth0Id}):`, error);
+        // Don't throw - local deletion succeeded
+      }
+    }
+
+    console.log(`[IMMEDIATE_DELETION] Successfully deleted user ${userId} (${originalEmail}) by admin ${performedBy}`);
   }
 
   /**

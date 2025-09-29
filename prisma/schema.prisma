@@ -52,6 +52,7 @@ model User {
   botOrders             BotOrder[]
   emergencyStops        EmergencyStop[]
   botStrategies         BotStrategy[]
+  pageViews             PageView[]
 
   @@index([email, createdAt])
   @@index([subscriptionTier, subscriptionStatus])
@@ -1077,4 +1078,23 @@ model MarketAnalysis {
   @@index([createdAt])
   @@index([expiresAt])
   @@map("market_analyses")
+}
+
+model PageView {
+  id          String    @id @default(cuid())
+  userId      String
+  path        String    // Normalized route path, e.g., "/dashboard", "/settings"
+  duration    Int?      // Time spent on page in milliseconds
+  enteredAt   DateTime  @default(now())
+  exitedAt    DateTime?
+  sessionId   String    // Browser session identifier
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, enteredAt])
+  @@index([userId, path])
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("page_views")
 }
