@@ -4,6 +4,12 @@ interface Auth0User {
   user_id: string;
   email: string;
   name?: string;
+  identities?: Array<{
+    provider: string;
+    user_id: string;
+    connection: string;
+    isSocial: boolean;
+  }>;
 }
 
 class Auth0ManagementService {
@@ -37,14 +43,37 @@ class Auth0ManagementService {
    * Delete a user from Auth0
    */
   async deleteUser(auth0Id: string): Promise<void> {
+    const client = this.getClient();
+
     try {
-      const client = this.getClient();
+      // First check if user exists
+      const userExists = await this.getUser(auth0Id);
+      if (!userExists) {
+        console.log(`[Auth0] User ${auth0Id} does not exist in Auth0 (may have been deleted manually)`);
+        return; // Already deleted, no action needed
+      }
+
+      // Delete the user
       await client.users.delete(auth0Id);
-      console.log(`Successfully deleted Auth0 user: ${auth0Id}`);
+      console.log(`[Auth0] Successfully deleted user: ${auth0Id}`);
+
+      // Verify deletion
+      const stillExists = await this.getUser(auth0Id);
+      if (stillExists) {
+        throw new Error(`User ${auth0Id} still exists in Auth0 after deletion attempt`);
+      }
     } catch (error) {
-      console.error(`Failed to delete Auth0 user ${auth0Id}:`, error);
-      // Don't throw error - we want to proceed with local deletion even if Auth0 fails
-      // The user might have already been deleted from Auth0 manually
+      // Log detailed error information
+      console.error(`[Auth0] Failed to delete user ${auth0Id}:`, {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        auth0Id,
+        domain: process.env.AUTH0_DOMAIN,
+        audience: process.env.AUTH0_MANAGEMENT_AUDIENCE
+      });
+
+      // Re-throw the error so caller can handle it
+      throw new Error(`Auth0 deletion failed for ${auth0Id}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -56,9 +85,15 @@ class Auth0ManagementService {
       const client = this.getClient();
       const user = await client.users.get(auth0Id);
       return {
-        user_id: user.user_id || auth0Id,
-        email: user.email || '',
-        name: user.name
+        user_id: user.data.user_id || auth0Id,
+        email: user.data.email || '',
+        name: user.data.name,
+        identities: user.data.identities as Array<{
+          provider: string;
+          user_id: string;
+          connection: string;
+          isSocial: boolean;
+        }>
       };
     } catch (error) {
       console.error(`Failed to get Auth0 user ${auth0Id}:`, error);

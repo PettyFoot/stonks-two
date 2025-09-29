@@ -1,5 +1,5 @@
 import * as nodemailer from 'nodemailer';
-import { generateWelcomeEmail, WelcomeEmailData, generateSignupWelcomeEmail, SignupWelcomeEmailData, generateCouponEmail, CouponEmailData } from './templates';
+import { generateWelcomeEmail, WelcomeEmailData, generateSignupWelcomeEmail, SignupWelcomeEmailData, generateCouponEmail, CouponEmailData, generateFeedbackEmail, FeedbackEmailData } from './templates';
 
 export interface EmailOptions {
   to: string;
@@ -170,6 +170,34 @@ Automated notification from Trade Voyager Analytics
     } catch (error) {
       console.error('Failed to send coupon email:', error);
       throw new Error('Failed to send coupon email');
+    }
+  }
+
+  async sendFeedbackRequest(data: FeedbackEmailData): Promise<void> {
+    try {
+      console.log(`[DEBUG] sendFeedbackRequest called with data:`, {
+        userEmail: data.userEmail,
+        userName: data.userName,
+        supportEmail: data.supportEmail
+      });
+
+      const emailContent = generateFeedbackEmail(data);
+
+      await this.sendEmail({
+        to: data.userEmail,
+        subject: emailContent.subject,
+        text: emailContent.text,
+        html: emailContent.html,
+        replyTo: data.supportEmail,
+      });
+
+      console.log('Feedback request email sent successfully:', {
+        to: data.userEmail,
+        userName: data.userName
+      });
+    } catch (error) {
+      console.error('Failed to send feedback request email:', error);
+      throw new Error('Failed to send feedback request email');
     }
   }
 }

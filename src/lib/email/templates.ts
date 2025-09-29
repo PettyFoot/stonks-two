@@ -26,6 +26,14 @@ export interface CouponEmailData {
   appUrl: string;
 }
 
+export interface FeedbackEmailData {
+  userName: string;
+  userEmail: string;
+  feedbackUrl: string;
+  supportEmail: string;
+  appUrl: string;
+}
+
 /**
  * Base HTML email template with logo and styling
  */
@@ -598,5 +606,109 @@ Professional Trading Analytics & Portfolio Management
 Dashboard: ${data.appUrl}
 Support: ${data.supportEmail}
 Upgrade to Premium: ${data.appUrl}/pricing
+  `.trim();
+};
+
+/**
+ * Feedback request email for users
+ */
+export const getFeedbackEmailContent = (data: FeedbackEmailData): string => {
+  const content = `
+    <div class="header">
+      <img src="${data.appUrl}/api/logo" alt="Trade Voyager Analytics Logo" class="logo">
+      <h1>We'd Love Your Feedback!</h1>
+    </div>
+
+    <div class="content">
+      <h2>Hi ${data.userName}!</h2>
+
+      <p>We hope you're enjoying your experience with Trade Voyager Analytics! Your feedback is incredibly valuable to us as we continue to improve our platform.</p>
+
+      <p>We'd be grateful if you could take just a few minutes to share your thoughts about your experience with our application.</p>
+
+      <div class="highlight-box">
+        <h3 style="margin-top: 0; color: #1a202c;">What we're asking:</h3>
+        <p style="margin-bottom: 0;">
+          • A quick 5-question survey (1-10 rating scale)<br>
+          • An optional comment to share any additional thoughts<br>
+          • Takes less than 3 minutes to complete
+        </p>
+      </div>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${data.feedbackUrl}" class="btn" style="font-size: 16px; padding: 16px 32px;">Share Your Feedback</a>
+      </div>
+
+      <div class="divider"></div>
+
+      <p>Your honest feedback helps us understand what we're doing well and where we can improve. Every response is read and considered as we work to make Trade Voyager Analytics the best trading analytics platform possible.</p>
+
+      <p><strong>Prefer to respond via email?</strong> Feel free to simply reply to this message with your thoughts. We read every response personally!</p>
+
+      <p style="font-style: italic; color: #718096; margin-top: 30px;">
+        Thank you for being part of our community!<br>
+        <strong>The Trade Voyager Analytics Team</strong>
+      </p>
+    </div>
+
+    <div class="footer">
+      <p><strong>Trade Voyager Analytics</strong></p>
+      <p>Professional Trading Analytics & Portfolio Management</p>
+      <p>
+        <a href="${data.appUrl}">Visit Dashboard</a> •
+        <a href="mailto:${data.supportEmail}">Contact Support</a>
+      </p>
+      <p style="font-size: 12px; margin-top: 20px;">
+        This email was sent because you have an account with Trade Voyager Analytics.<br>
+        You can manage your email preferences in your account settings.
+      </p>
+    </div>
+  `;
+
+  return getEmailTemplate(content, 'We\'d Love Your Feedback!');
+};
+
+/**
+ * Generate feedback request email
+ */
+export const generateFeedbackEmail = (data: FeedbackEmailData) => ({
+  subject: 'We\'d love your feedback on Trade Voyager Analytics',
+  html: getFeedbackEmailContent(data),
+  text: generateFeedbackTextEmail(data)
+});
+
+/**
+ * Plain text version of feedback email
+ */
+const generateFeedbackTextEmail = (data: FeedbackEmailData): string => {
+  return `
+We'd Love Your Feedback!
+
+Hi ${data.userName}!
+
+We hope you're enjoying your experience with Trade Voyager Analytics! Your feedback is incredibly valuable to us as we continue to improve our platform.
+
+We'd be grateful if you could take just a few minutes to share your thoughts about your experience with our application.
+
+What we're asking:
+• A quick 5-question survey (1-10 rating scale)
+• An optional comment to share any additional thoughts
+• Takes less than 3 minutes to complete
+
+Share your feedback: ${data.feedbackUrl}
+
+Your honest feedback helps us understand what we're doing well and where we can improve. Every response is read and considered as we work to make Trade Voyager Analytics the best trading analytics platform possible.
+
+Prefer to respond via email? Feel free to simply reply to this message with your thoughts. We read every response personally!
+
+Thank you for being part of our community!
+The Trade Voyager Analytics Team
+
+---
+Trade Voyager Analytics
+Professional Trading Analytics & Portfolio Management
+
+Dashboard: ${data.appUrl}
+Contact Support: ${data.supportEmail}
   `.trim();
 };

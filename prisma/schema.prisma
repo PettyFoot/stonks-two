@@ -53,6 +53,7 @@ model User {
   emergencyStops        EmergencyStop[]
   botStrategies         BotStrategy[]
   pageViews             PageView[]
+  feedbackResponses     FeedbackResponse[]
 
   @@index([email, createdAt])
   @@index([subscriptionTier, subscriptionStatus])
@@ -1097,4 +1098,67 @@ model PageView {
   @@index([sessionId])
   @@index([createdAt])
   @@map("page_views")
+}
+
+model FeedbackResponse {
+  id              String    @id @default(cuid())
+  userId          String
+  userName        String
+  userEmail       String
+  question1Rating Int       // 1-10: How easy was it to navigate and use the application?
+  question2Rating Int       // 1-10: How useful are the trading analytics and insights provided?
+  question3Rating Int       // 1-10: How would you rate the quality of the data visualizations?
+  question4Rating Int       // 1-10: How satisfied are you with the application's performance and speed?
+  question5Rating Int       // 1-10: How likely are you to recommend Trade Voyager Analytics?
+  comment         String?   @db.Text
+  submittedAt     DateTime  @default(now())
+  token           String    @unique
+  tokenUsed       Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, submittedAt])
+  @@index([submittedAt])
+  @@index([token])
+  @@map("feedback_responses")
+}
+
+model BannedUser {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  auth0Id           String?   // The auth0 ID at time of ban (may be deleted from Auth0)
+  originalUserId    String    // Reference to the deleted user ID
+  bannedAt          DateTime  @default(now())
+  bannedBy          String    // Admin user ID who banned them
+  reason            String?   @db.Text
+
+  // Identity tracking - to prevent re-registration via any method
+  identities        Json?     // Store all Auth0 identities (google, github, email, etc.)
+  googleEmail       String?   // If they used Google login
+  githubUsername    String?   // If they used GitHub login
+
+  // Additional metadata
+  bannedVia         BanSource @default(ADMIN_DELETE)
+  userMetadata      Json?     // Store any additional user data for reference
+  ipAddresses       String[]  @default([]) // IPs used by this user (optional)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([email])
+  @@index([auth0Id])
+  @@index([googleEmail])
+  @@index([githubUsername])
+  @@index([bannedAt])
+  @@map("banned_users")
+}
+
+enum BanSource {
+  ADMIN_DELETE      // Banned via immediate admin deletion
+  MANUAL_BAN        // Manually banned without deletion
+  FRAUD_DETECTION   // Auto-banned by fraud detection
+  POLICY_VIOLATION  // Banned for policy violation
+
+  @@map("ban_source")
 }

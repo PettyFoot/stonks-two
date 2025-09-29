@@ -265,7 +265,8 @@ class AccountDeletionServiceImpl implements AccountDeletionService {
         email: true,
         auth0Id: true,
         name: true,
-        id: true
+        id: true,
+        subscriptionTier: true
       }
     });
 
@@ -275,6 +276,16 @@ class AccountDeletionServiceImpl implements AccountDeletionService {
 
     const originalEmail = user.email;
     const auth0Id = user.auth0Id;
+
+    // Get Auth0 user details before deletion to capture all identities
+    let auth0UserData = null;
+    if (auth0Id && auth0ManagementService.isConfigured()) {
+      try {
+        auth0UserData = await auth0ManagementService.getUser(auth0Id);
+      } catch (error) {
+        console.warn(`[IMMEDIATE_DELETION] Could not fetch Auth0 user data before deletion:`, error);
+      }
+    }
 
     await prisma.$transaction(async (tx) => {
       // Log the immediate deletion FIRST for audit purposes
@@ -346,23 +357,84 @@ class AccountDeletionServiceImpl implements AccountDeletionService {
         }
       });
 
-      // 7. Finally, delete the user
+      // 7. Add to banned users list to prevent re-registration
+      const googleEmail = auth0UserData?.identities?.find(i => i.provider === 'google-oauth2')?.user_id;
+      const githubUsername = auth0UserData?.identities?.find(i => i.provider === 'github')?.user_id;
+
+      await tx.bannedUser.create({
+        data: {
+          email: originalEmail,
+          auth0Id: auth0Id || undefined,
+          originalUserId: userId,
+          bannedBy: performedBy,
+          reason: reason || 'Account deleted by admin - user is permanently banned from re-registering',
+          bannedVia: 'ADMIN_DELETE',
+          identities: auth0UserData?.identities ? JSON.parse(JSON.stringify(auth0UserData.identities)) : undefined,
+          googleEmail: googleEmail || undefined,
+          githubUsername: githubUsername || undefined,
+          userMetadata: {
+            name: user.name,
+            deletedAt: new Date().toISOString(),
+            subscriptionTier: user.subscriptionTier
+          }
+        }
+      });
+
+      // 8. Finally, delete the user
       await tx.user.delete({
         where: { id: userId }
       });
     });
 
     // Delete from Auth0 after successful database deletion
+    let auth0DeletionSuccess = false;
+    let auth0DeletionError: string | null = null;
+
     if (auth0Id && auth0ManagementService.isConfigured()) {
       try {
         await auth0ManagementService.deleteUser(auth0Id);
+        auth0DeletionSuccess = true;
+        console.log(`[IMMEDIATE_DELETION] Successfully deleted user from Auth0: ${auth0Id}`);
       } catch (error) {
-        console.error(`Failed to delete user from Auth0 (${auth0Id}):`, error);
-        // Don't throw - local deletion succeeded
+        auth0DeletionError = error instanceof Error ? error.message : String(error);
+        console.error(`[IMMEDIATE_DELETION] Failed to delete user from Auth0 (${auth0Id}):`, {
+          error: auth0DeletionError,
+          userId,
+          email: originalEmail
+        });
+        // Don't throw - local deletion succeeded, but we log this failure
       }
+    } else if (!auth0Id) {
+      console.warn(`[IMMEDIATE_DELETION] No auth0Id found for user ${userId}`);
+    } else {
+      console.warn(`[IMMEDIATE_DELETION] Auth0 Management API not configured`);
     }
 
-    console.log(`[IMMEDIATE_DELETION] Successfully deleted user ${userId} (${originalEmail}) by admin ${performedBy}`);
+    // Update the audit log with Auth0 deletion status
+    await prisma.accountDeletionLog.updateMany({
+      where: {
+        userId,
+        action: DeletionAction.HARD_DELETED,
+        completedAt: { not: null }
+      },
+      data: {
+        details: {
+          timestamp: new Date().toISOString(),
+          originalUserId: userId,
+          originalEmail: originalEmail,
+          originalName: user.name,
+          immediateAdminDeletion: true,
+          performedBy,
+          auth0Deletion: {
+            success: auth0DeletionSuccess,
+            auth0Id: auth0Id,
+            error: auth0DeletionError
+          }
+        }
+      }
+    });
+
+    console.log(`[IMMEDIATE_DELETION] Successfully deleted user ${userId} (${originalEmail}) by admin ${performedBy}. Auth0 deletion: ${auth0DeletionSuccess ? 'SUCCESS' : 'FAILED'}`);
   }
 
   /**

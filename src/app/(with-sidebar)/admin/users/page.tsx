@@ -32,7 +32,8 @@ import {
   Mail,
   Trophy,
   Trash2,
-  Activity
+  Activity,
+  MessageSquare
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -64,6 +65,7 @@ export default function AdminUsersPage() {
   const [sendingCoupon, setSendingCoupon] = useState<string | null>(null);
   const [sendingWelcome, setSendingWelcome] = useState<string | null>(null);
   const [sendingCongrats, setSendingCongrats] = useState<string | null>(null);
+  const [sendingFeedback, setSendingFeedback] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
   const [isDeletingUser, setIsDeletingUser] = useState(false);
@@ -210,6 +212,32 @@ export default function AdminUsersPage() {
       toast.error(error instanceof Error ? error.message : 'Failed to send premium congratulations email');
     } finally {
       setSendingCongrats(null);
+    }
+  };
+
+  const handleSendFeedback = async (userId: string, userName: string, userEmail: string) => {
+    setSendingFeedback(userId);
+    try {
+      const response = await fetch('/api/admin/users/send-feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(
+          `Feedback request email sent successfully to ${userName} (${userEmail})`
+        );
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send feedback request email');
+      }
+    } catch (error) {
+      console.error('Error sending feedback request email:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to send feedback request email');
+    } finally {
+      setSendingFeedback(null);
     }
   };
 
@@ -440,7 +468,7 @@ export default function AdminUsersPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              disabled={updatingUser === user.id || sendingCoupon === user.id || sendingWelcome === user.id || sendingCongrats === user.id || isDeletingUser}
+                              disabled={updatingUser === user.id || sendingCoupon === user.id || sendingWelcome === user.id || sendingCongrats === user.id || sendingFeedback === user.id || isDeletingUser}
                             >
                               <MoreVertical className="h-4 w-4" />
                             </Button>
@@ -488,6 +516,13 @@ export default function AdminUsersPage() {
                             >
                               <Trophy className="h-4 w-4 mr-2" />
                               {sendingCongrats === user.id ? 'Sending...' : 'Send Premium Congrats'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleSendFeedback(user.id, user.name || 'User', user.email)}
+                              disabled={sendingFeedback === user.id}
+                            >
+                              <MessageSquare className="h-4 w-4 mr-2" />
+                              {sendingFeedback === user.id ? 'Sending...' : 'Send Feedback Request'}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleDeleteUser(user)}
