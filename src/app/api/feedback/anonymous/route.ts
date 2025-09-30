@@ -2,39 +2,119 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@auth0/nextjs-auth0';
 import { emailService } from '@/lib/email/emailService';
-
-// Simple in-memory rate limiting (resets on server restart)
-// For production, consider using Redis or a database table
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+import crypto from 'crypto';
 
 const RATE_LIMIT_WINDOW = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-const MAX_SUBMISSIONS = 1; // 1 submission per 24 hours per IP
+const MAX_COMMENT_LENGTH = 5000; // 5000 characters
+const MAX_REQUEST_SIZE = 50000; // 50KB
 
-function checkRateLimit(ip: string): { allowed: boolean; resetTime?: number } {
-  const now = Date.now();
-  const record = rateLimitMap.get(ip);
+/**
+ * Generate cryptographically secure token
+ */
+function generateSecureToken(): string {
+  const buffer = crypto.randomBytes(32);
+  return `anon-${buffer.toString('base64url')}`;
+}
 
-  if (!record || now > record.resetTime) {
-    // No record or expired - allow and create new record
-    rateLimitMap.set(ip, {
-      count: 1,
-      resetTime: now + RATE_LIMIT_WINDOW,
-    });
-    return { allowed: true };
+/**
+ * Get client IP address from request headers (Vercel-safe)
+ */
+function getClientIp(req: NextRequest): string {
+  // Vercel-specific header (most reliable)
+  const vercelIp = req.headers.get('x-vercel-forwarded-for');
+  if (vercelIp) return vercelIp.split(',')[0].trim();
+
+  // Cloudflare
+  const cfIp = req.headers.get('cf-connecting-ip');
+  if (cfIp) return cfIp;
+
+  // Standard headers (use rightmost IP before our server)
+  const forwarded = req.headers.get('x-forwarded-for');
+  if (forwarded) {
+    const ips = forwarded.split(',').map(ip => ip.trim());
+    return ips[ips.length - 1] || 'unknown';
   }
 
-  if (record.count >= MAX_SUBMISSIONS) {
-    return { allowed: false, resetTime: record.resetTime };
-  }
+  const realIp = req.headers.get('x-real-ip');
+  if (realIp) return realIp;
 
-  // Increment count
-  record.count += 1;
-  return { allowed: true };
+  return 'unknown';
+}
+
+/**
+ * Hash IP address for privacy and rate limiting
+ */
+function hashIp(ip: string): string {
+  const secret = process.env.IP_HASH_SECRET || process.env.NEXTAUTH_SECRET || 'change-me-in-production';
+  return crypto.createHmac('sha256', secret)
+    .update(ip)
+    .digest('hex')
+    .substring(0, 32); // Use first 32 chars
+}
+
+/**
+ * Sanitize comment to prevent XSS and other attacks
+ */
+function sanitizeComment(comment: string | null | undefined): string | null {
+  if (!comment) return null;
+
+  // Remove null bytes (could break PostgreSQL)
+  let sanitized = comment.replace(/\0/g, '');
+
+  // Normalize Unicode (prevent homograph attacks)
+  sanitized = sanitized.normalize('NFKC');
+
+  // Remove invisible characters except normal whitespace
+  sanitized = sanitized.replace(/[\u200B-\u200D\uFEFF\u00AD]/g, '');
+
+  // Trim whitespace
+  sanitized = sanitized.trim();
+
+  // Remove excessive consecutive whitespace
+  sanitized = sanitized.replace(/\s{3,}/g, '  ');
+
+  // Basic HTML escaping
+  sanitized = sanitized
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;');
+
+  return sanitized || null;
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    // Check content-length header
+    const contentLength = req.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > MAX_REQUEST_SIZE) {
+      return NextResponse.json(
+        { error: 'Request body too large' },
+        { status: 413 }
+      );
+    }
+
+    // Read body with size limit
+    const text = await req.text();
+    if (text.length > MAX_REQUEST_SIZE) {
+      return NextResponse.json(
+        { error: 'Request body too large' },
+        { status: 413 }
+      );
+    }
+
+    let body;
+    try {
+      body = JSON.parse(text);
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid JSON' },
+        { status: 400 }
+      );
+    }
+
     const {
       question1Rating,
       question2Rating,
@@ -55,17 +135,43 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Get IP address for rate limiting
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0] ||
-               req.headers.get('x-real-ip') ||
-               'unknown';
+    // Validate comment type and length
+    if (comment !== null && comment !== undefined) {
+      if (typeof comment !== 'string') {
+        return NextResponse.json(
+          { error: 'Comment must be a string' },
+          { status: 400 }
+        );
+      }
 
-    // Check rate limit
-    const rateCheck = checkRateLimit(ip);
-    if (!rateCheck.allowed) {
-      const hoursRemaining = Math.ceil((rateCheck.resetTime! - Date.now()) / (1000 * 60 * 60));
+      if (comment.length > MAX_COMMENT_LENGTH) {
+        return NextResponse.json(
+          { error: `Comment cannot exceed ${MAX_COMMENT_LENGTH} characters` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Get and hash IP address for rate limiting
+    const clientIp = getClientIp(req);
+    const ipHash = hashIp(clientIp);
+
+    // Database-backed rate limiting (survives restarts and deployments)
+    const existingSubmission = await prisma.feedbackResponse.findFirst({
+      where: {
+        ipAddressHash: ipHash,
+        submittedAt: {
+          gte: new Date(Date.now() - RATE_LIMIT_WINDOW),
+        },
+      },
+      select: { id: true, submittedAt: true },
+    });
+
+    if (existingSubmission) {
+      const timeRemaining = RATE_LIMIT_WINDOW - (Date.now() - existingSubmission.submittedAt.getTime());
+      const hoursRemaining = Math.ceil(timeRemaining / (1000 * 60 * 60));
       return NextResponse.json(
-        { error: `You've already submitted feedback recently. Please try again in ${hoursRemaining} hours.` },
+        { error: `You've already submitted feedback recently. Please try again in ${hoursRemaining} hour(s).` },
         { status: 429 }
       );
     }
@@ -99,7 +205,10 @@ export async function POST(req: NextRequest) {
       console.log('Could not get user session, proceeding with anonymous feedback');
     }
 
-    // Create feedback response
+    // Sanitize comment
+    const sanitizedComment = sanitizeComment(comment);
+
+    // Create feedback response with secure token and IP hash
     const feedbackResponse = await prisma.feedbackResponse.create({
       data: {
         userId: userId || null,
@@ -110,17 +219,46 @@ export async function POST(req: NextRequest) {
         question3Rating,
         question4Rating,
         question5Rating,
-        comment: comment || null,
-        token: `anon-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        comment: sanitizedComment,
+        token: generateSecureToken(),
         tokenUsed: true,
+        ipAddressHash: ipHash,
       },
     });
 
-    // Send email notification to admin
+    // Email batching: Send at most 1 notification per hour
+    // Check when the last notification was sent
+    const NOTIFICATION_BATCH_WINDOW = 60 * 60 * 1000; // 1 hour
+
     try {
-      const avgRating = (question1Rating + question2Rating + question3Rating + question4Rating + question5Rating) / 5;
-      const emailContent = `
-New Feedback Submission
+      // Get the most recent feedback notification timestamp
+      const recentFeedbacks = await prisma.feedbackResponse.findMany({
+        where: {
+          submittedAt: {
+            gte: new Date(Date.now() - NOTIFICATION_BATCH_WINDOW),
+          },
+        },
+        orderBy: { submittedAt: 'asc' },
+        select: { id: true, submittedAt: true },
+        take: 1,
+      });
+
+      // Only send email if this is the first feedback in the last hour
+      // This prevents email spam while still notifying about new feedback
+      if (recentFeedbacks.length === 0 || recentFeedbacks[0].id === feedbackResponse.id) {
+        const avgRating = (question1Rating + question2Rating + question3Rating + question4Rating + question5Rating) / 5;
+
+        // Count total feedbacks in the last hour (including this one)
+        const feedbackCount = await prisma.feedbackResponse.count({
+          where: {
+            submittedAt: {
+              gte: new Date(Date.now() - NOTIFICATION_BATCH_WINDOW),
+            },
+          },
+        });
+
+        const emailContent = `
+New Feedback Submission${feedbackCount > 1 ? ` (${feedbackCount} in last hour)` : ''}
 
 User: ${userName || 'Anonymous'}
 Email: ${userEmail || 'Not provided'}
@@ -133,20 +271,28 @@ Ratings:
 4. Performance & Speed: ${question4Rating}/10
 5. Likelihood to Recommend: ${question5Rating}/10
 
-${comment ? `Comments:\n${comment}` : 'No additional comments'}
+${sanitizedComment ? `Comments:\n${sanitizedComment}` : 'No additional comments'}
+
+${feedbackCount > 1 ? `\nNote: ${feedbackCount} feedback submission(s) received in the last hour. View all in admin panel.` : ''}
 
 --
 Submitted via anonymous feedback form
 Feedback ID: ${feedbackResponse.id}
-      `.trim();
+        `.trim();
 
-      await emailService.sendEmail({
-        to: process.env.EMAIL_FROM!,
-        subject: `New Feedback: ${avgRating.toFixed(1)}/10 - ${userName || 'Anonymous'}`,
-        text: emailContent,
-      });
+        await emailService.sendEmail({
+          to: process.env.EMAIL_FROM!,
+          subject: `New Feedback: ${avgRating.toFixed(1)}/10${feedbackCount > 1 ? ` (${feedbackCount} total)` : ''} - ${userName || 'Anonymous'}`,
+          text: emailContent,
+        });
+      }
     } catch (emailError) {
-      console.error('Failed to send feedback notification email:', emailError);
+      // Log error but don't expose details
+      console.error('Failed to send feedback notification email:', {
+        timestamp: new Date().toISOString(),
+        feedbackId: feedbackResponse.id,
+        errorType: emailError instanceof Error ? emailError.name : 'Unknown',
+      });
       // Don't fail the request if email fails
     }
 
@@ -162,7 +308,15 @@ Feedback ID: ${feedbackResponse.id}
       feedbackId: feedbackResponse.id,
     });
   } catch (error) {
-    console.error('Error submitting anonymous feedback:', error);
+    // Log error internally without sensitive details
+    console.error('Feedback submission error:', {
+      timestamp: new Date().toISOString(),
+      errorType: error instanceof Error ? error.name : 'Unknown',
+      // Don't log full error object in production
+      ...(process.env.NODE_ENV === 'development' && { error }),
+    });
+
+    // Return generic error to client
     return NextResponse.json(
       { error: 'Failed to submit feedback. Please try again.' },
       { status: 500 }

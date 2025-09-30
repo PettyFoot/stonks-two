@@ -54,6 +54,7 @@ model User {
   botStrategies         BotStrategy[]
   pageViews             PageView[]
   feedbackResponses     FeedbackResponse[]
+  blogPosts             BlogPost[]
 
   @@index([email, createdAt])
   @@index([subscriptionTier, subscriptionStatus])
@@ -1103,17 +1104,18 @@ model PageView {
 model FeedbackResponse {
   id              String    @id @default(cuid())
   userId          String?   // Optional - can be anonymous
-  userName        String
-  userEmail       String
-  question1Rating Int       // 1-10: How easy was it to navigate and use the application?
-  question2Rating Int       // 1-10: How useful are the trading analytics and insights provided?
-  question3Rating Int       // 1-10: How would you rate the quality of the data visualizations?
-  question4Rating Int       // 1-10: How satisfied are you with the application's performance and speed?
-  question5Rating Int       // 1-10: How likely are you to recommend Trade Voyager Analytics?
-  comment         String?   @db.Text
+  userName        String    @db.VarChar(255)
+  userEmail       String    @db.VarChar(255)
+  question1Rating Int       @db.SmallInt // 1-10: How easy was it to navigate and use the application?
+  question2Rating Int       @db.SmallInt // 1-10: How useful are the trading analytics and insights provided?
+  question3Rating Int       @db.SmallInt // 1-10: How would you rate the quality of the data visualizations?
+  question4Rating Int       @db.SmallInt // 1-10: How satisfied are you with the application's performance and speed?
+  question5Rating Int       @db.SmallInt // 1-10: How likely are you to recommend Trade Voyager Analytics?
+  comment         String?   @db.VarChar(5000) // Limited to 5000 chars for security
   submittedAt     DateTime  @default(now())
-  token           String    @unique
+  token           String    @unique @db.VarChar(100)
   tokenUsed       Boolean   @default(false)
+  ipAddressHash   String?   @db.VarChar(64) // Hashed IP for rate limiting
   createdAt       DateTime  @default(now())
 
   user            User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1121,6 +1123,7 @@ model FeedbackResponse {
   @@index([userId, submittedAt])
   @@index([submittedAt])
   @@index([token])
+  @@index([ipAddressHash, submittedAt]) // For rate limiting queries
   @@map("feedback_responses")
 }
 
@@ -1178,4 +1181,69 @@ enum BanSource {
   POLICY_VIOLATION  // Banned for policy violation
 
   @@map("ban_source")
+}
+
+// ============================================================================
+// BLOG MODELS - Admin-authored content with SEO optimization
+// ============================================================================
+
+model BlogPost {
+  id              String         @id @default(cuid())
+  slug            String         @unique @db.VarChar(255)
+  title           String         @db.VarChar(255)
+  excerpt         String?        @db.VarChar(500)
+  content         String         @db.Text
+  coverImage      String?        @db.VarChar(500)
+  author          String         @db.VarChar(100)
+  authorId        String
+  status          BlogStatus     @default(DRAFT)
+  viewCount       Int            @default(0)
+  seoTitle        String?        @db.VarChar(70)
+  seoDescription  String?        @db.VarChar(160)
+  publishedAt     DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  authorUser      User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  tags            BlogPostTag[]
+
+  @@index([status, publishedAt(sort: Desc)])
+  @@index([slug])
+  @@index([authorId])
+  @@map("blog_posts")
+}
+
+model BlogTag {
+  id        String        @id @default(cuid())
+  name      String        @unique @db.VarChar(50)
+  slug      String        @unique @db.VarChar(50)
+  postCount Int           @default(0)
+  createdAt DateTime      @default(now())
+
+  posts     BlogPostTag[]
+
+  @@index([slug])
+  @@map("blog_tags")
+}
+
+model BlogPostTag {
+  id        String   @id @default(cuid())
+  postId    String
+  tagId     String
+  createdAt DateTime @default(now())
+
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag       BlogTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, tagId])
+  @@index([tagId])
+  @@map("blog_post_tags")
+}
+
+enum BlogStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+
+  @@map("blog_status")
 }

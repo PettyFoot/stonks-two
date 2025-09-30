@@ -44,7 +44,8 @@ import {
   Shield,
   Users,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  BookText
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Theme } from '@/lib/themes';
@@ -63,6 +64,7 @@ const navigation = [
 const adminNavigation = [
   { name: 'Admin Dashboard', href: '/admin', icon: Shield },
   { name: 'User Management', href: '/admin/users', icon: Users },
+  { name: 'Blog Management', href: '/admin/blog', icon: BookText },
   { name: 'SnapTrade Sync', href: '/admin/snaptrade', icon: RefreshCw },
   { name: 'AI Reviews', href: '/admin/ai-reviews', icon: AlertTriangle },
   { name: 'Import History', href: '/import/history', icon: Import },
