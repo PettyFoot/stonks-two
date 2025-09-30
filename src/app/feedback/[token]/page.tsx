@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { validateFeedbackToken } from '@/lib/feedback/tokens';
+import { decodeTokenBrowser } from '@/lib/feedback/tokens';
 import { MessageSquare, CheckCircle, XCircle } from 'lucide-react';
 import { PageTriangleLoader } from '@/components/ui/TriangleLoader';
 
@@ -32,15 +32,11 @@ export default function FeedbackPage() {
   const [comment, setComment] = useState('');
 
   useEffect(() => {
-    // Validate token on mount
-    const tokenPayload = validateFeedbackToken(token);
-    if (!tokenPayload) {
-      setError('This feedback link is invalid or has expired.');
-      setLoading(false);
-      return;
+    // Decode token to get user name (validation happens server-side on submit)
+    const decoded = decodeTokenBrowser(token);
+    if (decoded?.name) {
+      setUserName(decoded.name);
     }
-
-    setUserName(tokenPayload.name || 'User');
     setLoading(false);
   }, [token]);
 
@@ -95,23 +91,6 @@ export default function FeedbackPage() {
     );
   }
 
-  if (error && !submitted) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="p-8 text-center">
-            <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Invalid Link</h1>
-            <p className="text-gray-600 mb-6">{error}</p>
-            <Button onClick={() => router.push('/')} variant="outline">
-              Go to Homepage
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   if (submitted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -144,7 +123,7 @@ export default function FeedbackPage() {
             </div>
             <CardTitle className="text-3xl">We'd Love Your Feedback!</CardTitle>
             <p className="text-gray-600 mt-2">
-              Hi {userName}! Please take a moment to share your experience with Trade Voyager Analytics.
+              {userName ? `Hi ${userName}! ` : ''}Please take a moment to share your experience with Trade Voyager Analytics.
             </p>
           </CardHeader>
           <CardContent>

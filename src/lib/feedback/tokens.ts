@@ -57,12 +57,45 @@ export function validateFeedbackToken(token: string): ValidatedTokenPayload | nu
 
 /**
  * Decode token without verification (useful for debugging)
+ * Server-side only - uses jsonwebtoken library
  */
 export function decodeToken(token: string): any {
   try {
     return jwt.decode(token);
   } catch (error) {
     console.error('Error decoding token:', error);
+    return null;
+  }
+}
+
+/**
+ * Decode JWT token payload in browser-safe way (no libraries needed)
+ * This is safe to use in client components
+ */
+export function decodeTokenBrowser(token: string): any {
+  try {
+    // JWT structure: header.payload.signature
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      console.error('Invalid JWT token format');
+      return null;
+    }
+
+    // Decode the payload (middle part)
+    const payload = parts[1];
+
+    // Base64 decode (handle URL-safe base64)
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Error decoding token in browser:', error);
     return null;
   }
 }
