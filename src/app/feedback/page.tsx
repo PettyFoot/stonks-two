@@ -1,13 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { decodeTokenBrowser } from '@/lib/feedback/tokens-client';
-import { MessageSquare, CheckCircle, XCircle } from 'lucide-react';
-import { PageTriangleLoader } from '@/components/ui/TriangleLoader';
+import { MessageSquare, CheckCircle } from 'lucide-react';
 
 const questions = [
   'How easy was it to navigate and use the application?',
@@ -18,27 +16,13 @@ const questions = [
 ];
 
 export default function FeedbackPage() {
-  const params = useParams();
   const router = useRouter();
-  const token = params.token as string;
-
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [userName, setUserName] = useState<string>('');
 
   const [ratings, setRatings] = useState<number[]>([5, 5, 5, 5, 5]);
   const [comment, setComment] = useState('');
-
-  useEffect(() => {
-    // Decode token to get user name (validation happens server-side on submit)
-    const decoded = decodeTokenBrowser(token);
-    if (decoded?.name) {
-      setUserName(decoded.name);
-    }
-    setLoading(false);
-  }, [token]);
 
   const handleRatingChange = (questionIndex: number, value: number) => {
     const newRatings = [...ratings];
@@ -52,13 +36,12 @@ export default function FeedbackPage() {
     setError(null);
 
     try {
-      const response = await fetch('/api/feedback/submit', {
+      const response = await fetch('/api/feedback/anonymous', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          token,
           question1Rating: ratings[0],
           question2Rating: ratings[1],
           question3Rating: ratings[2],
@@ -83,14 +66,6 @@ export default function FeedbackPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <PageTriangleLoader />
-      </div>
-    );
-  }
-
   if (submitted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -104,7 +79,7 @@ export default function FeedbackPage() {
             <p className="text-gray-600 mb-6">
               We really appreciate you taking the time to share your thoughts with us!
             </p>
-            <Button onClick={() => router.push('/')} className="w-full">
+            <Button onClick={() => router.push('/dashboard')} className="w-full">
               Return to Dashboard
             </Button>
           </CardContent>
@@ -123,7 +98,7 @@ export default function FeedbackPage() {
             </div>
             <CardTitle className="text-3xl">We'd Love Your Feedback!</CardTitle>
             <p className="text-gray-600 mt-2">
-              {userName ? `Hi ${userName}! ` : ''}Please take a moment to share your experience with Trade Voyager Analytics.
+              Please take a moment to share your experience with Trade Voyager Analytics.
             </p>
           </CardHeader>
           <CardContent>
@@ -164,7 +139,7 @@ export default function FeedbackPage() {
                   className="w-full"
                 />
                 <p className="text-xs text-gray-500">
-                  You can also respond directly to the feedback email if you prefer.
+                  Your feedback is anonymous and helps us improve the platform.
                 </p>
               </div>
 

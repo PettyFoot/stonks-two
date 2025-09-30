@@ -104,6 +104,129 @@ export default function ContactPageComponent({ discordInvite }: ContactPageCompo
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
+          {/* Sidebar - Contact Info & FAQ */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Discord Community */}
+            {discordInvite && (
+              <Card className="bg-gradient-to-r from-blue-500/10 to-purple-600/10 border-blue-500/30">
+                <CardHeader>
+                  <CardTitle className="text-xl text-[var(--theme-primary-text)] flex items-center">
+                    <Users className="h-5 w-5 mr-2 text-blue-500" />
+                    Join Our Community
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <p className="text-sm text-gray-700">
+                      Connect with other traders, share strategies, get real-time help, and stay updated with the latest features.
+                    </p>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <span>✓</span>
+                        <span>Real-time trading discussions</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <span>✓</span>
+                        <span>Feature updates & announcements</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <span>✓</span>
+                        <span>Direct support from the team</span>
+                      </div>
+                    </div>
+                    <a
+                      href={discordInvite}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block"
+                    >
+                      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                        Join Discord Community
+                      </Button>
+                    </a>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Demo CTA */}
+            <Card className="bg-gradient-to-r from-[var(--theme-tertiary)]/10 to-[var(--theme-green)]/10 border-[var(--theme-tertiary)]/30">
+              <CardContent className="p-6 text-center">
+                <h3 className="font-bold text-[var(--theme-tertiary)] mb-2">Try Before You Ask</h3>
+                <p className="text-sm text-gray-700 mb-4">
+                  Experience Trade Voyager Analytics with our demo mode - no signup required!
+                </p>
+                <Link href="/demo">
+                  <Button className="w-full bg-[var(--theme-tertiary)] hover:bg-[var(--theme-tertiary)]/80 text-white">
+                    Launch Demo
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Contact Information */}
+            <Card className="bg-white shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-xl text-[var(--theme-primary-text)] flex items-center">
+                  <Mail className="h-5 w-5 mr-2 text-[var(--theme-tertiary)]" />
+                  Get in Touch
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-[var(--theme-primary-text)]">Support Email</h3>
+                    <p className="text-gray-600">{SEO_CONFIG.supportEmail}</p>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <Clock className="h-5 w-5 text-[var(--theme-tertiary)] mt-0.5" />
+                    <div>
+                      <h3 className="font-semibold text-[var(--theme-primary-text)]">Response Time</h3>
+                      <p className="text-gray-600 text-sm">
+                        We typically respond within 24 hours during business days.
+                        Premium users receive priority support.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Common Questions */}
+            <Card className="bg-white shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-xl text-[var(--theme-primary-text)] flex items-center">
+                  <HelpCircle className="h-5 w-5 mr-2 text-[var(--theme-tertiary)]" />
+                  Common Questions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-[var(--theme-primary-text)] mb-1">How do I import my trades?</h3>
+                    <p className="text-sm text-gray-600">
+                      You can import trades via CSV upload or connect directly with supported brokers.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-[var(--theme-primary-text)] mb-1">Can I cancel my subscription?</h3>
+                    <p className="text-sm text-gray-600">
+                      Yes, you can cancel your subscription at any time from your account settings. Your data remains accessible until the end of your billing period.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-[var(--theme-primary-text)] mb-1">Which brokers do you support?</h3>
+                    <p className="text-sm text-gray-600">
+                      We support all brokers via our intelligent AI-driven CSV upload system. We also offer direct broker connection via Broker Connect to over 30 brokerages including Robinhood and Charles Schwab.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Contact Form */}
           <div className="lg:col-span-2">
             <Card className="bg-white shadow-lg">
@@ -225,136 +348,6 @@ export default function ContactPageComponent({ discordInvite }: ContactPageCompo
                 </form>
               </CardContent>
             </Card>
-          </div>
-
-          {/* Contact Info & FAQ */}
-          <div className="space-y-6">
-            {/* Contact Information */}
-            <Card className="bg-white shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-xl text-[var(--theme-primary-text)] flex items-center">
-                  <Mail className="h-5 w-5 mr-2 text-[var(--theme-tertiary)]" />
-                  Get in Touch
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold text-[var(--theme-primary-text)]">Support Email</h3>
-                    <p className="text-gray-600">{SEO_CONFIG.supportEmail}</p>
-                  </div>
-                  <div className="flex items-start space-x-2">
-                    <Clock className="h-5 w-5 text-[var(--theme-tertiary)] mt-0.5" />
-                    <div>
-                      <h3 className="font-semibold text-[var(--theme-primary-text)]">Response Time</h3>
-                      <p className="text-gray-600 text-sm">
-                        We typically respond within 24 hours during business days. 
-                        Premium users receive priority support.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Common Questions */}
-            <Card className="bg-white shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-xl text-[var(--theme-primary-text)] flex items-center">
-                  <HelpCircle className="h-5 w-5 mr-2 text-[var(--theme-tertiary)]" />
-                  Common Questions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold text-[var(--theme-primary-text)] mb-1">How do I import my trades?</h3>
-                    <p className="text-sm text-gray-600">
-                      You can import trades via CSV upload or connect directly with supported brokers like Interactive Brokers and TD Ameritrade.
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-semibold text-[var(--theme-primary-text)] mb-1">Is my trading data secure?</h3>
-                    <p className="text-sm text-gray-600">
-                      Yes! We use bank-level encryption and complete user data isolation. Your trading data is never shared or mixed with other users.
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-semibold text-[var(--theme-primary-text)] mb-1">Can I cancel my subscription?</h3>
-                    <p className="text-sm text-gray-600">
-                      Yes, you can cancel your subscription at any time from your account settings. Your data remains accessible until the end of your billing period.
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-semibold text-[var(--theme-primary-text)] mb-1">Which brokers do you support?</h3>
-                    <p className="text-sm text-gray-600">
-                      We support Interactive Brokers, TD Ameritrade, and many others. You can also import data via CSV from any broker.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Demo CTA */}
-            <Card className="bg-gradient-to-r from-[var(--theme-tertiary)]/10 to-[var(--theme-green)]/10 border-[var(--theme-tertiary)]/30">
-              <CardContent className="p-6 text-center">
-                <h3 className="font-bold text-[var(--theme-tertiary)] mb-2">Try Before You Ask</h3>
-                <p className="text-sm text-gray-700 mb-4">
-                  Experience Trade Voyager Analytics with our demo mode - no signup required!
-                </p>
-                <Link href="/demo">
-                  <Button className="w-full bg-[var(--theme-tertiary)] hover:bg-[var(--theme-tertiary)]/80 text-white">
-                    Launch Demo
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            {/* Discord Community */}
-            {discordInvite && (
-              <Card className="bg-gradient-to-r from-blue-500/10 to-purple-600/10 border-blue-500/30">
-                <CardHeader>
-                  <CardTitle className="text-xl text-[var(--theme-primary-text)] flex items-center">
-                    <Users className="h-5 w-5 mr-2 text-blue-500" />
-                    Join Our Community
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <p className="text-sm text-gray-700">
-                      Connect with other traders, share strategies, get real-time help, and stay updated with the latest features.
-                    </p>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <span>✓</span>
-                        <span>Real-time trading discussions</span>
-                      </div>
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <span>✓</span>
-                        <span>Feature updates & announcements</span>
-                      </div>
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <span>✓</span>
-                        <span>Direct support from the team</span>
-                      </div>
-                    </div>
-                    <a
-                      href={discordInvite}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block"
-                    >
-                      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                        Join Discord Community
-                      </Button>
-                    </a>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
       </main>

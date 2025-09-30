@@ -29,7 +29,6 @@ export interface CouponEmailData {
 export interface FeedbackEmailData {
   userName: string;
   userEmail: string;
-  feedbackUrl: string;
   supportEmail: string;
   appUrl: string;
 }
@@ -636,7 +635,7 @@ export const getFeedbackEmailContent = (data: FeedbackEmailData): string => {
       </div>
 
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${data.feedbackUrl}" class="btn" style="font-size: 16px; padding: 16px 32px;">Share Your Feedback</a>
+        <a href="${data.appUrl}/feedback" class="btn" style="font-size: 16px; padding: 16px 32px;">Share Your Feedback</a>
       </div>
 
       <div class="divider"></div>
@@ -644,6 +643,8 @@ export const getFeedbackEmailContent = (data: FeedbackEmailData): string => {
       <p>Your honest feedback helps us understand what we're doing well and where we can improve. Every response is read and considered as we work to make Trade Voyager Analytics the best trading analytics platform possible.</p>
 
       <p><strong>Prefer to respond via email?</strong> Feel free to simply reply to this message with your thoughts. We read every response personally!</p>
+
+      <p style="margin-top: 24px;">You can also reach us anytime through our <a href="${data.appUrl}/contact" style="color: #667eea; text-decoration: none; font-weight: 600;">contact form</a>.</p>
 
       <p style="font-style: italic; color: #718096; margin-top: 30px;">
         Thank you for being part of our community!<br>
@@ -695,11 +696,13 @@ What we're asking:
 • An optional comment to share any additional thoughts
 • Takes less than 3 minutes to complete
 
-Share your feedback: ${data.feedbackUrl}
+Share your feedback: ${data.appUrl}/feedback
 
 Your honest feedback helps us understand what we're doing well and where we can improve. Every response is read and considered as we work to make Trade Voyager Analytics the best trading analytics platform possible.
 
 Prefer to respond via email? Feel free to simply reply to this message with your thoughts. We read every response personally!
+
+You can also reach us anytime through our contact form: ${data.appUrl}/contact
 
 Thank you for being part of our community!
 The Trade Voyager Analytics Team

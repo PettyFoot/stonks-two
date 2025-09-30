@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as nodemailer from 'nodemailer';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
-
-  
   try {
     const body = await request.json();
     const { name, email, subject, message, category, recaptchaToken } = body;
@@ -126,7 +125,21 @@ Sent from Trade Voyager Analytics Contact Form
 
     const result = await transporter.sendMail(mailOptions);
 
-
+    // Save submission to database
+    try {
+      await prisma.contactSubmission.create({
+        data: {
+          name: name || null,
+          email: email || null,
+          message: `Category: ${category || 'General'}\nSubject: ${subject || 'No subject'}\n\n${message}`,
+          ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
+          userAgent: request.headers.get('user-agent') || null,
+        },
+      });
+    } catch (dbError) {
+      // Log database error but don't fail the request since email was sent
+      console.error('Failed to save contact submission to database:', dbError);
+    }
 
     return NextResponse.json(
       { success: true, message: 'Message sent successfully' },

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { validateFeedbackToken } from '@/lib/feedback/tokens';
+import { validateFeedbackToken } from '@/lib/feedback/tokens-server';
 
 export async function POST(req: NextRequest) {
   try {

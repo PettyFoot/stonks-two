@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth } from '@/lib/auth0';
 import { prisma } from '@/lib/prisma';
 import { emailService } from '@/lib/email/emailService';
-import { generateFeedbackToken } from '@/lib/feedback/tokens';
 
 export async function POST(req: NextRequest) {
   try {
@@ -42,22 +41,13 @@ export async function POST(req: NextRequest) {
       return 'User';
     };
 
-    // Generate feedback token
-    const feedbackToken = generateFeedbackToken({
-      userId: user.id,
-      email: user.email,
-      name: user.name || 'User',
-    });
-
-    // Create feedback URL
+    // Create app URL
     const appUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tradevoyageranalytics.com';
-    const feedbackUrl = `${appUrl}/feedback/${feedbackToken}`;
 
     // Prepare email data
     const emailData = {
       userName: getFirstName(user.name),
       userEmail: user.email,
-      feedbackUrl,
       supportEmail: process.env.EMAIL_FROM!,
       appUrl,
     };

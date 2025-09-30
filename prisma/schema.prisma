@@ -1102,7 +1102,7 @@ model PageView {
 
 model FeedbackResponse {
   id              String    @id @default(cuid())
-  userId          String
+  userId          String?   // Optional - can be anonymous
   userName        String
   userEmail       String
   question1Rating Int       // 1-10: How easy was it to navigate and use the application?
@@ -1116,12 +1116,29 @@ model FeedbackResponse {
   tokenUsed       Boolean   @default(false)
   createdAt       DateTime  @default(now())
 
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, submittedAt])
   @@index([submittedAt])
   @@index([token])
   @@map("feedback_responses")
+}
+
+model ContactSubmission {
+  id              String    @id @default(cuid())
+  name            String?
+  email           String?
+  message         String    @db.Text
+  submittedAt     DateTime  @default(now())
+  ipAddress       String?
+  userAgent       String?
+  isRead          Boolean   @default(false)
+  readAt          DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([submittedAt])
+  @@index([isRead])
+  @@map("contact_submissions")
 }
 
 model BannedUser {
