@@ -1,4 +1,4 @@
-# Trading Analytics Platform - Professional Trade Metrics & Performance Tracking
+# Trade Voyager Analytics - Trading Journal & Performance Tracking
 # Robots.txt Configuration
 
 User-agent: *
@@ -14,6 +14,13 @@ Allow: /privacy
 Allow: /terms
 Allow: /pricing
 Allow: /features
+
+# Allow trading journal landing pages (high priority for SEO)
+Allow: /stock-trading-journal
+Allow: /options-trading-journal
+Allow: /forex-trading-journal
+Allow: /crypto-trading-journal
+Allow: /futures-trading-journal
 
 # Allow Next.js static assets needed for public pages
 Allow: /_next/static/

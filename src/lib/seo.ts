@@ -2,25 +2,25 @@ import { Metadata } from 'next';
 
 // SEO Configuration Constants
 export const SEO_CONFIG = {
-  siteName: 'Trade Analytics Platform',
-  siteDescription: 'Professional trade analytics platform for serious traders. Advanced trade analysis, real-time performance tracking, and comprehensive trade metrics to optimize your trading strategy.',
+  siteName: 'Trade Voyager Analytics - Trading Journal',
+  siteDescription: 'Professional trading journal and analytics platform for serious traders. Track trades, analyze performance, and improve your trading strategy with advanced metrics and insights.',
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://tradevoyageranalytics.com',
   twitterHandle: '@tradinganalytics',
   defaultImage: '/trade-voyager-logo.png',
   supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'tradevoyageranalyticssup@gmail.com',
   keywords: {
-    primary: ['trade analytics', 'trading analytics', 'trade analysis', 'trade metrics', 'trading performance', 'trader tools'],
-    secondary: ['stock trade analytics', 'forex trade analytics', 'options trade analytics', 'trade dashboard', 'trade tracking', 'investment analytics'],
-    technical: ['Interactive Brokers', 'TD Ameritrade', 'trading platform', 'portfolio analysis', 'real-time trade data']
+    primary: ['trading journal', 'online trading journal', 'trade journal software', 'trading journal app', 'trade journaling', 'trading diary'],
+    secondary: ['stock trading journal', 'options trading journal', 'forex trading journal', 'crypto trading journal', 'futures trading journal', 'day trading journal'],
+    technical: ['trade analytics', 'trading performance tracking', 'trade metrics', 'Interactive Brokers', 'TD Ameritrade', 'trading platform']
   }
 };
 
 // Page-specific SEO configurations
 export const PAGE_SEO = {
   home: {
-    title: 'Trade Analytics Platform | Professional Trading Performance Analysis',
-    description: 'Advanced trade analytics platform for professional traders. Real-time trade metrics, comprehensive trade analysis, and performance optimization tools. Start free demo →',
-    keywords: ['trade analytics platform', 'trade analytics', 'trade metrics', 'trading performance', 'trade analysis', 'trader tools'],
+    title: 'Trading Journal & Analytics Platform | Track & Improve Your Trading',
+    description: 'Professional trading journal with advanced analytics. Track every trade, analyze performance, identify patterns, and become a better trader. Try our free demo →',
+    keywords: ['trading journal', 'online trading journal', 'trade journal software', 'trading analytics', 'trading performance tracker', 'trade tracking app'],
     path: '/'
   },
   login: {

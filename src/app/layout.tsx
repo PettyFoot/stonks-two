@@ -20,8 +20,8 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(SEO_CONFIG.siteUrl),
 title: {
-    default: "Trading Analytics Platform - Professional Trade Metrics & Performance Tracking",
-    template: "%s | Trading Analytics Platform"
+    default: "Trade Voyager Analytics - Trading Journal & Performance Tracking",
+    template: "%s | Trade Voyager Analytics"
   },
   description: SEO_CONFIG.siteDescription,
   keywords: [
@@ -46,7 +46,7 @@ title: {
 openGraph: {
     type: 'website',
     siteName: SEO_CONFIG.siteName,
-    title: 'Trading Analytics Platform - Professional Trade Metrics & Performance Tracking',
+    title: 'Trade Voyager Analytics - Trading Journal & Performance Tracking',
     description: SEO_CONFIG.siteDescription,
     url: SEO_CONFIG.siteUrl,
     images: [
@@ -54,7 +54,7 @@ openGraph: {
         url: `${SEO_CONFIG.siteUrl}${SEO_CONFIG.defaultImage}`,
         width: 1200,
         height: 630,
-alt: 'Trading Analytics Platform - Professional Trade Metrics & Performance Tracking',
+alt: 'Trade Voyager Analytics - Trading Journal & Performance Tracking',
         type: 'image/png',
       },
     ],
@@ -64,7 +64,7 @@ twitter: {
     card: 'summary_large_image',
     site: SEO_CONFIG.twitterHandle,
     creator: SEO_CONFIG.twitterHandle,
-    title: 'Trading Analytics Platform - Professional Trade Metrics & Performance Tracking',
+    title: 'Trade Voyager Analytics - Trading Journal & Performance Tracking',
     description: SEO_CONFIG.siteDescription,
     images: [`${SEO_CONFIG.siteUrl}${SEO_CONFIG.defaultImage}`],
   },

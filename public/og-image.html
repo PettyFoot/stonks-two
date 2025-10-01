@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenGraph Image Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #2b4140;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .og-container {
+            width: 1200px;
+            height: 630px;
+            background: linear-gradient(135deg, #2b4140 0%, #1a2827 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        .pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0.05;
+            background-image:
+                linear-gradient(30deg, #fff 12%, transparent 12.5%, transparent 87%, #fff 87.5%, #fff),
+                linear-gradient(150deg, #fff 12%, transparent 12.5%, transparent 87%, #fff 87.5%, #fff),
+                linear-gradient(30deg, #fff 12%, transparent 12.5%, transparent 87%, #fff 87.5%, #fff),
+                linear-gradient(150deg, #fff 12%, transparent 12.5%, transparent 87%, #fff 87.5%, #fff);
+            background-size: 80px 140px;
+            background-position: 0 0, 0 0, 40px 70px, 40px 70px;
+        }
+        .content {
+            position: relative;
+            z-index: 1;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px;
+            text-align: center;
+        }
+        .logo-container {
+            margin-bottom: 40px;
+        }
+        .logo {
+            width: 180px;
+            height: 180px;
+        }
+        h1 {
+            color: #ffffff;
+            font-size: 68px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 20px;
+            line-height: 1.1;
+        }
+        .subtitle {
+            color: #10b981;
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .tagline {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 28px;
+            font-weight: 400;
+            max-width: 900px;
+            margin: 0 auto;
+            line-height: 1.4;
+        }
+        .accent {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%);
+        }
+        .accent-1 {
+            top: -150px;
+            right: -150px;
+        }
+        .accent-2 {
+            bottom: -200px;
+            left: -200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="og-container">
+        <div class="accent accent-1"></div>
+        <div class="accent accent-2"></div>
+        <div class="pattern"></div>
+        <div class="content">
+            <div class="logo-container">
+                <!-- Logo SVG -->
+                <svg class="logo" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="100" cy="100" r="95" fill="none" stroke="#10b981" stroke-width="4"/>
+                    <!-- Ship -->
+                    <path d="M100 60 L100 120 M80 80 Q100 70 120 80 M70 95 Q100 85 130 95"
+                          stroke="#10b981" stroke-width="6" fill="none" stroke-linecap="round"/>
+                    <!-- Waves -->
+                    <path d="M50 130 Q65 125 80 130 Q95 135 110 130 Q125 125 140 130 Q155 135 170 130"
+                          stroke="#10b981" stroke-width="4" fill="none" stroke-linecap="round"/>
+                    <!-- Dollar signs -->
+                    <text x="60" y="70" fill="#10b981" font-size="20" font-weight="bold">$</text>
+                    <text x="130" y="55" fill="#10b981" font-size="20" font-weight="bold">$</text>
+                    <text x="105" y="65" fill="#10b981" font-size="16" font-weight="bold">$</text>
+                </svg>
+            </div>
+            <div class="subtitle">Trading Journal</div>
+            <h1>TRADE VOYAGER<br/>ANALYTICS</h1>
+            <p class="tagline">Voyage Beyond Market Depths • Chart Smarter • Trade Smarter • See Deeper</p>
+        </div>
+    </div>
+
+    <script>
+        // Instructions
+        console.log('To create the OpenGraph image:');
+        console.log('1. Take a screenshot of this page at 1200x630px');
+        console.log('2. Save as og-image.png');
+        console.log('3. Place in /public/ directory');
+        console.log('4. Update SEO_CONFIG.defaultImage to /og-image.png');
+    </script>
+</body>
+</html>
