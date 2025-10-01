@@ -8,6 +8,7 @@ import { BlogPostStructuredData } from '@/components/blog/BlogStructuredData';
 import { BlogPostCard } from '@/components/blog/BlogPostCard';
 import { BlogCTAButton } from '@/components/blog/BlogCTAButton';
 import { BlogNav } from '@/components/blog/BlogNav';
+import { SEO_CONFIG } from '@/lib/seo';
 import Image from 'next/image';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -34,22 +35,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
+  const ogImage = post.coverImage || `${SEO_CONFIG.siteUrl}${SEO_CONFIG.defaultImage}`;
+
   return {
     title: post.seoTitle || post.title,
     description: post.seoDescription || post.excerpt || '',
     openGraph: {
       type: 'article',
-      url: `https://yoursite.com/blog/${post.slug}`,
+      url: `${SEO_CONFIG.siteUrl}/blog/${post.slug}`,
       title: post.title,
       description: post.excerpt || '',
-      images: post.coverImage ? [{ url: post.coverImage }] : [],
+      images: [{ url: ogImage }],
       publishedTime: post.publishedAt?.toISOString(),
     },
     twitter: {
       card: 'summary_large_image',
       title: post.title,
       description: post.excerpt || '',
-      images: post.coverImage ? [post.coverImage] : [],
+      images: [ogImage],
     },
   };
 }
