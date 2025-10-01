@@ -198,8 +198,6 @@ export default async function BlogPostPage({ params }: PageProps) {
               <span>
                 {transformedPost.publishedAt && format(new Date(transformedPost.publishedAt), 'MMMM dd, yyyy')}
               </span>
-              <span>•</span>
-              <span>{transformedPost.viewCount} views</span>
             </div>
 
             <BlogCTAButton />
