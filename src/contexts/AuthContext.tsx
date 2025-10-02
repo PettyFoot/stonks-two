@@ -90,18 +90,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (isDemo) {
         // Clear demo session
         await fetch('/api/demo/logout', { method: 'POST' });
+        // Redirect to home after demo logout
+        window.location.replace('/');
       } else {
-        // Auth0 logout
-        window.location.href = '/api/auth/logout';
-        return;
+        // Auth0 logout - use replace for hard navigation
+        window.location.replace('/api/auth/logout');
       }
-      
-      // Redirect to home after demo logout
-      window.location.href = '/';
     } catch (error) {
       console.error('Error during logout:', error);
       // Force redirect even on error
-      window.location.href = '/';
+      window.location.replace('/');
     }
   };
 

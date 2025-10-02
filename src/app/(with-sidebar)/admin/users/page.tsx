@@ -33,7 +33,8 @@ import {
   Trophy,
   Trash2,
   Activity,
-  MessageSquare
+  MessageSquare,
+  HandHelping
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -66,6 +67,8 @@ export default function AdminUsersPage() {
   const [sendingWelcome, setSendingWelcome] = useState<string | null>(null);
   const [sendingCongrats, setSendingCongrats] = useState<string | null>(null);
   const [sendingFeedback, setSendingFeedback] = useState<string | null>(null);
+  const [sendingOnboarding, setSendingOnboarding] = useState<string | null>(null);
+  const [sendingOnboardingCoupon, setSendingOnboardingCoupon] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
   const [isDeletingUser, setIsDeletingUser] = useState(false);
@@ -238,6 +241,58 @@ export default function AdminUsersPage() {
       toast.error(error instanceof Error ? error.message : 'Failed to send feedback request email');
     } finally {
       setSendingFeedback(null);
+    }
+  };
+
+  const handleSendOnboarding = async (userId: string, userName: string, userEmail: string) => {
+    setSendingOnboarding(userId);
+    try {
+      const response = await fetch('/api/admin/users/send-onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(
+          `Onboarding check-in email sent successfully to ${userName} (${userEmail})`
+        );
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send onboarding check-in email');
+      }
+    } catch (error) {
+      console.error('Error sending onboarding check-in email:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to send onboarding check-in email');
+    } finally {
+      setSendingOnboarding(null);
+    }
+  };
+
+  const handleSendOnboardingCoupon = async (userId: string, userName: string, userEmail: string) => {
+    setSendingOnboardingCoupon(userId);
+    try {
+      const response = await fetch('/api/admin/users/send-onboarding-coupon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(
+          `Onboarding + Coupon email sent successfully to ${userName} (${userEmail})`
+        );
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send onboarding + coupon email');
+      }
+    } catch (error) {
+      console.error('Error sending onboarding + coupon email:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to send onboarding + coupon email');
+    } finally {
+      setSendingOnboardingCoupon(null);
     }
   };
 
@@ -468,7 +523,7 @@ export default function AdminUsersPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              disabled={updatingUser === user.id || sendingCoupon === user.id || sendingWelcome === user.id || sendingCongrats === user.id || sendingFeedback === user.id || isDeletingUser}
+                              disabled={updatingUser === user.id || sendingCoupon === user.id || sendingWelcome === user.id || sendingCongrats === user.id || sendingFeedback === user.id || sendingOnboarding === user.id || sendingOnboardingCoupon === user.id || isDeletingUser}
                             >
                               <MoreVertical className="h-4 w-4" />
                             </Button>
@@ -525,8 +580,22 @@ export default function AdminUsersPage() {
                               {sendingFeedback === user.id ? 'Sending...' : 'Send Feedback Request'}
                             </DropdownMenuItem>
                             <DropdownMenuItem
+                              onClick={() => handleSendOnboarding(user.id, user.name || 'User', user.email)}
+                              disabled={sendingOnboarding === user.id}
+                            >
+                              <HandHelping className="h-4 w-4 mr-2" />
+                              {sendingOnboarding === user.id ? 'Sending...' : 'Send Onboarding Check-In'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleSendOnboardingCoupon(user.id, user.name || 'User', user.email)}
+                              disabled={sendingOnboardingCoupon === user.id}
+                            >
+                              <Gift className="h-4 w-4 mr-2" />
+                              {sendingOnboardingCoupon === user.id ? 'Sending...' : 'Send Onboarding + Coupon'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
                               onClick={() => handleDeleteUser(user)}
-                              disabled={currentUser ? user.id === currentUser.id : false || isDeletingUser}
+                              disabled={(currentUser ? user.id === currentUser.id : false) || isDeletingUser}
                               className="text-red-600 hover:text-red-700 hover:bg-red-50"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />

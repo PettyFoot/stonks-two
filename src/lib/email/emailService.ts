@@ -1,5 +1,5 @@
 import * as nodemailer from 'nodemailer';
-import { generateWelcomeEmail, WelcomeEmailData, generateSignupWelcomeEmail, SignupWelcomeEmailData, generateCouponEmail, CouponEmailData, generateFeedbackEmail, FeedbackEmailData } from './templates';
+import { generateWelcomeEmail, WelcomeEmailData, generateSignupWelcomeEmail, SignupWelcomeEmailData, generateCouponEmail, CouponEmailData, generateFeedbackEmail, FeedbackEmailData, generateOnboardingCheckInEmail, OnboardingCheckInEmailData, generateOnboardingWithCouponEmail, OnboardingWithCouponEmailData } from './templates';
 
 export interface EmailOptions {
   to: string;
@@ -198,6 +198,62 @@ Automated notification from Trade Voyager Analytics
     } catch (error) {
       console.error('Failed to send feedback request email:', error);
       throw new Error('Failed to send feedback request email');
+    }
+  }
+
+  async sendOnboardingCheckIn(data: OnboardingCheckInEmailData): Promise<void> {
+    try {
+      console.log(`[DEBUG] sendOnboardingCheckIn called with data:`, {
+        userEmail: data.userEmail,
+        userName: data.userName,
+        supportEmail: data.supportEmail
+      });
+
+      const emailContent = generateOnboardingCheckInEmail(data);
+
+      await this.sendEmail({
+        to: data.userEmail,
+        subject: emailContent.subject,
+        text: emailContent.text,
+        html: emailContent.html,
+        replyTo: data.supportEmail,
+      });
+
+      console.log('Onboarding check-in email sent successfully:', {
+        to: data.userEmail,
+        userName: data.userName
+      });
+    } catch (error) {
+      console.error('Failed to send onboarding check-in email:', error);
+      throw new Error('Failed to send onboarding check-in email');
+    }
+  }
+
+  async sendOnboardingWithCoupon(data: OnboardingWithCouponEmailData): Promise<void> {
+    try {
+      console.log(`[DEBUG] sendOnboardingWithCoupon called with data:`, {
+        userEmail: data.userEmail,
+        userName: data.userName,
+        supportEmail: data.supportEmail
+      });
+
+      const emailContent = generateOnboardingWithCouponEmail(data);
+
+      await this.sendEmail({
+        to: data.userEmail,
+        subject: emailContent.subject,
+        text: emailContent.text,
+        html: emailContent.html,
+        replyTo: data.supportEmail,
+      });
+
+      console.log('Onboarding with coupon email sent successfully:', {
+        to: data.userEmail,
+        userName: data.userName
+      });
+    } catch (error) {
+      console.error('Failed to send onboarding with coupon email:', error);
+      throw new Error('Failed to send onboarding with coupon email');
     }
   }
 }

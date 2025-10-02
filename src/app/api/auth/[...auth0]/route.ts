@@ -21,7 +21,7 @@ export const GET = handleAuth({
       prompt: 'login',
       login_hint: 'signup'
     },
-    returnTo: '/onboarding'
+    returnTo: '/dashboard'
   }),
   callback: handleCallback({
     afterCallback: async (req: NextRequest, session: Session) => {

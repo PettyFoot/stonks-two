@@ -39,9 +39,7 @@ export default function Pricing() {
         "10 API calls per 30 minutes",
         "10 uploads per day"
       ],
-      limitations: [
-        "Not all brokers available"
-      ],
+      limitations: [],
       cta: "Get Started",
       ctaLink: "/demo",
       highlight: false

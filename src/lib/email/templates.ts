@@ -33,6 +33,20 @@ export interface FeedbackEmailData {
   appUrl: string;
 }
 
+export interface OnboardingCheckInEmailData {
+  userName: string;
+  userEmail: string;
+  supportEmail: string;
+  appUrl: string;
+}
+
+export interface OnboardingWithCouponEmailData {
+  userName: string;
+  userEmail: string;
+  supportEmail: string;
+  appUrl: string;
+}
+
 /**
  * Base HTML email template with logo and styling
  */
@@ -713,5 +727,383 @@ Professional Trading Analytics & Portfolio Management
 
 Dashboard: ${data.appUrl}
 Contact Support: ${data.supportEmail}
+  `.trim();
+};
+
+/**
+ * Onboarding check-in email for users who haven't uploaded trades yet
+ */
+export const getOnboardingCheckInEmailContent = (data: OnboardingCheckInEmailData): string => {
+  const content = `
+    <div class="header">
+      <img src="${data.appUrl}/api/logo" alt="Trade Voyager Analytics Logo" class="logo">
+      <h1>Need Help Getting Started?</h1>
+    </div>
+
+    <div class="content">
+      <h2>Hi ${data.userName}!</h2>
+
+      <p>Thanks for signing up for Trade Voyager Analytics! We're excited to have you join our community of traders.</p>
+
+      <p>We wanted to reach out to check in and see if you have any questions about making your first upload so you can start harnessing the power of our analytics and heighten your trading game.</p>
+
+      <div class="benefits">
+        <h3 style="margin-top: 0; color: #1a202c;">Here's what you can do once you upload your trades:</h3>
+        <ul>
+          <li>Track your performance with detailed analytics and visualizations</li>
+          <li>Identify patterns in your winning and losing trades</li>
+          <li>Analyze your trading behavior across different timeframes</li>
+          <li>Set goals and monitor your progress over time</li>
+          <li>Make data-driven decisions to improve your trading results</li>
+        </ul>
+      </div>
+
+      <div class="highlight-box">
+        <h3 style="margin-top: 0; color: #1a202c;">Getting Your Trades Uploaded:</h3>
+        <p style="margin-bottom: 0;">
+          <strong>Option 1: Upload CSV File</strong><br>
+          1. <strong>Export your trade data</strong> from your broker (CSV format)<br>
+          2. <strong>Visit your dashboard</strong> and click on "Import Trades"<br>
+          3. <strong>Upload your CSV file</strong> and let our system process it<br>
+          4. <strong>Start analyzing</strong> your trading performance immediately
+        </p>
+        <p style="margin: 16px 0; text-align: center; font-weight: 600; color: #667eea;">— OR —</p>
+        <p style="margin-bottom: 0;">
+          <strong>Option 2: Automatic Broker Sync</strong><br>
+          1. <strong>Upgrade to Premium</strong> to access Broker Connect<br>
+          2. <strong>Connect your brokerage account</strong> for automatic trade syncing<br>
+          3. <strong>Enjoy hands-free</strong> trade tracking with real-time updates<br>
+          <a href="${data.appUrl}/pricing" style="color: #667eea; text-decoration: none; font-weight: 600;">Learn more about Premium features →</a>
+        </p>
+      </div>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${data.appUrl}/dashboard" class="btn" style="font-size: 16px; padding: 16px 32px;">Go to Dashboard</a>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 style="color: #1a202c;">Have Questions? We're Here to Help!</h3>
+      <p><strong>Just reply directly to this email to start a conversation with one of our support staff.</strong> We're here to support you in getting up and running with Trade Voyager Analytics.</p>
+
+      <p>Whether you need help with:</p>
+      <ul style="font-size: 15px; line-height: 1.6;">
+        <li>Exporting data from your broker</li>
+        <li>Understanding the analytics and reports</li>
+        <li>Navigating the platform features</li>
+      </ul>
+
+      <p>We're ready to assist you every step of the way!</p>
+
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="mailto:${data.supportEmail}" class="btn" style="background: #48bb78;">Contact Support</a>
+      </div>
+
+      <div class="divider"></div>
+
+      <p style="font-style: italic; color: #718096; margin-top: 30px;">
+        Thanks for taking the time to join us. We look forward to helping you elevate your trading!<br>
+        <strong>The Trade Voyager Analytics Team</strong>
+      </p>
+    </div>
+
+    <div class="footer">
+      <p><strong>Trade Voyager Analytics</strong></p>
+      <p>Professional Trading Analytics & Portfolio Management</p>
+      <p>
+        <a href="${data.appUrl}">Visit Dashboard</a> •
+        <a href="mailto:${data.supportEmail}">Contact Support</a>
+      </p>
+      <p style="font-size: 12px; margin-top: 20px;">
+        This email was sent because you have an account with Trade Voyager Analytics.<br>
+        You can manage your email preferences in your account settings.
+      </p>
+    </div>
+  `;
+
+  return getEmailTemplate(content, 'Need Help Getting Started?');
+};
+
+/**
+ * Generate onboarding check-in email
+ */
+export const generateOnboardingCheckInEmail = (data: OnboardingCheckInEmailData) => ({
+  subject: 'Need help getting started with Trade Voyager Analytics?',
+  html: getOnboardingCheckInEmailContent(data),
+  text: generateOnboardingCheckInTextEmail(data)
+});
+
+/**
+ * Plain text version of onboarding check-in email
+ */
+const generateOnboardingCheckInTextEmail = (data: OnboardingCheckInEmailData): string => {
+  return `
+Need Help Getting Started?
+
+Hi ${data.userName}!
+
+Thanks for signing up for Trade Voyager Analytics! We're excited to have you join our community of traders.
+
+We wanted to reach out to check in and see if you have any questions about making your first upload so you can start harnessing the power of our analytics and heighten your trading game.
+
+Here's what you can do once you upload your trades:
+• Track your performance with detailed analytics and visualizations
+• Identify patterns in your winning and losing trades
+• Analyze your trading behavior across different timeframes
+• Set goals and monitor your progress over time
+• Make data-driven decisions to improve your trading results
+
+Getting Your Trades Uploaded:
+
+Option 1: Upload CSV File
+1. Export your trade data from your broker (CSV format)
+2. Visit your dashboard and click on "Import Trades"
+3. Upload your CSV file and let our system process it
+4. Start analyzing your trading performance immediately
+
+— OR —
+
+Option 2: Automatic Broker Sync
+1. Upgrade to Premium to access Broker Connect
+2. Connect your brokerage account for automatic trade syncing
+3. Enjoy hands-free trade tracking with real-time updates
+Learn more about Premium features: ${data.appUrl}/pricing
+
+Go to your dashboard: ${data.appUrl}/dashboard
+
+Have Questions? We're Here to Help!
+
+Just reply directly to this email to start a conversation with one of our support staff. We're here to support you in getting up and running with Trade Voyager Analytics.
+
+Whether you need help with:
+• Exporting data from your broker
+• Understanding the analytics and reports
+• Navigating the platform features
+
+We're ready to assist you every step of the way!
+
+Contact support: ${data.supportEmail}
+
+Thanks for taking the time to join us. We look forward to helping you elevate your trading!
+The Trade Voyager Analytics Team
+
+---
+Trade Voyager Analytics
+Professional Trading Analytics & Portfolio Management
+
+Dashboard: ${data.appUrl}
+Contact Support: ${data.supportEmail}
+  `.trim();
+};
+
+/**
+ * Onboarding check-in email with VOYAGER25 coupon for users who haven't uploaded trades yet
+ */
+export const getOnboardingWithCouponEmailContent = (data: OnboardingWithCouponEmailData): string => {
+  const content = `
+    <div class="header">
+      <img src="${data.appUrl}/api/logo" alt="Trade Voyager Analytics Logo" class="logo">
+      <h1>🎁 Welcome Gift + Getting Started Help</h1>
+    </div>
+
+    <div class="content">
+      <h2>Hi ${data.userName}!</h2>
+
+      <p>Thanks for signing up for Trade Voyager Analytics! We're excited to have you join our community of traders.</p>
+
+      <p>We wanted to reach out to check in and see if you have any questions about getting started. Plus, we have a special thank you gift for you!</p>
+
+      <div class="highlight-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; padding: 30px; border-left: none; border-radius: 8px;">
+        <h3 style="margin-top: 0; color: white; font-size: 24px;">🚀 Your Exclusive Welcome Gift</h3>
+        <div style="background: rgba(255,255,255,0.9); color: #1a202c; padding: 20px; border-radius: 6px; margin: 20px 0; font-size: 28px; font-weight: bold; letter-spacing: 2px;">
+          VOYAGER25
+        </div>
+        <p style="margin-bottom: 0; font-size: 18px; color: white;">
+          <strong>100% OFF Premium Subscription for 1 Full Year!</strong>
+        </p>
+      </div>
+
+      <p><strong>This is our way of saying thank you for joining us!</strong> Your VOYAGER25 coupon gives you complete access to all premium features at no cost for an entire year.</p>
+
+      <div class="benefits">
+        <h3 style="margin-top: 0; color: #1a202c;">What you can do with Premium once you upload your trades:</h3>
+        <ul>
+          <li>Track your performance with advanced analytics and visualizations</li>
+          <li>Unlimited API calls for candlestick charts in your trade records</li>
+          <li>Unlimited daily trade uploads</li>
+          <li>Auto broker sync via Broker Connect for hands-free tracking</li>
+          <li>Priority customer support</li>
+        </ul>
+      </div>
+
+      <div class="highlight-box">
+        <h3 style="margin-top: 0; color: #1a202c;">Getting Your Trades Uploaded:</h3>
+        <p style="margin-bottom: 0;">
+          <strong>Option 1: Upload CSV File (Free Tier)</strong><br>
+          1. <strong>Export your trade data</strong> from your broker (CSV format)<br>
+          2. <strong>Visit your dashboard</strong> and click on "Import Trades"<br>
+          3. <strong>Upload your CSV file</strong> and let our system process it<br>
+          4. <strong>Start analyzing</strong> your trading performance immediately
+        </p>
+        <p style="margin: 16px 0; text-align: center; font-weight: 600; color: #667eea;">— OR —</p>
+        <p style="margin-bottom: 0;">
+          <strong>Option 2: Automatic Broker Sync (Premium)</strong><br>
+          1. <strong>Claim your VOYAGER25 coupon</strong> for free Premium access<br>
+          2. <strong>Connect your brokerage account</strong> for automatic trade syncing<br>
+          3. <strong>Enjoy hands-free</strong> trade tracking with real-time updates<br>
+          <a href="${data.appUrl}/pricing?coupon=VOYAGER25" style="color: #667eea; text-decoration: none; font-weight: 600;">Claim your free Premium year →</a>
+        </p>
+      </div>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${data.appUrl}/pricing?coupon=VOYAGER25" class="btn" style="font-size: 16px; padding: 16px 32px; background: #48bb78;">Claim Free Premium Year</a>
+        <a href="${data.appUrl}/dashboard" class="btn" style="font-size: 16px; padding: 16px 32px;">Go to Dashboard</a>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 style="color: #1a202c;">How to Use Your VOYAGER25 Coupon:</h3>
+      <ol style="font-size: 15px; line-height: 1.6;">
+        <li>Click the "Claim Free Premium Year" button above</li>
+        <li>Select the Premium plan on our pricing page</li>
+        <li>Enter coupon code <strong>VOYAGER25</strong> at checkout</li>
+        <li>Enjoy a full year of premium features completely free!</li>
+      </ol>
+
+      <div style="background-color: #fef5e7; border-left: 4px solid #f6ad55; padding: 16px; margin: 24px 0; border-radius: 0 4px 4px 0;">
+        <p style="margin: 0; color: #744210; font-weight: 600;">
+          ⏰ <strong>Limited Time Offer:</strong> This coupon is valid for 30 days, so be sure to claim it soon!
+        </p>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 style="color: #1a202c;">Have Questions? We're Here to Help!</h3>
+      <p><strong>Just reply directly to this email to start a conversation with one of our support staff.</strong> We're here to support you in getting up and running with Trade Voyager Analytics.</p>
+
+      <p>Whether you need help with:</p>
+      <ul style="font-size: 15px; line-height: 1.6;">
+        <li>Exporting data from your broker</li>
+        <li>Using your VOYAGER25 coupon</li>
+        <li>Setting up Broker Connect</li>
+        <li>Understanding the analytics and reports</li>
+      </ul>
+
+      <p>We're ready to assist you every step of the way!</p>
+
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="mailto:${data.supportEmail}" class="btn" style="background: #667eea;">Contact Support</a>
+      </div>
+
+      <div class="divider"></div>
+
+      <p style="font-style: italic; color: #718096; margin-top: 30px;">
+        Thanks for taking the time to join us. We look forward to helping you elevate your trading!<br>
+        <strong>The Trade Voyager Analytics Team</strong>
+      </p>
+    </div>
+
+    <div class="footer">
+      <p><strong>Trade Voyager Analytics</strong></p>
+      <p>Professional Trading Analytics & Portfolio Management</p>
+      <p>
+        <a href="${data.appUrl}">Visit Dashboard</a> •
+        <a href="mailto:${data.supportEmail}">Contact Support</a> •
+        <a href="${data.appUrl}/pricing?coupon=VOYAGER25">Claim Your Coupon</a>
+      </p>
+      <p style="font-size: 12px; margin-top: 20px;">
+        This email was sent because you have an account with Trade Voyager Analytics.<br>
+        Coupon code VOYAGER25 is valid for 30 days from the date of this email.
+      </p>
+    </div>
+  `;
+
+  return getEmailTemplate(content, 'Welcome Gift + Getting Started Help');
+};
+
+/**
+ * Generate onboarding check-in email with coupon
+ */
+export const generateOnboardingWithCouponEmail = (data: OnboardingWithCouponEmailData) => ({
+  subject: 'Welcome Gift: Free Premium Year + Getting Started Help',
+  html: getOnboardingWithCouponEmailContent(data),
+  text: generateOnboardingWithCouponTextEmail(data)
+});
+
+/**
+ * Plain text version of onboarding check-in email with coupon
+ */
+const generateOnboardingWithCouponTextEmail = (data: OnboardingWithCouponEmailData): string => {
+  return `
+Welcome Gift + Getting Started Help
+
+Hi ${data.userName}!
+
+Thanks for signing up for Trade Voyager Analytics! We're excited to have you join our community of traders.
+
+We wanted to reach out to check in and see if you have any questions about getting started. Plus, we have a special thank you gift for you!
+
+🚀 YOUR EXCLUSIVE WELCOME GIFT: VOYAGER25 🚀
+100% OFF Premium Subscription for 1 Full Year!
+
+This is our way of saying thank you for joining us! Your VOYAGER25 coupon gives you complete access to all premium features at no cost for an entire year.
+
+What you can do with Premium once you upload your trades:
+• Track your performance with advanced analytics and visualizations
+• Unlimited API calls for candlestick charts in your trade records
+• Unlimited daily trade uploads
+• Auto broker sync via Broker Connect for hands-free tracking
+• Priority customer support
+
+Getting Your Trades Uploaded:
+
+Option 1: Upload CSV File (Free Tier)
+1. Export your trade data from your broker (CSV format)
+2. Visit your dashboard and click on "Import Trades"
+3. Upload your CSV file and let our system process it
+4. Start analyzing your trading performance immediately
+
+— OR —
+
+Option 2: Automatic Broker Sync (Premium)
+1. Claim your VOYAGER25 coupon for free Premium access
+2. Connect your brokerage account for automatic trade syncing
+3. Enjoy hands-free trade tracking with real-time updates
+Claim your free Premium year: ${data.appUrl}/pricing?coupon=VOYAGER25
+
+How to Use Your VOYAGER25 Coupon:
+1. Click the link above or visit our pricing page
+2. Select the Premium plan
+3. Enter coupon code VOYAGER25 at checkout
+4. Enjoy a full year of premium features completely free!
+
+⏰ LIMITED TIME OFFER: This coupon is valid for 30 days, so be sure to claim it soon!
+
+Have Questions? We're Here to Help!
+
+Just reply directly to this email to start a conversation with one of our support staff. We're here to support you in getting up and running with Trade Voyager Analytics.
+
+Whether you need help with:
+• Exporting data from your broker
+• Using your VOYAGER25 coupon
+• Setting up Broker Connect
+• Understanding the analytics and reports
+
+We're ready to assist you every step of the way!
+
+Claim free Premium year: ${data.appUrl}/pricing?coupon=VOYAGER25
+Go to your dashboard: ${data.appUrl}/dashboard
+Contact support: ${data.supportEmail}
+
+Thanks for taking the time to join us. We look forward to helping you elevate your trading!
+The Trade Voyager Analytics Team
+
+---
+Trade Voyager Analytics
+Professional Trading Analytics & Portfolio Management
+
+Dashboard: ${data.appUrl}
+Contact Support: ${data.supportEmail}
+Claim Your Coupon: ${data.appUrl}/pricing?coupon=VOYAGER25
   `.trim();
 };
