@@ -158,7 +158,7 @@ const calculateWinLossMetrics = (dailyPnlData: Array<{ date: string; value: numb
     maxConsecutiveWins: winningDays.length,
     maxConsecutiveLosses: 0,
     avgHoldTime: overallStats?.avgDailyPnl ? '4h' : '0',
-    profitFactor: winningDays.length > 0 ? 999 : 0, // Infinite since no losses
+    profitFactor: winningDays.reduce((sum, day) => sum + day.value, 0), // Total gains when no losses
     sharpeRatio: overallStats?.sharpeRatio || 0,
     maxDrawdown: 0,
     kellyPercentage: overallStats?.kellyPercentage || 0,

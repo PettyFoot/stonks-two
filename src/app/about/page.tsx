@@ -211,9 +211,9 @@ export default function AboutUs() {
               analyze their trade metrics, and make data-driven improvements to their trading strategies.
             </p>
             <div className="flex items-center justify-center space-x-4">
-              <Link href="/demo">
+              <Link href="/pricing">
                 <Button size="lg" className="bg-[var(--theme-tertiary)] hover:bg-[var(--theme-tertiary)]/80 text-white">
-                  Try Demo Mode
+                  Get Started Mode
                 </Button>
               </Link>
               <Link href="/login">

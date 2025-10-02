@@ -1,11 +1,25 @@
 import { MetadataRoute } from 'next';
 import { SEO_CONFIG } from '@/lib/seo';
+import { prisma } from '@/lib/prisma';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = SEO_CONFIG.siteUrl;
   const currentDate = new Date().toISOString();
 
-  return [
+  // Fetch all published blog posts dynamically
+  const blogPosts = await prisma.blogPost.findMany({
+    where: {
+      status: 'PUBLISHED',
+      publishedAt: { lte: new Date() },
+    },
+    select: {
+      slug: true,
+      updatedAt: true,
+    },
+    orderBy: { publishedAt: 'desc' },
+  });
+
+  const staticPages: MetadataRoute.Sitemap = [
     // Public pages - High priority
     {
       url: baseUrl,
@@ -19,63 +33,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 0.8,
     },
-    {
-      url: `${baseUrl}/demo`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.9,
-    },
-    
-    // Demo pages - Medium priority (publicly accessible)
-    {
-      url: `${baseUrl}/demo/dashboard`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/demo/trades`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/demo/reports`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/demo/calendar`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.6,
-    },
-    {
-      url: `${baseUrl}/demo/records`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.6,
-    },
-    {
-      url: `${baseUrl}/demo/import`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.6,
-    },
-    {
-      url: `${baseUrl}/demo/search`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.6,
-    },
-    {
-      url: `${baseUrl}/demo/community`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.5,
-    },
-    
+
     // Feature/Marketing pages - High priority
     {
       url: `${baseUrl}/features`,
@@ -90,15 +48,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
 
-    // Resource/Content pages - High priority for SEO
+    // Content pages - High priority for SEO
     {
-      url: `${baseUrl}/resources`,
+      url: `${baseUrl}/day-trading-analytics`,
       lastModified: currentDate,
       changeFrequency: 'weekly',
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/day-trading-analytics`,
+      url: `${baseUrl}/trade-analytics`,
       lastModified: currentDate,
       changeFrequency: 'weekly',
       priority: 0.8,
@@ -135,7 +93,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 0.9,
     },
-    
+
+    // Blog - High priority for SEO
+    {
+      url: `${baseUrl}/blog`,
+      lastModified: currentDate,
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+
     // Static/Legal pages - Medium priority
     {
       url: `${baseUrl}/about`,
@@ -161,7 +127,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.5,
     },
-    
+    {
+      url: `${baseUrl}/cookies`,
+      lastModified: currentDate,
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+
     // Note: Private authenticated pages are intentionally excluded:
     // - /dashboard
     // - /trades
@@ -172,4 +144,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // - /search
     // These should not be indexed as they require authentication
   ];
+
+  // Add all blog posts dynamically
+  const blogPostPages: MetadataRoute.Sitemap = blogPosts.map((post) => ({
+    url: `${baseUrl}/blog/${post.slug}`,
+    lastModified: post.updatedAt.toISOString(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.8,
+  }));
+
+  return [...staticPages, ...blogPostPages];
 }

@@ -71,12 +71,6 @@ export const PAGE_SEO = {
     keywords: ['search trades', 'trade search', 'find trades', 'trade patterns', 'trade filtering'],
     path: '/search'
   },
-  demo: {
-    title: 'Free Demo | Try Trade Voyager Analytics Risk-Free',
-    description: 'Explore all features with sample trading data. No signup required. See real analytics, reports, and insights. Try it free before you commit →',
-    keywords: ['trading demo', 'demo mode', 'free trial', 'trading platform demo', 'sample trading data'],
-    path: '/demo'
-  },
   contact: {
     title: 'Contact Trading Analytics Support | Help for Traders',
     description: 'Need help with trading analytics or broker integration? Our expert team responds within 24 hours. Get support for imports, trade metrics, and more.',

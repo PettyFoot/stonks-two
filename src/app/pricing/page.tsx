@@ -42,7 +42,7 @@ export default function Pricing() {
       limitations: [
         "Not all brokers available"
       ],
-      cta: "Try Demo",
+      cta: "Get Started",
       ctaLink: "/demo",
       highlight: false
     },
@@ -106,9 +106,9 @@ export default function Pricing() {
                 Features
               </Button>
             </Link>
-            <Link href="/demo">
+            <Link href="/pricing">
               <Button variant="outline" className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/10">
-                Try Demo
+                Get Started
               </Button>
             </Link>
             <Link href="/login">
@@ -302,10 +302,10 @@ export default function Pricing() {
         </h2>
         <p className="text-xl text-[var(--theme-primary-text)] mb-8 max-w-2xl mx-auto">
           Join thousands of traders who use Trade Voyager Analytics to track and improve their performance. 
-          Discover all our <Link href="/features" className="text-[var(--theme-tertiary)] hover:underline">powerful features</Link> or start with our <Link href="/demo" className="text-[var(--theme-tertiary)] hover:underline">free demo</Link>.
+          Discover all our <Link href="/features" className="text-[var(--theme-tertiary)] hover:underline">powerful features</Link> or start with our <Link href="/pricing" className="text-[var(--theme-tertiary)] hover:underline">free demo</Link>.
         </p>
         <div className="flex justify-center space-x-4">
-          <Link href="/demo">
+          <Link href="/pricing">
             <Button size="lg" variant="outline" className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/10 px-8 py-3 text-lg">
               Try Free Demo
             </Button>

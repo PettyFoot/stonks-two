@@ -79,9 +79,9 @@ export default function Features() {
             <span className="text-2xl font-bold text-[var(--theme-primary-text)]">Trade Voyager Analytics</span>
           </Link>
           <div className="flex space-x-4">
-            <Link href="/demo">
+            <Link href="/pricing">
               <Button variant="outline" className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/10">
-                Try Demo
+                Get Started
               </Button>
             </Link>
             <Link href="/login">
@@ -104,7 +104,7 @@ export default function Features() {
           professional-grade tools and enterprise security. Advanced trade analytics made simple. See our <Link href="/pricing" className="text-[var(--theme-tertiary)] hover:underline">simple pricing plans</Link> to get started.
         </p>
         <div className="flex justify-center space-x-4">
-          <Link href="/demo">
+          <Link href="/pricing">
             <Button size="lg" className="bg-[var(--theme-tertiary)] hover:bg-[var(--theme-tertiary)]/80 text-white px-8 py-3 text-lg">
               Explore Demo <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
@@ -157,10 +157,10 @@ export default function Features() {
         </h2>
         <p className="text-xl text-[var(--theme-primary-text)] mb-8 max-w-2xl mx-auto">
           Join thousands of professional traders who trust Trade Voyager Analytics to track and improve their performance. 
-          Start for <Link href="/demo" className="text-[var(--theme-tertiary)] hover:underline">FREE</Link> or explore our <Link href="/pricing" className="text-[var(--theme-tertiary)] hover:underline">pricing options</Link>.
+          Start for <Link href="/pricing" className="text-[var(--theme-tertiary)] hover:underline">FREE</Link> or explore our <Link href="/pricing" className="text-[var(--theme-tertiary)] hover:underline">pricing options</Link>.
         </p>
         <div className="flex justify-center space-x-4">
-          <Link href="/demo">
+          <Link href="/pricing">
             <Button size="lg" variant="outline" className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/10 px-8 py-3 text-lg">
               Try Free Demo
             </Button>

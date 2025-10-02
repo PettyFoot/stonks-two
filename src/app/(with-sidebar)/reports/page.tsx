@@ -11,6 +11,7 @@ import TradeDistributionChart from '@/components/charts/TradeDistributionChart';
 import { useReportsData } from '@/hooks/useReportsData';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 import { useIsMobile } from '@/hooks/useMediaQuery';
+import ShareButton from '@/components/ShareButton';
 
 // New enhanced components
 import StatsSection from '@/components/reports/StatsSection';
@@ -190,23 +191,33 @@ export default function Reports() {
       <div className="flex-1 overflow-auto p-6">
         {/* Report Type Selection */}
         <div className="mb-6">
-          <div className="flex items-center mb-4">
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-primary">P&L Type</label>
-              <Select value={pnlType} onValueChange={setPnlType}>
-                <SelectTrigger className="w-24 h-8 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Gross">Gross</SelectItem>
-                  <SelectItem value="Net">Net</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-primary">P&L Type</label>
+                <Select value={pnlType} onValueChange={setPnlType}>
+                  <SelectTrigger className="w-24 h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Gross">Gross</SelectItem>
+                    <SelectItem value="Net">Net</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="text-sm text-muted font-medium">
+                Current Period: {formatDateRange()}
+              </div>
             </div>
-            
-            <div className="text-sm text-muted font-medium ml-6">
-              Current Period: {formatDateRange()}
-            </div>
+
+            <ShareButton
+              dateFrom={toFilterOptions().dateFrom}
+              dateTo={toFilterOptions().dateTo}
+              shareType="statistics"
+              variant="button"
+              className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+            />
           </div>
         </div>
 

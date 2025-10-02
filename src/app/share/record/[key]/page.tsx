@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -220,6 +221,19 @@ export default function SharedTradePage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-4">
+        {/* Centered Logo */}
+        <div className="flex justify-center mb-4">
+          <Link href="/">
+            <Image
+              src="/trade-voyager-logo.png"
+              alt="Trade Voyager"
+              width={80}
+              height={27}
+              className="object-contain"
+            />
+          </Link>
+        </div>
+
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <BarChart3 className="h-6 w-6 text-blue-600" />
@@ -232,7 +246,7 @@ export default function SharedTradePage() {
               </p>
             </div>
           </div>
-          
+
           <Link href="/" className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors">
             <Clock className="h-4 w-4" />
             {getTimeToExpiry(data.expiresAt)}
@@ -364,12 +378,27 @@ export default function SharedTradePage() {
         />
 
         {/* Footer */}
-        <div className="text-center py-6 border-t border-gray-200">
-          <div className="text-sm text-gray-500">
-            Powered by <Link href="/" className="font-medium text-blue-600 hover:text-blue-800 transition-colors">Trade Voyager Analytics</Link>
-          </div>
-          <div className="text-xs text-gray-400 mt-1">
-            Shared on {formatDate(data.createdAt)} • Expires {formatDate(data.expiresAt)}
+        <div className="py-6 border-t border-gray-200">
+          <div className="flex items-center justify-center gap-4">
+            {/* Text Group - Centered */}
+            <div className="text-center">
+              <div className="text-sm text-gray-500">
+                Powered by <Link href="/" className="font-medium text-blue-600 hover:text-blue-800 transition-colors">Trade Voyager Analytics</Link>
+              </div>
+              <div className="text-xs text-gray-400 mt-1">
+                Shared on {formatDate(data.createdAt)} • Expires {formatDate(data.expiresAt)}
+              </div>
+            </div>
+            {/* Logo Group - Right */}
+            <div>
+              <Image
+                src="/trade-voyager-logo.png"
+                alt="Trade Voyager"
+                width={24}
+                height={24}
+                className="object-contain"
+              />
+            </div>
           </div>
         </div>
       </div>

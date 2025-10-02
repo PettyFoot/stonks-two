@@ -47,9 +47,9 @@ export default function TradingCalculatorPage() {
                 Features
               </Button>
             </Link>
-            <Link href="/demo">
+            <Link href="/pricing">
               <Button variant="outline" className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/10">
-                Try Demo
+                Get Started
               </Button>
             </Link>
             <Link href="/login">
@@ -156,7 +156,7 @@ export default function TradingCalculatorPage() {
           and <Link href="/features" className="text-[var(--theme-tertiary)] hover:underline">professional reports</Link> with Trade Voyager Analytics.
         </p>
         <div className="flex justify-center space-x-4">
-          <Link href="/demo">
+          <Link href="/pricing">
             <Button size="lg" variant="outline" className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/10 px-8 py-3 text-lg">
               Try Free Demo
             </Button>

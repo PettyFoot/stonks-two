@@ -34,7 +34,7 @@ export default function ForexJournalPage() {
               Trade Voyager Analytics
             </Link>
             <div className="flex gap-4">
-              <Link href="/demo"><Button variant="outline">Try Demo</Button></Link>
+              <Link href="/pricing"><Button variant="outline">Get Started</Button></Link>
               <Link href="/login"><Button className="bg-[#2b4140] hover:bg-[#1a2827]">Sign In</Button></Link>
             </div>
           </div>
@@ -49,9 +49,9 @@ export default function ForexJournalPage() {
               Track every currency pair trade, analyze your FX performance, and become a consistently profitable forex trader
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/demo">
+              <Link href="/pricing">
                 <Button size="lg" className="bg-[#2b4140] hover:bg-[#1a2827] text-lg px-8">
-                  Try Free Demo <ArrowRight className="ml-2 h-5 w-5" />
+                  Get Started Free <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
               <Link href="/pricing"><Button size="lg" variant="outline" className="text-lg px-8">View Pricing</Button></Link>
@@ -157,9 +157,9 @@ export default function ForexJournalPage() {
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl font-bold mb-6">Start Tracking Your Forex Trades Today</h2>
           <p className="text-xl mb-8 text-gray-200">Join forex traders improving their performance with Trade Voyager</p>
-          <Link href="/demo">
+          <Link href="/pricing">
             <Button size="lg" variant="secondary" className="text-lg px-8">
-              Try Free Demo <ArrowRight className="ml-2 h-5 w-5" />
+              Get Started Free <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
         </div>

@@ -70,7 +70,7 @@ export class TradingAnalyzer {
 
     const grossProfit = winningTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl), 0);
     const grossLoss = Math.abs(losingTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : trade.pnl), 0));
-    const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0;
+    const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit;
 
     const dayMetrics = this.calculateDayMetrics();
     const consecutiveMetrics = this.calculateConsecutiveMetrics();

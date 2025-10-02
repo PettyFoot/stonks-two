@@ -156,7 +156,7 @@ export default function ContactPageComponent({ discordInvite }: ContactPageCompo
                 <p className="text-sm text-gray-700 mb-4">
                   Experience Trade Voyager Analytics with our demo mode - no signup required!
                 </p>
-                <Link href="/demo">
+                <Link href="/pricing">
                   <Button className="w-full bg-[var(--theme-tertiary)] hover:bg-[var(--theme-tertiary)]/80 text-white">
                     Launch Demo
                   </Button>

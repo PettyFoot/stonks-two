@@ -65,10 +65,7 @@ export function BlogPostCard({
           )}
         </CardContent>
         <CardFooter className="text-sm text-gray-600 p-6 pt-0">
-          <div className="flex items-center justify-between w-full">
-            <span>{format(date, 'MMM dd, yyyy')}</span>
-            <span>{viewCount} views</span>
-          </div>
+          <span>{format(date, 'MMM dd, yyyy')}</span>
         </CardFooter>
       </Card>
     </Link>

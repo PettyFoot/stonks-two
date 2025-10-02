@@ -317,7 +317,7 @@ async function calculateMetricsForDays(
   const avgLoss = losingTrades > 0 ? totalLosses / losingTrades : 0;
   const avgHoldWinning = winningHoldCount > 0 ? totalHoldWinning / winningHoldCount : 0;
   const avgHoldLosing = losingHoldCount > 0 ? totalHoldLosing / losingHoldCount : 0;
-  const profitFactor = totalLosses > 0 ? totalWins / totalLosses : (totalWins > 0 ? 999999 : 0);
+  const profitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins;
   
   // Calculate standard deviation
   const avgPnl = totalPnl / totalTrades;

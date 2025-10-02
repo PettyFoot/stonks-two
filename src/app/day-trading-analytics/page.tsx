@@ -84,9 +84,9 @@ export default function DayTradingAnalyticsPage() {
           </Link>
 
           <div className="flex space-x-4">
-            <Link href="/demo">
+            <Link href="/pricing">
               <Button variant="outline" size="sm">
-                Try Demo
+                Get Started
               </Button>
             </Link>
             <Link href="/login">
@@ -111,7 +111,7 @@ export default function DayTradingAnalyticsPage() {
                 intraday performance metrics, and advanced analytics to optimize your day trading strategy.
               </p>
               <div className="flex space-x-4 mb-8">
-                <Link href="/demo">
+                <Link href="/pricing">
                   <Button size="lg" className="group">
                     Try Free Demo
                     <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
@@ -263,7 +263,7 @@ export default function DayTradingAnalyticsPage() {
                 Join thousands of day traders who have improved their performance with our analytics platform.
               </p>
               <div className="space-y-4">
-                <Link href="/demo" className="block">
+                <Link href="/pricing" className="block">
                   <Button className="w-full group">
                     Try Free Demo
                     <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />

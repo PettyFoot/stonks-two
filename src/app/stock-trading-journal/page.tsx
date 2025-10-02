@@ -35,8 +35,8 @@ export default function StockTradingJournalPage() {
               Trade Voyager Analytics
             </Link>
             <div className="flex gap-4">
-              <Link href="/demo">
-                <Button variant="outline">Try Demo</Button>
+              <Link href="/pricing">
+                <Button variant="outline">Get Started</Button>
               </Link>
               <Link href="/login">
                 <Button className="bg-[#2b4140] hover:bg-[#1a2827]">Sign In</Button>
@@ -57,9 +57,9 @@ export default function StockTradingJournalPage() {
               Track every stock trade, analyze your performance, and become a consistently profitable stock trader
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/demo">
+              <Link href="/pricing">
                 <Button size="lg" className="bg-[#2b4140] hover:bg-[#1a2827] text-lg px-8">
-                  Try Free Demo <ArrowRight className="ml-2 h-5 w-5" />
+                  Get Started Free <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
               <Link href="/pricing">
@@ -181,9 +181,9 @@ export default function StockTradingJournalPage() {
           <p className="text-xl mb-8 text-gray-200">
             Join thousands of stock traders improving their performance with Trade Voyager Analytics
           </p>
-          <Link href="/demo">
+          <Link href="/pricing">
             <Button size="lg" variant="secondary" className="text-lg px-8">
-              Try Free Demo <ArrowRight className="ml-2 h-5 w-5" />
+              Get Started Free <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
         </div>

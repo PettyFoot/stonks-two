@@ -35,8 +35,8 @@ export default function OptionsJournalPage() {
               Trade Voyager Analytics
             </Link>
             <div className="flex gap-4">
-              <Link href="/demo">
-                <Button variant="outline">Try Demo</Button>
+              <Link href="/pricing">
+                <Button variant="outline">Get Started</Button>
               </Link>
               <Link href="/login">
                 <Button className="bg-[#2b4140] hover:bg-[#1a2827]">Sign In</Button>
@@ -57,9 +57,9 @@ export default function OptionsJournalPage() {
               Track calls, puts, spreads, and complex options strategies. Master options trading with detailed analytics.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/demo">
+              <Link href="/pricing">
                 <Button size="lg" className="bg-[#2b4140] hover:bg-[#1a2827] text-lg px-8">
-                  Try Free Demo <ArrowRight className="ml-2 h-5 w-5" />
+                  Get Started Free <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
               <Link href="/pricing">
@@ -210,9 +210,9 @@ export default function OptionsJournalPage() {
           <p className="text-xl mb-8 text-gray-200">
             Stop guessing. Start tracking. Become a consistently profitable options trader.
           </p>
-          <Link href="/demo">
+          <Link href="/pricing">
             <Button size="lg" variant="secondary" className="text-lg px-8">
-              Try Free Demo <ArrowRight className="ml-2 h-5 w-5" />
+              Get Started Free <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
         </div>

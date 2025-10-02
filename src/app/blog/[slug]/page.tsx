@@ -154,7 +154,7 @@ export default async function BlogPostPage({ params }: PageProps) {
     <>
       <BlogPostStructuredData
         post={transformedPost}
-        siteUrl="https://yoursite.com"
+        siteUrl={SEO_CONFIG.siteUrl}
       />
 
       <BlogNav />

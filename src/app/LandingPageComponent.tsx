@@ -106,7 +106,7 @@ export default function LandingPageComponent() {
                 <Link href="/features" className="text-white hover:text-[var(--theme-tertiary)] text-lg font-medium transition-colors">
                   Features
                 </Link>
-                <Link href="/demo" className="text-white hover:text-[var(--theme-tertiary)] text-lg font-medium transition-colors">
+                <Link href="/pricing" className="text-white hover:text-[var(--theme-tertiary)] text-lg font-medium transition-colors">
                   Demo
                 </Link>
               </div>
@@ -148,7 +148,7 @@ export default function LandingPageComponent() {
                     Features
                   </Link>
                   <Link 
-                    href="/demo" 
+                    href="/pricing" 
                     className="text-white hover:text-[var(--theme-tertiary)] text-lg font-medium transition-colors"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
@@ -190,7 +190,7 @@ export default function LandingPageComponent() {
                 className="w-full sm:w-auto bg-[var(--theme-tertiary)]/80 hover:bg-[var(--theme-tertiary)]/60 text-white px-6 py-3 sm:px-8 sm:py-4 lg:px-12 lg:py-6 text-base sm:text-lg lg:text-2xl font-semibold rounded-lg"
                 onClick={startDemo}
                 disabled={isStartingDemo}
-                aria-label="Try Demo"
+                aria-label="Get Started"
               >
                 {isStartingDemo ? (
                   <>

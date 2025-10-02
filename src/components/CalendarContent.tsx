@@ -14,8 +14,10 @@ import CalendarSummaryChartsRecharts from '@/components/CalendarSummaryChartsRec
 import CalendarYearView from '@/components/CalendarYearView';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
-import { Trade } from '@/types';
+import { Trade, ColumnConfiguration } from '@/types';
 import { FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
+import ShareButton from '@/components/ShareButton';
+import ColumnSettingsModal from '@/components/ColumnSettingsModal';
 
 type ViewType = 'summary' | 'year' | 'month';
 
@@ -41,6 +43,11 @@ const CalendarContent = React.memo(() => {
   const [monthData, setMonthData] = useState<DayData[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [, setIsLoading] = useState(false);
+  const [columnConfig, setColumnConfig] = useState<ColumnConfiguration[]>([]);
+
+  const handleColumnsChange = (newColumns: ColumnConfiguration[]) => {
+    setColumnConfig(newColumns);
+  };
 
   // Handle URL parameter changes
   useEffect(() => {
@@ -317,13 +324,34 @@ const CalendarContent = React.memo(() => {
       <FilterPanel showAdvanced={true} />
       
       <div className="flex-1 overflow-auto p-6">
-        {/* Tab Navigation */}
+        {/* Tab Navigation with Share Button */}
         <Tabs value={view} onValueChange={(v) => setView(v as ViewType)}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="summary">Summary</TabsTrigger>
-            <TabsTrigger value="year">Year</TabsTrigger>
-            <TabsTrigger value="month">Month</TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between mb-6">
+            <TabsList>
+              <TabsTrigger value="summary">Summary</TabsTrigger>
+              <TabsTrigger value="year">Year</TabsTrigger>
+              <TabsTrigger value="month">Month</TabsTrigger>
+            </TabsList>
+
+            {/* Share Button - shown for Month and Year views */}
+            {view === 'month' && (
+              <ShareButton
+                year={currentDate.getFullYear()}
+                month={currentDate.getMonth()}
+                shareType="calendar-month"
+                variant="button"
+                className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+              />
+            )}
+            {view === 'year' && (
+              <ShareButton
+                year={year}
+                shareType="calendar-year"
+                variant="button"
+                className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+              />
+            )}
+          </div>
 
           {/* Summary View */}
           <TabsContent value="summary">
@@ -368,7 +396,7 @@ const CalendarContent = React.memo(() => {
                 </Button>
               </div>
             </div>
-            
+
             {/* Monthly P&L Summary */}
             <div className="flex justify-center mb-6">
               <div className="bg-gradient-to-r from-theme-surface via-theme-surface to-theme-surface/95 border border-theme-border/50 rounded-2xl px-6 py-3 shadow-lg">
@@ -547,18 +575,20 @@ const CalendarContent = React.memo(() => {
             <div className="mt-8">
               <Card className="bg-gradient-to-br from-theme-surface via-theme-surface to-theme-surface/95 border-theme-border shadow-xl rounded-3xl overflow-hidden relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-theme-tertiary/5 via-transparent to-theme-tertiary/5 opacity-30"></div>
-                <CardHeader className="bg-gradient-to-r from-theme-surface via-theme-surface to-theme-surface/80 border-b border-theme-border/50 relative z-10">
+                <CardHeader className="bg-gradient-to-r from-theme-surface via-theme-surface to-theme-surface/80 border-b border-theme-border/50 relative z-10 flex flex-row items-center justify-between">
                   <CardTitle className="text-xl font-bold text-theme-primary-text">
-                    {selectedDay 
+                    {selectedDay
                       ? `Trades for ${format(new Date(selectedDay), 'MMMM d, yyyy')}`
                       : `All Trades for ${format(currentDate, 'MMMM yyyy')}`
                     }
                   </CardTitle>
+                  <ColumnSettingsModal onColumnsChange={handleColumnsChange} />
                 </CardHeader>
                 <CardContent className="relative z-10">
-                  <TradesTable 
+                  <TradesTable
                     trades={trades}
                     showCheckboxes={false}
+                    columnConfig={columnConfig}
                   />
                 </CardContent>
               </Card>

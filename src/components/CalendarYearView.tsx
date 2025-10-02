@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, getDaysInMonth, getDay, startOfMonth } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface DayData {
   tradeCount: number;
@@ -169,9 +170,10 @@ export default function CalendarYearView({ year: initialYear, isDemo = false }: 
   }
 
   return (
-    <div className="space-y-6">
-      {/* Year Navigation - Centered */}
-      <div className="flex items-center justify-center mb-2">
+    <TooltipProvider delayDuration={100}>
+      <div className="space-y-6">
+        {/* Year Navigation - Centered */}
+        <div className="flex items-center justify-center mb-2">
         <div className="flex items-center space-x-6 bg-white/60 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg border border-theme-border/30">
           <Button
             variant="ghost"
@@ -236,35 +238,59 @@ export default function CalendarYearView({ year: initialYear, isDemo = false }: 
 
               {/* Calendar Days */}
               <div className="grid grid-cols-7 gap-1">
-                {generateMonthCalendar(monthIndex).map((day, index) => (
-                  <div
-                    key={index}
-                    className={`
-                      aspect-square flex items-center justify-center text-xs p-1 relative rounded-lg
-                      ${!day ? 'invisible' : `${getDayBackground(day)} ${dayHasTradeData(day) ? 'cursor-pointer hover:opacity-80 hover:scale-110 hover:z-10 hover:shadow-lg' : 'cursor-default hover:bg-theme-surface/80'} transition-all duration-200 border border-theme-border/30`}
-                      ${day && dayHasTradeData(day) ? 'shadow-sm hover:shadow-md' : ''}
-                    `}
-                    onClick={() => day && dayHasTradeData(day as Record<string, unknown>) && handleDayClick(day.dateStr)}
-                    role={day && dayHasTradeData(day as Record<string, unknown>) ? "button" : undefined}
-                    tabIndex={day && dayHasTradeData(day as Record<string, unknown>) ? 0 : undefined}
-                    aria-label={day && dayHasTradeData(day as Record<string, unknown>) ? `${day.date} - ${day.tradeCount} trades, $${Number(day.pnl || 0).toFixed(2)} P&L` : undefined}
-                    onKeyDown={(e) => {
-                      if (day && dayHasTradeData(day as Record<string, unknown>) && (e.key === 'Enter' || e.key === ' ')) {
-                        e.preventDefault();
-                        handleDayClick(day.dateStr);
-                      }
-                    }}
-                  >
-                    {day && (
-                      <span className={`font-semibold ${getDayColor(day)} transition-all duration-200`}>
-                        {day.date}
-                      </span>
-                    )}
-                    {day && dayHasTradeData(day as Record<string, unknown>) ? (
-                      <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-theme-tertiary opacity-60 animate-pulse"></div>
-                    ) : null}
-                  </div>
-                ))}
+                {generateMonthCalendar(monthIndex).map((day, index) => {
+                  const pnl = day ? Number(day.pnl || 0) : 0;
+                  const isPositive = pnl >= 0;
+                  const pnlColor = isPositive ? 'text-green-600' : 'text-red-600';
+
+                  return day && dayHasTradeData(day as Record<string, unknown>) ? (
+                    <Tooltip key={index}>
+                      <TooltipTrigger asChild>
+                        <div
+                          className={`
+                            aspect-square flex items-center justify-center text-xs p-1 relative rounded-lg
+                            ${getDayBackground(day)} cursor-pointer hover:opacity-80 hover:scale-110 hover:z-10 hover:shadow-lg transition-all duration-200 border border-theme-border/30 shadow-sm hover:shadow-md
+                          `}
+                          onClick={() => handleDayClick(day.dateStr)}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`${day.date} - ${day.tradeCount} trades, $${pnl.toFixed(2)} P&L`}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              handleDayClick(day.dateStr);
+                            }
+                          }}
+                        >
+                          <span className={`font-semibold ${getDayColor(day)} transition-all duration-200`}>
+                            {day.date}
+                          </span>
+                          <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-theme-tertiary opacity-60 animate-pulse"></div>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-gray-900 text-white border-gray-700">
+                        <span className={pnlColor}>
+                          {isPositive ? '+' : ''}${pnl.toFixed(2)}
+                        </span>
+                        {' '}({day.tradeCount} trade{day.tradeCount !== 1 ? 's' : ''})
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <div
+                      key={index}
+                      className={`
+                        aspect-square flex items-center justify-center text-xs p-1 relative rounded-lg
+                        ${!day ? 'invisible' : `${getDayBackground(day)} cursor-default hover:bg-theme-surface/80 transition-all duration-200 border border-theme-border/30`}
+                      `}
+                    >
+                      {day && (
+                        <span className={`font-semibold ${getDayColor(day)} transition-all duration-200`}>
+                          {day.date}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Monthly PnL Total */}
@@ -324,6 +350,7 @@ export default function CalendarYearView({ year: initialYear, isDemo = false }: 
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }

@@ -155,7 +155,7 @@ export async function GET(request: Request) {
     // Calculate profit factor (total wins / absolute total losses)
     const totalWins = winningTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : Number(trade.pnl)), 0);
     const totalLosses = Math.abs(losingTrades.reduce((sum, trade) => sum + (typeof trade.pnl === 'object' ? trade.pnl.toNumber() : Number(trade.pnl)), 0));
-    const profitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? 999 : 0;
+    const profitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins;
     
     // Calculate average daily volume
     const uniqueDays = new Set(trades.map(trade => trade.date.toISOString().split('T')[0]));

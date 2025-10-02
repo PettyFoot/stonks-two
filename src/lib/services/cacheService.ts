@@ -6,6 +6,9 @@ export class CacheService {
   private defaultTtl = 3600; // 1 hour
   private keyPrefix = 'stonks:analytics:';
 
+  // Static flag to prevent repeated logging
+  private static hasLoggedWarning = false;
+
   constructor() {
     // Initialize Redis connection only if environment variables are available
     if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
@@ -15,11 +18,19 @@ export class CacheService {
           token: process.env.UPSTASH_REDIS_REST_TOKEN,
         });
       } catch (error) {
-        console.warn('Redis initialization failed, caching disabled:', error);
+        // Only log once per process
+        if (!CacheService.hasLoggedWarning) {
+          console.log('Redis initialization failed, caching disabled:', error);
+          CacheService.hasLoggedWarning = true;
+        }
         this.redis = null;
       }
     } else {
-      console.warn('Redis environment variables not found, caching disabled');
+      // Only log once per process
+      if (!CacheService.hasLoggedWarning) {
+        console.log('Redis environment variables not found, caching disabled');
+        CacheService.hasLoggedWarning = true;
+      }
     }
   }
 

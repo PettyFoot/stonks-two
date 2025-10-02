@@ -700,7 +700,7 @@ export class AnalyticsService {
     
     const grossProfit = winningTrades.reduce((sum, pnl) => sum + pnl, 0);
     const grossLoss = Math.abs(losingTrades.reduce((sum, pnl) => sum + pnl, 0));
-    const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : (grossProfit > 0 ? Infinity : 0);
+    const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit;
 
     // Calculate consecutive streaks
     const { maxWins, maxLosses } = this.calculateConsecutiveStreaks(pnls);

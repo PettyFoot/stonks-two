@@ -55,13 +55,21 @@ export async function GET(
                       usagePercentage >= 70 ? 'HIGH' :
                       usagePercentage >= 50 ? 'MEDIUM' : 'LOW';
 
-    // Return the trade and order data with usage statistics
+    // Check share type
+    const isStatsShare = (sharedTrade.metadata as any)?.isStatsShare;
+    const isCalendarMonthShare = (sharedTrade.metadata as any)?.isCalendarMonthShare;
+    const isCalendarYearShare = (sharedTrade.metadata as any)?.isCalendarYearShare;
+
+    // Return the appropriate data structure based on share type
     return NextResponse.json({
       trade: sharedTrade.tradeSnapshot,
       orders: sharedTrade.orderSnapshot,
       metadata: sharedTrade.metadata,
       expiresAt: sharedTrade.expiresAt,
       createdAt: sharedTrade.createdAt,
+      isStatsShare,
+      isCalendarMonthShare,
+      isCalendarYearShare,
       // Add API usage information
       apiUsage: {
         used: sharedTrade.apiCallCount,

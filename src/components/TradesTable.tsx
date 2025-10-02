@@ -16,6 +16,7 @@ interface TradesTableProps {
   showPagination?: boolean;
   onTradeSelect?: (trade: Trade) => void;
   columnConfig?: ColumnConfiguration[];
+  isSharedView?: boolean;
 }
 
 type SortField = 'date' | 'time' | 'symbol' | 'side' | 'holdingPeriod' | 'entryPrice' | 'exitPrice' | 'volume' | 'executions' | 'pnl' | 'commission' | 'fees' | 'marketSession' | 'orderType';
@@ -32,7 +33,8 @@ const TradesTable = React.memo<TradesTableProps>(({
   trades,
   showCheckboxes = true,
   onTradeSelect,
-  columnConfig = []
+  columnConfig = [],
+  isSharedView = false
 }) => {
   const router = useRouter();
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
@@ -404,8 +406,10 @@ const TradesTable = React.memo<TradesTableProps>(({
       trades: acc.trades + 1,
       volume: acc.volume + (trade.quantity || 0),
       executions: acc.executions + (trade.executions || 0),
-      pnl: acc.pnl + (trade.pnl || 0)
-    }), { trades: 0, volume: 0, executions: 0, pnl: 0 });
+      pnl: acc.pnl + (trade.pnl || 0),
+      longs: acc.longs + (trade.side === 'long' ? 1 : 0),
+      shorts: acc.shorts + (trade.side === 'short' ? 1 : 0)
+    }), { trades: 0, volume: 0, executions: 0, pnl: 0, longs: 0, shorts: 0 });
   }, [trades]);
 
   return (
@@ -446,13 +450,18 @@ const TradesTable = React.memo<TradesTableProps>(({
         <TableBody>
           {sortedTrades.map((trade) => (
             <React.Fragment key={trade.id}>
-              <TableRow 
-                className="hover:bg-surface/50 border-b border-default cursor-pointer"
+              <TableRow
+                className={cn(
+                  "hover:bg-surface/50 border-b border-default",
+                  !isSharedView && "cursor-pointer"
+                )}
                 onClick={() => {
-                  // Call existing onTradeSelect callback if provided
-                  onTradeSelect?.(trade);
-                  // Navigate to records page
-                  handleTradeClick(trade);
+                  if (!isSharedView) {
+                    // Call existing onTradeSelect callback if provided
+                    onTradeSelect?.(trade);
+                    // Navigate to records page
+                    handleTradeClick(trade);
+                  }
                 }}
               >
                 {showCheckboxes && !isMobile && (
@@ -498,12 +507,15 @@ const TradesTable = React.memo<TradesTableProps>(({
                   }
                   return <React.Fragment key={column.id}>{cellContent}</React.Fragment>;
                 })}
-                {!isMobile && (
+                {!isMobile && !isSharedView && (
                   <TableCell>
                     <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
                       <MoreHorizontal className="h-3 w-3" />
                     </Button>
                   </TableCell>
+                )}
+                {!isMobile && isSharedView && (
+                  <TableCell></TableCell>
                 )}
               </TableRow>
               {isMobile && expandedRows.includes(trade.id) && renderExpandedDetails(trade)}
@@ -530,6 +542,12 @@ const TradesTable = React.memo<TradesTableProps>(({
                     return (
                       <TableCell key={column.id} className="text-sm font-semibold text-primary">
                         {totals.trades} trades
+                      </TableCell>
+                    );
+                  case 'side':
+                    return (
+                      <TableCell key={column.id} className="text-sm font-semibold text-primary">
+                        {totals.longs}L/{totals.shorts}S
                       </TableCell>
                     );
                   case 'volume':
@@ -571,6 +589,10 @@ const TradesTable = React.memo<TradesTableProps>(({
             <div>
               <span className="text-muted">Total Trades:</span>
               <span className="ml-2 font-semibold">{totals.trades}</span>
+            </div>
+            <div>
+              <span className="text-muted">Side:</span>
+              <span className="ml-2 font-semibold">{totals.longs}L/{totals.shorts}S</span>
             </div>
             <div>
               <span className="text-muted">Total P&L:</span>

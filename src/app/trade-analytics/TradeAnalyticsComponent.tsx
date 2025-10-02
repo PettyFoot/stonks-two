@@ -53,7 +53,7 @@ export default function TradeAnalyticsComponent() {
                   <ArrowRight className="h-5 w-5 ml-2" />
                 </Button>
               </Link>
-              <Link href="/demo">
+              <Link href="/pricing">
                 <Button size="lg" variant="outline" className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/50">
                   View Demo
                 </Button>

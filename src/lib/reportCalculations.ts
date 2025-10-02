@@ -361,12 +361,12 @@ export function calculateProfitFactor(trades: TradeData[]): number {
   const gains = trades
     .filter(t => Number(t.pnl || 0) > 0)
     .reduce((sum, t) => sum + Number(t.pnl || 0), 0);
-    
+
   const losses = Math.abs(trades
     .filter(t => Number(t.pnl || 0) < 0)
     .reduce((sum, t) => sum + Number(t.pnl || 0), 0));
-  
-  return losses === 0 ? gains > 0 ? Infinity : 0 : gains / losses;
+
+  return losses === 0 ? gains : gains / losses;
 }
 
 // Price bucket type

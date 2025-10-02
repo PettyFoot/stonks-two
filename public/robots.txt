@@ -5,7 +5,6 @@ User-agent: *
 Allow: /
 
 # Allow important public pages
-Allow: /demo
 Allow: /login
 Allow: /signup
 Allow: /about
@@ -14,6 +13,7 @@ Allow: /privacy
 Allow: /terms
 Allow: /pricing
 Allow: /features
+Allow: /blog
 
 # Allow trading journal landing pages (high priority for SEO)
 Allow: /stock-trading-journal

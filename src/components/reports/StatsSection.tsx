@@ -267,7 +267,7 @@ export default function StatsSection({ stats, winLossStats }: StatsSectionProps)
                 <div className="flex justify-between py-2 border-b border-theme-border/30">
                   <span className="text-sm text-theme-secondary-text">Profit Factor</span>
                   <span className="text-sm font-semibold text-theme-primary-text">
-                    {currentStats.profitFactor === Infinity ? '∞' : formatValue(currentStats.profitFactor, 'number')}
+                    {formatValue(currentStats.profitFactor, 'number')}
                   </span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-theme-border/30">
@@ -402,7 +402,7 @@ export default function StatsSection({ stats, winLossStats }: StatsSectionProps)
                 <div className="flex justify-between py-2 border-b border-theme-border/30">
                   <span className="text-sm text-theme-secondary-text">Profit Factor</span>
                   <span className="text-sm font-semibold text-theme-primary-text">
-                    {winLossStats?.winningDays.profitFactor === Infinity ? '∞' : (winLossStats?.winningDays.profitFactor ? formatValue(winLossStats.winningDays.profitFactor, 'number') : '0')}
+                    {winLossStats?.winningDays.profitFactor ? formatValue(winLossStats.winningDays.profitFactor, 'number') : '0'}
                   </span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-theme-border/30">
@@ -537,7 +537,7 @@ export default function StatsSection({ stats, winLossStats }: StatsSectionProps)
                 <div className="flex justify-between py-2 border-b border-theme-border/30">
                   <span className="text-sm text-theme-secondary-text">Profit Factor</span>
                   <span className="text-sm font-semibold text-theme-primary-text">
-                    {winLossStats?.losingDays.profitFactor === Infinity ? '∞' : formatValue(winLossStats?.losingDays.profitFactor || 0, 'number')}
+                    {formatValue(winLossStats?.losingDays.profitFactor || 0, 'number')}
                   </span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-theme-border/30">

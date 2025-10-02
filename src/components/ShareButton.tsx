@@ -20,13 +20,23 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 interface ShareButtonProps {
   tradeId?: string;
   date?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  year?: number;
+  month?: number;
+  shareType?: 'record' | 'statistics' | 'calendar-month' | 'calendar-year';
   className?: string;
   variant?: 'icon' | 'button';
 }
 
-export default function ShareButton({ 
-  tradeId, 
-  date, 
+export default function ShareButton({
+  tradeId,
+  date,
+  dateFrom,
+  dateTo,
+  year,
+  month,
+  shareType = 'record',
   className = '',
   variant = 'icon'
 }: ShareButtonProps) {
@@ -38,8 +48,8 @@ export default function ShareButton({
   const [expiresAt, setExpiresAt] = useState<string>('');
 
   const createShare = async () => {
-    if (!tradeId && !date) {
-      setError('Either trade ID or date is required');
+    if (!tradeId && !date && !dateFrom && !dateTo && !year) {
+      setError('Either trade ID, date, date range, or year is required');
       return;
     }
 
@@ -54,7 +64,12 @@ export default function ShareButton({
         },
         body: JSON.stringify({
           tradeId,
-          date
+          date,
+          dateFrom,
+          dateTo,
+          year,
+          month,
+          shareType
         }),
       });
 
@@ -135,10 +150,23 @@ export default function ShareButton({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="h-5 w-5" />
-            Share Trade Record
+            {shareType === 'statistics'
+              ? 'Share Trading Statistics'
+              : shareType === 'calendar-month'
+                ? 'Share Calendar Month'
+                : shareType === 'calendar-year'
+                  ? 'Share Calendar Year'
+                  : 'Share Trade Record'}
           </DialogTitle>
           <DialogDescription>
-            Create a secure link to share this trade record. The link will expire in 14 days.
+            {shareType === 'statistics'
+              ? 'Create a secure link to share your trading statistics. The link will expire in 14 days.'
+              : shareType === 'calendar-month'
+                ? 'Create a secure link to share this calendar month view. The link will expire in 14 days.'
+                : shareType === 'calendar-year'
+                  ? 'Create a secure link to share this calendar year view. The link will expire in 14 days.'
+                  : 'Create a secure link to share this trade record. The link will expire in 14 days.'
+            }
           </DialogDescription>
         </DialogHeader>
 
@@ -152,9 +180,15 @@ export default function ShareButton({
         {!shareUrl && !error && (
           <div className="space-y-4">
             <div className="text-sm text-gray-600">
-              {date 
-                ? `This will share all trades and notes for ${date}`
-                : 'This will share the selected trade record with execution details'
+              {shareType === 'statistics'
+                ? `This will share your trading statistics${dateFrom && dateTo ? ` from ${dateFrom} to ${dateTo}` : ''}`
+                : shareType === 'calendar-month'
+                  ? `This will share the calendar view for ${month !== undefined ? new Date(year || 2025, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'the selected month'}`
+                  : shareType === 'calendar-year'
+                    ? `This will share the calendar year view for ${year}`
+                    : date
+                      ? `This will share all trades and notes for ${date}`
+                      : 'This will share the selected trade record with execution details'
               }
             </div>
             <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 p-3 rounded-md">
@@ -210,7 +244,12 @@ export default function ShareButton({
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Anyone with this link can view the trade record. No personal information is shared.
+                {shareType === 'statistics'
+                  ? 'Anyone with this link can view the trading statistics. No personal information is shared.'
+                  : shareType === 'calendar-month' || shareType === 'calendar-year'
+                    ? 'Anyone with this link can view the calendar. No personal information is shared.'
+                    : 'Anyone with this link can view the trade record. No personal information is shared.'
+                }
               </AlertDescription>
             </Alert>
           </div>

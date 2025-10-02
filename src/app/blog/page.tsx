@@ -6,9 +6,14 @@ import { BlogNav } from '@/components/blog/BlogNav';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
+import { SEO_CONFIG } from '@/lib/seo';
+
 export const metadata: Metadata = {
   title: 'Blog | Trading Insights & Resources',
   description: 'Expert trading strategies, market analysis, and platform updates from Trade Voyager Analytics',
+  alternates: {
+    canonical: `${SEO_CONFIG.siteUrl}/blog`,
+  },
 };
 
 export const revalidate = 60; // Revalidate every 60 seconds

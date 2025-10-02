@@ -26,14 +26,14 @@ export default function Footer() {
               Advanced trade analytics, real-time performance tracking, and comprehensive trading insights.
             </p>
             <div className="flex space-x-4">
-              <Link href="/demo">
+              <Link href="/pricing">
                 <Button size="sm" className="bg-[var(--theme-tertiary)] hover:bg-[var(--theme-tertiary)]/80 text-white">
-                  Try Demo
+                  Get Started
                 </Button>
               </Link>
-              <Link href="/login">
+              <Link href="/features">
                 <Button size="sm" variant="outline" className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/10">
-                  Get Started
+                  View Features
                 </Button>
               </Link>
             </div>
@@ -49,11 +49,11 @@ export default function Footer() {
               <Link href="/contact" className="block text-gray-600 hover:text-[var(--theme-tertiary)] transition-colors">
                 Contact
               </Link>
-              <Link href="/demo" className="block text-gray-600 hover:text-[var(--theme-tertiary)] transition-colors">
-                Demo
+              <Link href="/features" className="block text-gray-600 hover:text-[var(--theme-tertiary)] transition-colors">
+                Features
               </Link>
-              <Link href="/login" className="block text-gray-600 hover:text-[var(--theme-tertiary)] transition-colors">
-                Sign In
+              <Link href="/pricing" className="block text-gray-600 hover:text-[var(--theme-tertiary)] transition-colors">
+                Pricing
               </Link>
               <Link href="/blog" className="block text-gray-600 hover:text-[var(--theme-tertiary)] transition-colors">
                 Blog

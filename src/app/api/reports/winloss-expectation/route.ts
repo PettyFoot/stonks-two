@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
     const largestWin = winningTrades.length > 0 ? Math.max(...winningTrades.map(t => t.pnl)) : 0;
     const largestLoss = losingTrades.length > 0 ? Math.min(...losingTrades.map(t => t.pnl)) : 0;
 
-    const profitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? 999 : 0;
+    const profitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins;
     const payoffRatio = avgLoss > 0 ? avgWin / avgLoss : 0;
     const winRate = totalTrades > 0 ? (winCount / totalTrades) * 100 : 0;
     const expectationPerTrade = totalTrades > 0 ? (totalWins - totalLosses) / totalTrades : 0;
