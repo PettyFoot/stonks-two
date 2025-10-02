@@ -170,20 +170,7 @@ export default function SharedCalendarMonthPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 sm:px-6 lg:px-8 py-4">
-        {/* Centered Logo */}
-        <div className="flex justify-center mb-4">
-          <Link href="/">
-            <Image
-              src="/trade-voyager-logo.png"
-              alt="Trade Voyager"
-              width={80}
-              height={27}
-              className="object-contain"
-            />
-          </Link>
-        </div>
-
-        <div className="flex items-center justify-between">
+        <div className="relative flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Calendar className="h-6 w-6 text-blue-600" />
             <div>
@@ -194,6 +181,18 @@ export default function SharedCalendarMonthPage() {
                 Shared via <Link href="/" className="text-blue-600 hover:text-blue-800 transition-colors">Trade Voyager Analytics</Link>
               </p>
             </div>
+          </div>
+
+          <div className="absolute left-1/2 transform -translate-x-1/2">
+            <Link href="/">
+              <Image
+                src="/trade-voyager-logo.png"
+                alt="Trade Voyager"
+                width={80}
+                height={27}
+                className="object-contain"
+              />
+            </Link>
           </div>
 
           <Link href="/" className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors">
