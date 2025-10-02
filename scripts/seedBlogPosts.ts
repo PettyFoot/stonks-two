@@ -632,6 +632,22 @@ After your next trade, fill this out. That's how profitable traders are built—
 async function main() {
   console.log('Starting blog posts seed...');
 
+  // Find or create an admin user for blog post authorship
+  let adminUser = await prisma.user.findFirst({
+    where: { isAdmin: true },
+  });
+
+  if (!adminUser) {
+    console.log('No admin user found, using first available user...');
+    adminUser = await prisma.user.findFirst();
+
+    if (!adminUser) {
+      throw new Error('No users found in database. Please create a user first.');
+    }
+  }
+
+  console.log(`Using author: ${adminUser.email} (${adminUser.id})`);
+
   for (const postData of blogPosts) {
     console.log(`Creating post: ${postData.title}`);
 
@@ -671,6 +687,7 @@ async function main() {
         excerpt: postData.excerpt,
         content: postData.content,
         author: postData.author,
+        authorId: adminUser.id,
         status: postData.status,
         seoTitle: postData.seoTitle,
         seoDescription: postData.seoDescription,
