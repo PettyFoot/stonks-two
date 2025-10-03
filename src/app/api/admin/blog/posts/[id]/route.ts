@@ -12,25 +12,25 @@ const UpdatePostSchema = z.object({
   author: z.string().min(1).optional(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
   tags: z.array(z.string()).optional(),
-  seoTitle: z.string().max(70).optional().nullable(),
-  seoDescription: z.string().max(160).optional().nullable(),
+  seoTitle: z.string().max(255).optional().nullable(),
+  seoDescription: z.string().max(500).optional().nullable(),
   publishedAt: z.string().datetime().optional().nullable(),
   isAutosave: z.boolean().optional(),
 });
 
 // Relaxed schema for autosaves - allows empty or partial fields
 const AutosaveUpdateSchema = z.object({
-  title: z.string().max(255).optional(),
-  slug: z.string().max(255).regex(/^[a-z0-9-]*$/).optional(),
-  excerpt: z.string().max(500).optional(),
-  content: z.string().optional(),
-  coverImage: z.string().url().optional().nullable(),
-  author: z.string().optional(),
+  title: z.string().optional().nullable(),
+  slug: z.string().optional().nullable(),
+  excerpt: z.string().optional().nullable(),
+  content: z.string().optional().nullable(),
+  coverImage: z.string().optional().nullable(),
+  author: z.string().optional().nullable(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
   tags: z.array(z.string()).optional(),
-  seoTitle: z.string().max(70).optional().nullable(),
-  seoDescription: z.string().max(160).optional().nullable(),
-  publishedAt: z.string().datetime().optional().nullable(),
+  seoTitle: z.string().optional().nullable(),
+  seoDescription: z.string().optional().nullable(),
+  publishedAt: z.string().optional().nullable(),
   isAutosave: z.boolean().optional(),
 });
 
@@ -115,34 +115,48 @@ export async function PUT(
       }
     }
 
-    // Handle tags if provided
+    // Handle tags if provided (only update when explicitly provided, not undefined)
     let tagUpdates = {};
-    if (data.tags) {
-      // Remove old tags
+    if (data.tags !== undefined) {
+      // Get existing tag IDs to decrement their counts
+      const existingTagIds = existingPost.tags.map(t => t.tagId);
+
+      // Decrement counts on old tags
+      if (existingTagIds.length > 0) {
+        await prisma.blogTag.updateMany({
+          where: { id: { in: existingTagIds } },
+          data: { postCount: { decrement: 1 } },
+        });
+      }
+
+      // Remove old tag connections
       await prisma.blogPostTag.deleteMany({
         where: { postId: id },
       });
 
-      // Create new tag connections
-      const tagConnections = await Promise.all(
-        data.tags.map(async (tagName) => {
-          const tagSlug = tagName.toLowerCase().replace(/\s+/g, '-');
-          const tag = await prisma.blogTag.upsert({
-            where: { slug: tagSlug },
-            create: { name: tagName, slug: tagSlug, postCount: 1 },
-            update: { postCount: { increment: 1 } },
-          });
-          return tag.id;
-        })
-      );
+      // Only create new tags if the array is not empty
+      if (data.tags.length > 0) {
+        // Create new tag connections
+        const tagConnections = await Promise.all(
+          data.tags.map(async (tagName) => {
+            const tagSlug = tagName.toLowerCase().replace(/\s+/g, '-');
+            const tag = await prisma.blogTag.upsert({
+              where: { slug: tagSlug },
+              create: { name: tagName, slug: tagSlug, postCount: 1 },
+              update: { postCount: { increment: 1 } },
+            });
+            return tag.id;
+          })
+        );
 
-      tagUpdates = {
-        tags: {
-          create: tagConnections.map(tagId => ({
-            tag: { connect: { id: tagId } },
-          })),
-        },
-      };
+        tagUpdates = {
+          tags: {
+            create: tagConnections.map(tagId => ({
+              tag: { connect: { id: tagId } },
+            })),
+          },
+        };
+      }
     }
 
     // Handle publishedAt logic

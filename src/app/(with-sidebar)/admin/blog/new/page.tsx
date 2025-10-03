@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import TopBar from '@/components/TopBar';
 import { PageTriangleLoader } from '@/components/ui/TriangleLoader';
@@ -52,20 +51,37 @@ export default function NewBlogPostPage() {
         .map(t => t.trim())
         .filter(t => t.length > 0);
 
+      // Sanitize data for autosave - convert empty strings to null
+      const sanitizedData = {
+        title: formData.title || null,
+        slug: formData.slug || null,
+        excerpt: formData.excerpt || null,
+        content: formData.content || null,
+        author: formData.author || null,
+        seoTitle: formData.seoTitle || null,
+        seoDescription: formData.seoDescription || null,
+        tags,
+        isAutosave: true,
+      };
+
       if (postId) {
         // Update existing post
         const res = await fetch(`/api/admin/blog/posts/${postId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...formData,
-            tags,
-            isAutosave: true,
-          }),
+          body: JSON.stringify(sanitizedData),
         });
 
         if (res.ok) {
           setLastSaved(new Date());
+        } else {
+          // Log validation errors for debugging
+          const errorData = await res.json();
+          console.error('Autosave failed with status:', res.status);
+          console.error('Error details:', errorData);
+          if (errorData.details) {
+            console.error('Validation issues:', errorData.details);
+          }
         }
       } else {
         // Create new post
@@ -73,10 +89,8 @@ export default function NewBlogPostPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            ...formData,
+            ...sanitizedData,
             status: 'DRAFT',
-            tags,
-            isAutosave: true,
           }),
         });
 
@@ -86,6 +100,14 @@ export default function NewBlogPostPage() {
           setLastSaved(new Date());
           // Update URL to edit mode without redirect
           window.history.replaceState({}, '', `/admin/blog/${data.post.id}`);
+        } else {
+          // Log validation errors for debugging
+          const errorData = await res.json();
+          console.error('Autosave failed with status:', res.status);
+          console.error('Error details:', errorData);
+          if (errorData.details) {
+            console.error('Validation issues:', errorData.details);
+          }
         }
       }
     } catch (error) {

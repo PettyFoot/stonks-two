@@ -94,18 +94,35 @@ export default function EditBlogPostPage() {
         .map(t => t.trim())
         .filter(t => t.length > 0);
 
+      // Sanitize data for autosave - convert empty strings to null
+      const sanitizedData = {
+        title: formData.title || null,
+        slug: formData.slug || null,
+        excerpt: formData.excerpt || null,
+        content: formData.content || null,
+        author: formData.author || null,
+        seoTitle: formData.seoTitle || null,
+        seoDescription: formData.seoDescription || null,
+        tags,
+        isAutosave: true,
+      };
+
       const res = await fetch(`/api/admin/blog/posts/${params.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          tags,
-          isAutosave: true,
-        }),
+        body: JSON.stringify(sanitizedData),
       });
 
       if (res.ok) {
         setLastSaved(new Date());
+      } else {
+        // Log validation errors for debugging
+        const errorData = await res.json();
+        console.error('Autosave failed with status:', res.status);
+        console.error('Error details:', errorData);
+        if (errorData.details) {
+          console.error('Validation issues:', errorData.details);
+        }
       }
     } catch (error) {
       console.error('Autosave error:', error);

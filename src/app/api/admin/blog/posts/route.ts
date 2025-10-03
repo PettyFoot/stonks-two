@@ -19,25 +19,25 @@ const CreatePostSchema = z.object({
   author: z.string().min(1),
   status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).default('DRAFT'),
   tags: z.array(z.string()).default([]),
-  seoTitle: z.string().max(70).optional(),
-  seoDescription: z.string().max(160).optional(),
+  seoTitle: z.string().max(255).optional(),
+  seoDescription: z.string().max(500).optional(),
   publishedAt: z.string().datetime().nullable().optional(),
   isAutosave: z.boolean().optional(),
 });
 
 // Relaxed schema for autosaves - only requires minimal fields
 const AutosavePostSchema = z.object({
-  title: z.string().max(255).optional(),
-  slug: z.string().max(255).regex(/^[a-z0-9-]*$/).optional(),
-  excerpt: z.string().max(500).optional(),
-  content: z.string().optional(),
-  coverImage: z.string().url().optional(),
-  author: z.string().optional(),
+  title: z.string().optional().nullable(),
+  slug: z.string().optional().nullable(),
+  excerpt: z.string().optional().nullable(),
+  content: z.string().optional().nullable(),
+  coverImage: z.string().optional().nullable(),
+  author: z.string().optional().nullable(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).default('DRAFT'),
   tags: z.array(z.string()).default([]),
-  seoTitle: z.string().max(70).optional(),
-  seoDescription: z.string().max(160).optional(),
-  publishedAt: z.string().datetime().nullable().optional(),
+  seoTitle: z.string().optional().nullable(),
+  seoDescription: z.string().optional().nullable(),
+  publishedAt: z.string().optional().nullable(),
   isAutosave: z.boolean().optional(),
 });
 
