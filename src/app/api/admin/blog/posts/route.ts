@@ -22,6 +22,23 @@ const CreatePostSchema = z.object({
   seoTitle: z.string().max(70).optional(),
   seoDescription: z.string().max(160).optional(),
   publishedAt: z.string().datetime().nullable().optional(),
+  isAutosave: z.boolean().optional(),
+});
+
+// Relaxed schema for autosaves - only requires minimal fields
+const AutosavePostSchema = z.object({
+  title: z.string().max(255).optional(),
+  slug: z.string().max(255).regex(/^[a-z0-9-]*$/).optional(),
+  excerpt: z.string().max(500).optional(),
+  content: z.string().optional(),
+  coverImage: z.string().url().optional(),
+  author: z.string().optional(),
+  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).default('DRAFT'),
+  tags: z.array(z.string()).default([]),
+  seoTitle: z.string().max(70).optional(),
+  seoDescription: z.string().max(160).optional(),
+  publishedAt: z.string().datetime().nullable().optional(),
+  isAutosave: z.boolean().optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -109,11 +126,19 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireAdminAuth();
     const body = await request.json();
-    const data = CreatePostSchema.parse(body);
+
+    // Use different schema based on whether this is an autosave
+    const isAutosave = body.isAutosave === true;
+    const data = isAutosave
+      ? AutosavePostSchema.parse(body)
+      : CreatePostSchema.parse(body);
+
+    // For autosaves, generate a temporary slug if none provided
+    const slug = data.slug || `draft-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
     // Check if slug already exists
     const existingPost = await prisma.blogPost.findUnique({
-      where: { slug: data.slug },
+      where: { slug },
     });
 
     if (existingPost) {
@@ -146,12 +171,12 @@ export async function POST(request: NextRequest) {
     // Create post
     const post = await prisma.blogPost.create({
       data: {
-        title: data.title,
-        slug: data.slug,
+        title: data.title || 'Untitled Draft',
+        slug: slug,
         excerpt: data.excerpt,
-        content: data.content,
+        content: data.content || '',
         coverImage: data.coverImage,
-        author: data.author,
+        author: data.author || 'Unknown',
         authorId: user.id,
         status: data.status,
         seoTitle: data.seoTitle,

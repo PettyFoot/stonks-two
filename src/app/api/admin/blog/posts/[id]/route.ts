@@ -15,6 +15,23 @@ const UpdatePostSchema = z.object({
   seoTitle: z.string().max(70).optional().nullable(),
   seoDescription: z.string().max(160).optional().nullable(),
   publishedAt: z.string().datetime().optional().nullable(),
+  isAutosave: z.boolean().optional(),
+});
+
+// Relaxed schema for autosaves - allows empty or partial fields
+const AutosaveUpdateSchema = z.object({
+  title: z.string().max(255).optional(),
+  slug: z.string().max(255).regex(/^[a-z0-9-]*$/).optional(),
+  excerpt: z.string().max(500).optional(),
+  content: z.string().optional(),
+  coverImage: z.string().url().optional().nullable(),
+  author: z.string().optional(),
+  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
+  tags: z.array(z.string()).optional(),
+  seoTitle: z.string().max(70).optional().nullable(),
+  seoDescription: z.string().max(160).optional().nullable(),
+  publishedAt: z.string().datetime().optional().nullable(),
+  isAutosave: z.boolean().optional(),
 });
 
 export async function GET(
@@ -69,7 +86,12 @@ export async function PUT(
     await requireAdminAuth();
     const { id } = await params;
     const body = await request.json();
-    const data = UpdatePostSchema.parse(body);
+
+    // Use different schema based on whether this is an autosave
+    const isAutosave = body.isAutosave === true;
+    const data = isAutosave
+      ? AutosaveUpdateSchema.parse(body)
+      : UpdatePostSchema.parse(body);
 
     const existingPost = await prisma.blogPost.findUnique({
       where: { id },

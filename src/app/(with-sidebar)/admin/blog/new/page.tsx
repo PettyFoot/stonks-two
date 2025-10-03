@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import TopBar from '@/components/TopBar';
@@ -10,15 +10,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BlogEditor } from '@/components/blog/BlogEditor';
 import { toast } from 'sonner';
-import { Save, Eye } from 'lucide-react';
+import { Save, Eye, Clock } from 'lucide-react';
 
 export default function NewBlogPostPage() {
-  const router = useRouter();
   const { isAdmin, isLoading: authLoading } = useAdminAuth();
   const [saving, setSaving] = useState(false);
+  const [postId, setPostId] = useState<string | null>(null);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
@@ -40,6 +41,80 @@ export default function NewBlogPostPage() {
       .replace(/-+/g, '-');
   };
 
+  // Autosave function
+  const handleAutosave = React.useCallback(async () => {
+    // Don't autosave if already saving
+    if (saving) return;
+
+    try {
+      const tags = formData.tags
+        .split(',')
+        .map(t => t.trim())
+        .filter(t => t.length > 0);
+
+      if (postId) {
+        // Update existing post
+        const res = await fetch(`/api/admin/blog/posts/${postId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            tags,
+            isAutosave: true,
+          }),
+        });
+
+        if (res.ok) {
+          setLastSaved(new Date());
+        }
+      } else {
+        // Create new post
+        const res = await fetch('/api/admin/blog/posts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            status: 'DRAFT',
+            tags,
+            isAutosave: true,
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setPostId(data.post.id);
+          setLastSaved(new Date());
+          // Update URL to edit mode without redirect
+          window.history.replaceState({}, '', `/admin/blog/${data.post.id}`);
+        }
+      }
+    } catch (error) {
+      console.error('Autosave error:', error);
+      // Silent fail for autosave
+    }
+  }, [saving, formData, postId]);
+
+  // Autosave effect
+  useEffect(() => {
+    // Clear existing timer
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+    }
+
+    // Only autosave if there's content
+    if (formData.title || formData.content) {
+      autosaveTimerRef.current = setTimeout(() => {
+        handleAutosave();
+      }, 10000); // 10 seconds
+    }
+
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+      }
+    };
+  }, [formData, handleAutosave]);
+
   const handleTitleChange = (value: string) => {
     setFormData({
       ...formData,
@@ -49,9 +124,12 @@ export default function NewBlogPostPage() {
   };
 
   const handleSubmit = async (status: 'DRAFT' | 'PUBLISHED') => {
-    if (!formData.title || !formData.slug || !formData.content || !formData.author) {
-      toast.error('Please fill in all required fields');
-      return;
+    // Validate required fields only for publish
+    if (status === 'PUBLISHED') {
+      if (!formData.title || !formData.slug || !formData.content || !formData.author) {
+        toast.error('Please fill in all required fields (title, slug, content, author)');
+        return;
+      }
     }
 
     setSaving(true);
@@ -61,23 +139,49 @@ export default function NewBlogPostPage() {
         .map(t => t.trim())
         .filter(t => t.length > 0);
 
-      const res = await fetch('/api/admin/blog/posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          status,
-          tags,
-          publishedAt: status === 'PUBLISHED' ? new Date().toISOString() : null,
-        }),
-      });
+      if (postId) {
+        // Update existing post
+        const res = await fetch(`/api/admin/blog/posts/${postId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            status,
+            tags,
+            publishedAt: status === 'PUBLISHED' ? new Date().toISOString() : null,
+          }),
+        });
 
-      if (res.ok) {
-        toast.success(`Post ${status === 'PUBLISHED' ? 'published' : 'saved as draft'} successfully`);
-        router.push('/admin/blog');
+        if (res.ok) {
+          toast.success(`Post ${status === 'PUBLISHED' ? 'published' : 'saved'} successfully`);
+          setLastSaved(new Date());
+        } else {
+          const error = await res.json();
+          toast.error(error.error || 'Failed to save post');
+        }
       } else {
-        const error = await res.json();
-        toast.error(error.error || 'Failed to save post');
+        // Create new post
+        const res = await fetch('/api/admin/blog/posts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            status,
+            tags,
+            publishedAt: status === 'PUBLISHED' ? new Date().toISOString() : null,
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setPostId(data.post.id);
+          toast.success(`Post ${status === 'PUBLISHED' ? 'published' : 'saved'} successfully`);
+          setLastSaved(new Date());
+          window.history.replaceState({}, '', `/admin/blog/${data.post.id}`);
+        } else {
+          const error = await res.json();
+          toast.error(error.error || 'Failed to save post');
+        }
       }
     } catch (error) {
       console.error('Error saving post:', error);
@@ -101,15 +205,25 @@ export default function NewBlogPostPage() {
     <div className="flex flex-col h-full">
       <TopBar title="New Blog Post" showTimeRangeFilters={false} />
 
-      <div className="flex justify-end gap-2 px-6 py-4 border-b">
-        <Button variant="outline" onClick={() => handleSubmit('DRAFT')} disabled={saving}>
-          <Save className="h-4 w-4 mr-2" />
-          Save Draft
-        </Button>
-        <Button onClick={() => handleSubmit('PUBLISHED')} disabled={saving}>
-          <Eye className="h-4 w-4 mr-2" />
-          Publish
-        </Button>
+      <div className="flex justify-between items-center gap-2 px-6 py-4 border-b">
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <Clock className="h-4 w-4" />
+          {lastSaved ? (
+            <span>Last saved: {lastSaved.toLocaleTimeString()}</span>
+          ) : (
+            <span>Autosaving every 10 seconds</span>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => handleSubmit('DRAFT')} disabled={saving}>
+            <Save className="h-4 w-4 mr-2" />
+            Save Draft
+          </Button>
+          <Button onClick={() => handleSubmit('PUBLISHED')} disabled={saving}>
+            <Eye className="h-4 w-4 mr-2" />
+            Publish
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-auto p-6">

@@ -106,9 +106,9 @@ export default function LandingPageComponent() {
                 <Link href="/features" className="text-white hover:text-[var(--theme-tertiary)] text-lg font-medium transition-colors">
                   Features
                 </Link>
-                <Link href="/pricing" className="text-white hover:text-[var(--theme-tertiary)] text-lg font-medium transition-colors">
+                <button onClick={startDemo} disabled={isStartingDemo} className="text-white hover:text-[var(--theme-tertiary)] text-lg font-medium transition-colors disabled:opacity-50">
                   Demo
-                </Link>
+                </button>
               </div>
               
               <div className="hidden md:flex items-center space-x-3">
@@ -133,27 +133,30 @@ export default function LandingPageComponent() {
             {isMobileMenuOpen && (
               <div className="md:hidden absolute top-full left-0 right-0 bg-black/90 backdrop-blur-sm border-t border-white/20 mt-4 z-50">
                 <div className="flex flex-col space-y-4 p-6">
-                  <Link 
-                    href="/about" 
+                  <Link
+                    href="/about"
                     className="text-white hover:text-[var(--theme-tertiary)] text-lg font-medium transition-colors"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     About Us
                   </Link>
-                  <Link 
-                    href="/features" 
+                  <Link
+                    href="/features"
                     className="text-white hover:text-[var(--theme-tertiary)] text-lg font-medium transition-colors"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Features
                   </Link>
-                  <Link 
-                    href="/pricing" 
-                    className="text-white hover:text-[var(--theme-tertiary)] text-lg font-medium transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      startDemo();
+                    }}
+                    disabled={isStartingDemo}
+                    className="text-white hover:text-[var(--theme-tertiary)] text-lg font-medium transition-colors text-left disabled:opacity-50"
                   >
                     Demo
-                  </Link>
+                  </button>
                   <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
                     <Button variant="ghost" className="w-full text-white hover:bg-white/10 text-lg">
                       Sign In

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import TopBar from '@/components/TopBar';
@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { BlogEditor } from '@/components/blog/BlogEditor';
 import { toast } from 'sonner';
-import { Save, Eye, Trash2 } from 'lucide-react';
+import { Save, Eye, Trash2, Clock } from 'lucide-react';
 
 interface BlogPost {
   id: string;
@@ -35,6 +35,8 @@ export default function EditBlogPostPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
@@ -47,13 +49,7 @@ export default function EditBlogPostPage() {
     seoDescription: '',
   });
 
-  useEffect(() => {
-    if (isAdmin && !authLoading && params.id) {
-      fetchPost();
-    }
-  }, [isAdmin, authLoading, params.id]);
-
-  const fetchPost = async () => {
+  const fetchPost = React.useCallback(async () => {
     try {
       const res = await fetch(`/api/admin/blog/posts/${params.id}`);
       if (res.ok) {
@@ -72,25 +68,74 @@ export default function EditBlogPostPage() {
         });
       } else {
         toast.error('Failed to load post');
-        router.push('/admin/blog');
       }
     } catch (error) {
       console.error('Error fetching post:', error);
       toast.error('Failed to load post');
-      router.push('/admin/blog');
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
 
-  const generateSlug = (title: string) => {
-    return title
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-');
-  };
+  useEffect(() => {
+    if (isAdmin && !authLoading && params.id) {
+      fetchPost();
+    }
+  }, [isAdmin, authLoading, params.id, fetchPost]);
+
+  // Autosave function
+  const handleAutosave = React.useCallback(async () => {
+    // Don't autosave if already saving
+    if (saving) return;
+
+    try {
+      const tags = formData.tags
+        .split(',')
+        .map(t => t.trim())
+        .filter(t => t.length > 0);
+
+      const res = await fetch(`/api/admin/blog/posts/${params.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          tags,
+          isAutosave: true,
+        }),
+      });
+
+      if (res.ok) {
+        setLastSaved(new Date());
+      }
+    } catch (error) {
+      console.error('Autosave error:', error);
+      // Silent fail for autosave
+    }
+  }, [saving, formData, params.id]);
+
+  // Autosave effect
+  useEffect(() => {
+    // Don't autosave while loading initial data
+    if (loading) return;
+
+    // Clear existing timer
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+    }
+
+    // Only autosave if there's content
+    if (formData.title || formData.content) {
+      autosaveTimerRef.current = setTimeout(() => {
+        handleAutosave();
+      }, 10000); // 10 seconds
+    }
+
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+      }
+    };
+  }, [formData, loading, handleAutosave]);
 
   const handleTitleChange = (value: string) => {
     setFormData({
@@ -100,9 +145,12 @@ export default function EditBlogPostPage() {
   };
 
   const handleSubmit = async (status: 'DRAFT' | 'PUBLISHED') => {
-    if (!formData.title || !formData.slug || !formData.content || !formData.author) {
-      toast.error('Please fill in all required fields');
-      return;
+    // Validate required fields only for publish
+    if (status === 'PUBLISHED') {
+      if (!formData.title || !formData.slug || !formData.content || !formData.author) {
+        toast.error('Please fill in all required fields (title, slug, content, author)');
+        return;
+      }
     }
 
     setSaving(true);
@@ -127,7 +175,8 @@ export default function EditBlogPostPage() {
 
       if (res.ok) {
         toast.success(`Post ${status === 'PUBLISHED' ? 'published' : 'saved'} successfully`);
-        router.push('/admin/blog');
+        setLastSaved(new Date());
+        // Stay on this page - no redirect
       } else {
         const error = await res.json();
         toast.error(error.error || 'Failed to save post');
@@ -180,14 +229,24 @@ export default function EditBlogPostPage() {
       <TopBar title="Edit Blog Post" showTimeRangeFilters={false} />
 
       <div className="flex justify-between items-center gap-2 px-6 py-4 border-b">
-        <Button
-          variant="destructive"
-          onClick={handleDelete}
-          disabled={saving || deleting}
-        >
-          <Trash2 className="h-4 w-4 mr-2" />
-          Delete
-        </Button>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={saving || deleting}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete
+          </Button>
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Clock className="h-4 w-4" />
+            {lastSaved ? (
+              <span>Last saved: {lastSaved.toLocaleTimeString()}</span>
+            ) : (
+              <span>Autosaving every 10 seconds</span>
+            )}
+          </div>
+        </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => handleSubmit('DRAFT')} disabled={saving || deleting}>
             <Save className="h-4 w-4 mr-2" />
