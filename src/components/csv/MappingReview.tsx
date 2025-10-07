@@ -101,17 +101,39 @@ export default function MappingReview({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAutoSubmitting, setIsAutoSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Utility function to wrap fetch with timeout
+  const fetchWithTimeout = useCallback(async (url: string, options: RequestInit, timeoutMs = 30000) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Request timed out after 30 seconds. Please try again or contact support if the issue persists.');
+      }
+      throw error;
+    }
+  }, []);
 
   // Auto-submit handler for back button/ESC key - defined before use in useEffect
   const handleAutoSubmit = useCallback(async () => {
     if (isProcessing || isAutoSubmitting) return;
 
     setIsAutoSubmitting(true);
+    setErrorMessage(null);
 
     try {
       // Use current AI mappings without any user corrections
-      const response = await fetch('/api/csv/finalize-mappings', {
+      const response = await fetchWithTimeout('/api/csv/finalize-mappings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -129,18 +151,17 @@ export default function MappingReview({
         throw new Error(result.error || 'Failed to finalize mappings');
       }
 
-
-
       // Call the original callback with the result
       onApproveMapping(result);
     } catch (error) {
       console.error('💥 Auto-submit failed:', error);
-      // For now, fall back to the original behavior
-      onApproveMapping();
+      const errorMsg = error instanceof Error ? error.message : 'Failed to process import';
+      setErrorMessage(errorMsg);
+      // Don't close the dialog - let user see the error and retry
     } finally {
       setIsAutoSubmitting(false);
     }
-  }, [isProcessing, isAutoSubmitting, importBatchId, onApproveMapping]);
+  }, [isProcessing, isAutoSubmitting, importBatchId, onApproveMapping, fetchWithTimeout]);
 
   // Handle browser back button - auto-submit when user tries to navigate away
   useEffect(() => {
@@ -248,17 +269,17 @@ export default function MappingReview({
   };
 
   const handleReportError = async () => {
-
-    
     if (!importBatchId) {
       console.error('❌ Missing importBatchId, cannot report error');
+      setErrorMessage('Missing import batch ID. Please refresh and try again.');
       return;
     }
 
     setIsProcessing(true);
-    
+    setErrorMessage(null);
+
     try {
-      const response = await fetch('/api/csv/finalize-mappings', {
+      const response = await fetchWithTimeout('/api/csv/finalize-mappings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -269,39 +290,37 @@ export default function MappingReview({
           reportError: true,
         }),
       });
-      
+
       const result = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(result.error || 'Failed to report error');
       }
 
-
-      
       // Close the dialog and notify parent
       onClose();
-      
+
     } catch (error) {
       console.error('💥 Failed to report error:', error);
-      // For now, just close the dialog
-      onClose();
+      const errorMsg = error instanceof Error ? error.message : 'Failed to report error';
+      setErrorMessage(errorMsg);
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleUseAsIs = async () => {
-
-    
     if (!importBatchId) {
       console.error('❌ Missing importBatchId, cannot finalize mappings');
+      setErrorMessage('Missing import batch ID. Please refresh and try again.');
       return;
     }
 
     setIsProcessing(true);
-    
+    setErrorMessage(null);
+
     try {
-      const response = await fetch('/api/csv/finalize-mappings', {
+      const response = await fetchWithTimeout('/api/csv/finalize-mappings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -312,22 +331,20 @@ export default function MappingReview({
           reportError: false,
         }),
       });
-      
+
       const result = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(result.error || 'Failed to finalize mappings');
       }
 
-
-      
       // Call the original callback with the result
       onApproveMapping(result);
-      
+
     } catch (error) {
       console.error('💥 Failed to finalize mappings:', error);
-      // For now, fall back to the original behavior
-      onApproveMapping();
+      const errorMsg = error instanceof Error ? error.message : 'Failed to process import';
+      setErrorMessage(errorMsg);
     } finally {
       setIsProcessing(false);
     }
@@ -345,17 +362,17 @@ export default function MappingReview({
       }
     });
 
-
-
     if (!importBatchId) {
       console.error('❌ Missing importBatchId, cannot finalize mappings');
+      setErrorMessage('Missing import batch ID. Please refresh and try again.');
       return;
     }
 
     setIsProcessing(true);
+    setErrorMessage(null);
 
     try {
-      const response = await fetch('/api/csv/finalize-mappings', {
+      const response = await fetchWithTimeout('/api/csv/finalize-mappings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -367,23 +384,20 @@ export default function MappingReview({
           reportError: false,
         }),
       });
-      
+
       const result = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(result.error || 'Failed to finalize mappings');
       }
 
-
-      
       // Call the original callback with the finalized result
       onApproveMapping(result);
-      
+
     } catch (error) {
       console.error('💥 Failed to finalize mappings:', error);
-      // For now, fall back to the original behavior
-      const hasCorrections = Object.keys(actualCorrections).length > 0;
-      onApproveMapping(hasCorrections ? actualCorrections : undefined);
+      const errorMsg = error instanceof Error ? error.message : 'Failed to process import';
+      setErrorMessage(errorMsg);
     } finally {
       setIsProcessing(false);
     }
@@ -814,6 +828,14 @@ export default function MappingReview({
             </div>
           </div>
         </div>
+
+        {/* Error Message Display */}
+        {errorMessage && (
+          <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+            <XCircle className="h-4 w-4 text-red-600 dark:text-red-400 flex-shrink-0" />
+            <p className="text-sm text-red-800 dark:text-red-200">{errorMessage}</p>
+          </div>
+        )}
 
         {/* Action Buttons - No Cancel Option */}
         <div className="flex justify-between pt-4 flex-shrink-0 border-t bg-white dark:bg-gray-900">

@@ -64,9 +64,15 @@ const EquityChart = React.memo(function EquityChart({
         return formatTimeAxis(value, 'short');
       }
     }
-    
+
     return formatTimeAxis(value, 'short');
   }, [timeInterval]);
+
+  const formatYAxisTick = React.useCallback((value: number) => {
+    // Hide the $0 tick mark
+    if (value === 0) return '';
+    return CHART_FORMATTERS.currency.formatAxisValue(value);
+  }, []);
 
   // Calculate tick interval to prevent overcrowding
   const tickInterval = React.useMemo(() => {
@@ -172,11 +178,11 @@ const EquityChart = React.memo(function EquityChart({
               tickFormatter={formatXAxisTick}
               interval={tickInterval}
             />
-            <YAxis 
+            <YAxis
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 12, fill: 'var(--theme-primary-text)' }}
-              tickFormatter={CHART_FORMATTERS.currency.formatAxisValue}
+              tickFormatter={formatYAxisTick}
               domain={['dataMin', 'dataMax']}
             />
             {showTooltip && (

@@ -107,29 +107,13 @@ export class OrderStagingService {
         stagedCount += stagingRecords.length;
       }
 
-      // Update import batch with staging info
-      await prisma.importBatch.update({
-        where: { id: importBatch.id },
-        data: {
-          status: 'PENDING',
-          successCount: stagedCount,
-          errorCount,
-          errors: errors.length > 0 ? errors : undefined,
-          userReviewRequired: true
-        }
-      });
+      // Note: importBatch update is handled by the calling transaction to avoid deadlocks
+      // DO NOT update importBatch here - it causes database conflicts when called within a transaction
 
       console.log(`[OrderStagingService] Successfully staged ${stagedCount} orders, ${errorCount} errors`);
 
-      // Record monitoring metrics
-      const duration = Date.now() - Date.parse(importBatch.createdAt.toISOString());
-      await StagingMonitor.trackStaging(
-        format.id,
-        stagedCount > 0,
-        duration,
-        stagedCount + errorCount,
-        errorCount
-      );
+      // Note: Monitoring is handled by the calling function to avoid nested DB operations in transaction
+      // Note: importBatch status updates are handled by the calling transaction
 
       return {
         success: stagedCount > 0,
@@ -143,15 +127,8 @@ export class OrderStagingService {
     } catch (error) {
       console.error('[OrderStagingService] Staging failed:', error);
 
-      // Update import batch with failure
-      await prisma.importBatch.update({
-        where: { id: importBatch.id },
-        data: {
-          status: 'FAILED',
-          errorCount: records.length,
-          errors: [error instanceof Error ? error.message : 'Staging failed']
-        }
-      });
+      // Note: Error handling and importBatch status updates are handled by the calling transaction
+      // to avoid database conflicts and deadlocks
 
       throw error;
     }

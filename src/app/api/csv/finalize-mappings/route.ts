@@ -308,6 +308,18 @@ export async function POST(request: NextRequest) {
           user.id
         );
 
+        // Update import batch with staging results (moved from OrderStagingService to avoid conflicts)
+        await tx.importBatch.update({
+          where: { id: importBatch.id },
+          data: {
+            status: 'PENDING',
+            successCount: stagingResult.stagedCount,
+            errorCount: stagingResult.errorCount,
+            errors: stagingResult.errors.length > 0 ? stagingResult.errors : undefined,
+            userReviewRequired: true
+          }
+        });
+
         processingResult = {
           success: true,
           importBatchId: importBatch.id,
@@ -380,6 +392,24 @@ export async function POST(request: NextRequest) {
         } catch (error) {
           console.error('⚠️ Failed to update format usage statistics:', error);
           // Don't fail the operation for this
+        }
+      }
+
+      // Record staging metrics (outside transaction to avoid deadlocks)
+      if (result.processingResult.staged) {
+        try {
+          const StagingMonitor = (await import('@/lib/monitoring/StagingMonitor')).StagingMonitor;
+          const duration = Date.now() - Date.parse(importBatch.createdAt.toISOString());
+          await StagingMonitor.trackStaging(
+            result.format.id,
+            result.processingResult.successCount > 0,
+            duration,
+            result.processingResult.totalRecords,
+            result.processingResult.errorCount
+          );
+        } catch (error) {
+          console.error('⚠️ Failed to record staging metrics:', error);
+          // Don't fail the operation for monitoring issues
         }
       }
 

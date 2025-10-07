@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { InputValidator } from '@/lib/security/InputValidator';
 import { StagingMonitor } from '@/lib/monitoring/StagingMonitor';
-import type { BrokerCsvFormat, OrderStaging, MigrationStatus } from '@prisma/client';
+import type { BrokerCsvFormat, OrderStaging, MigrationStatus, BrokerType } from '@prisma/client';
 
 export interface MigrationResult {
   success: boolean;
@@ -74,6 +74,9 @@ export class FormatApprovalService {
             approvedBy: adminUserId,
             approvedAt: new Date(),
             fieldMappings: correctedMappings || formatRecord.fieldMappings
+          },
+          include: {
+            broker: true
           }
         });
 
@@ -96,11 +99,16 @@ export class FormatApprovalService {
           };
         }
 
+        // Calculate broker type from broker name
+        const brokerType = this.getBrokerTypeFromName(updatedFormat.broker.name);
+        console.log(`[FormatApprovalService] Using broker type: ${brokerType} for broker: ${updatedFormat.broker.name}`);
+
         // Migrate orders in batches
         const migrationResult = await this.migrateStagedOrdersBatch(
           tx,
           formatId,
-          updatedFormat.fieldMappings
+          updatedFormat.fieldMappings,
+          brokerType
         );
 
         return {
@@ -182,7 +190,8 @@ export class FormatApprovalService {
   private async migrateStagedOrdersBatch(
     tx: any,
     formatId: string,
-    fieldMappings: any
+    fieldMappings: any,
+    brokerType: BrokerType
   ): Promise<{ migratedCount: number; failedCount: number; errors: string[] }> {
     let migratedCount = 0;
     let failedCount = 0;
@@ -205,7 +214,7 @@ export class FormatApprovalService {
       if (staged.length === 0) break;
 
       // Process this batch
-      const batchResult = await this.processMigrationBatch(tx, staged, fieldMappings);
+      const batchResult = await this.processMigrationBatch(tx, staged, fieldMappings, brokerType);
       migratedCount += batchResult.migratedCount;
       failedCount += batchResult.failedCount;
       errors.push(...batchResult.errors);
@@ -228,7 +237,8 @@ export class FormatApprovalService {
   private async processMigrationBatch(
     tx: any,
     staged: OrderStaging[],
-    fieldMappings: any
+    fieldMappings: any,
+    brokerType: BrokerType
   ): Promise<{ migratedCount: number; failedCount: number; errors: string[] }> {
     const ordersToCreate: any[] = [];
     const successfulStagingIds: string[] = [];
@@ -257,7 +267,7 @@ export class FormatApprovalService {
           orderExecutedTime: validatedData.orderExecutedTime,
           accountId: validatedData.accountId,
           orderAccount: validatedData.accountId,
-          brokerType: 'GENERIC_CSV',
+          brokerType: brokerType,
           datePrecision: 'MILLISECOND',
           tags: [],
           usedInTrade: false
@@ -533,6 +543,7 @@ export class FormatApprovalService {
           }
         },
         include: {
+          broker: true,
           _count: {
             select: {
               orderStaging: {
@@ -549,6 +560,9 @@ export class FormatApprovalService {
       for (const format of approvedFormatsWithPending) {
         try {
           console.log(`[FormatApprovalService] Processing format ${format.id}: ${format._count.orderStaging} pending records`);
+
+          // Calculate broker type from broker name
+          const brokerType = this.getBrokerTypeFromName(format.broker.name);
 
           const result = await prisma.$transaction(async (tx) => {
             // Get all pending staging records for this format
@@ -568,7 +582,8 @@ export class FormatApprovalService {
             return await this.migrateStagedOrdersBatch(
               tx,
               format.id,
-              format.fieldMappings
+              format.fieldMappings,
+              brokerType
             );
           }, {
             isolationLevel: 'Serializable',
@@ -693,6 +708,29 @@ export class FormatApprovalService {
         approvedFormatsWithPending: 0,
         oldestPendingHours: 0
       };
+    }
+  }
+
+  /**
+   * Convert broker name to BrokerType enum
+   */
+  private getBrokerTypeFromName(brokerName: string): BrokerType {
+    const normalized = brokerName.toLowerCase();
+
+    if (normalized.includes('interactive') || normalized.includes('ibkr')) {
+      return 'INTERACTIVE_BROKERS' as BrokerType;
+    } else if (normalized.includes('schwab') || normalized.includes('charles')) {
+      return 'CHARLES_SCHWAB' as BrokerType;
+    } else if (normalized.includes('ameritrade') || normalized.includes('thinkorswim') || normalized.includes('tos')) {
+      return 'TD_AMERITRADE' as BrokerType;
+    } else if (normalized.includes('etrade') || normalized.includes('e*trade')) {
+      return 'E_TRADE' as BrokerType;
+    } else if (normalized.includes('fidelity')) {
+      return 'FIDELITY' as BrokerType;
+    } else if (normalized.includes('robinhood')) {
+      return 'ROBINHOOD' as BrokerType;
+    } else {
+      return 'GENERIC_CSV' as BrokerType;
     }
   }
 }

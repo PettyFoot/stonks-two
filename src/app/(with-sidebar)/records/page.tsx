@@ -94,7 +94,7 @@ function RecordsContent() {
   } = useAutoSave({
     initialValue: getInitialNotes(), // Initialize with the correct notes
     saveFunction: autoSaveNotes, // Auto-save directly to notes field
-    debounceMs: 3000,
+    debounceMs: 10000, // 10 seconds - longer delay for smooth typing experience
     enabled: !!recordsData // Only enable auto-save when data is loaded
   });
 
