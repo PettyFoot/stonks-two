@@ -691,8 +691,8 @@ export default function TradeCandlestickChart({
     },
     markers: {
       size: [0, 8, 8], // Hide markers for candlestick (0), show for scatter series (8px)
-      colors: ['transparent', '#3b82f6', '#9333ea'], // Transparent for candlestick, blue for buy, purple for sell
-      strokeColors: ['transparent', '#ffffff', '#ffffff'], // White border for scatter markers
+      colors: ['transparent', 'rgba(59, 130, 246, 0.1)', 'rgba(147, 51, 234, 0.1)'], // 10% transparent fill for better candle visibility
+      strokeColors: ['transparent', '#3b82f6', '#9333ea'], // Colored borders (blue for buy, purple for sell)
       strokeWidth: [0, 2, 2], // No border for candlestick, 2px border for scatter
       hover: {
         sizeOffset: 0  // Prevent size increase on hover

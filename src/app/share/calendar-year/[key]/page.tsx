@@ -191,28 +191,6 @@ export default function SharedCalendarYearPage() {
       {/* Content */}
       <div className="px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-        {/* API Usage Warning */}
-        {data.apiUsage && (
-          <>
-            {data.apiUsage.level === 'CRITICAL' && data.apiUsage.remaining <= 10 && (
-              <Alert className="mb-4 border-red-200 bg-red-50">
-                <AlertCircle className="h-4 w-4 text-red-600" />
-                <AlertDescription className="text-red-800">
-                  🚨 <strong>Critical:</strong> Only {data.apiUsage.remaining} views remaining before this link expires
-                </AlertDescription>
-              </Alert>
-            )}
-            {data.apiUsage.level === 'HIGH' && data.apiUsage.remaining > 10 && data.apiUsage.remaining <= 50 && (
-              <Alert className="mb-4 border-orange-200 bg-orange-50">
-                <AlertCircle className="h-4 w-4 text-orange-600" />
-                <AlertDescription className="text-orange-800">
-                  ⚠️ <strong>Warning:</strong> {data.apiUsage.remaining} views remaining for this shared link
-                </AlertDescription>
-              </Alert>
-            )}
-          </>
-        )}
-
         {/* Calendar Component */}
         <SharedCalendarYear
           year={calendarData.year}
