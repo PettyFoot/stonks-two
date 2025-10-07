@@ -36,6 +36,7 @@ import {
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import EnhancedMappingReviewTable from '@/components/admin/EnhancedMappingReviewTable';
+import DenialReasonDialog from '@/components/admin/DenialReasonDialog';
 
 interface AiIngestReview {
   id: string;
@@ -75,6 +76,8 @@ export default function AdminAiReviewsPage() {
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
   const [processingStagingOrders, setProcessingStagingOrders] = useState(false);
   const [pendingStagingCount, setPendingStagingCount] = useState(0);
+  const [denialDialogOpen, setDenialDialogOpen] = useState(false);
+  const [reviewToDeny, setReviewToDeny] = useState<string | null>(null);
 
   const fetchReviews = useCallback(async () => {
     try {
@@ -182,6 +185,69 @@ export default function AdminAiReviewsPage() {
     }
   };
 
+  const handleDisapprove = (reviewId: string) => {
+    setReviewToDeny(reviewId);
+    setDenialDialogOpen(true);
+  };
+
+  const handleDenialSubmit = async (reason: string, message: string, assetType?: string) => {
+    if (!reviewToDeny) return;
+
+    setUpdatingReview(reviewToDeny);
+    try {
+      const response = await fetch('/api/admin/ai-reviews', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reviewId: reviewToDeny,
+          adminReviewStatus: 'DENIED',
+          denialReason: reason,
+          denialMessage: message || null,
+          assetType: assetType || null,
+          adminNotes: `Denied: ${reason}${assetType ? ` (${assetType})` : ''}`
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        await fetchReviews();
+        await fetchPendingStagingCount();
+
+        // Show success message with cleanup stats
+        const cleanupParts = [];
+        if (data.cleanup?.deletedStagingOrders) {
+          cleanupParts.push(`${data.cleanup.deletedStagingOrders} staging order${data.cleanup.deletedStagingOrders !== 1 ? 's' : ''}`);
+        }
+        if (data.cleanup?.deletedFeedbackItems) {
+          cleanupParts.push(`${data.cleanup.deletedFeedbackItems} feedback item${data.cleanup.deletedFeedbackItems !== 1 ? 's' : ''}`);
+        }
+        if (data.cleanup?.cleanedImportBatches && data.cleanup.cleanedImportBatches > 1) {
+          cleanupParts.push(`${data.cleanup.cleanedImportBatches} import batches`);
+        }
+
+        const cleanupInfo = cleanupParts.length > 0
+          ? ` Cleaned up: ${cleanupParts.join(', ')}.`
+          : '';
+
+        toast.success(`Format denied and user notified via email.${cleanupInfo}`);
+        setDenialDialogOpen(false);
+        setReviewToDeny(null);
+        // Close mapping review if it was open for this review
+        if (selectedReviewId === reviewToDeny) {
+          setSelectedReviewId(null);
+        }
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to deny review');
+      }
+    } catch (error) {
+      console.error('Error denying review:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to deny review');
+    } finally {
+      setUpdatingReview(null);
+    }
+  };
+
   const handleViewDetails = (reviewId: string) => {
     setSelectedReviewId(reviewId);
   };
@@ -202,9 +268,9 @@ export default function AdminAiReviewsPage() {
       IN_REVIEW: 'secondary',
       APPROVED: 'default',
       CORRECTED: 'secondary',
-      DISMISSED: 'destructive',
+      DENIED: 'destructive',
     };
-    
+
     return (
       <Badge variant={variants[status] || 'outline'}>
         {status}
@@ -223,7 +289,7 @@ export default function AdminAiReviewsPage() {
       case 'pending':
         return review.adminReviewStatus === 'PENDING';
       case 'reviewed':
-        return ['APPROVED', 'CORRECTED', 'DISMISSED'].includes(review.adminReviewStatus);
+        return ['APPROVED', 'CORRECTED', 'DENIED'].includes(review.adminReviewStatus);
       default:
         return true;
     }
@@ -300,7 +366,7 @@ export default function AdminAiReviewsPage() {
               className="flex items-center gap-2"
             >
               <CheckCircle className="h-4 w-4" />
-              Reviewed ({reviews.filter(r => ['APPROVED', 'CORRECTED', 'DISMISSED'].includes(r.adminReviewStatus)).length})
+              Reviewed ({reviews.filter(r => ['APPROVED', 'CORRECTED', 'DENIED'].includes(r.adminReviewStatus)).length})
             </Button>
             <Button
               variant={filter === 'all' ? 'default' : 'outline'}
@@ -418,11 +484,14 @@ export default function AdminAiReviewsPage() {
                                     Mark as Corrected
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
-                                    onClick={() => handleReviewAction(review.id, 'DISMISSED')}
-                                    className="text-red-600"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDisapprove(review.id);
+                                    }}
+                                    className="text-orange-600"
                                   >
                                     <XCircle className="h-4 w-4 mr-2" />
-                                    Dismiss
+                                    Disapprove
                                   </DropdownMenuItem>
                                 </>
                               )}
@@ -446,6 +515,14 @@ export default function AdminAiReviewsPage() {
             />
           )}
 
+          {/* Denial Reason Dialog */}
+          <DenialReasonDialog
+            open={denialDialogOpen}
+            onOpenChange={setDenialDialogOpen}
+            onSubmit={handleDenialSubmit}
+            isSubmitting={updatingReview === reviewToDeny}
+          />
+
           {/* Info Card */}
           <Card className="bg-blue-50 border-blue-200">
             <CardContent className="p-6">
@@ -455,7 +532,7 @@ export default function AdminAiReviewsPage() {
                 <li>• Low confidence scores or user flags require admin review</li>
                 <li>• Approved mappings improve future AI accuracy</li>
                 <li>• Corrected mappings help train the AI system</li>
-                <li>• Dismissed reviews are removed from the queue</li>
+                <li>• Disapproved formats are denied with user notification</li>
               </ul>
             </CardContent>
           </Card>

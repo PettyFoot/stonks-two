@@ -4,7 +4,7 @@ import React, { useState, useCallback } from 'react';
 import TopBar from '@/components/TopBar';
 import FilterPanel from '@/components/FilterPanel';
 import TradesTable from '@/components/TradesTable';
-import ColumnSettingsModal from '@/components/ColumnSettingsModal';
+import TradesSettingsMenu from '@/components/TradesSettingsMenu';
 import { Trade, ColumnConfiguration } from '@/types';
 import { useTradesData } from '@/hooks/useTradesData';
 import { FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
@@ -109,7 +109,7 @@ export default function Trades() {
             
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-              <ColumnSettingsModal onColumnsChange={handleColumnsChange} />
+              <TradesSettingsMenu onColumnsChange={handleColumnsChange} />
             </div>
           </div>
         </div>

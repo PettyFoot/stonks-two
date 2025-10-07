@@ -47,6 +47,16 @@ export interface OnboardingWithCouponEmailData {
   appUrl: string;
 }
 
+export interface FormatDenialEmailData {
+  userName: string;
+  userEmail: string;
+  supportEmail: string;
+  appUrl: string;
+  denialReason: string;
+  denialMessage?: string;
+  assetType?: string;
+}
+
 /**
  * Base HTML email template with logo and styling
  */
@@ -1105,5 +1115,214 @@ Professional Trading Analytics & Portfolio Management
 Dashboard: ${data.appUrl}
 Contact Support: ${data.supportEmail}
 Claim Your Coupon: ${data.appUrl}/pricing?coupon=VOYAGER25
+  `.trim();
+};
+
+/**
+ * Get CSV format examples based on asset type
+ */
+const getCsvFormatExamples = (assetType: string) => {
+  const examples: Record<string, { description: string; header: string; sample: string }> = {
+    Stock: {
+      description: 'Stock Trades',
+      header: 'Date,Symbol,Side,Quantity,Price,Commission,Total',
+      sample: '2024-01-15,AAPL,BUY,100,185.50,1.00,18551.00'
+    },
+    Option: {
+      description: 'Option Trades',
+      header: 'Date,Symbol,Option Type,Strike,Expiration,Side,Contracts,Price,Commission,Total',
+      sample: '2024-01-15,AAPL,CALL,190,2024-02-16,BUY,1,5.25,0.65,525.65'
+    },
+    Forex: {
+      description: 'Forex Trades',
+      header: 'Date/Time,Currency Pair,Side,Units,Entry Price,Exit Price,Commission,P/L',
+      sample: '2024-01-15 09:30:00,EUR/USD,BUY,10000,1.0850,1.0875,2.50,247.50'
+    },
+    Futures: {
+      description: 'Futures Trades',
+      header: 'Date,Contract,Expiration,Side,Contracts,Entry Price,Exit Price,Commission,P/L',
+      sample: '2024-01-15,ES,2024-03-15,LONG,2,4750.00,4765.50,4.80,1545.20'
+    },
+    Crypto: {
+      description: 'Crypto Trades',
+      header: 'Date/Time,Pair,Side,Amount,Price,Fee,Total',
+      sample: '2024-01-15 14:22:33,BTC/USD,BUY,0.05,45000.00,11.25,2261.25'
+    }
+  };
+  return examples[assetType];
+};
+
+/**
+ * Format denial email for CSV uploads that cannot be supported
+ */
+export const getFormatDenialEmailContent = (data: FormatDenialEmailData): string => {
+  const content = `
+    <div class="header">
+      <img src="${data.appUrl}/api/logo" alt="Trade Voyager Analytics Logo" class="logo">
+      <h1>CSV Format Review Update</h1>
+    </div>
+
+    <div class="content">
+      <h2>Hi ${data.userName},</h2>
+
+      <p>Thank you for uploading your trade data to Trade Voyager Analytics. We appreciate you taking the time to share your trading information with our platform.</p>
+
+      <p>Unfortunately, after careful review by our admin team, we've determined that the CSV format you submitted is not one we can currently support for automatic processing.</p>
+
+      <div class="highlight-box" style="background-color: #fef5e7; border-left: 4px solid #f6ad55;">
+        <h3 style="margin-top: 0; color: #744210;">Reason for Format Denial:</h3>
+        <p style="margin-bottom: 0; color: #744210; font-weight: 600;">
+          ${data.denialReason}
+        </p>
+      </div>
+
+      ${data.denialMessage ? `
+      <div class="highlight-box">
+        <h3 style="margin-top: 0; color: #1a202c;">Additional Details from Our Team:</h3>
+        <p style="margin-bottom: 0; white-space: pre-wrap;">
+          ${data.denialMessage}
+        </p>
+      </div>
+      ` : ''}
+
+      ${data.assetType ? `
+      <div class="highlight-box" style="background-color: #f0f9ff; border-left: 4px solid #3b82f6;">
+        <h3 style="margin-top: 0; color: #1e40af;">Example CSV Format for ${data.assetType} Orders:</h3>
+        <p style="margin-bottom: 12px;">To help you understand what we're looking for, here's an example of what a valid ${data.assetType.toLowerCase()} order execution CSV file might look like:</p>
+
+        <div style="background-color: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 13px; overflow-x: auto; margin: 12px 0;">
+          <div style="color: #94a3b8; margin-bottom: 8px;">Sample Header Row:</div>
+          <div style="color: #60a5fa; margin-bottom: 12px;">${getCsvFormatExamples(data.assetType).header}</div>
+
+          <div style="color: #94a3b8; margin-bottom: 8px;">Sample Data Row:</div>
+          <div style="color: #86efac;">${getCsvFormatExamples(data.assetType).sample}</div>
+        </div>
+
+        <p style="margin-top: 12px; margin-bottom: 0; font-size: 14px; color: #475569;">
+          <strong>Note:</strong> This is just one example format. Your broker's CSV may have different column names or ordering, but it should contain similar transaction data including dates, symbols, quantities, prices, and fees for executed orders.
+        </p>
+      </div>
+      ` : ''}
+
+      <div class="divider"></div>
+
+      <h3 style="color: #1a202c;">We're Here to Help!</h3>
+      <p><strong>Please don't hesitate to reach out if you have any questions or need assistance.</strong> Our support team is ready to help you find alternative ways to import your trade data or discuss potential solutions.</p>
+
+      <div class="benefits">
+        <h3 style="margin-top: 0; color: #1a202c;">You can contact us through:</h3>
+        <ul>
+          <li><strong>Reply to this email</strong> - We'll respond personally to your questions</li>
+          <li><strong>Visit our contact page</strong> - Submit a support request with additional details</li>
+          <li><strong>Email our support team</strong> - Direct line to our technical support staff</li>
+        </ul>
+      </div>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${data.appUrl}/contact" class="btn" style="font-size: 16px; padding: 16px 32px;">Contact Support</a>
+        <a href="mailto:${data.supportEmail}" class="btn" style="background: #667eea;">Email Us Directly</a>
+      </div>
+
+      <div class="divider"></div>
+
+      <p>We understand this may be disappointing, and we genuinely value your interest in using Trade Voyager Analytics. Our goal is to provide the best possible trading analytics experience, and sometimes that means we need to ensure data quality and compatibility.</p>
+
+      <p><strong>We're committed to helping you succeed.</strong> Whether you need guidance on exporting data in a different format, or you'd like to explore other import options, we're here to support you every step of the way.</p>
+
+      <p style="margin-top: 24px;">Thank you for your understanding, and we hope you continue to find value in using Trade Voyager Analytics for your trading journey.</p>
+
+      <p style="font-style: italic; color: #718096; margin-top: 30px;">
+        We're here whenever you need us!<br>
+        <strong>The Trade Voyager Analytics Team</strong>
+      </p>
+    </div>
+
+    <div class="footer">
+      <p><strong>Trade Voyager Analytics</strong></p>
+      <p>Professional Trading Analytics & Portfolio Management</p>
+      <p>
+        <a href="${data.appUrl}">Visit Dashboard</a> •
+        <a href="mailto:${data.supportEmail}">Support</a> •
+        <a href="${data.appUrl}/contact">Contact Us</a>
+      </p>
+      <p style="font-size: 12px; margin-top: 20px;">
+        This email was sent regarding your CSV upload to Trade Voyager Analytics.<br>
+        If you have any questions, please don't hesitate to reach out to our support team.
+      </p>
+    </div>
+  `;
+
+  return getEmailTemplate(content, 'CSV Format Review Update');
+};
+
+/**
+ * Generate format denial email
+ */
+export const generateFormatDenialEmail = (data: FormatDenialEmailData) => ({
+  subject: 'CSV Format Review Update - Trade Voyager Analytics',
+  html: getFormatDenialEmailContent(data),
+  text: generateFormatDenialTextEmail(data)
+});
+
+/**
+ * Plain text version of format denial email
+ */
+const generateFormatDenialTextEmail = (data: FormatDenialEmailData): string => {
+  return `
+CSV Format Review Update - Trade Voyager Analytics
+
+Hi ${data.userName},
+
+Thank you for uploading your trade data to Trade Voyager Analytics. We appreciate you taking the time to share your trading information with our platform.
+
+Unfortunately, after careful review by our admin team, we've determined that the CSV format you submitted is not one we can currently support for automatic processing.
+
+REASON FOR FORMAT DENIAL:
+${data.denialReason}
+
+${data.denialMessage ? `
+ADDITIONAL DETAILS FROM OUR TEAM:
+${data.denialMessage}
+` : ''}
+
+${data.assetType ? `
+EXAMPLE CSV FORMAT FOR ${data.assetType.toUpperCase()} ORDERS:
+
+To help you understand what we're looking for, here's an example of what a valid ${data.assetType.toLowerCase()} order execution CSV file might look like:
+
+Sample Header Row:
+${getCsvFormatExamples(data.assetType).header}
+
+Sample Data Row:
+${getCsvFormatExamples(data.assetType).sample}
+
+Note: This is just one example format. Your broker's CSV may have different column names or ordering, but it should contain similar transaction data including dates, symbols, quantities, prices, and fees for executed orders.
+
+` : ''}
+We're Here to Help!
+
+Please don't hesitate to reach out if you have any questions or need assistance. Our support team is ready to help you find alternative ways to import your trade data or discuss potential solutions.
+
+You can contact us through:
+• Reply to this email - We'll respond personally to your questions
+• Visit our contact page - Submit a support request with additional details: ${data.appUrl}/contact
+• Email our support team - Direct line to our technical support staff: ${data.supportEmail}
+
+We understand this may be disappointing, and we genuinely value your interest in using Trade Voyager Analytics. Our goal is to provide the best possible trading analytics experience, and sometimes that means we need to ensure data quality and compatibility.
+
+We're committed to helping you succeed. Whether you need guidance on exporting data in a different format, or you'd like to explore other import options, we're here to support you every step of the way.
+
+Thank you for your understanding, and we hope you continue to find value in using Trade Voyager Analytics for your trading journey.
+
+We're here whenever you need us!
+The Trade Voyager Analytics Team
+
+---
+Trade Voyager Analytics
+Professional Trading Analytics & Portfolio Management
+
+Dashboard: ${data.appUrl}
+Support: ${data.supportEmail}
+Contact Us: ${data.appUrl}/contact
   `.trim();
 };

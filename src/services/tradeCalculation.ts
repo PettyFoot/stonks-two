@@ -239,6 +239,20 @@ export class TradeCalculationService {
   private async storeTrades(userId: string): Promise<void> {
     // Create new calculated trades and mark orders as used
     for (const trade of this.completedTrades) {
+      // Get importBatchId from the orders in this trade
+      const orders = await prisma.order.findMany({
+        where: {
+          orderId: { in: trade.ordersInTrade },
+          userId,
+        },
+        select: {
+          importBatchId: true,
+        },
+      });
+
+      // Use the first non-null importBatchId found (all orders in a trade should have the same batch)
+      const importBatchId = orders.find(o => o.importBatchId)?.importBatchId ?? undefined;
+
       const createdTrade = await prisma.trade.create({
         data: {
           userId,
@@ -258,6 +272,7 @@ export class TradeCalculationService {
           date: trade.closeTime,
           entryPrice: trade.costBasis / trade.quantity,
           exitPrice: trade.proceeds / trade.quantity,
+          importBatchId,
         },
       });
 

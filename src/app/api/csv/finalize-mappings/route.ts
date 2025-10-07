@@ -273,24 +273,63 @@ export async function POST(request: NextRequest) {
         isExactMatch: true
       };
 
-      // Create ingestion service (note: this will create orders inside the transaction)
+      // Create ingestion service
       const ingestionService = new CsvIngestionService();
 
+      // Determine broker type for the import batch
+      const brokerType = (ingestionService as any).getBrokerTypeFromName(broker.name);
+
+      // Update the existing import batch for staging instead of creating a new one
+      await tx.importBatch.update({
+        where: { id: importBatch.id },
+        data: {
+          status: 'PENDING', // Status for staging
+          brokerType: brokerType,
+          importType: 'CUSTOM',
+          aiMappingUsed: false,
+          mappingConfidence: 1.0,
+          columnMappings: format.fieldMappings as any,
+          userReviewRequired: true, // Requires admin review
+          tempFileContent: null, // Clear after processing
+        }
+      });
+
       // Since this is a newly created format (isApproved = false by default),
-      // we should stage the orders instead of processing them directly
-      const processingResult = !format.isApproved
-        ? await (ingestionService as any).processWithUnapprovedFormat(
-            records,
-            format,
-            importBatch.filename,
-            user.id,
-            [], // account tags
-            uploadLog.id,
-            importBatch.fileSize || 0,
-            brokerDetection,
-            true // isNewFormat flag
-          )
-        : await (ingestionService as any).processKnownBrokerFormat(
+      // we should stage the orders using the EXISTING import batch
+      let processingResult;
+      if (!format.isApproved) {
+        // Use OrderStagingService directly to avoid creating duplicate ImportBatch
+        const OrderStagingService = (await import('@/lib/services/OrderStagingService')).OrderStagingService;
+        const stagingService = new OrderStagingService();
+        const stagingResult = await stagingService.stageOrders(
+          records,
+          format,
+          importBatch, // Use existing ImportBatch
+          user.id
+        );
+
+        processingResult = {
+          success: true,
+          importBatchId: importBatch.id,
+          importType: 'CUSTOM' as const,
+          totalRecords: records.length,
+          successCount: stagingResult.stagedCount,
+          errorCount: stagingResult.errorCount,
+          errors: stagingResult.errors,
+          requiresUserReview: false,
+          requiresBrokerSelection: false,
+          staged: true,
+          stagedCount: stagingResult.stagedCount,
+          requiresApproval: true,
+          pendingFormatName: format.formatName,
+          estimatedApprovalTime: '1-2 business days',
+          message: 'New broker format uploaded, waiting for admin review.',
+          isNewFormat: true,
+          orderIds: [] // No orders created yet, they're staged
+        };
+      } else {
+        // For approved formats, process normally
+        processingResult = await (ingestionService as any).processKnownBrokerFormat(
             importBatch.tempFileContent,
             importBatch.filename,
             user.id,
@@ -299,15 +338,7 @@ export async function POST(request: NextRequest) {
             importBatch.fileSize || 0,
             brokerDetection
           );
-
-      // Clear the temporary file content after successful processing
-      await tx.importBatch.update({
-        where: { id: importBatch.id },
-        data: { 
-          tempFileContent: null,
-          columnMappings: {} as any // Clear the pending mappings
-        }
-      });
+      }
 
       // Update AiIngestToCheck with orderIds if processing was successful
       if (processingResult.orderIds && processingResult.orderIds.length > 0) {
@@ -352,15 +383,18 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Increment upload count after successful processing (outside transaction)
-      if (result.processingResult.success && result.processingResult.successCount > 0) {
+      // ONLY increment upload count if session is complete
+      // This ensures partial uploads don't count toward daily limit
+      if (result.processingResult.success && result.processingResult.sessionComplete) {
         try {
           await incrementUploadCount(user.id);
-
+          console.log(`[Upload Count] Incremented for user ${user.id}. Session complete.`);
         } catch (error) {
           console.error('Failed to increment upload count:', error);
           // Don't fail the whole operation for counting issues
         }
+      } else if (result.processingResult.success && !result.processingResult.sessionComplete) {
+        console.log(`[Upload Count] NOT incremented. Session incomplete.`);
       }
 
       return NextResponse.json({

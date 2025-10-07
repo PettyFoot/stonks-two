@@ -17,6 +17,8 @@ interface TradesTableProps {
   onTradeSelect?: (trade: Trade) => void;
   columnConfig?: ColumnConfiguration[];
   isSharedView?: boolean;
+  externalSelectedTrades?: string[];
+  onSelectionChange?: (selectedIds: string[]) => void;
 }
 
 type SortField = 'date' | 'time' | 'symbol' | 'side' | 'holdingPeriod' | 'entryPrice' | 'exitPrice' | 'volume' | 'executions' | 'pnl' | 'commission' | 'fees' | 'marketSession' | 'orderType';
@@ -34,13 +36,18 @@ const TradesTable = React.memo<TradesTableProps>(({
   showCheckboxes = true,
   onTradeSelect,
   columnConfig = [],
-  isSharedView = false
+  isSharedView = false,
+  externalSelectedTrades,
+  onSelectionChange
 }) => {
   const router = useRouter();
-  const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
+  const [internalSelectedTrades, setInternalSelectedTrades] = useState<string[]>([]);
   const [sortField, setSortField] = useState<SortField>('time');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
+
+  // Use external selection if provided, otherwise use internal
+  const selectedTrades = externalSelectedTrades !== undefined ? externalSelectedTrades : internalSelectedTrades;
   
   // Media queries
   const isMobile = useMediaQuery('(max-width: 639px)');
@@ -146,18 +153,24 @@ const TradesTable = React.memo<TradesTableProps>(({
   }, [trades, sortField, sortDirection]);
 
   const handleSelectTrade = (tradeId: string, checked: boolean) => {
-    if (checked) {
-      setSelectedTrades([...selectedTrades, tradeId]);
+    const newSelection = checked
+      ? [...selectedTrades, tradeId]
+      : selectedTrades.filter(id => id !== tradeId);
+
+    if (onSelectionChange) {
+      onSelectionChange(newSelection);
     } else {
-      setSelectedTrades(selectedTrades.filter(id => id !== tradeId));
+      setInternalSelectedTrades(newSelection);
     }
   };
 
   const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedTrades(trades.map(t => t.id));
+    const newSelection = checked ? trades.map(t => t.id) : [];
+
+    if (onSelectionChange) {
+      onSelectionChange(newSelection);
     } else {
-      setSelectedTrades([]);
+      setInternalSelectedTrades(newSelection);
     }
   };
   

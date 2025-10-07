@@ -72,7 +72,7 @@ export default function TradeCandlestickChart({
   }); // Independent chart date
   const [retryCount, setRetryCount] = useState<number>(0); // Force retry counter
   const [lastRateLimitError, setLastRateLimitError] = useState<number>(0); // Track last rate limit error timestamp
-  
+
   // Request deduplication
   const abortControllerRef = useRef<AbortController | null>(null);
   const requestInProgressRef = useRef<boolean>(false);
@@ -756,6 +756,11 @@ export default function TradeCandlestickChart({
         },
         autoSelected: 'zoom'
       },
+      zoom: {
+        enabled: true,
+        type: 'x',
+        autoScaleYaxis: true  // Automatically rescale Y-axis based on visible data when zooming
+      },
       events: {
         dataPointSelection: (event, chartContext, config) => {
           // Handle execution marker clicks (scatter series are at index 1 and 2)
@@ -805,10 +810,7 @@ export default function TradeCandlestickChart({
     },
     yaxis: {
       opposite: true, // Position on right side
-      ...(yAxisRange && {
-        min: yAxisRange.min,
-        max: yAxisRange.max
-      }),
+      forceNiceScale: true, // Round axis values to nice numbers
       tooltip: {
         enabled: true
       },

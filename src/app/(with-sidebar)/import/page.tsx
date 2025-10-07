@@ -10,8 +10,8 @@ import BrokerList from '@/components/broker/BrokerList';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  FileText, 
+import {
+  FileText,
   Shield,
   TrendingUp,
   Building2,
@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
 import Link from 'next/link';
+import { useImportTracking } from '@/hooks/useImportTracking';
 
 interface ColumnMapping {
   sourceColumn: string;
@@ -55,7 +56,8 @@ interface UploadLimitStatus {
 export default function EnhancedImportPage() {
   const { user, isLoading } = useUser();
   const router = useRouter();
-  
+  const { track } = useImportTracking();
+
   const [mappingModal, setMappingModal] = useState<MappingModalState>({
     isOpen: false,
     aiMappingResult: null,
@@ -63,7 +65,7 @@ export default function EnhancedImportPage() {
     sampleData: [],
     importBatchId: null,
   });
-  
+
   const [isProcessingMapping, setIsProcessingMapping] = useState(false);
   const [uploadLimitStatus, setUploadLimitStatus] = useState<UploadLimitStatus | null>(null);
   const [activeTab, setActiveTab] = useState('broker');
@@ -172,7 +174,18 @@ export default function EnhancedImportPage() {
   };
 
   const handleTabChange = (value: string) => {
+    const previousTab = activeTab;
     setActiveTab(value);
+
+    // Track tab change (non-blocking)
+    track({
+      action: 'tab_changed',
+      component: 'ImportPage',
+      metadata: {
+        previousTab,
+        newTab: value,
+      },
+    });
   };
 
   return (

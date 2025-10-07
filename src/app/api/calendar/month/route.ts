@@ -9,13 +9,15 @@ export async function GET(req: NextRequest) {
     const demo = url.searchParams.get('demo') === 'true';
     const year = Number(url.searchParams.get('year'));
     const month = Number(url.searchParams.get('month')); // 1-12
+    const startDate = url.searchParams.get('startDate'); // Optional: for calendar grid range
+    const endDate = url.searchParams.get('endDate'); // Optional: for calendar grid range
 
     if (!year || !month || month < 1 || month > 12) {
       return NextResponse.json({ error: 'Invalid parameters' }, { status: 400 });
     }
 
     let userId: string;
-    
+
     if (demo) {
       userId = getDemoUserId();
     } else {
@@ -31,12 +33,14 @@ export async function GET(req: NextRequest) {
       if (!dbUser) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
-      
+
       userId = dbUser.id;
     }
 
-    const start = new Date(Date.UTC(year, month - 1, 1));
-    const end = new Date(Date.UTC(year, month, 1));
+    // Use provided date range if available (for calendar grid including edge days)
+    // Otherwise default to the month boundaries
+    const start = startDate ? new Date(startDate) : new Date(Date.UTC(year, month - 1, 1));
+    const end = endDate ? new Date(endDate) : new Date(Date.UTC(year, month, 1));
 
     // Use database for both demo and authenticated users
     const rows = await prisma.$queryRaw<
@@ -60,6 +64,7 @@ export async function GET(req: NextRequest) {
       day: r.day.toISOString().slice(0, 10),
       tradeCount: Number(r.trade_count),
       pnl: r.total_pnl || 0,
+      wins: Number(r.wins),
       winRate: r.trade_count ? Math.round((Number(r.wins) / Number(r.trade_count)) * 100) : 0
     }));
 

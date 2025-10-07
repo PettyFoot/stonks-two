@@ -6,12 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Upload, 
-  FileText, 
-  CheckCircle, 
-  XCircle, 
-  AlertTriangle, 
+import {
+  Upload,
+  FileText,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
   Download,
   RefreshCw,
   Info,
@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import BrokerSelector from '@/components/broker/BrokerSelector';
 import MappingReview from '@/components/csv/MappingReview';
+import { useImportTracking } from '@/hooks/useImportTracking';
 // Removed broker formats import - using automatic detection now
 
 // Types
@@ -68,16 +69,17 @@ interface EnhancedFileUploadProps {
   onRefreshLimits?: () => void;
 }
 
-export default function EnhancedFileUpload({ 
-  onUploadComplete, 
-  onMappingRequired, 
+export default function EnhancedFileUpload({
+  onUploadComplete,
+  onMappingRequired,
   accountTags = [],
   uploadLimitStatus,
   onRefreshLimits
 }: EnhancedFileUploadProps) {
   const { user } = useUser();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+  const { track } = useImportTracking();
+
   const [state, setState] = useState<UploadState>({
     file: null,
     isDragOver: false,
@@ -154,24 +156,58 @@ export default function EnhancedFileUpload({
     const validationError = validateFile(file);
     if (validationError) {
       setState(prev => ({ ...prev, error: validationError }));
+      // Track file selection error (non-blocking)
+      track({
+        action: 'file_selected',
+        component: 'EnhancedFileUpload',
+        outcome: 'failure',
+        errorMessage: validationError,
+        metadata: {
+          fileName: file.name,
+          fileSize: file.size,
+          fileType: file.type,
+        },
+      });
       return;
     }
 
-    setState(prev => ({ 
-      ...prev, 
-      file, 
-      error: null, 
-      validationResult: null, 
-      uploadResult: null 
+    setState(prev => ({
+      ...prev,
+      file,
+      error: null,
+      validationResult: null,
+      uploadResult: null
     }));
+
+    // Track successful file selection (non-blocking)
+    track({
+      action: 'file_selected',
+      component: 'EnhancedFileUpload',
+      outcome: 'success',
+      metadata: {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+      },
+    });
 
     // Auto-validate the file
     await validateCsvFile(file);
-  }, [validateFile]);
+  }, [validateFile, track]);
 
   const validateCsvFile = async (file: File) => {
     try {
       setState(prev => ({ ...prev, isUploading: true, uploadProgress: 25 }));
+
+      // Track validation start (non-blocking)
+      track({
+        action: 'file_validation_started',
+        component: 'EnhancedFileUpload',
+        metadata: {
+          fileName: file.name,
+          fileSize: file.size,
+        },
+      });
 
       const formData = new FormData();
       formData.append('file', file);
@@ -187,20 +223,46 @@ export default function EnhancedFileUpload({
         throw new Error(result.error || 'Validation failed');
       }
 
-      setState(prev => ({ 
-        ...prev, 
-        validationResult: result, 
-        isUploading: false, 
-        uploadProgress: 0 
-      }));
-
-    } catch (error) {
-      setState(prev => ({ 
-        ...prev, 
-        error: error instanceof Error ? error.message : 'Validation failed',
+      setState(prev => ({
+        ...prev,
+        validationResult: result,
         isUploading: false,
         uploadProgress: 0
       }));
+
+      // Track validation success (non-blocking)
+      track({
+        action: 'file_validation_completed',
+        component: 'EnhancedFileUpload',
+        outcome: 'success',
+        metadata: {
+          fileName: file.name,
+          rowCount: result.rowCount,
+          isStandardFormat: result.isStandardFormat,
+          detectedFormat: result.detectedFormatInfo?.name,
+          detectedBroker: result.detectedFormatInfo?.brokerName,
+        },
+      });
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Validation failed';
+      setState(prev => ({
+        ...prev,
+        error: errorMessage,
+        isUploading: false,
+        uploadProgress: 0
+      }));
+
+      // Track validation failure (non-blocking)
+      track({
+        action: 'file_validation_completed',
+        component: 'EnhancedFileUpload',
+        outcome: 'failure',
+        errorMessage,
+        metadata: {
+          fileName: file.name,
+        },
+      });
     }
   };
 
@@ -210,14 +272,27 @@ export default function EnhancedFileUpload({
     try {
       setState(prev => ({ ...prev, isUploading: true, uploadProgress: 0, error: null }));
 
+      // Track upload start (non-blocking)
+      track({
+        action: 'upload_clicked',
+        component: 'EnhancedFileUpload',
+        metadata: {
+          fileName: state.file.name,
+          fileSize: state.file.size,
+          detectedFormat: state.validationResult?.detectedFormatInfo?.name,
+          rowCount: state.validationResult?.rowCount,
+          hasAccountTags: accountTags.length > 0 || customAccountTags.trim().length > 0,
+        },
+      });
+
       const formData = new FormData();
       formData.append('file', state.file);
-      
+
       const allTags = [...accountTags];
       if (customAccountTags.trim()) {
         allTags.push(...customAccountTags.split(',').map(tag => tag.trim()).filter(Boolean));
       }
-      
+
       if (allTags.length > 0) {
         formData.append('accountTags', allTags.join(','));
       }
@@ -226,9 +301,9 @@ export default function EnhancedFileUpload({
 
       // Simulate progress
       const progressInterval = setInterval(() => {
-        setState(prev => ({ 
-          ...prev, 
-          uploadProgress: Math.min(prev.uploadProgress + 10, 90) 
+        setState(prev => ({
+          ...prev,
+          uploadProgress: Math.min(prev.uploadProgress + 10, 90)
         }));
       }, 200);
 
@@ -245,18 +320,40 @@ export default function EnhancedFileUpload({
         throw new Error(result.error || 'Upload failed');
       }
 
-      setState(prev => ({ 
-        ...prev, 
-        uploadResult: result, 
-        isUploading: false, 
-        uploadProgress: 100 
+      setState(prev => ({
+        ...prev,
+        uploadResult: result,
+        isUploading: false,
+        uploadProgress: 100
       }));
 
+      // Track upload completed AFTER state update (non-blocking)
+      track({
+        action: 'upload_completed',
+        component: 'EnhancedFileUpload',
+        outcome: 'success',
+        importBatchId: result.importBatchId,
+        metadata: {
+          fileName: state.file?.name,
+          successCount: result.successCount,
+          errorCount: result.errorCount,
+          requiresBrokerSelection: result.requiresBrokerSelection,
+          requiresUserReview: result.requiresUserReview,
+          brokerFormatUsed: result.brokerFormatUsed,
+        },
+      });
+
       // Handle different result types
-      
+
       if (result.requiresBrokerSelection) {
         setPendingImportBatchId(result.importBatchId);
         setShowBrokerSelector(true);
+        // Track broker selection required (non-blocking)
+        track({
+          action: 'broker_selection_required',
+          component: 'EnhancedFileUpload',
+          importBatchId: result.importBatchId,
+        });
       } else if (result.requiresUserReview && result.openAiMappingResult && result.openAiMappingResult.mappings) {
         console.log('[CSV_UPLOAD] Starting mapping review:', {
           hasMappings: !!result.openAiMappingResult.mappings,
@@ -272,6 +369,16 @@ export default function EnhancedFileUpload({
         setTimeout(() => {
           setShowMappingReview(true);
         }, 100);
+        // Track mapping review required (non-blocking)
+        track({
+          action: 'mapping_review_required',
+          component: 'EnhancedFileUpload',
+          importBatchId: result.importBatchId,
+          metadata: {
+            confidence: result.openAiMappingResult.overallConfidence,
+            mappingsCount: Object.keys(result.openAiMappingResult.mappings || {}).length,
+          },
+        });
       } else if (result.success) {
 
         onUploadComplete?.(result);
@@ -290,12 +397,24 @@ export default function EnhancedFileUpload({
       }
 
     } catch (error) {
-      setState(prev => ({ 
-        ...prev, 
-        error: error instanceof Error ? error.message : 'Upload failed',
+      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
+      setState(prev => ({
+        ...prev,
+        error: errorMessage,
         isUploading: false,
         uploadProgress: 0
       }));
+
+      // Track upload failure AFTER error handling (non-blocking)
+      track({
+        action: 'upload_completed',
+        component: 'EnhancedFileUpload',
+        outcome: 'failure',
+        errorMessage,
+        metadata: {
+          fileName: state.file?.name,
+        },
+      });
     }
   };
 
@@ -332,9 +451,20 @@ export default function EnhancedFileUpload({
 
   // Handle broker selection
   const handleBrokerSelected = async (broker: any, brokerName: string) => {
-    
+
     setShowBrokerSelector(false);
-    
+
+    // Track broker selection (non-blocking)
+    track({
+      action: 'broker_selected',
+      component: 'EnhancedFileUpload',
+      importBatchId: pendingImportBatchId || undefined,
+      metadata: {
+        brokerName,
+        brokerId: broker?.id,
+      },
+    });
+
     if (!pendingImportBatchId) {
       console.error('❌ No pending import batch ID');
       setState(prev => ({ ...prev, error: 'Missing import batch ID' }));
@@ -342,11 +472,11 @@ export default function EnhancedFileUpload({
     }
 
     try {
-      setState(prev => ({ 
-        ...prev, 
-        isUploading: true, 
+      setState(prev => ({
+        ...prev,
+        isUploading: true,
         uploadProgress: 50,
-        error: null 
+        error: null
       }));
 
       const allTags = [
@@ -368,16 +498,28 @@ export default function EnhancedFileUpload({
 
       const result = await response.json();
 
-      setState(prev => ({ 
-        ...prev, 
-        uploadResult: result, 
-        isUploading: false, 
-        uploadProgress: 100 
+      setState(prev => ({
+        ...prev,
+        uploadResult: result,
+        isUploading: false,
+        uploadProgress: 100
       }));
 
       if (!response.ok) {
         throw new Error(result.error || 'Processing failed');
       }
+
+      // Track broker processing completed (non-blocking)
+      track({
+        action: 'broker_processing_completed',
+        component: 'EnhancedFileUpload',
+        outcome: 'success',
+        importBatchId: pendingImportBatchId,
+        metadata: {
+          brokerName,
+          requiresReview: result.requiresUserReview,
+        },
+      });
 
       // Check if we need mapping review
       if (result.requiresUserReview && result.openAiMappingResult && result.openAiMappingResult.mappings) {
@@ -410,12 +552,22 @@ export default function EnhancedFileUpload({
 
     } catch (error) {
       console.error('💥 Process with broker error:', error);
-      setState(prev => ({ 
-        ...prev, 
-        error: error instanceof Error ? error.message : 'Processing failed',
+      const errorMessage = error instanceof Error ? error.message : 'Processing failed';
+      setState(prev => ({
+        ...prev,
+        error: errorMessage,
         isUploading: false,
         uploadProgress: 0
       }));
+
+      // Track broker processing failure (non-blocking)
+      track({
+        action: 'broker_processing_completed',
+        component: 'EnhancedFileUpload',
+        outcome: 'failure',
+        errorMessage,
+        importBatchId: pendingImportBatchId || undefined,
+      });
     }
   };
 
@@ -454,9 +606,20 @@ export default function EnhancedFileUpload({
   // Handle mapping review approval
   const handleMappingApproved = async (finalizedResult?: Record<string, unknown>) => {
 
-    
+
     setShowMappingReview(false);
-    
+
+    // Track mapping approval (non-blocking)
+    track({
+      action: 'mapping_approved',
+      component: 'EnhancedFileUpload',
+      outcome: 'success',
+      importBatchId: pendingImportBatchId || undefined,
+      metadata: {
+        hasFinalizedResult: !!finalizedResult,
+      },
+    });
+
     // Update state with the finalized result from the API
     if (finalizedResult) {
       setState(prev => ({
@@ -466,13 +629,13 @@ export default function EnhancedFileUpload({
           success: true // Ensure success is true since mapping was approved
         }
       }));
-      
+
       // Trigger completion callback with the updated result
       onUploadComplete?.(finalizedResult);
-      
+
       // Refresh upload limits after successful completion
       onRefreshLimits?.();
-      
+
       // Clear only the file, keep success status message
       setTimeout(() => {
         clearFileOnly();

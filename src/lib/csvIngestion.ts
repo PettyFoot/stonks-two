@@ -1,15 +1,15 @@
 import { parse } from 'csv-parse/sync';
 import { prisma } from '@/lib/prisma';
 import { BrokerType, OrderType, TimeInForce, OrderStatus, Prisma } from '@prisma/client';
-import { 
-  StandardCsvRowSchema, 
-  normalizeStandardCsvRow, 
+import {
+  StandardCsvRowSchema,
+  normalizeStandardCsvRow,
   STANDARD_CSV_COLUMNS,
   REQUIRED_COLUMNS
 } from '@/lib/schemas/standardCsv';
-import { 
-  CsvAiMapper, 
-  type AiMappingResult, 
+import {
+  CsvAiMapper,
+  type AiMappingResult,
   type ColumnMapping
 } from '@/lib/ai/csvMapper';
 import {
@@ -21,6 +21,7 @@ import { BrokerFormatService, type FormatDetectionResult } from '@/lib/brokerFor
 import { OpenAiMappingService, type OpenAiMappingResult } from '@/lib/ai/openAiMappingService';
 import { TradeBuilder } from '@/lib/tradeBuilder';
 import { OrderStagingService } from '@/lib/services/OrderStagingService';
+import { createHash } from 'crypto';
 
 export type CustomCsvRow = Record<string, string>;
 
@@ -57,6 +58,9 @@ export interface CsvIngestionResult {
   estimatedApprovalTime?: string; // Expected approval timeframe
   message?: string; // Additional message about the staging status
   isNewFormat?: boolean; // True if this is a newly created format vs existing pending format
+  sessionComplete?: boolean; // True if upload session is complete
+  sessionProgress?: string; // Progress indicator (e.g. "16/16")
+  sessionAttempt?: number; // Current attempt number for this session
 }
 
 // CSV validation result
@@ -115,6 +119,14 @@ interface NormalizedOrder {
   orderAccount?: string | null;
   orderRoute?: string | null;
   tags: string[];
+}
+
+// Upload Session information
+interface UploadSessionInfo {
+  id: string; // Session ID (hash of filename + userId)
+  expectedRowCount: number; // Total rows expected
+  previousCompleted: number; // Rows successfully uploaded in previous attempts
+  isNew: boolean; // True if this is a new session vs continuing existing
 }
 
 export class CsvIngestionService {
@@ -748,7 +760,10 @@ export class CsvIngestionService {
     // Continue with normal processing for approved formats
     console.log(`[CSV Ingestion] Processing with approved format ${brokerDetection.format.formatName}`);
 
-    // Create import batch
+    // Detect or create upload session BEFORE creating orders
+    const session = await this.detectOrCreateSession(userId, fileName, records.length);
+
+    // Create import batch with session info
     const importBatch = await prisma.importBatch.create({
       data: {
         userId,
@@ -762,6 +777,14 @@ export class CsvIngestionService {
         mappingConfidence: brokerDetection.confidence,
         columnMappings: brokerDetection.format.fieldMappings as any,
         userReviewRequired: false,
+        // Session fields
+        uploadSessionId: session.id,
+        expectedRowCount: session.expectedRowCount,
+        completedRowCount: 0,
+        isSessionComplete: false,
+        holdTradeCalculation: true,
+        sessionStatus: 'ACTIVE',
+        sessionAttempts: session.isNew ? 1 : (await this.getSessionAttemptCount(session.id) + 1),
       },
     });
 
@@ -870,15 +893,26 @@ export class CsvIngestionService {
       }
     }
 
-    // Update import batch with results
+    // Calculate total valid rows (new inserts + duplicates)
+    const totalValidRows = successCount + duplicateCount;
+    // Only count new inserts toward completedRowCount
+    const totalCompleted = session.previousCompleted + successCount;
+    // Session is complete when all expected rows are accounted for (including duplicates)
+    const isComplete = totalValidRows >= session.expectedRowCount;
+
+    // Update import batch with results and session status
     await prisma.importBatch.update({
       where: { id: importBatch.id },
       data: {
-        status: errorCount === records.length ? 'FAILED' : 'COMPLETED',
+        status: errorCount === records.length ? 'FAILED' : (isComplete ? 'COMPLETED' : 'PARTIAL'),
         successCount,
         errorCount,
         errors: errors.length > 0 ? errors : undefined,
-        processingCompleted: new Date(),
+        completedRowCount: totalCompleted,
+        isSessionComplete: isComplete,
+        holdTradeCalculation: !isComplete,
+        sessionStatus: isComplete ? 'COMPLETED' : 'ACTIVE',
+        processingCompleted: isComplete ? new Date() : null,
       },
     });
 
@@ -888,20 +922,36 @@ export class CsvIngestionService {
     // Update upload log
     await this.updateUploadLog(uploadLogId, 'IMPORTED', 'STANDARD');
 
-    // Calculate trades after successful import
-    if (successCount > 0) {
+    // ONLY calculate trades if session is complete
+    if (successCount > 0 && isComplete) {
       try {
+        console.log(`[Trade Calculation] ✓ Session complete. Triggering trade calculation...`);
+        console.log(`[Trade Calculation] - Session ID: ${session.id}`);
+        console.log(`[Trade Calculation] - Total completed: ${totalCompleted}/${session.expectedRowCount}`);
+        console.log(`[Trade Calculation] - Import batch: ${importBatch.id}`);
+        console.log(`[Trade Calculation] - User: ${userId}`);
+
         const tradeBuilder = new TradeBuilder();
         await tradeBuilder.processUserOrders(userId);
         await tradeBuilder.persistTrades(userId);
+
+        console.log(`[Trade Calculation] ✓ Trade calculation completed successfully`);
       } catch (error: unknown) {
-        console.error('Trade calculation error:', error);
+        console.error(`[Trade Calculation] ✗ Trade calculation FAILED for session ${session.id}:`, error);
+        console.error(`[Trade Calculation] Error details:`, error instanceof Error ? (error as Error).message : 'Unknown error');
+        console.error(`[Trade Calculation] Stack trace:`, error instanceof Error ? (error as Error).stack : 'No stack trace');
         // Don't fail the import if trade calculation fails
       }
+    } else if (successCount > 0) {
+      console.log(`[Trade Calculation] ⏳ Session incomplete. Holding trade calculation.`);
+      console.log(`[Trade Calculation] - Progress: ${totalValidRows}/${session.expectedRowCount}`);
+      console.log(`[Trade Calculation] - Session ID: ${session.id}`);
+    } else {
+      console.log(`[Trade Calculation] ⏭️  No successful rows in this batch. Session status: ${isComplete ? 'COMPLETE' : 'INCOMPLETE'}`);
     }
 
     return {
-      success: successCount > 0,
+      success: successCount > 0 || isComplete,
       importBatchId: importBatch.id,
       importType: 'CUSTOM',
       totalRecords: records.length,
@@ -914,6 +964,10 @@ export class CsvIngestionService {
       requiresBrokerSelection: false,
       brokerFormatUsed: brokerDetection.format.formatName,
       orderIds: createdOrderIds,
+      // Session-specific fields
+      sessionComplete: isComplete,
+      sessionProgress: `${totalValidRows}/${session.expectedRowCount}`,
+      sessionAttempt: importBatch.sessionAttempts,
     };
   }
 
@@ -1133,7 +1187,7 @@ export class CsvIngestionService {
     fileSize: number,
     detectedFormat: CsvFormat
   ): Promise<CsvIngestionResult> {
-    
+
     const records = parse(fileContent, {
       columns: true,
       skip_empty_lines: true,
@@ -1145,7 +1199,10 @@ export class CsvIngestionService {
       throw new Error('No data found in CSV file');
     }
 
-    // Create import batch
+    // Detect or create upload session BEFORE creating orders
+    const session = await this.detectOrCreateSession(userId, fileName, records.length);
+
+    // Create import batch with session info
     const brokerType = this.getBrokerTypeFromFormat(detectedFormat);
 
     const importBatch = await prisma.importBatch.create({
@@ -1161,6 +1218,14 @@ export class CsvIngestionService {
         mappingConfidence: detectedFormat.confidence,
         columnMappings: detectedFormat.fieldMappings,
         userReviewRequired: false,
+        // Session fields
+        uploadSessionId: session.id,
+        expectedRowCount: session.expectedRowCount,
+        completedRowCount: 0,
+        isSessionComplete: false,
+        holdTradeCalculation: true,
+        sessionStatus: 'ACTIVE',
+        sessionAttempts: session.isNew ? 1 : (await this.getSessionAttemptCount(session.id) + 1),
       },
     });
 
@@ -1225,35 +1290,62 @@ export class CsvIngestionService {
       }
     }
 
-    // Update import batch with results
+    // Calculate total valid rows (new inserts + duplicates)
+    const totalValidRows = successCount + duplicateCount;
+    // Only count new inserts toward completedRowCount
+    const totalCompleted = session.previousCompleted + successCount;
+    // Session is complete when all expected rows are accounted for (including duplicates)
+    const isComplete = totalValidRows >= session.expectedRowCount;
+
+    // Update import batch with results and session status
     await prisma.importBatch.update({
       where: { id: importBatch.id },
       data: {
-        status: errorCount === records.length ? 'FAILED' : 'COMPLETED',
+        status: errorCount === records.length ? 'FAILED' : (isComplete ? 'COMPLETED' : 'PARTIAL'),
         successCount,
         errorCount,
         errors: errors.length > 0 ? errors : undefined,
-        processingCompleted: new Date(),
+        completedRowCount: totalCompleted,
+        isSessionComplete: isComplete,
+        holdTradeCalculation: !isComplete,
+        sessionStatus: isComplete ? 'COMPLETED' : 'ACTIVE',
+        processingCompleted: isComplete ? new Date() : null,
       },
     });
 
     // Update upload log
     await this.updateUploadLog(uploadLogId, 'IMPORTED', 'STANDARD');
 
-    // Calculate trades after successful import
-    if (successCount > 0) {
+    // ONLY calculate trades if session is complete
+    if (successCount > 0 && isComplete) {
       try {
+        console.log(`[Trade Calculation] ✓ Session complete. Triggering trade calculation...`);
+        console.log(`[Trade Calculation] - Session ID: ${session.id}`);
+        console.log(`[Trade Calculation] - Total completed: ${totalCompleted}/${session.expectedRowCount}`);
+        console.log(`[Trade Calculation] - Import batch: ${importBatch.id}`);
+        console.log(`[Trade Calculation] - User: ${userId}`);
+
         const tradeBuilder = new TradeBuilder();
         await tradeBuilder.processUserOrders(userId);
         await tradeBuilder.persistTrades(userId);
+
+        console.log(`[Trade Calculation] ✓ Trade calculation completed successfully`);
       } catch (error: unknown) {
-        console.error('Trade calculation error:', error);
+        console.error(`[Trade Calculation] ✗ Trade calculation FAILED for session ${session.id}:`, error);
+        console.error(`[Trade Calculation] Error details:`, error instanceof Error ? (error as Error).message : 'Unknown error');
+        console.error(`[Trade Calculation] Stack trace:`, error instanceof Error ? (error as Error).stack : 'No stack trace');
         // Don't fail the import if trade calculation fails
       }
+    } else if (successCount > 0) {
+      console.log(`[Trade Calculation] ⏳ Session incomplete. Holding trade calculation.`);
+      console.log(`[Trade Calculation] - Progress: ${totalValidRows}/${session.expectedRowCount}`);
+      console.log(`[Trade Calculation] - Session ID: ${session.id}`);
+    } else {
+      console.log(`[Trade Calculation] ⏭️  No successful rows in this batch. Session status: ${isComplete ? 'COMPLETE' : 'INCOMPLETE'}`);
     }
 
     return {
-      success: successCount > 0,
+      success: successCount > 0 || isComplete,
       importBatchId: importBatch.id,
       importType: 'CUSTOM',
       totalRecords: records.length,
@@ -1264,6 +1356,10 @@ export class CsvIngestionService {
       duplicateMessages: duplicateMessages.length > 0 ? duplicateMessages : undefined,
       requiresUserReview: false,
       requiresBrokerSelection: false,
+      // Session-specific fields
+      sessionComplete: isComplete,
+      sessionProgress: `${totalValidRows}/${session.expectedRowCount}`,
+      sessionAttempt: importBatch.sessionAttempts,
     };
   }
 
@@ -1307,6 +1403,9 @@ export class CsvIngestionService {
       mappingResult = await this.aiMapper.analyzeAndMapColumns(headers, records.slice(0, 10) as CustomCsvRow[]);
     }
 
+    // Detect or create upload session BEFORE creating orders
+    const session = await this.detectOrCreateSession(userId, fileName, records.length);
+
     // Create import batch with proper broker type detection
     let brokerType: BrokerType = BrokerType.GENERIC_CSV;
     if (detectedFormat?.brokerName) {
@@ -1326,6 +1425,14 @@ export class CsvIngestionService {
         mappingConfidence: mappingResult.overallConfidence,
         columnMappings: mappingResult.mappings as unknown as Prisma.InputJsonValue,
         userReviewRequired: true, // Always require review for AI-generated mappings
+        // Session fields
+        uploadSessionId: session.id,
+        expectedRowCount: session.expectedRowCount,
+        completedRowCount: 0,
+        isSessionComplete: false,
+        holdTradeCalculation: true,
+        sessionStatus: 'ACTIVE',
+        sessionAttempts: session.isNew ? 1 : (await this.getSessionAttemptCount(session.id) + 1),
       },
     });
 
@@ -1403,6 +1510,10 @@ export class CsvIngestionService {
         requiresUserReview: true,
         requiresBrokerSelection: false,
         aiIngestCheckId: aiIngestCheck?.id, // Include for frontend reference
+        // Session fields (review pending, no orders processed yet)
+        sessionComplete: false,
+        sessionProgress: `0/${session.expectedRowCount}`,
+        sessionAttempt: importBatch.sessionAttempts,
       };
     }
 
@@ -1685,10 +1796,9 @@ export class CsvIngestionService {
       sampleData,
       brokerName: brokerName
     });
-    
 
-
-
+    // Detect or create upload session BEFORE creating orders
+    const session = await this.detectOrCreateSession(userId, fileName, records.length);
 
     let importBatch: any;
     try {
@@ -1853,15 +1963,26 @@ export class CsvIngestionService {
       errorCount = records.length;
     }
 
-    // Update import batch with results
+    // Calculate total valid rows (new inserts + duplicates)
+    const totalValidRows = successCount + duplicateCount;
+    // Only count new inserts toward completedRowCount
+    const totalCompleted = session.previousCompleted + successCount;
+    // Session is complete when all expected rows are accounted for (including duplicates)
+    const isComplete = totalValidRows >= session.expectedRowCount;
+
+    // Update import batch with results and session status
     await prisma.importBatch.update({
       where: { id: importBatch.id },
       data: {
-        status: errorCount === records.length ? 'FAILED' : 'COMPLETED',
+        status: errorCount === records.length ? 'FAILED' : (isComplete ? 'COMPLETED' : 'PARTIAL'),
         successCount,
         errorCount,
         errors: errors.length > 0 ? errors : undefined,
-        processingCompleted: new Date(),
+        completedRowCount: totalCompleted,
+        isSessionComplete: isComplete,
+        holdTradeCalculation: !isComplete,
+        sessionStatus: isComplete ? 'COMPLETED' : 'ACTIVE',
+        processingCompleted: isComplete ? new Date() : null,
       },
     });
 
@@ -1871,20 +1992,36 @@ export class CsvIngestionService {
     // Update upload log
     await this.updateUploadLog(uploadLogId, 'IMPORTED', 'AI_MAPPED', undefined, importBatch.id);
 
-    // Calculate trades after successful import
-    if (successCount > 0) {
+    // ONLY calculate trades if session is complete
+    if (successCount > 0 && isComplete) {
       try {
+        console.log(`[Trade Calculation] ✓ Session complete. Triggering trade calculation...`);
+        console.log(`[Trade Calculation] - Session ID: ${session.id}`);
+        console.log(`[Trade Calculation] - Total completed: ${totalCompleted}/${session.expectedRowCount}`);
+        console.log(`[Trade Calculation] - Import batch: ${importBatch.id}`);
+        console.log(`[Trade Calculation] - User: ${userId}`);
+
         const tradeBuilder = new TradeBuilder();
         await tradeBuilder.processUserOrders(userId);
         await tradeBuilder.persistTrades(userId);
+
+        console.log(`[Trade Calculation] ✓ Trade calculation completed successfully`);
       } catch (error: unknown) {
-        console.error('Trade calculation error:', error);
+        console.error(`[Trade Calculation] ✗ Trade calculation FAILED for session ${session.id}:`, error);
+        console.error(`[Trade Calculation] Error details:`, error instanceof Error ? (error as Error).message : 'Unknown error');
+        console.error(`[Trade Calculation] Stack trace:`, error instanceof Error ? (error as Error).stack : 'No stack trace');
         // Don't fail the import if trade calculation fails
       }
+    } else if (successCount > 0) {
+      console.log(`[Trade Calculation] ⏳ Session incomplete. Holding trade calculation.`);
+      console.log(`[Trade Calculation] - Progress: ${totalValidRows}/${session.expectedRowCount}`);
+      console.log(`[Trade Calculation] - Session ID: ${session.id}`);
+    } else {
+      console.log(`[Trade Calculation] ⏭️  No successful rows in this batch. Session status: ${isComplete ? 'COMPLETE' : 'INCOMPLETE'}`);
     }
 
     return {
-      success: successCount > 0,
+      success: successCount > 0 || isComplete,
       importBatchId: importBatch.id,
       importType: 'CUSTOM',
       totalRecords: records.length,
@@ -1897,6 +2034,10 @@ export class CsvIngestionService {
       requiresUserReview: false,
       requiresBrokerSelection: false,
       brokerFormatUsed: brokerName || 'AI_Generated',
+      // Session-specific fields
+      sessionComplete: isComplete,
+      sessionProgress: `${totalValidRows}/${session.expectedRowCount}`,
+      sessionAttempt: importBatch.sessionAttempts,
     };
   }
 
@@ -2099,14 +2240,14 @@ export class CsvIngestionService {
   }
 
   private async updateUploadLog(
-    logId: string, 
-    status: string, 
-    parseMethod?: string, 
+    logId: string,
+    status: string,
+    parseMethod?: string,
     errorMessage?: string,
     importBatchId?: string
   ) {
     const updateData: Record<string, unknown> = { uploadStatus: status };
-    
+
     if (parseMethod) updateData.parseMethod = parseMethod;
     if (errorMessage) updateData.errorMessage = errorMessage;
     if (importBatchId) updateData.importBatchId = importBatchId;
@@ -2115,6 +2256,88 @@ export class CsvIngestionService {
       where: { id: logId },
       data: updateData,
     });
+  }
+
+  /**
+   * Detect or create upload session for tracking partial uploads
+   */
+  private async detectOrCreateSession(
+    userId: string,
+    filename: string,
+    rowCount: number
+  ): Promise<UploadSessionInfo> {
+    // Generate session ID from filename + userId (NOT timestamp - same file = same session)
+    const sessionId = createHash('sha256')
+      .update(`${filename}-${userId}`)
+      .digest('hex')
+      .substring(0, 16);
+
+    // Search last 24h for matching session
+    const cutoffDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const existingSessions = await prisma.importBatch.findMany({
+      where: {
+        userId,
+        uploadSessionId: sessionId,
+        createdAt: { gte: cutoffDate },
+        sessionStatus: { in: ['ACTIVE', 'SUPERSEDED'] }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const activeSession = existingSessions.find(s => s.sessionStatus === 'ACTIVE');
+
+    if (activeSession) {
+      // Check if row count changed
+      if (activeSession.expectedRowCount !== rowCount) {
+        console.log(`[Session] Row count changed: ${activeSession.expectedRowCount} → ${rowCount}. Superseding old session.`);
+
+        // Mark old session as SUPERSEDED
+        await prisma.importBatch.update({
+          where: { id: activeSession.id },
+          data: { sessionStatus: 'SUPERSEDED' }
+        });
+
+        // Create new session with new row count
+        return {
+          id: sessionId,
+          expectedRowCount: rowCount,
+          previousCompleted: 0, // Start fresh count for new session
+          isNew: true
+        };
+      }
+
+      // Same row count - continue existing session
+      console.log(`[Session] Continuing existing session. Progress: ${activeSession.completedRowCount}/${activeSession.expectedRowCount}`);
+      return {
+        id: sessionId,
+        expectedRowCount: activeSession.expectedRowCount || rowCount,
+        previousCompleted: activeSession.completedRowCount,
+        isNew: false
+      };
+    }
+
+    // No active session - create new
+    console.log(`[Session] Creating new session for ${filename} with ${rowCount} expected rows`);
+    return {
+      id: sessionId,
+      expectedRowCount: rowCount,
+      previousCompleted: 0,
+      isNew: true
+    };
+  }
+
+  /**
+   * Get current session attempt count
+   */
+  private async getSessionAttemptCount(sessionId: string): Promise<number> {
+    const count = await prisma.importBatch.count({
+      where: {
+        uploadSessionId: sessionId,
+        sessionStatus: { in: ['ACTIVE', 'SUPERSEDED'] }
+      }
+    });
+    return count;
   }
 
   async getImportStatus(importBatchId: string, userId: string) {

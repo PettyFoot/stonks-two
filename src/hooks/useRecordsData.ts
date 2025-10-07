@@ -56,6 +56,27 @@ export function useRecordsData(date: string | null, tradeId?: string | null): Us
       }
 
       const response = await fetch(`/api/records?${params}`);
+
+      // Handle 404 as empty state (user has no trades) instead of error
+      if (response.status === 404) {
+        setData({
+          id: `records_${date}`,
+          date,
+          pnl: 0,
+          totalTrades: 0,
+          totalVolume: 0,
+          winRate: 0,
+          notes: '',
+          notesChanges: '',
+          trades: [],
+          executions: [],
+          commissions: 0,
+          netPnl: 0
+        });
+        return;
+      }
+
+      // For other errors, throw
       if (!response.ok) {
         throw new Error(`Failed to fetch records data: ${response.statusText}`);
       }

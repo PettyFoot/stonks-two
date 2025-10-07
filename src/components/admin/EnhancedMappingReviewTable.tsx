@@ -78,6 +78,7 @@ interface MappingReviewData {
   mappings: { csvHeader: string; orderField: string; confidence?: number; isNew?: boolean; isModified?: boolean; }[];
   unmappedHeaders: string[];
   sampleData: Record<string, unknown>[];
+  csvFileContent: string | null;
 }
 
 interface EnhancedMappingReviewTableProps {
@@ -727,6 +728,23 @@ export default function EnhancedMappingReviewTable({
           />
         </CardContent>
       </Card>
+
+      {/* CSV File Contents */}
+      {data.csvFileContent && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Raw CSV File Contents</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              value={data.csvFileContent}
+              readOnly
+              className="font-mono text-xs resize-none h-96 overflow-y-auto"
+              placeholder="CSV file contents not available"
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Action Buttons */}
       <div className="flex justify-end gap-3">

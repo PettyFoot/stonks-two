@@ -24,6 +24,7 @@ export interface CreateTradeData {
   holdingPeriod?: HoldingPeriod;
   costBasis?: number;
   proceeds?: number;
+  importBatchId?: string;
 }
 
 export class TradesRepository {
@@ -60,6 +61,7 @@ export class TradesRepository {
         entryPrice: tradeData.avgEntryPrice?.toNumber(),
         exitPrice: tradeData.avgExitPrice?.toNumber(),
         isCalculated: true,
+        importBatchId: tradeData.importBatchId,
       },
     });
   }
@@ -269,6 +271,168 @@ export class TradesRepository {
       winRate,
       trades
     };
+  }
+
+  /**
+   * Validate if trades can be deleted (check for shared orders)
+   * Returns validation result with details about conflicts
+   */
+  async validateDeletion(userId: string, tradeIds: string[]) {
+    // Get all trades to be deleted
+    const tradesToDelete = await prisma.trade.findMany({
+      where: {
+        id: { in: tradeIds },
+        userId,
+      },
+      select: {
+        id: true,
+        symbol: true,
+        ordersInTrade: true,
+      },
+    });
+
+    if (tradesToDelete.length === 0) {
+      return {
+        canDelete: false,
+        error: 'No trades found to delete',
+      };
+    }
+
+    // Get all unique order IDs from trades to be deleted
+    const orderIds = Array.from(
+      new Set(
+        tradesToDelete.flatMap(trade => trade.ordersInTrade || [])
+      )
+    );
+
+    if (orderIds.length === 0) {
+      // No orders to worry about, can delete
+      return {
+        canDelete: true,
+        tradeCount: tradesToDelete.length,
+        orderCount: 0,
+      };
+    }
+
+    // Check if any of these orders are used by OTHER trades (not in deletion list)
+    const tradesUsingOrders = await prisma.trade.findMany({
+      where: {
+        userId,
+        id: { notIn: tradeIds },
+        ordersInTrade: {
+          hasSome: orderIds,
+        },
+      },
+      select: {
+        id: true,
+        symbol: true,
+        date: true,
+        ordersInTrade: true,
+      },
+    });
+
+    if (tradesUsingOrders.length > 0) {
+      // Find which specific orders are shared
+      const sharedOrders = orderIds.filter(orderId =>
+        tradesUsingOrders.some(trade => trade.ordersInTrade.includes(orderId))
+      );
+
+      // Build detailed conflict information
+      const conflictDetails = sharedOrders.map(orderId => {
+        const tradesWithThisOrder = tradesUsingOrders.filter(t =>
+          t.ordersInTrade.includes(orderId)
+        );
+        return {
+          orderId,
+          affectedTradeIds: tradesWithThisOrder.map(t => t.id),
+          affectedTradeInfo: tradesWithThisOrder.map(t => ({
+            id: t.id,
+            symbol: t.symbol,
+            date: t.date,
+          })),
+        };
+      });
+
+      // Get unique list of all affected trade IDs
+      const allAffectedTradeIds = Array.from(
+        new Set(tradesUsingOrders.map(t => t.id))
+      );
+
+      return {
+        canDelete: false,
+        error: 'Some orders are shared with other trades',
+        sharedOrderCount: sharedOrders.length,
+        affectedTrades: tradesUsingOrders.map(t => ({
+          id: t.id,
+          symbol: t.symbol,
+          date: t.date,
+        })),
+        // Enhanced debug information
+        conflictDetails,
+        allAffectedTradeIds,
+        totalConflictingTrades: tradesUsingOrders.length,
+        selectedTradeIds: tradeIds,
+        sharedOrderIds: sharedOrders,
+      };
+    }
+
+    // All validations passed
+    return {
+      canDelete: true,
+      tradeCount: tradesToDelete.length,
+      orderCount: orderIds.length,
+    };
+  }
+
+  /**
+   * Delete trades and their associated orders
+   * Must call validateDeletion first to ensure it's safe
+   */
+  async deleteTrades(userId: string, tradeIds: string[]) {
+    return await prisma.$transaction(async (tx) => {
+      // Get all trades to delete (with their orders)
+      const trades = await tx.trade.findMany({
+        where: {
+          id: { in: tradeIds },
+          userId,
+        },
+        select: {
+          id: true,
+          ordersInTrade: true,
+        },
+      });
+
+      // Collect all order IDs
+      const orderIds = Array.from(
+        new Set(
+          trades.flatMap(trade => trade.ordersInTrade || [])
+        )
+      );
+
+      // Delete the trades first
+      const tradesDeleted = await tx.trade.deleteMany({
+        where: {
+          id: { in: tradeIds },
+          userId,
+        },
+      });
+
+      // Delete the associated orders
+      let ordersDeleted = 0;
+      if (orderIds.length > 0) {
+        const ordersResult = await tx.order.deleteMany({
+          where: {
+            id: { in: orderIds },
+          },
+        });
+        ordersDeleted = ordersResult.count;
+      }
+
+      return {
+        tradesDeleted: tradesDeleted.count,
+        ordersDeleted,
+      };
+    });
   }
 }
 

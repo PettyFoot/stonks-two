@@ -83,17 +83,18 @@ export async function POST(request: NextRequest) {
 
 
 
-    // Increment upload count after successful processing
-    // (Note: this will be called when the upload completes successfully, 
-    // not just when it's validated)
-    if (result.success && result.successCount > 0) {
+    // ONLY increment upload count if session is complete
+    // This ensures partial uploads don't count toward daily limit
+    if (result.success && result.sessionComplete) {
       try {
         await incrementUploadCount(user.id);
-
+        console.log(`[Upload Count] Incremented for user ${user.id}. Session complete.`);
       } catch (error) {
         console.error('Failed to increment upload count:', error);
         // Don't fail the whole operation for counting issues
       }
+    } else if (result.success && !result.sessionComplete) {
+      console.log(`[Upload Count] NOT incremented. Session incomplete: ${result.sessionProgress}`);
     }
 
     return NextResponse.json(result);

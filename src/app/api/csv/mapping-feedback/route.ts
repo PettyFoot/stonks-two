@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     });
 
     // If user made corrections, update the broker format confidence
-    if (feedbackItems.length > 0) {
+    if (feedbackItems.length > 0 && aiIngestCheck.brokerCsvFormatId) {
       const brokerFormat = await prisma.brokerCsvFormat.findUnique({
         where: { id: aiIngestCheck.brokerCsvFormatId }
       });

@@ -34,7 +34,8 @@ import {
   Trash2,
   Activity,
   MessageSquare,
-  HandHelping
+  HandHelping,
+  Calculator
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -69,6 +70,7 @@ export default function AdminUsersPage() {
   const [sendingFeedback, setSendingFeedback] = useState<string | null>(null);
   const [sendingOnboarding, setSendingOnboarding] = useState<string | null>(null);
   const [sendingOnboardingCoupon, setSendingOnboardingCoupon] = useState<string | null>(null);
+  const [calculatingTrades, setCalculatingTrades] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
   const [isDeletingUser, setIsDeletingUser] = useState(false);
@@ -293,6 +295,44 @@ export default function AdminUsersPage() {
       toast.error(error instanceof Error ? error.message : 'Failed to send onboarding + coupon email');
     } finally {
       setSendingOnboardingCoupon(null);
+    }
+  };
+
+  const handleCalculateTrades = async (userId: string, userName: string, userEmail: string) => {
+    setCalculatingTrades(userId);
+    try {
+      const response = await fetch('/api/admin/trades/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userIds: [userId] }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const result = data.results[0];
+
+        if (result.success) {
+          toast.success(
+            `Trade calculation completed for ${userName}:\n` +
+            `${result.tradesCreated} trades created (${result.completedTrades} closed, ${result.openTrades} open)\n` +
+            `Total P&L: $${result.totalPnL.toFixed(2)}\n` +
+            `Orders processed: ${result.ordersProcessed}`
+          );
+
+          // Refresh user data to update counts
+          await fetchUsers();
+        } else {
+          throw new Error(result.errors[0] || 'Trade calculation failed');
+        }
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to calculate trades');
+      }
+    } catch (error) {
+      console.error('Error calculating trades:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to calculate trades');
+    } finally {
+      setCalculatingTrades(null);
     }
   };
 
@@ -523,7 +563,7 @@ export default function AdminUsersPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              disabled={updatingUser === user.id || sendingCoupon === user.id || sendingWelcome === user.id || sendingCongrats === user.id || sendingFeedback === user.id || sendingOnboarding === user.id || sendingOnboardingCoupon === user.id || isDeletingUser}
+                              disabled={updatingUser === user.id || sendingCoupon === user.id || sendingWelcome === user.id || sendingCongrats === user.id || sendingFeedback === user.id || sendingOnboarding === user.id || sendingOnboardingCoupon === user.id || calculatingTrades === user.id || isDeletingUser}
                             >
                               <MoreVertical className="h-4 w-4" />
                             </Button>
@@ -534,6 +574,13 @@ export default function AdminUsersPage() {
                             >
                               <Activity className="h-4 w-4 mr-2" />
                               View Activity
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleCalculateTrades(user.id, user.name || 'User', user.email)}
+                              disabled={calculatingTrades === user.id}
+                            >
+                              <Calculator className="h-4 w-4 mr-2" />
+                              {calculatingTrades === user.id ? 'Calculating...' : 'Calculate Trades'}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleToggleAdmin(user.id, user.isAdmin)}

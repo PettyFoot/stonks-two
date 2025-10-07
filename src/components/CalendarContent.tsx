@@ -25,6 +25,7 @@ interface DayData {
   day: string;
   tradeCount: number;
   pnl: number;
+  wins: number;
   winRate: number;
 }
 
@@ -73,12 +74,33 @@ const CalendarContent = React.memo(() => {
   // Fetch month data
   const fetchMonthData = useCallback(async () => {
     if (!user) return;
-    
+
     setIsLoading(true);
     try {
+      // Calculate the calendar grid date range (including prev/next month edge days)
+      const firstDay = startOfMonth(currentDate);
+      const startingDayOfWeek = getDay(firstDay);
+      const daysInMonth = getDaysInMonth(currentDate);
+
+      // Calculate first day of calendar grid (may be in previous month)
+      const prevMonth = month === 1 ? 12 : month - 1;
+      const prevYear = month === 1 ? year - 1 : year;
+      const daysInPrevMonth = getDaysInMonth(new Date(prevYear, prevMonth - 1));
+      const firstGridDay = daysInPrevMonth - startingDayOfWeek + 1;
+      const gridStartDate = format(new Date(prevYear, prevMonth - 1, firstGridDay), 'yyyy-MM-dd');
+
+      // Calculate last day of calendar grid (may be in next month)
+      const totalDaysInGrid = Math.ceil((startingDayOfWeek + daysInMonth) / 7) * 7;
+      const daysFromNextMonth = totalDaysInGrid - (startingDayOfWeek + daysInMonth);
+      const nextMonth = month === 12 ? 1 : month + 1;
+      const nextYear = month === 12 ? year + 1 : year;
+      const gridEndDate = format(new Date(nextYear, nextMonth - 1, daysFromNextMonth), 'yyyy-MM-dd');
+
       const params = new URLSearchParams({
         year: year.toString(),
-        month: month.toString()
+        month: month.toString(),
+        startDate: gridStartDate,
+        endDate: gridEndDate
       });
       if (isDemo) {
         params.append('demo', 'true');
@@ -93,7 +115,7 @@ const CalendarContent = React.memo(() => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, year, month, isDemo]);
+  }, [user, year, month, isDemo, currentDate]);
 
   // Fetch trades
   const fetchTrades = useCallback(async () => {
@@ -206,13 +228,12 @@ const CalendarContent = React.memo(() => {
     const validDays = weekDays.filter(day => day && day.pnl !== undefined);
     const weekPnl = validDays.reduce((sum, d) => sum + Number(d.pnl || 0), 0);
     const weekTrades = validDays.reduce((sum, d) => sum + Number(d.tradeCount || 0), 0);
-    const winDays = validDays.filter(d => Number(d.pnl) > 0).length;
-    const tradingDays = validDays.filter(d => Number(d.tradeCount || 0) > 0).length;
-    
+    const weekWins = validDays.reduce((sum, d) => sum + Number(d.wins || 0), 0);
+
     return {
       weekPnl,
       weekTrades,
-      weekWinRate: tradingDays > 0 ? Math.round((winDays / tradingDays) * 100) : 0,
+      weekWinRate: weekTrades > 0 ? Math.round((weekWins / weekTrades) * 100) : 0,
       isWeekTotal: true,
       weekNumber: 0 // Will be set by caller
     };
@@ -228,17 +249,19 @@ const CalendarContent = React.memo(() => {
     const prevMonth = month === 1 ? 12 : month - 1;
     const prevYear = month === 1 ? year - 1 : year;
     const daysInPrevMonth = getDaysInMonth(new Date(prevYear, prevMonth - 1));
-    
+
     for (let i = startingDayOfWeek - 1; i >= 0; i--) {
       const prevDay = daysInPrevMonth - i;
       const dayStr = format(new Date(prevYear, prevMonth - 1, prevDay), 'yyyy-MM-dd');
+      const dayData = monthData.find(d => d.day === dayStr);
       calendarDays.push({
         date: prevDay,
         dayStr,
         isPrevMonth: true,
-        pnl: 0,
-        tradeCount: 0,
-        winRate: 0
+        pnl: dayData?.pnl || 0,
+        tradeCount: dayData?.tradeCount || 0,
+        wins: dayData?.wins || 0,
+        winRate: dayData?.winRate || 0
       });
     }
 
@@ -259,17 +282,19 @@ const CalendarContent = React.memo(() => {
     const totalCellsNeeded = Math.ceil(calendarDays.length / 7) * 7;
     const nextMonth = month === 12 ? 1 : month + 1;
     const nextYear = month === 12 ? year + 1 : year;
-    
+
     let nextMonthDay = 1;
     while (calendarDays.length < totalCellsNeeded) {
       const dayStr = format(new Date(nextYear, nextMonth - 1, nextMonthDay), 'yyyy-MM-dd');
+      const dayData = monthData.find(d => d.day === dayStr);
       calendarDays.push({
         date: nextMonthDay,
         dayStr,
         isNextMonth: true,
-        pnl: 0,
-        tradeCount: 0,
-        winRate: 0
+        pnl: dayData?.pnl || 0,
+        tradeCount: dayData?.tradeCount || 0,
+        wins: dayData?.wins || 0,
+        winRate: dayData?.winRate || 0
       });
       nextMonthDay++;
     }
@@ -467,41 +492,41 @@ const CalendarContent = React.memo(() => {
                       return (
                         <button
                           key={index}
-                          onClick={() => day && !day.isPrevMonth && !day.isNextMonth && handleDayClick(day.dayStr)}
-                          disabled={!day || day.isPrevMonth || day.isNextMonth}
+                          onClick={() => day && handleDayClick(day.dayStr)}
+                          disabled={!day || !dayHasTradeData(day.dayStr)}
                           className={`
                             min-h-[80px] md:min-h-[120px] lg:min-h-[140px] border border-theme-border/30 rounded-lg md:rounded-2xl p-2 lg:p-3 text-left transition-all duration-300 relative shadow-sm
-                            ${!day ? 'bg-theme-surface/20 cursor-default' : 
-                              day.isPrevMonth || day.isNextMonth ? 
-                                'bg-theme-surface/10 cursor-default opacity-50 hover:opacity-60' :
-                              day && dayHasTradeData(day.dayStr) ? 
+                            ${!day ? 'bg-theme-surface/20 cursor-default' :
+                              day && dayHasTradeData(day.dayStr) ?
                                 Number(day.pnl || 0) > 0 ? 'bg-theme-green hover:bg-theme-green/80 cursor-pointer text-white hover:scale-110 hover:shadow-xl hover:z-10 hover:-translate-y-2' :
                                 Number(day.pnl || 0) < 0 ? 'bg-theme-red hover:bg-theme-red/80 cursor-pointer text-white hover:scale-110 hover:shadow-xl hover:z-10 hover:-translate-y-2' :
-                                'bg-white hover:bg-theme-surface/50 cursor-pointer hover:scale-110 hover:shadow-xl hover:-translate-y-2' : 
+                                'bg-white hover:bg-theme-surface/50 cursor-pointer hover:scale-110 hover:shadow-xl hover:-translate-y-2' :
+                              day.isPrevMonth || day.isNextMonth ?
+                                'bg-theme-surface/10 cursor-default opacity-50 hover:opacity-60' :
                                 'bg-white hover:bg-theme-surface/30 cursor-default hover:scale-105 hover:-translate-y-1'
                             }
                             ${selectedDay === day?.dayStr ? 'ring-2 ring-theme-tertiary shadow-lg scale-105' : ''}
                             focus:outline-none focus:ring-2 focus:ring-theme-tertiary
                           `}
-                          aria-label={day ? `${day.date} - ${day.tradeCount || 0} trades${dayHasTradeData(day.dayStr) && !day.isPrevMonth && !day.isNextMonth ? ' (clickable)' : ''}` : undefined}
+                          aria-label={day ? `${day.date} - ${day.tradeCount || 0} trades${dayHasTradeData(day.dayStr) ? ' (clickable)' : ''}` : undefined}
                         >
                           {day && (
                             <div className="h-full flex flex-col relative">
                               {/* Date number - centered on mobile, top-left on larger screens */}
                               <div className="md:absolute md:top-0 md:left-0 flex md:block justify-center md:justify-start">
-                                <div className={`text-lg font-bold ${day.isPrevMonth || day.isNextMonth ? 'text-theme-secondary-text opacity-75' : dayHasTradeData(day.dayStr) ? 'text-white' : 'text-theme-primary-text'} transition-all duration-200`}>
+                                <div className={`text-lg font-bold ${dayHasTradeData(day.dayStr) ? 'text-white' : day.isPrevMonth || day.isNextMonth ? 'text-theme-secondary-text opacity-75' : 'text-theme-primary-text'} transition-all duration-200`}>
                                   {day.date}
                                 </div>
                               </div>
-                              
+
                               {/* Trading indicator dot */}
-                              {day && dayHasTradeData(day.dayStr) && !day.isPrevMonth && !day.isNextMonth && (
+                              {day && dayHasTradeData(day.dayStr) && (
                                 <div className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-theme-tertiary opacity-70 animate-pulse shadow-sm"></div>
                               )}
-                              
+
                               {/* Trade statistics - centered in the cell, visible on tablet and larger screens */}
                               <div className="hidden md:flex flex-col flex-1 justify-center items-center space-y-1">
-                                {day && dayHasTradeData(day.dayStr) && !day.isPrevMonth && !day.isNextMonth && (
+                                {day && dayHasTradeData(day.dayStr) && (
                                   <>
                                     {/* PnL */}
                                     <div className={`text-sm font-bold text-center transition-all duration-200 ${dayHasTradeData(day.dayStr) ? 'text-white' : 'text-theme-primary-text'}`}>

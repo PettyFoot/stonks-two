@@ -175,6 +175,7 @@ export async function GET(request: Request) {
             userId: order.userId,
             orderId: order.orderId,
             parentOrderId: order.parentOrderId,
+            splitFromOrderId: order.splitFromOrderId,
             symbol: order.symbol,
             orderType: order.orderType,
             side: order.side,
@@ -247,13 +248,6 @@ export async function GET(request: Request) {
       })
     );
 
-    // Get records summary for the date
-    const summary = await tradesRepo.getRecordsSummary(
-      user.id, 
-      new Date(recordsDate.setUTCHours(0, 0, 0, 0)),
-      new Date(recordsDate.setUTCHours(23, 59, 59, 999))
-    );
-
     // Aggregate all executions from all trades into a single array
     const allExecutions = tradesWithExecutions.reduce((acc, trade) => {
       if (trade.executionDetails && trade.executionDetails.length > 0) {
@@ -267,14 +261,38 @@ export async function GET(request: Request) {
       return sum + (execution.orderQuantity || 0);
     }, 0);
 
+    // Calculate P&L and stats based on whether we're viewing a specific trade or all trades
+    let recordsPnl: number;
+    let recordsTotalTrades: number;
+    let recordsWinRate: number;
+
+    if (tradeId) {
+      // For specific trade view, use only that trade's P&L and stats
+      const actualTrades = tradesWithExecutions.filter(t => t.status !== 'BLANK');
+      recordsPnl = actualTrades.reduce((sum, t) => sum + t.pnl, 0);
+      recordsTotalTrades = actualTrades.length;
+      const winningTrades = actualTrades.filter(t => t.pnl > 0).length;
+      recordsWinRate = recordsTotalTrades > 0 ? (winningTrades / recordsTotalTrades) * 100 : 0;
+    } else {
+      // For date view (no specific trade), use aggregated summary
+      const summary = await tradesRepo.getRecordsSummary(
+        user.id,
+        new Date(recordsDate.setUTCHours(0, 0, 0, 0)),
+        new Date(recordsDate.setUTCHours(23, 59, 59, 999))
+      );
+      recordsPnl = summary.totalPnl;
+      recordsTotalTrades = summary.totalTrades;
+      recordsWinRate = summary.winRate;
+    }
+
     // Create records entry format
     const recordsEntry = {
       id: `records_${user.id}_${date}`,
       date,
-      pnl: summary.totalPnl,
-      totalTrades: summary.totalTrades,
+      pnl: recordsPnl,
+      totalTrades: recordsTotalTrades,
       totalVolume: totalVolumeFromExecutions,
-      winRate: summary.winRate,
+      winRate: recordsWinRate,
       notes: tradesWithExecutions.find(t => t.status === 'BLANK')?.notes || '',
       notesChanges: tradesWithExecutions.find(t => t.status === 'BLANK')?.notesChanges || '',
       trades: tradesWithExecutions.filter(t => t.status !== 'BLANK'), // Separate actual trades from records notes

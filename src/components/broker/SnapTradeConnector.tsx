@@ -5,6 +5,7 @@ import { SnapTradeReact } from 'snaptrade-react';
 import { useWindowMessage } from 'snaptrade-react/hooks/useWindowMessage';
 import type { ErrorData } from 'snaptrade-react';
 import { toast } from 'sonner';
+import { useImportTracking } from '@/hooks/useImportTracking';
 
 interface SnapTradeConnectorProps {
   isOpen: boolean;
@@ -23,12 +24,20 @@ export default function SnapTradeConnector({
   const [loginLink, setLoginLink] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { track } = useImportTracking();
 
   // Handle window messages from SnapTrade iframe
   const handleSuccess = (data: string) => {
 
     toast.success('Successfully connected to your broker!');
-    
+
+    // Track SnapTrade auth success (non-blocking)
+    track({
+      action: 'snaptrade_auth_success',
+      component: 'SnapTradeConnector',
+      outcome: 'success',
+    });
+
     // Complete the connection process
     completeConnection(data || 'success');
   };
@@ -38,14 +47,40 @@ export default function SnapTradeConnector({
     const errorMessage = data.detail || data.errorCode || 'Connection failed';
     toast.error(`Connection failed: ${errorMessage}`);
     setError(errorMessage);
+
+    // Track SnapTrade auth error (non-blocking)
+    track({
+      action: 'snaptrade_auth_error',
+      component: 'SnapTradeConnector',
+      outcome: 'failure',
+      errorMessage,
+      metadata: {
+        errorCode: data.errorCode,
+        detail: data.detail,
+      },
+    });
   };
 
   const handleExit = () => {
+
+    // Track SnapTrade modal exit (non-blocking)
+    track({
+      action: 'snaptrade_modal_exited',
+      component: 'SnapTradeConnector',
+      outcome: 'cancelled',
+    });
 
     onClose();
   };
 
   const handleClose = () => {
+
+    // Track SnapTrade modal close (non-blocking)
+    track({
+      action: 'snaptrade_modal_closed',
+      component: 'SnapTradeConnector',
+      outcome: 'cancelled',
+    });
 
     onClose();
   };
@@ -80,9 +115,14 @@ export default function SnapTradeConnector({
   // Get the SnapTrade login link when component opens
   useEffect(() => {
     if (isOpen && !loginLink) {
+      // Track modal opened (non-blocking)
+      track({
+        action: 'snaptrade_modal_opened',
+        component: 'SnapTradeConnector',
+      });
       initializeSnapTradeConnection();
     }
-  }, [isOpen]);
+  }, [isOpen, loginLink, track]);
 
   const initializeSnapTradeConnection = async () => {
     setLoading(true);

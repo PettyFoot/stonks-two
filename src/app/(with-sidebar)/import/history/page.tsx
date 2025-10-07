@@ -123,7 +123,7 @@ export default function ImportHistoryPage() {
   };
 
   const handleDeleteBatch = async (batchId: string) => {
-    if (!confirm('Are you sure you want to delete this import batch and all associated data?')) {
+    if (!confirm('All orders and trades associated with this upload will be permanently deleted. Are you sure?')) {
       return;
     }
 
@@ -350,21 +350,12 @@ export default function ImportHistoryPage() {
                                   Delete Trades Only
                                 </DropdownMenuItem>
                               )}
-                              {batch._count.orders > 0 && (
-                                <DropdownMenuItem
-                                  onClick={() => handleReprocess(batch.id, 'delete_orders')}
-                                  className="text-orange-600"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete Orders Only
-                                </DropdownMenuItem>
-                              )}
                               <DropdownMenuItem
                                 onClick={() => handleDeleteBatch(batch.id)}
                                 className="text-red-600"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Everything
+                                Delete
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

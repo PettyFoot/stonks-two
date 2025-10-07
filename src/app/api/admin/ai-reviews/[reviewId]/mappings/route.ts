@@ -51,6 +51,13 @@ export async function PUT(
       );
     }
 
+    if (!review.brokerCsvFormatId) {
+      return NextResponse.json(
+        { error: 'Review has no associated broker format' },
+        { status: 400 }
+      );
+    }
+
     if (review.adminReviewStatus !== 'PENDING') {
       return NextResponse.json(
         { error: 'Review has already been processed' },
@@ -116,7 +123,7 @@ export async function PUT(
 
       // Update the broker CSV format with new mappings
       const updatedFormat = await tx.brokerCsvFormat.update({
-        where: { id: review.brokerCsvFormatId },
+        where: { id: review.brokerCsvFormatId! },
         data: {
           fieldMappings: newFieldMappings,
           confidence: 1.0, // Admin-reviewed has full confidence
@@ -144,7 +151,7 @@ export async function PUT(
       });
 
       // Create feedback items for all mappings to help train the AI
-      const originalMappings = review.brokerCsvFormat.fieldMappings as Record<string, any>;
+      const originalMappings = review.brokerCsvFormat!.fieldMappings as Record<string, any>;
 
       for (const mapping of mappings) {
         const originalMapping = originalMappings[mapping.csvHeader];

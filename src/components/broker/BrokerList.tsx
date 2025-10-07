@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useImportTracking } from '@/hooks/useImportTracking';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -63,6 +64,7 @@ interface BrokerListProps {
 export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
   const { user } = useUser();
   const { hasPremiumAccess } = useSubscription();
+  const { track } = useImportTracking();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showUpgradeMessage, setShowUpgradeMessage] = useState(false);
   const [connections, setConnections] = useState<BrokerConnectionData[]>([]);
@@ -198,7 +200,16 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
 
   const handleSync = async (connectionId: string) => {
     setSyncingConnections(prev => new Set(prev).add(connectionId));
-    
+
+    // Track sync start (non-blocking)
+    track({
+      action: 'broker_sync_started',
+      component: 'BrokerList',
+      metadata: {
+        connectionId,
+      },
+    });
+
     try {
       const response = await fetch('/api/snaptrade/sync', {
         method: 'POST',
@@ -211,11 +222,31 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
       }
 
       const result = await response.json();
-      
+
       if (result.success) {
         toast.success(`Sync completed: ${result.tradesImported} trades imported`);
+        // Track sync success (non-blocking)
+        track({
+          action: 'broker_sync_completed',
+          component: 'BrokerList',
+          outcome: 'success',
+          metadata: {
+            connectionId,
+            tradesImported: result.tradesImported,
+          },
+        });
       } else {
         toast.error(`Sync failed: ${result.errors?.[0] || 'Unknown error'}`);
+        // Track sync failure (non-blocking)
+        track({
+          action: 'broker_sync_completed',
+          component: 'BrokerList',
+          outcome: 'failure',
+          errorMessage: result.errors?.[0] || 'Unknown error',
+          metadata: {
+            connectionId,
+          },
+        });
       }
 
       // Reload connections and sync history
@@ -225,6 +256,16 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
     } catch (error) {
       console.error('Error syncing:', error);
       toast.error('Failed to sync trades');
+      // Track sync error (non-blocking)
+      track({
+        action: 'broker_sync_completed',
+        component: 'BrokerList',
+        outcome: 'failure',
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        metadata: {
+          connectionId,
+        },
+      });
     } finally {
       setSyncingConnections(prev => {
         const newSet = new Set(prev);
@@ -343,13 +384,39 @@ export default function BrokerList({ onConnectionsChange }: BrokerListProps) {
     loadLiveConnections();
     onConnectionsChange?.();
     toast.success('Broker connected successfully!');
+
+    // Track connection complete (non-blocking)
+    track({
+      action: 'broker_connection_completed',
+      component: 'BrokerList',
+      outcome: 'success',
+    });
   };
 
   const handleConnectBrokerClick = () => {
+    // Track connect broker click (non-blocking)
+    track({
+      action: 'connect_broker_clicked',
+      component: 'BrokerList',
+      metadata: {
+        hasPremiumAccess,
+        currentConnections: connections.length,
+        liveConnections: liveConnections.length,
+      },
+    });
+
     if (hasPremiumAccess) {
       setIsConnectModalOpen(true);
     } else {
       setShowUpgradeMessage(true);
+      // Track upgrade message shown (non-blocking)
+      track({
+        action: 'upgrade_message_shown',
+        component: 'BrokerList',
+        metadata: {
+          reason: 'broker_connection_requires_premium',
+        },
+      });
     }
   };
 

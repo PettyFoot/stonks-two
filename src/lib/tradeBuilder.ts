@@ -3,14 +3,6 @@ import { ordersRepo } from './repositories/ordersRepo';
 import { tradesRepo, CreateTradeData } from './repositories/tradesRepo';
 import { Decimal } from '@prisma/client/runtime/library';
 
-// Track partial order allocations when orders are split between trades
-export interface OrderAllocation {
-  orderId: string;
-  quantityAllocated: number;  // How much of this order is allocated to this trade
-  totalOrderQuantity: number; // The full order quantity for reference
-  price: number;              // Price for this allocation
-}
-
 export interface OpenPosition {
   symbol: string;
   side: TradeSide;
@@ -18,7 +10,6 @@ export interface OpenPosition {
   totalCostBasis: number;
   openTime: Date;
   orderIds: string[];
-  orderAllocations?: OrderAllocation[]; // Track partial order allocations
   existingTradeId?: string; // Track if this position came from an existing trade
 }
 
@@ -35,7 +26,6 @@ export interface ProcessedTrade {
   closeQuantity?: number;
   pnl: number;
   ordersInTrade: string[];
-  orderAllocations?: OrderAllocation[]; // Track partial order allocations
 }
 
 export class TradeBuilder {
@@ -43,63 +33,11 @@ export class TradeBuilder {
   private newTrades: ProcessedTrade[] = [];
 
   /**
-   * Create an order allocation for tracking partial order usage
-   */
-  private createOrderAllocation(
-    orderId: string,
-    quantityAllocated: number,
-    totalOrderQuantity: number,
-    price: number
-  ): OrderAllocation {
-    return {
-      orderId,
-      quantityAllocated,
-      totalOrderQuantity,
-      price
-    };
-  }
-
-  /**
-   * Calculate total quantity from order allocations
-   */
-  private calculateTotalQuantityFromAllocations(allocations?: OrderAllocation[]): number {
-    if (!allocations) return 0;
-    return allocations.reduce((total, alloc) => total + alloc.quantityAllocated, 0);
-  }
-
-  /**
    * Calculate total quantity across all orders in a trade
-   * Updated to handle order allocations for split orders
    */
-  private async calculateTotalQuantity(orderIds: string[], allocations?: OrderAllocation[]): Promise<number> {
-    // Get all orders in the trade
+  private async calculateTotalQuantity(orderIds: string[]): Promise<number> {
     const orders = await ordersRepo.getOrdersByIds(orderIds);
-    
-    // If no allocations, use standard calculation
-    if (!allocations || allocations.length === 0) {
-      return orders.reduce((total, order) => total + order.orderQuantity, 0);
-    }
-    
-    // Create a map of allocated quantities by order ID
-    const allocationMap = new Map<string, number>();
-    for (const alloc of allocations) {
-      allocationMap.set(alloc.orderId, alloc.quantityAllocated);
-    }
-    
-    // Calculate total: use allocation if exists, otherwise use full quantity
-    let totalQuantity = 0;
-    for (const order of orders) {
-      const allocatedQty = allocationMap.get(order.id);
-      if (allocatedQty !== undefined) {
-        // This order has an allocation (it's split), use allocated quantity
-        totalQuantity += allocatedQty;
-      } else {
-        // This order is not split, use full quantity
-        totalQuantity += order.orderQuantity;
-      }
-    }
-    
-    return totalQuantity;
+    return orders.reduce((total, order) => total + order.orderQuantity, 0);
   }
 
   /**
@@ -111,41 +49,19 @@ export class TradeBuilder {
   }
 
   /**
-   * Calculate average exit price for open trades
-   * Updated to handle order allocations for split orders
+   * Calculate average exit price for trades
    */
-  private async calculateAvgExitPrice(orderIds: string[], tradeSide: TradeSide, allocations?: OrderAllocation[]): Promise<number | undefined> {
+  private async calculateAvgExitPrice(orderIds: string[], tradeSide: TradeSide): Promise<number | undefined> {
     const exitSide = tradeSide === TradeSide.LONG ? 'SELL' : 'BUY';
-    
-    // If we have allocations, use those for accurate price calculation
-    if (allocations && allocations.length > 0) {
-      const orders = await ordersRepo.getOrdersByIds(orderIds);
-      const orderMap = new Map(orders.map(o => [o.id, o]));
-      
-      let totalQuantity = 0;
-      let weightedSum = 0;
-      
-      for (const alloc of allocations) {
-        const order = orderMap.get(alloc.orderId);
-        if (order && order.side === exitSide && order.limitPrice) {
-          totalQuantity += alloc.quantityAllocated;
-          weightedSum += alloc.quantityAllocated * Number(order.limitPrice);
-        }
-      }
-      
-      return totalQuantity > 0 ? weightedSum / totalQuantity : undefined;
-    }
-    
-    // Fallback to original behavior if no allocations
     const orders = await ordersRepo.getOrdersByIds(orderIds);
     const exitOrders = orders.filter(order => order.side === exitSide && order.limitPrice);
-    
+
     if (exitOrders.length === 0) return undefined;
-    
+
     const totalQuantity = exitOrders.reduce((sum, order) => sum + order.orderQuantity, 0);
-    const weightedSum = exitOrders.reduce((sum, order) => 
+    const weightedSum = exitOrders.reduce((sum, order) =>
       sum + (order.orderQuantity * Number(order.limitPrice || 0)), 0);
-    
+
     return weightedSum / totalQuantity;
   }
 
@@ -167,68 +83,34 @@ export class TradeBuilder {
 
   /**
    * Calculate open and close quantities based on trade side
-   * Updated to handle order allocations for split orders
    */
   private async calculateOpenCloseQuantities(
-    orderIds: string[], 
-    tradeSide: TradeSide, 
-    allocations?: OrderAllocation[]
+    orderIds: string[],
+    tradeSide: TradeSide
   ): Promise<{openQuantity: number, closeQuantity: number}> {
-    
-    // If we have allocations, use those for accurate quantity calculation
-    if (allocations && allocations.length > 0) {
-      const orders = await ordersRepo.getOrdersByIds(orderIds);
-      const orderMap = new Map(orders.map(o => [o.id, o]));
-      
-      let openQuantity = 0;
-      let closeQuantity = 0;
-      
-      for (const alloc of allocations) {
-        const order = orderMap.get(alloc.orderId);
-        if (!order) continue;
-        
-        if (tradeSide === TradeSide.LONG) {
-          if (order.side === 'BUY') {
-            openQuantity += alloc.quantityAllocated;
-          } else if (order.side === 'SELL') {
-            closeQuantity += alloc.quantityAllocated;
-          }
-        } else {
-          if (order.side === 'SELL') {
-            openQuantity += alloc.quantityAllocated;
-          } else if (order.side === 'BUY') {
-            closeQuantity += alloc.quantityAllocated;
-          }
-        }
-      }
-      
-      return { openQuantity, closeQuantity };
-    }
-    
-    // Fallback to original behavior if no allocations
     const orders = await ordersRepo.getOrdersByIds(orderIds);
-    
+
     if (tradeSide === TradeSide.LONG) {
       // For LONG trades: BUY orders open, SELL orders close
       const openQuantity = orders
         .filter(order => order.side === 'BUY')
         .reduce((sum, order) => sum + order.orderQuantity, 0);
-      
+
       const closeQuantity = orders
         .filter(order => order.side === 'SELL')
         .reduce((sum, order) => sum + order.orderQuantity, 0);
-        
+
       return { openQuantity, closeQuantity };
     } else {
       // For SHORT trades: SELL orders open, BUY orders close
       const openQuantity = orders
         .filter(order => order.side === 'SELL')
         .reduce((sum, order) => sum + order.orderQuantity, 0);
-      
+
       const closeQuantity = orders
         .filter(order => order.side === 'BUY')
         .reduce((sum, order) => sum + order.orderQuantity, 0);
-        
+
       return { openQuantity, closeQuantity };
     }
   }
@@ -312,13 +194,12 @@ export class TradeBuilder {
 
         continue;
       }
-      
+
       const avgEntryPrice = position.totalCostBasis / position.openQuantity;
-      const avgExitPrice = await this.calculateAvgExitPrice(position.orderIds, position.side, position.orderAllocations);
+      const avgExitPrice = await this.calculateAvgExitPrice(position.orderIds, position.side);
       const { openQuantity, closeQuantity } = await this.calculateOpenCloseQuantities(
-        position.orderIds, 
-        position.side,
-        position.orderAllocations
+        position.orderIds,
+        position.side
       );
       const remainingQuantity = await this.calculateRemainingQuantity(position.orderIds, position.side);
       
@@ -346,9 +227,8 @@ export class TradeBuilder {
         closeQuantity,
         pnl,
         ordersInTrade: position.orderIds,
-        orderAllocations: position.orderAllocations,
       };
-      
+
       this.newTrades.push(openTrade);
     }
   }
@@ -415,26 +295,20 @@ export class TradeBuilder {
     quantity: number,
     price: number,
     openTime: Date,
-    orderId: string,
-    quantityAllocated?: number  // Optional: for partial order allocations
+    orderId: string
   ): Promise<void> {
-    const actualQuantity = quantityAllocated || quantity;
-    
     const position: OpenPosition = {
       symbol,
       side,
-      openQuantity: actualQuantity,
-      totalCostBasis: actualQuantity * price,
+      openQuantity: quantity,
+      totalCostBasis: quantity * price,
       openTime,
       orderIds: [orderId],
-      orderAllocations: quantityAllocated ? [
-        this.createOrderAllocation(orderId, quantityAllocated, quantity, price)
-      ] : undefined,
       // No existingTradeId since this is a new position
     };
 
     this.openPositions.set(symbol, position);
-    
+
     // Don't create trade record yet - only when position is closed or at end of processing
   }
 
@@ -445,35 +319,22 @@ export class TradeBuilder {
     position: OpenPosition,
     quantity: number,
     price: number,
-    orderId: string,
-    quantityAllocated?: number  // Optional: for partial order allocations
+    orderId: string
   ): void {
-    const actualQuantity = quantityAllocated || quantity;
-    
     // Update position
-    const newTotalQuantity = position.openQuantity + actualQuantity;
-    const newTotalCostBasis = position.totalCostBasis + (actualQuantity * price);
-    
+    const newTotalQuantity = position.openQuantity + quantity;
+    const newTotalCostBasis = position.totalCostBasis + (quantity * price);
+
     position.openQuantity = newTotalQuantity;
     position.totalCostBasis = newTotalCostBasis;
     position.orderIds.push(orderId);
-    
-    // Add allocation if this is a partial order
-    if (quantityAllocated) {
-      if (!position.orderAllocations) {
-        position.orderAllocations = [];
-      }
-      position.orderAllocations.push(
-        this.createOrderAllocation(orderId, quantityAllocated, quantity, price)
-      );
-    }
-    
+
     // No need to update trades array since we don't create trades until positions close
   }
 
   /**
    * Handle opposite side order (close or reverse position)
-   * Updated to properly handle order splitting when an order both closes and opens positions
+   * Updated to physically split orders when an order both closes and opens positions
    */
   private async handleOppositeOrder(
     position: OpenPosition,
@@ -488,50 +349,50 @@ export class TradeBuilder {
 
     // Calculate average entry price
     const avgEntryPrice = position.totalCostBasis / position.openQuantity;
-    
-    // Create allocations for the closing portion of the order
-    const closingAllocations = position.orderAllocations ? [...position.orderAllocations] : [];
-    
-    // If this order is being split, add only the closing portion
+
+    // Handle order splitting if needed
+    let closingOrderId = orderId;
+    let newPositionOrderId: string | null = null;
+
     if (closingQuantity < quantity) {
-      // This order is split - only allocate the closing portion to this trade
-      closingAllocations.push(
-        this.createOrderAllocation(orderId, closingQuantity, quantity, price)
+      // This order needs to be split - create two separate orders
+      console.log(`[TRADE BUILDER] Splitting order ${orderId}:`, {
+        originalQuantity: quantity,
+        closingQuantity,
+        remainingQuantity: remainingOrderQuantity,
+        symbol: position.symbol,
+        positionSide: position.side
+      });
+
+      const [splitOrder1Id, splitOrder2Id] = await ordersRepo.splitOrder(
+        orderId,
+        closingQuantity,
+        remainingOrderQuantity
       );
+
+      closingOrderId = splitOrder1Id; // First part closes existing position
+      newPositionOrderId = splitOrder2Id; // Second part opens new position
     }
-    
-    // Add the order ID to the list
-    const allOrderIds = [...position.orderIds, orderId];
+
+    // Add the closing order ID to the list
+    const allOrderIds = [...position.orderIds, closingOrderId];
 
     if (remainingPositionQuantity === 0) {
       // Position fully closed - create closed trade
-      // If order was split, use allocations; otherwise use standard calculation
-      const finalAllocations = closingQuantity < quantity ? closingAllocations : position.orderAllocations;
-      
       const { openQuantity, closeQuantity } = await this.calculateOpenCloseQuantities(
-        allOrderIds, 
-        position.side,
-        finalAllocations
+        allOrderIds,
+        position.side
       );
-      
+
       const avgExitPrice = await this.calculateAvgExitPrice(
-        allOrderIds, 
-        position.side,
-        finalAllocations
+        allOrderIds,
+        position.side
       ) || price;
-      
-      // Calculate P&L based on actual quantities used
-      const actualCloseQty = finalAllocations ? 
-        this.calculateTotalQuantityFromAllocations(finalAllocations.filter(a => {
-          // Get only exit side allocations for P&L calculation
-          return position.side === TradeSide.LONG ? 
-            allOrderIds.includes(a.orderId) : 
-            allOrderIds.includes(a.orderId);
-        })) : closeQuantity;
-      
+
+      // Calculate P&L - now simple since all orders are complete (no allocations needed)
       const pnl = position.side === TradeSide.LONG
-        ? Math.round(((avgExitPrice - avgEntryPrice) * actualCloseQty) * 100) / 100
-        : Math.round(((avgEntryPrice - avgExitPrice) * actualCloseQty) * 100) / 100;
+        ? Math.round(((avgExitPrice - avgEntryPrice) * closeQuantity) * 100) / 100
+        : Math.round(((avgEntryPrice - avgExitPrice) * closeQuantity) * 100) / 100;
 
       const closedTrade: ProcessedTrade = {
         id: '',
@@ -546,7 +407,6 @@ export class TradeBuilder {
         closeQuantity,
         pnl,
         ordersInTrade: allOrderIds,
-        orderAllocations: finalAllocations,
       };
 
       this.newTrades.push(closedTrade);
@@ -556,32 +416,24 @@ export class TradeBuilder {
       position.openQuantity = remainingPositionQuantity;
       position.totalCostBasis = avgEntryPrice * remainingPositionQuantity;
       position.orderIds = allOrderIds;
-      
-      // Update allocations if this was a split order
-      if (closingQuantity < quantity) {
-        position.orderAllocations = closingAllocations;
-      }
-      
+
       // The position remains open with reduced quantity
     }
 
     if (remainingOrderQuantity > 0) {
       // Order quantity exceeds position - reverse/create new position
       const newSide = position.side === TradeSide.LONG ? TradeSide.SHORT : TradeSide.LONG;
-      
-      // Create allocation for the remaining portion of the split order
-      const newAllocations = [
-        this.createOrderAllocation(orderId, remainingOrderQuantity, quantity, price)
-      ];
-      
+
+      // Use the split order ID if we created one
+      const orderIdForNewPosition = newPositionOrderId || orderId;
+
       const newPosition: OpenPosition = {
         symbol: position.symbol,
         side: newSide,
         openQuantity: remainingOrderQuantity,
         totalCostBasis: remainingOrderQuantity * price,
         openTime: orderTime,
-        orderIds: [orderId],
-        orderAllocations: newAllocations,
+        orderIds: [orderIdForNewPosition],
         // No existingTradeId since this is a new position from reversal
       };
 
@@ -594,14 +446,17 @@ export class TradeBuilder {
    */
   async persistTrades(userId: string): Promise<void> {
     for (const trade of this.newTrades) {
-      // Use allocations if available for accurate quantity calculation
-      const totalQuantity = await this.calculateTotalQuantity(trade.ordersInTrade, trade.orderAllocations);
+      const totalQuantity = await this.calculateTotalQuantity(trade.ordersInTrade);
       const timeInTrade = this.calculateTimeInTrade(trade.openTime, trade.closeTime);
-      const remainingQuantity = trade.status === TradeStatus.OPEN 
+      const remainingQuantity = trade.status === TradeStatus.OPEN
         ? await this.calculateRemainingQuantity(trade.ordersInTrade, trade.side)
         : 0;
       const marketSession = this.calculateMarketSession(trade.openTime);
       const holdingPeriod = this.calculateHoldingPeriod(trade.openTime, trade.closeTime);
+
+      // Get importBatchId from the orders in this trade
+      const orders = await ordersRepo.getOrdersByIds(trade.ordersInTrade);
+      const importBatchId = orders.find(o => o.importBatchId)?.importBatchId ?? undefined;
 
       const tradeData: CreateTradeData = {
         userId,
@@ -626,9 +481,10 @@ export class TradeBuilder {
         costBasis: trade.avgEntryPrice && trade.openQuantity 
           ? trade.avgEntryPrice * trade.openQuantity 
           : undefined,
-        proceeds: trade.avgExitPrice && trade.closeQuantity 
-          ? trade.avgExitPrice * trade.closeQuantity 
+        proceeds: trade.avgExitPrice && trade.closeQuantity
+          ? trade.avgExitPrice * trade.closeQuantity
           : undefined,
+        importBatchId,
       };
 
       const savedTrade = await tradesRepo.saveTrade(tradeData);

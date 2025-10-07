@@ -47,6 +47,11 @@ export async function GET(
             mappedHeaders: true
           }
         },
+        importBatch: {
+          select: {
+            tempFileContent: true
+          }
+        },
         feedbackItems: {
           select: {
             csvHeader: true,
@@ -65,6 +70,13 @@ export async function GET(
       return NextResponse.json(
         { error: 'Review not found' },
         { status: 404 }
+      );
+    }
+
+    if (!review.brokerCsvFormat) {
+      return NextResponse.json(
+        { error: 'Review has no associated broker format' },
+        { status: 400 }
       );
     }
 
@@ -128,7 +140,8 @@ export async function GET(
       mappings,
       unmappedHeaders,
       sampleData: sampleData.slice(0, 3), // First 3 rows for preview
-      feedbackItems: review.feedbackItems
+      feedbackItems: review.feedbackItems,
+      csvFileContent: review.importBatch?.tempFileContent || null
     };
 
     return NextResponse.json(response);
