@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ShareButtonProps {
   tradeId?: string;
@@ -40,7 +41,9 @@ export default function ShareButton({
   className = '',
   variant = 'icon'
 }: ShareButtonProps) {
+  const { isDemo, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [isDemoRestrictionOpen, setIsDemoRestrictionOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
   const [copied, setCopied] = useState(false);
@@ -121,12 +124,26 @@ export default function ShareButton({
     }
   };
 
+  const handleShareClick = () => {
+    if (isDemo) {
+      setIsDemoRestrictionOpen(true);
+    } else {
+      setIsOpen(true);
+    }
+  };
+
+  const handleSignUpClick = async () => {
+    setIsDemoRestrictionOpen(false);
+    await logout(); // This will redirect to login page for demo users
+  };
+
   const ShareTrigger = variant === 'icon' ? (
     <Button
       variant="ghost"
       size="sm"
       className={`h-8 w-8 p-0 hover:bg-gray-100 ${className}`}
       title="Share this trade"
+      onClick={handleShareClick}
     >
       <Share2 className="h-4 w-4 text-gray-600" />
     </Button>
@@ -135,6 +152,7 @@ export default function ShareButton({
       variant="outline"
       size="sm"
       className={`gap-2 ${className}`}
+      onClick={handleShareClick}
     >
       <Share2 className="h-4 w-4" />
       Share
@@ -142,10 +160,35 @@ export default function ShareButton({
   );
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        {ShareTrigger}
-      </DialogTrigger>
+    <>
+      {ShareTrigger}
+
+      {/* Demo Restriction Dialog */}
+      <Dialog open={isDemoRestrictionOpen} onOpenChange={setIsDemoRestrictionOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-600" />
+              No Sharing in Demo Mode
+            </DialogTitle>
+            <DialogDescription>
+              Only authenticated signed up users can share pages. Please sign up or sign in to continue.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setIsDemoRestrictionOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSignUpClick} className="gap-2">
+              Sign Up / Sign In
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Regular Share Dialog */}
+      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -287,5 +330,6 @@ export default function ShareButton({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

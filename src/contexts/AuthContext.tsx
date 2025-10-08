@@ -27,6 +27,7 @@ interface AuthContextValue {
   canEdit: boolean;
   canDelete: boolean;
   canExport: boolean;
+  canShare: boolean;
   upgradeUrl: string;
   logout: () => Promise<void>;
   extendSession: () => Promise<void>;
@@ -83,6 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const canEdit = true; // Both demo and auth users can edit
   const canDelete = authState.type === 'authenticated';
   const canExport = true; // Both demo and auth users can export
+  const canShare = authState.type === 'authenticated';
   const upgradeUrl = isDemo ? '/api/auth/login' : '/pricing';
 
   const logout = async () => {
@@ -132,6 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     canEdit,
     canDelete,
     canExport,
+    canShare,
     upgradeUrl,
     logout,
     extendSession,

@@ -18,6 +18,7 @@ export interface DemoSession {
     canEdit: false;
     canDelete: false;
     canExport: false;
+    canShare: false;
   };
 }
 
@@ -54,6 +55,7 @@ export async function createDemoSession(): Promise<DemoSession> {
       canEdit: false,
       canDelete: false,
       canExport: false,
+      canShare: false,
     },
   };
 

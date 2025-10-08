@@ -43,6 +43,7 @@ async function checkDemoSession(request: NextRequest): Promise<DemoSession | nul
         canEdit: false,
         canDelete: false,
         canExport: false,
+        canShare: false,
       }
     };
   } catch (error) {
