@@ -120,7 +120,8 @@ export async function PUT(req: NextRequest) {
           select: {
             importBatchId: true,
             csvUploadLogId: true,
-            userId: true
+            userId: true,
+            brokerCsvFormatId: true
           }
         });
 
@@ -190,6 +191,47 @@ export async function PUT(req: NextRequest) {
         });
 
         console.log('Deleted feedback items:', deletedFeedbackItems.count);
+
+        // Step 5.5: Delete BrokerCsvFormat if it's not approved and only used by this ingest
+        if (review.brokerCsvFormatId) {
+          const format = await tx.brokerCsvFormat.findUnique({
+            where: { id: review.brokerCsvFormatId },
+            select: {
+              isApproved: true,
+              formatName: true,
+              _count: {
+                select: {
+                  aiIngestChecks: true
+                }
+              }
+            }
+          });
+
+          // Only delete if:
+          // 1. Format exists
+          // 2. Format is not approved (isApproved = false)
+          // 3. This is the only ingest check using it (count = 1)
+          if (format && !format.isApproved && format._count.aiIngestChecks === 1) {
+            const deletedFormat = await tx.brokerCsvFormat.delete({
+              where: { id: review.brokerCsvFormatId }
+            });
+
+            console.log('Deleted unapproved broker format:', {
+              formatId: deletedFormat.id,
+              formatName: deletedFormat.formatName,
+              reason: 'Ingest rejected and format not approved'
+            });
+          } else if (format) {
+            console.log('Skipped broker format deletion:', {
+              formatId: review.brokerCsvFormatId,
+              isApproved: format.isApproved,
+              ingestCount: format._count.aiIngestChecks,
+              reason: format.isApproved
+                ? 'Format is already approved'
+                : `Format is used by ${format._count.aiIngestChecks} ingest checks`
+            });
+          }
+        }
 
         // Step 6: Update AiIngestToCheck with denial info AND processingStatus
         const updatedReview = await tx.aiIngestToCheck.update({

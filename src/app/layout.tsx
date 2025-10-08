@@ -9,6 +9,8 @@ import { CookieConsent } from "@/components/CookieConsent";
 import { ConditionalAnalytics } from "@/components/ConditionalAnalytics";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PageTrackingProvider } from "@/components/PageTrackingProvider";
+import { AnalyticsTrackingProvider } from "@/components/AnalyticsTrackingProvider";
+import { Suspense } from "react";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -144,6 +146,9 @@ export default function RootLayout({
         
         <Providers>
           <PageTrackingProvider />
+          <Suspense fallback={null}>
+            <AnalyticsTrackingProvider />
+          </Suspense>
           <main id="main-content" className="min-h-screen">
             {children}
           </main>

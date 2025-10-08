@@ -1023,6 +1023,78 @@ model ImportPageInteraction {
   @@map("import_page_interactions")
 }
 
+// ============================================================================
+// ANALYTICS MODELS - Track all visitors (authenticated + non-authenticated)
+// ============================================================================
+
+model AnalyticsSession {
+  id              String    @id @default(cuid())
+  sessionId       String    @unique // Client-generated session ID
+  userId          String?   // NULL for anonymous visitors
+
+  // UTM Parameters from landing
+  utmSource       String?   @db.VarChar(255) // e.g., "reddit", "google", "facebook"
+  utmMedium       String?   @db.VarChar(255) // e.g., "cpc", "social", "email"
+  utmCampaign     String?   @db.VarChar(255) // e.g., "spring_sale", "product_launch"
+  utmTerm         String?   @db.VarChar(255) // e.g., "trading journal"
+  utmContent      String?   @db.VarChar(255) // e.g., "banner_ad", "text_link"
+
+  // Session metadata
+  referrer        String?   @db.VarChar(2048) // Where they came from
+  landingPage     String    @db.VarChar(2048) // First page they visited
+  ipHash          String?   @db.VarChar(64)   // Hashed IP for privacy
+  userAgent       String?   @db.Text          // Browser/device info
+  country         String?   @db.VarChar(100)  // Optional: Geolocation
+  city            String?   @db.VarChar(100)  // Optional: Geolocation
+
+  // Timestamps
+  firstSeenAt     DateTime  @default(now())
+  lastSeenAt      DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+
+  // Relations
+  pageViews       AnalyticsPageView[]
+
+  @@index([sessionId])
+  @@index([userId, firstSeenAt])
+  @@index([utmSource, firstSeenAt])
+  @@index([utmMedium, firstSeenAt])
+  @@index([utmCampaign, firstSeenAt])
+  @@index([landingPage])
+  @@index([firstSeenAt])
+  @@map("analytics_sessions")
+}
+
+model AnalyticsPageView {
+  id              String    @id @default(cuid())
+  sessionId       String    // Links to AnalyticsSession.sessionId (not id)
+  userId          String?   // NULL for anonymous visitors
+
+  // Page tracking
+  path            String    @db.VarChar(2048) // Full path including query params
+  normalizedPath  String    @db.VarChar(2048) // Normalized path (e.g., /blog/[slug] -> /blog)
+  previousPath    String?   @db.VarChar(2048) // For funnel/flow analysis
+
+  // Duration tracking
+  enteredAt       DateTime  @default(now())
+  exitedAt        DateTime?
+  duration        Int?      // Time spent in milliseconds
+
+  // Metadata
+  createdAt       DateTime  @default(now())
+
+  // Relations
+  session         AnalyticsSession @relation(fields: [sessionId], references: [sessionId], onDelete: Cascade)
+
+  @@index([sessionId, enteredAt])
+  @@index([userId, enteredAt])
+  @@index([normalizedPath, enteredAt])
+  @@index([path])
+  @@index([enteredAt])
+  @@index([createdAt])
+  @@map("analytics_page_views")
+}
+
 model FeedbackResponse {
   id              String    @id @default(cuid())
   userId          String?   // Optional - can be anonymous
