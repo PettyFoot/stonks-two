@@ -48,6 +48,12 @@ export async function GET(request: Request) {
         notes: true,
         tags: true,
         brokerName: true,
+        brokerId: true,
+        broker: {
+          select: {
+            name: true
+          }
+        },
         tradeSource: true,
         costBasis: true,
         proceeds: true,
@@ -85,6 +91,12 @@ export async function GET(request: Request) {
         orderAccount: true,
         orderRoute: true,
         brokerType: true,
+        brokerId: true,
+        broker: {
+          select: {
+            name: true
+          }
+        },
         tags: true,
         tradeId: true
       }
@@ -123,7 +135,8 @@ export async function GET(request: Request) {
       'Low During Trade': trade.lowDuringTrade ? Number(trade.lowDuringTrade) : '',
       Notes: trade.notes || '',
       Tags: trade.tags.join(', '),
-      Broker: trade.brokerName || '',
+      'Broker': trade.broker?.name || trade.brokerName || '',
+      'Broker ID': trade.brokerId || '',
       'Trade Source': trade.tradeSource
     }));
 
@@ -150,6 +163,8 @@ export async function GET(request: Request) {
       'Order Account': order.orderAccount || '',
       'Order Route': order.orderRoute || '',
       'Broker Type': order.brokerType,
+      'Broker': order.broker?.name || '',
+      'Broker ID': order.brokerId || '',
       Tags: order.tags.join(', '),
       'Associated Trade ID': order.tradeId || ''
     }));

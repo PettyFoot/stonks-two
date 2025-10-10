@@ -80,6 +80,7 @@ model Trade {
   symbol            String
   assetClass        AssetClass    @default(EQUITY)
   brokerName        String?
+  brokerId          String?       // Reference to Broker.id - tracks which broker this trade came from
   tradeSource       TradeSource   @default(IMPORTED)
   orderType         OrderType     @default(MARKET)
   side              TradeSide
@@ -122,6 +123,7 @@ model Trade {
   recordsEntryId    String?
   importSource      ImportSource  @default(CSV)
   snapTradeId       String?
+  broker            Broker?       @relation(fields: [brokerId], references: [id])
   importBatch       ImportBatch?  @relation(fields: [importBatchId], references: [id])
   recordsEntry      RecordsEntry? @relation(fields: [recordsEntryId], references: [id])
   user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -131,6 +133,8 @@ model Trade {
   @@index([userId, assetClass])
   @@index([userId, side])
   @@index([userId, symbol, status])
+  @@index([userId, brokerId])
+  @@index([userId, symbol, brokerId])
   @@index([userId, entryPrice])
   @@index([userId, exitPrice])
   @@index([userId, quantity])
@@ -154,6 +158,7 @@ model Order {
   parentOrderId       String?
   splitFromOrderId    String?       // Tracks the original order ID when this order was created from a split
   symbol              String
+  assetClass          AssetClass    @default(EQUITY)
   orderType           OrderType
   side                OrderSide
   timeInForce         TimeInForce
@@ -169,6 +174,7 @@ model Order {
   orderAccount        String?
   orderRoute          String?
   brokerType          BrokerType    @default(GENERIC_CSV)
+  brokerId            String?       // Reference to Broker.id from BrokerCsvFormat
   commission          Decimal?      @db.Decimal(10, 2)
   fees                Decimal?      @db.Decimal(10, 2)
   tags                String[]
@@ -180,6 +186,7 @@ model Order {
   datePrecision       DatePrecision @default(MILLISECOND)
   importSequence      Int?
   snapTradeActivityId String?       @unique
+  broker              Broker?       @relation(fields: [brokerId], references: [id])
   importBatch         ImportBatch?  @relation(fields: [importBatchId], references: [id])
   user                User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   stagingRecords      OrderStaging[] @relation("StagingToOrder")
@@ -187,6 +194,7 @@ model Order {
   @@unique([orderId, brokerType])
   @@index([userId, symbol])
   @@index([userId, orderStatus])
+  @@index([userId, assetClass])
   @@index([tradeId])
   @@index([userId, tradeId])
   @@index([userId, snapTradeActivityId])
@@ -195,6 +203,7 @@ model Order {
   @@index([userId, orderPlacedTime])
   @@index([userId, orderStatus, orderPlacedTime])
   @@index([splitFromOrderId])
+  @@index([brokerId, userId])
   @@map("orders")
 }
 
@@ -205,6 +214,7 @@ model SplitOrdersParentOrders {
   parentOrderId       String?
   splitFromOrderId    String?
   symbol              String
+  assetClass          AssetClass    @default(EQUITY)
   orderType           OrderType
   side                OrderSide
   timeInForce         TimeInForce
@@ -220,6 +230,7 @@ model SplitOrdersParentOrders {
   orderAccount        String?
   orderRoute          String?
   brokerType          BrokerType    @default(GENERIC_CSV)
+  brokerId            String?       // Reference to Broker.id from BrokerCsvFormat
   commission          Decimal?      @db.Decimal(10, 2)
   fees                Decimal?      @db.Decimal(10, 2)
   tags                String[]
@@ -490,6 +501,8 @@ model Broker {
   updatedAt  DateTime          @updatedAt
   aliases    BrokerAlias[]
   csvFormats BrokerCsvFormat[]
+  orders     Order[]
+  trades     Trade[]
 
   @@index([name])
   @@map("brokers")
@@ -753,15 +766,11 @@ enum PaymentStatus {
 }
 
 enum AssetClass {
-  EQUITY
-  FUTURES
-  OPTIONS
-  FOREX
-  CRYPTO
-  BOND
-  ETF
-  MUTUAL_FUND
-  COMMODITY
+  EQUITY      // Default - represents stocks
+  OPTIONS     // Option contracts
+  FUTURES     // Futures contracts
+  FOREX       // Foreign exchange
+  CRYPTO      // Cryptocurrency
 
   @@map("asset_class")
 }

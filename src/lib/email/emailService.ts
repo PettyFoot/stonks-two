@@ -1,5 +1,5 @@
 import * as nodemailer from 'nodemailer';
-import { generateWelcomeEmail, WelcomeEmailData, generateSignupWelcomeEmail, SignupWelcomeEmailData, generateCouponEmail, CouponEmailData, generateFeedbackEmail, FeedbackEmailData, generateOnboardingCheckInEmail, OnboardingCheckInEmailData, generateOnboardingWithCouponEmail, OnboardingWithCouponEmailData, generateFormatDenialEmail, FormatDenialEmailData } from './templates';
+import { generateWelcomeEmail, WelcomeEmailData, generateSignupWelcomeEmail, SignupWelcomeEmailData, generateCouponEmail, CouponEmailData, generateFeedbackEmail, FeedbackEmailData, generateOnboardingCheckInEmail, OnboardingCheckInEmailData, generateOnboardingWithCouponEmail, OnboardingWithCouponEmailData, generateFormatDenialEmail, FormatDenialEmailData, generateDuplicateOrdersEmail, DuplicateOrdersEmailData } from './templates';
 
 export interface EmailOptions {
   to: string;
@@ -284,6 +284,36 @@ Automated notification from Trade Voyager Analytics
     } catch (error) {
       console.error('Failed to send format denial email:', error);
       throw new Error('Failed to send format denial email');
+    }
+  }
+
+  async sendDuplicateOrdersNotification(data: DuplicateOrdersEmailData): Promise<void> {
+    try {
+      console.log(`[DEBUG] sendDuplicateOrdersNotification called with data:`, {
+        importBatchId: data.importBatchId,
+        filename: data.filename,
+        userId: data.userId,
+        duplicatesCount: data.duplicates.length
+      });
+
+      const emailContent = generateDuplicateOrdersEmail(data);
+
+      // Send to admin email (EMAIL_FROM)
+      await this.sendEmail({
+        to: process.env.EMAIL_FROM!,
+        subject: emailContent.subject,
+        text: emailContent.text,
+        html: emailContent.html,
+      });
+
+      console.log('Duplicate orders notification sent successfully:', {
+        importBatchId: data.importBatchId,
+        duplicatesCount: data.duplicates.length
+      });
+    } catch (error) {
+      console.error('Failed to send duplicate orders notification:', error);
+      // Don't throw - we don't want email failures to break migration
+      // Just log the error
     }
   }
 }

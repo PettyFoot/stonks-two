@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminAuth } from '@/lib/auth0';
 import { prisma } from '@/lib/prisma';
 import { FormatApprovalService } from '@/lib/services/FormatApprovalService';
+import { processUserOrders } from '@/lib/tradeBuilder';
 import { z } from 'zod';
 
 const MappingUpdateSchema = z.object({
@@ -10,7 +11,8 @@ const MappingUpdateSchema = z.object({
     orderField: z.string(),
     confidence: z.number().optional().default(1.0),
     isNew: z.boolean().optional().default(false),
-    isModified: z.boolean().optional().default(false)
+    isModified: z.boolean().optional().default(false),
+    combinedWith: z.array(z.string()).optional()
   })),
   adminNotes: z.string().optional(),
   approve: z.boolean().default(true)
@@ -93,7 +95,8 @@ export async function PUT(
             confidence: mapping.confidence,
             adminReviewed: true,
             isNew: mapping.isNew,
-            isModified: mapping.isModified
+            isModified: mapping.isModified,
+            combinedWith: mapping.combinedWith || undefined
           });
         }
       });
@@ -102,14 +105,26 @@ export async function PUT(
       Object.entries(mappingGroups).forEach(([csvHeader, fieldMappings]) => {
         if (fieldMappings.length === 1) {
           // Single field - store in legacy format for backward compatibility
-          newFieldMappings[csvHeader] = fieldMappings[0];
+          const singleMapping = fieldMappings[0];
+          newFieldMappings[csvHeader] = {
+            field: singleMapping.field,
+            confidence: singleMapping.confidence,
+            adminReviewed: singleMapping.adminReviewed,
+            isNew: singleMapping.isNew,
+            isModified: singleMapping.isModified,
+            ...(singleMapping.combinedWith && { combinedWith: singleMapping.combinedWith })
+          };
         } else {
           // Multiple fields - store in new array format
           newFieldMappings[csvHeader] = {
             fields: fieldMappings.map(fm => fm.field),
             confidence: Math.max(...fieldMappings.map(fm => fm.confidence || 0)),
             adminReviewed: true,
-            hasMultipleFields: true
+            hasMultipleFields: true,
+            // If any of the fields have combinedWith, store it
+            ...(fieldMappings.some(fm => fm.combinedWith) && {
+              combinedWith: fieldMappings.find(fm => fm.combinedWith)?.combinedWith
+            })
           };
         }
       });
@@ -236,6 +251,18 @@ export async function PUT(
         `[AI Reviews] Migration completed: ${migrationResult.processedCount} processed, ` +
         `${migrationResult.errorCount} errors`
       );
+
+      // After successful migration, calculate trades from the newly migrated orders
+      if (migrationResult.processedCount > 0 && review.importBatch?.userId) {
+        try {
+          console.log(`[AI Reviews] Starting trade calculation for user ${review.importBatch.userId}`);
+          const trades = await processUserOrders(review.importBatch.userId);
+          console.log(`[AI Reviews] Trade calculation completed: ${trades.length} trades processed`);
+        } catch (tradeError) {
+          console.error('[AI Reviews] Failed to calculate trades:', tradeError);
+          // Don't fail the whole request if trade calculation fails - the orders are still migrated
+        }
+      }
     } catch (migrationError) {
       console.error('[AI Reviews] Failed to migrate staged orders:', migrationError);
       // Don't fail the whole request if migration fails - the format is still approved

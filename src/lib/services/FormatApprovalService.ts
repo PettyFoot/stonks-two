@@ -108,7 +108,8 @@ export class FormatApprovalService {
           tx,
           formatId,
           updatedFormat.fieldMappings,
-          brokerType
+          brokerType,
+          updatedFormat.brokerId // Pass brokerId from format
         );
 
         return {
@@ -191,7 +192,8 @@ export class FormatApprovalService {
     tx: any,
     formatId: string,
     fieldMappings: any,
-    brokerType: BrokerType
+    brokerType: BrokerType,
+    brokerId: string
   ): Promise<{ migratedCount: number; failedCount: number; errors: string[] }> {
     let migratedCount = 0;
     let failedCount = 0;
@@ -214,7 +216,7 @@ export class FormatApprovalService {
       if (staged.length === 0) break;
 
       // Process this batch
-      const batchResult = await this.processMigrationBatch(tx, staged, fieldMappings, brokerType);
+      const batchResult = await this.processMigrationBatch(tx, staged, fieldMappings, brokerType, brokerId);
       migratedCount += batchResult.migratedCount;
       failedCount += batchResult.failedCount;
       errors.push(...batchResult.errors);
@@ -238,18 +240,101 @@ export class FormatApprovalService {
     tx: any,
     staged: OrderStaging[],
     fieldMappings: any,
-    brokerType: BrokerType
+    brokerType: BrokerType,
+    brokerId: string
   ): Promise<{ migratedCount: number; failedCount: number; errors: string[] }> {
     const ordersToCreate: any[] = [];
     const successfulStagingIds: string[] = [];
     const failedStagingIds: string[] = [];
     const errors: string[] = [];
+    const detailedErrors: Map<string, string[]> = new Map();
+    const duplicates: Array<{
+      stagingId: string;
+      existingOrderId: string;
+      symbol: string;
+      executedTime: string;
+    }> = [];
 
     // Transform each staged record
     for (const record of staged) {
+      const recordErrors: string[] = [];
+
       try {
-        const mappedData = this.applyApprovedMappings(record.rawCsvRow, fieldMappings);
-        const validatedData = InputValidator.validateStagingOrderData(mappedData);
+        console.log(`[Migration] Processing record ${record.id} (row ${record.rowIndex})`);
+
+        // Step 1: Apply mappings
+        let mappedData;
+        try {
+          mappedData = this.applyApprovedMappings(record.rawCsvRow, fieldMappings);
+          console.log(`[Migration] Mapped data:`, JSON.stringify(mappedData, null, 2));
+        } catch (error) {
+          const msg = `Mapping failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          recordErrors.push(msg);
+          throw new Error(msg);
+        }
+
+        // Step 2: Infer side from quantity sign if side not explicitly mapped
+        let normalizedData;
+        try {
+          normalizedData = this.inferSideFromQuantity(mappedData);
+          console.log(`[Migration] After side inference:`, JSON.stringify({
+            side: normalizedData.side,
+            quantity: normalizedData.quantity || normalizedData.orderQuantity
+          }));
+        } catch (error) {
+          const msg = `Side inference failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          recordErrors.push(msg);
+          throw new Error(msg);
+        }
+
+        // Step 3: Validate the data
+        let validatedData;
+        try {
+          validatedData = InputValidator.validateStagingOrderData(normalizedData);
+          console.log(`[Migration] Validation successful for record ${record.id}`);
+        } catch (error) {
+          const msg = `Validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          recordErrors.push(msg);
+
+          // Log detailed validation context
+          console.error(`[Migration] Validation error for record ${record.id}:`, {
+            error: msg,
+            rawData: record.rawCsvRow,
+            mappedData,
+            normalizedData
+          });
+
+          throw new Error(msg);
+        }
+
+        // Step 4: Check for duplicates
+        const existingOrder = await tx.order.findFirst({
+          where: {
+            userId: record.userId,
+            symbol: validatedData.symbol,
+            orderExecutedTime: validatedData.orderExecutedTime,
+            brokerId: brokerId
+          },
+          select: { id: true, orderId: true }
+        });
+
+        if (existingOrder) {
+          // Mark as duplicate and skip migration
+          duplicates.push({
+            stagingId: record.id,
+            existingOrderId: existingOrder.id,
+            symbol: validatedData.symbol,
+            executedTime: validatedData.orderExecutedTime.toISOString()
+          });
+
+          const duplicateMsg = `Duplicate order exists (Order ID: ${existingOrder.id})`;
+          recordErrors.push(duplicateMsg);
+          failedStagingIds.push(record.id);
+          detailedErrors.set(record.id, [duplicateMsg]);
+
+          console.log(`[Migration] Duplicate found for record ${record.id}: existing order ${existingOrder.id}`);
+          continue; // Skip this record
+        }
 
         ordersToCreate.push({
           userId: record.userId,
@@ -268,6 +353,7 @@ export class FormatApprovalService {
           accountId: validatedData.accountId,
           orderAccount: validatedData.accountId,
           brokerType: brokerType,
+          brokerId: brokerId, // From BrokerCsvFormat passed as parameter
           datePrecision: 'MILLISECOND',
           tags: [],
           usedInTrade: false
@@ -276,7 +362,18 @@ export class FormatApprovalService {
         successfulStagingIds.push(record.id);
       } catch (error) {
         failedStagingIds.push(record.id);
-        errors.push(`Row ${record.rowIndex}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        const errorMessage = `Row ${record.rowIndex}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        errors.push(errorMessage);
+
+        // Log detailed error information for debugging
+        console.error(`[Migration] FAILED record ${record.id} (row ${record.rowIndex}):`, {
+          error: errorMessage,
+          symbol: record.rawCsvRow?.symbol || 'N/A',
+          rawData: record.rawCsvRow
+        });
+
+        // Store detailed errors for this record
+        detailedErrors.set(record.id, recordErrors.length > 0 ? recordErrors : [errorMessage]);
       }
     }
 
@@ -314,15 +411,65 @@ export class FormatApprovalService {
       }
     }
 
-    // Mark failed staging records
+    // Mark failed staging records with detailed errors
     if (failedStagingIds.length > 0) {
-      await tx.orderStaging.updateMany({
-        where: { id: { in: failedStagingIds } },
-        data: {
-          migrationStatus: 'FAILED',
-          processingErrors: errors
+      // Update each failed record individually with its specific errors
+      for (const failedId of failedStagingIds) {
+        const recordErrors = detailedErrors.get(failedId) || [`Row failed: ${errors.find(e => e.includes(failedId)) || 'Unknown error'}`];
+
+        await tx.orderStaging.update({
+          where: { id: failedId },
+          data: {
+            migrationStatus: 'FAILED',
+            processingErrors: recordErrors,
+            retryCount: { increment: 1 },
+            lastRetryAt: new Date()
+          }
+        });
+      }
+    }
+
+    // Send admin email notification if duplicates were found
+    if (duplicates.length > 0 && staged.length > 0) {
+      try {
+        // Get import batch and user info for email
+        const firstRecord = staged[0];
+        const importBatch = await tx.importBatch.findUnique({
+          where: { id: firstRecord.importBatchId },
+          select: { filename: true, userId: true }
+        });
+
+        const user = await tx.user.findUnique({
+          where: { id: firstRecord.userId },
+          select: { email: true }
+        });
+
+        const format = await tx.brokerCsvFormat.findUnique({
+          where: { id: firstRecord.brokerCsvFormatId },
+          include: { broker: true }
+        });
+
+        if (importBatch && user && format) {
+          // Import emailService dynamically to avoid circular dependencies
+          const { emailService } = await import('@/lib/email/emailService');
+
+          await emailService.sendDuplicateOrdersNotification({
+            importBatchId: firstRecord.importBatchId,
+            filename: importBatch.filename,
+            userId: firstRecord.userId,
+            userEmail: user.email,
+            formatName: format.formatName,
+            brokerName: format.broker.name,
+            duplicates: duplicates,
+            timestamp: new Date().toISOString()
+          });
+
+          console.log(`[FormatApprovalService] Sent duplicate notification email: ${duplicates.length} duplicates found`);
         }
-      });
+      } catch (emailError) {
+        // Don't fail migration if email fails
+        console.error('[FormatApprovalService] Failed to send duplicate notification email:', emailError);
+      }
     }
 
     return { migratedCount, failedCount, errors };
@@ -333,26 +480,62 @@ export class FormatApprovalService {
    */
   private applyApprovedMappings(rawRow: any, fieldMappings: any): any {
     const result: any = {};
+    const dateFields = ['orderPlacedTime', 'orderExecutedTime', 'tradeDate', 'executionTime', 'settlementDate'];
 
     try {
       for (const [csvColumn, mapping] of Object.entries(fieldMappings)) {
-        const value = rawRow[csvColumn];
+        // Use combineFieldValues to handle field combinations (e.g., date + time)
+        const value = this.combineFieldValues(rawRow, csvColumn, mapping);
 
         if (value !== undefined && value !== null && value !== '') {
           // Handle different mapping formats
           if (typeof mapping === 'object' && mapping !== null) {
             if ('field' in mapping) {
-              result[mapping.field as string] = this.transformValue(value, mapping);
+              const field = mapping.field as string;
+              let transformedValue = this.transformValue(value, mapping);
+
+              // Auto-detect and parse date fields even if transform isn't specified
+              if (dateFields.includes(field) && typeof transformedValue === 'string') {
+                transformedValue = this.parseDateWithMultipleFormats(transformedValue);
+              }
+
+              result[field] = transformedValue;
             } else if ('fields' in mapping && Array.isArray(mapping.fields)) {
               // Map to multiple fields
               mapping.fields.forEach((field: string) => {
-                result[field] = this.transformValue(value, mapping);
+                let transformedValue = this.transformValue(value, mapping);
+
+                // Auto-detect and parse date fields even if transform isn't specified
+                if (dateFields.includes(field) && typeof transformedValue === 'string') {
+                  transformedValue = this.parseDateWithMultipleFormats(transformedValue);
+                }
+
+                result[field] = transformedValue;
               });
             }
           } else if (typeof mapping === 'string') {
-            result[mapping] = value;
+            let finalValue = value;
+
+            // Auto-detect and parse date fields
+            if (dateFields.includes(mapping) && typeof finalValue === 'string') {
+              finalValue = this.parseDateWithMultipleFormats(finalValue);
+            }
+
+            result[mapping] = finalValue;
           }
         }
+      }
+
+      // Auto-fill missing timestamp fields with available timestamp data
+      // This handles CSVs that only have one timestamp field
+      if (!result.orderPlacedTime && result.orderExecutedTime) {
+        result.orderPlacedTime = result.orderExecutedTime;
+        console.log('[FormatApprovalService] Auto-filled orderPlacedTime from orderExecutedTime');
+      }
+
+      if (!result.orderExecutedTime && result.orderPlacedTime) {
+        result.orderExecutedTime = result.orderPlacedTime;
+        console.log('[FormatApprovalService] Auto-filled orderExecutedTime from orderPlacedTime');
       }
 
       return result;
@@ -360,6 +543,49 @@ export class FormatApprovalService {
       console.error('[FormatApprovalService] Mapping application failed:', error);
       throw new Error(`Failed to apply mappings: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  /**
+   * Helper method to combine multiple CSV field values into one string
+   * Used when a field mapping has combinedWith array (e.g., separate date and time columns)
+   */
+  private combineFieldValues(row: Record<string, unknown>, primaryHeader: string, mapping: any): unknown {
+    // If no combinedWith array, return the primary value as-is
+    if (!mapping.combinedWith || !Array.isArray(mapping.combinedWith) || mapping.combinedWith.length === 0) {
+      return row[primaryHeader];
+    }
+
+    // Collect all values to combine
+    const values: string[] = [];
+
+    // Add primary value
+    const primaryValue = row[primaryHeader];
+    if (primaryValue !== undefined && primaryValue !== null && primaryValue !== '') {
+      values.push(String(primaryValue).trim());
+    }
+
+    // Add combined values in order
+    for (const combinedHeader of mapping.combinedWith) {
+      const combinedValue = row[combinedHeader];
+      if (combinedValue !== undefined && combinedValue !== null && combinedValue !== '') {
+        values.push(String(combinedValue).trim());
+      }
+    }
+
+    // If we have no values, return empty
+    if (values.length === 0) {
+      return '';
+    }
+
+    // If we have only one value, return it as-is
+    if (values.length === 1) {
+      return values[0];
+    }
+
+    // Combine values with a space separator
+    // Example: "2024/07/15" + "10:14:41" = "2024/07/15 10:14:41"
+    console.log(`[FormatApprovalService] Combining fields: ${primaryHeader} + [${mapping.combinedWith.join(', ')}] = "${values.join(' ')}"`);
+    return values.join(' ');
   }
 
   /**
@@ -376,13 +602,178 @@ export class FormatApprovalService {
         case 'number':
           return Number(value);
         case 'date':
-          return new Date(value);
+          return this.parseDateWithMultipleFormats(value);
         default:
           return value;
       }
     }
 
     return value;
+  }
+
+  /**
+   * Parse date string with support for multiple common formats
+   * Handles broker-specific date formats and edge cases
+   */
+  private parseDateWithMultipleFormats(dateStr: any): string {
+    if (!dateStr) return dateStr;
+
+    const str = String(dateStr).trim();
+
+    // Try parsing common broker date formats
+    const formats = [
+      // ISO format: 2024-07-15T10:14:41.000Z
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/,
+      // MM/DD/YYYY HH:mm:ss
+      /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})/,
+      // YYYY/MM/DD HH:mm:ss
+      /^(\d{4})\/(\d{2})\/(\d{2})\s+(\d{1,2}):(\d{2}):(\d{2})/,
+      // MM-DD-YYYY HH:mm:ss
+      /^(\d{1,2})-(\d{1,2})-(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})/,
+      // YYYY-MM-DD HH:mm:ss
+      /^(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}):(\d{2}):(\d{2})/,
+      // MM/DD/YYYY (date only)
+      /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,
+      // YYYY/MM/DD (date only)
+      /^(\d{4})\/(\d{2})\/(\d{2})$/,
+      // MM-DD-YYYY (date only)
+      /^(\d{1,2})-(\d{1,2})-(\d{4})$/,
+      // YYYY-MM-DD (date only)
+      /^(\d{4})-(\d{2})-(\d{2})$/
+    ];
+
+    // First, try standard Date parsing (works for ISO format)
+    const standardParse = new Date(str);
+    if (!isNaN(standardParse.getTime())) {
+      return standardParse.toISOString();
+    }
+
+    // Try MM/DD/YYYY HH:mm:ss format (common in US brokers)
+    const usDateTimeMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})/);
+    if (usDateTimeMatch) {
+      const [_, month, day, year, hour, minute, second] = usDateTimeMatch;
+      const date = new Date(
+        parseInt(year),
+        parseInt(month) - 1,
+        parseInt(day),
+        parseInt(hour),
+        parseInt(minute),
+        parseInt(second)
+      );
+      if (!isNaN(date.getTime())) {
+        return date.toISOString();
+      }
+    }
+
+    // Try YYYY/MM/DD HH:mm:ss format
+    const isoLikeDateTimeMatch = str.match(/^(\d{4})\/(\d{2})\/(\d{2})\s+(\d{1,2}):(\d{2}):(\d{2})/);
+    if (isoLikeDateTimeMatch) {
+      const [_, year, month, day, hour, minute, second] = isoLikeDateTimeMatch;
+      const date = new Date(
+        parseInt(year),
+        parseInt(month) - 1,
+        parseInt(day),
+        parseInt(hour),
+        parseInt(minute),
+        parseInt(second)
+      );
+      if (!isNaN(date.getTime())) {
+        return date.toISOString();
+      }
+    }
+
+    // Try MM/DD/YYYY date only format
+    const usDateMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (usDateMatch) {
+      const [_, month, day, year] = usDateMatch;
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      if (!isNaN(date.getTime())) {
+        return date.toISOString();
+      }
+    }
+
+    // Try YYYY/MM/DD or YYYY-MM-DD date only format
+    const isoDateMatch = str.match(/^(\d{4})[\/-](\d{2})[\/-](\d{2})$/);
+    if (isoDateMatch) {
+      const [_, year, month, day] = isoDateMatch;
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      if (!isNaN(date.getTime())) {
+        return date.toISOString();
+      }
+    }
+
+    console.warn(`[FormatApprovalService] Could not parse date: "${str}". Returning original value.`);
+    return str; // Return original if all parsing attempts fail
+  }
+
+  /**
+   * Infer side from quantity sign and normalize quantity to absolute value
+   * This handles CSV files that use negative quantities to indicate SELL orders
+   * Also attempts to infer from other fields like action, transactionType, etc.
+   */
+  private inferSideFromQuantity(mappedData: any): any {
+    // If side already explicitly mapped and valid, return as-is
+    if (mappedData.side) {
+      const normalizedSide = String(mappedData.side).toUpperCase().trim();
+      const validSides = ['BUY', 'SELL', 'BOT', 'SLD', 'B', 'S', 'BOUGHT', 'SOLD', 'YOU BOUGHT', 'YOU SOLD'];
+      if (validSides.includes(normalizedSide)) {
+        return mappedData;
+      }
+    }
+
+    // Try to infer from various transaction/action fields
+    const actionFields = ['action', 'transactionType', 'type', 'transaction', 'orderAction'];
+    for (const field of actionFields) {
+      if (mappedData[field]) {
+        const value = String(mappedData[field]).toUpperCase().trim();
+
+        // Check for buy indicators
+        if (value.includes('BUY') || value.includes('BOT') || value === 'B' || value.includes('BOUGHT') || value.includes('PURCHASE')) {
+          mappedData.side = 'BUY';
+          console.log(`[FormatApprovalService] Inferred BUY from ${field}: "${mappedData[field]}"`);
+          break;
+        }
+
+        // Check for sell indicators
+        if (value.includes('SELL') || value.includes('SLD') || value === 'S' || value.includes('SOLD')) {
+          mappedData.side = 'SELL';
+          console.log(`[FormatApprovalService] Inferred SELL from ${field}: "${mappedData[field]}"`);
+          break;
+        }
+      }
+    }
+
+    // If still no side, try to infer from quantity sign
+    if (!mappedData.side) {
+      // Get quantity (check both fields)
+      const qty = mappedData.quantity || mappedData.orderQuantity;
+
+      if (qty !== undefined && qty !== null && qty !== '') {
+        const numQty = Number(qty);
+
+        if (!isNaN(numQty) && numQty !== 0) {
+          // Infer side from sign and normalize to absolute value
+          if (numQty < 0) {
+            mappedData.side = 'SELL';
+            mappedData.orderQuantity = Math.abs(numQty);
+            mappedData.quantity = Math.abs(numQty);
+            console.log(`[FormatApprovalService] Inferred SELL from negative quantity: ${qty} → ${Math.abs(numQty)}`);
+          } else if (numQty > 0) {
+            mappedData.side = 'BUY';
+            mappedData.orderQuantity = Math.abs(numQty);
+            mappedData.quantity = Math.abs(numQty);
+            console.log(`[FormatApprovalService] Inferred BUY from positive quantity: ${qty}`);
+          }
+        }
+      }
+    }
+
+    // If we still don't have a side, log a warning
+    if (!mappedData.side) {
+      console.warn(`[FormatApprovalService] Could not infer side from any field. Available fields:`, Object.keys(mappedData));
+    }
+
+    return mappedData;
   }
 
   /**
@@ -583,7 +974,8 @@ export class FormatApprovalService {
               tx,
               format.id,
               format.fieldMappings,
-              brokerType
+              brokerType,
+              format.brokerId // Pass brokerId from format
             );
           }, {
             isolationLevel: 'Serializable',

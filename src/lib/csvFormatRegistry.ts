@@ -80,7 +80,7 @@ export const TRADE_VOYAGER_FIELDS = {
   liquidityFlag: { required: false, type: 'string', description: 'Maker/Taker' },
   orderStatus: { required: false, type: 'string', description: 'Order status (WORKING/FILLED/CANCELLED)' },
   orderNotes: { required: false, type: 'string', description: 'Order notes and status details' },
-  assetClass: { required: false, type: 'string', description: 'Asset class (STOCK/OPTION/etc)' },
+  assetClass: { required: false, type: 'string', description: 'Asset class (EQUITY/OPTIONS/FUTURES/FOREX/CRYPTO)' },
   positionEffect: { required: false, type: 'string', description: 'Position effect (TO OPEN/TO CLOSE)' },
   fillPrice: { required: false, type: 'number', description: 'Actual fill price' },
   expirationDate: { required: false, type: 'string', description: 'Option expiration date' },
@@ -125,6 +125,9 @@ export class CsvFormatDetector {
     confidence: number;
     reasoning: string[];
   } {
+    console.log('[CsvFormatDetector] Analyzing', this.formats.length, 'formats against uploaded file');
+    console.log('[CsvFormatDetector] Uploaded headers:', headers.length, '-', headers.join(', '));
+
     const results = this.formats.map(format => {
       const analysis = this.analyzeFormat(headers, sampleRows, format, fileContent);
       return { format, ...analysis };
@@ -132,10 +135,18 @@ export class CsvFormatDetector {
 
     // Sort by confidence
     results.sort((a, b) => b.confidence - a.confidence);
-    
+
+    // Log top 3 results
+    console.log('[CsvFormatDetector] Top matches:');
+    results.slice(0, 3).forEach((result, idx) => {
+      console.log(`  ${idx + 1}. ${result.format.name} - Confidence: ${(result.confidence * 100).toFixed(1)}%`);
+      result.reasoning.forEach(r => console.log(`     ${r}`));
+    });
+
     const best = results[0];
-    
+
     if (best.confidence >= 0.7) {
+      console.log(`[CsvFormatDetector] ✅ Match found: ${best.format.name} (${(best.confidence * 100).toFixed(1)}%)`);
       return {
         format: best.format,
         confidence: best.confidence,
@@ -143,6 +154,7 @@ export class CsvFormatDetector {
       };
     }
 
+    console.log('[CsvFormatDetector] ❌ No format matched (threshold: 70%)');
     return {
       format: null,
       confidence: 0,
@@ -183,14 +195,29 @@ export class CsvFormatDetector {
     } else {
       // Regular header matching for other formats
       const requiredHeaders = format.detectionPatterns.headerPattern;
-      const headerMatches = requiredHeaders.filter(required => 
+      const headerMatches = requiredHeaders.filter(required =>
         headers.some(header => header.toLowerCase().includes(required.toLowerCase()))
       );
-      
+
+      // CRITICAL CHECK: Reject if uploaded file has too many extra unmapped columns
+      // This prevents matching when user has added new columns that need AI mapping
+      const mappableHeaders = Object.keys(format.fieldMappings).length;
+      const uploadedHeaderCount = headers.length;
+      const unmappedColumnCount = uploadedHeaderCount - mappableHeaders;
+
+      if (unmappedColumnCount > 2) {
+        // File has >2 extra unmapped columns - reject this format entirely
+        // This should trigger AI mapping for new format creation
+        score = 0;
+        maxScore = 1;
+        reasoning.push(`❌ Rejected: Uploaded file has ${uploadedHeaderCount} columns but format only maps ${mappableHeaders} (${unmappedColumnCount} unmapped columns)`);
+        return { confidence: 0, reasoning };
+      }
+
       const headerScore = headerMatches.length / requiredHeaders.length;
       score += headerScore * 0.6; // 60% weight for headers
       maxScore += 0.6;
-      
+
       reasoning.push(`Header match: ${headerMatches.length}/${requiredHeaders.length} required headers found`);
     }
 

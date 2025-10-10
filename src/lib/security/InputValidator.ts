@@ -5,19 +5,24 @@
 
 export class InputValidator {
   /**
-   * Sanitize and validate stock symbol
+   * Sanitize and validate stock/option symbol
+   * Supports:
+   * - Standard equity symbols: 1-6 characters (AAPL, MSFT)
+   * - Options symbols (OCC format): up to 21 characters (YHOO150416C00030000)
+   * - Extended symbols with dots/hyphens: (BRK.B, BF-A)
    */
   static sanitizeSymbol(symbol: string): string {
     if (!symbol || typeof symbol !== 'string') {
       throw new Error('Symbol is required and must be a string');
     }
 
-    // Valid symbol pattern: 1-12 characters, alphanumeric, dots, hyphens
-    const validPattern = /^[A-Z0-9\-\.]{1,12}$/;
+    // Valid symbol pattern: 1-21 characters, alphanumeric, dots, hyphens
+    // Supports standard equities and options contracts (OCC format)
+    const validPattern = /^[A-Z0-9\-\.]{1,21}$/;
     const normalized = symbol.toUpperCase().trim();
 
     if (!validPattern.test(normalized)) {
-      throw new Error(`Invalid symbol format: ${symbol}. Must be 1-12 alphanumeric characters, dots, or hyphens.`);
+      throw new Error(`Invalid symbol format: ${symbol}. Must be 1-21 alphanumeric characters, dots, or hyphens.`);
     }
 
     return normalized;

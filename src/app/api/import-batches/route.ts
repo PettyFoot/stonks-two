@@ -77,23 +77,89 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Import batch not found' }, { status: 404 });
     }
 
-    // Delete the batch and all associated records (cascade delete)
-    await prisma.$transaction([
-      // Delete associated trades
-      prisma.trade.deleteMany({
-        where: { importBatchId: batchId }
-      }),
-      // Delete associated orders
-      prisma.order.deleteMany({
-        where: { importBatchId: batchId }
-      }),
-      // Delete the import batch itself
-      prisma.importBatch.delete({
-        where: { id: batchId }
-      })
-    ]);
+    // Check if this is an AI-mapped import
+    const aiIngestCheck = await prisma.aiIngestToCheck.findUnique({
+      where: { importBatchId: batchId },
+      include: {
+        brokerCsvFormat: true
+      }
+    });
 
-    return NextResponse.json({ success: true, message: 'Import batch deleted successfully' });
+    // Delete the batch and all associated records in a transaction
+    await prisma.$transaction(async (tx) => {
+      // If this is an AI-mapped import, handle additional cleanup
+      if (aiIngestCheck) {
+        console.log(`[DELETE] AI-mapped import detected for batch ${batchId}`);
+
+        // 1. Delete AiIngestToCheck (this will cascade delete AiIngestFeedbackItem)
+        await tx.aiIngestToCheck.delete({
+          where: { id: aiIngestCheck.id }
+        });
+        console.log(`[DELETE] Deleted AiIngestToCheck and feedback items`);
+
+        // 2. Delete OrderStaging entries for this import
+        const deletedStaging = await tx.orderStaging.deleteMany({
+          where: { importBatchId: batchId }
+        });
+        console.log(`[DELETE] Deleted ${deletedStaging.count} OrderStaging entries`);
+
+        // 3. Check if BrokerCsvFormat is orphaned and delete if needed
+        if (aiIngestCheck.brokerCsvFormatId) {
+          const otherReferences = await tx.aiIngestToCheck.findFirst({
+            where: {
+              brokerCsvFormatId: aiIngestCheck.brokerCsvFormatId,
+              id: { not: aiIngestCheck.id } // Exclude the one we just deleted (paranoid check)
+            }
+          });
+
+          const otherStagingReferences = await tx.orderStaging.findFirst({
+            where: {
+              brokerCsvFormatId: aiIngestCheck.brokerCsvFormatId
+            }
+          });
+
+          // If no other imports use this format, delete it
+          if (!otherReferences && !otherStagingReferences) {
+            await tx.brokerCsvFormat.delete({
+              where: { id: aiIngestCheck.brokerCsvFormatId }
+            });
+            console.log(`[DELETE] Deleted orphaned BrokerCsvFormat ${aiIngestCheck.brokerCsvFormatId}`);
+          } else {
+            console.log(`[DELETE] Keeping BrokerCsvFormat ${aiIngestCheck.brokerCsvFormatId} (still in use)`);
+          }
+        }
+
+        // 4. Delete CsvUploadLog entries for this import
+        const deletedLogs = await tx.csvUploadLog.deleteMany({
+          where: { importBatchId: batchId }
+        });
+        console.log(`[DELETE] Deleted ${deletedLogs.count} CsvUploadLog entries`);
+      }
+
+      // 5. Delete associated trades
+      const deletedTrades = await tx.trade.deleteMany({
+        where: { importBatchId: batchId }
+      });
+      console.log(`[DELETE] Deleted ${deletedTrades.count} trades`);
+
+      // 6. Delete associated orders
+      const deletedOrders = await tx.order.deleteMany({
+        where: { importBatchId: batchId }
+      });
+      console.log(`[DELETE] Deleted ${deletedOrders.count} orders`);
+
+      // 7. Delete the import batch itself
+      await tx.importBatch.delete({
+        where: { id: batchId }
+      });
+      console.log(`[DELETE] Deleted ImportBatch ${batchId}`);
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Import batch deleted successfully',
+      deletedAiMapping: !!aiIngestCheck
+    });
   } catch (error) {
     console.error('Error deleting import batch:', error);
     return NextResponse.json(

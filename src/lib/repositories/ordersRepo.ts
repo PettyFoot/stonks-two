@@ -153,6 +153,7 @@ export class OrdersRepository {
           orderId: `${originalOrder.orderId}-split-1`,
           splitFromOrderId: originalOrder.id, // Link to original order that was split
           symbol: originalOrder.symbol,
+          assetClass: originalOrder.assetClass,
           orderType: originalOrder.orderType,
           side: originalOrder.side,
           timeInForce: originalOrder.timeInForce,
@@ -168,6 +169,7 @@ export class OrdersRepository {
           orderAccount: originalOrder.orderAccount,
           orderRoute: originalOrder.orderRoute,
           brokerType: originalOrder.brokerType,
+          brokerId: originalOrder.brokerId, // Copy brokerId from original order
           commission: originalOrder.commission,
           fees: originalOrder.fees,
           tags: originalOrder.tags,
@@ -187,6 +189,7 @@ export class OrdersRepository {
           orderId: `${originalOrder.orderId}-split-2`,
           splitFromOrderId: originalOrder.id, // Link to original order that was split
           symbol: originalOrder.symbol,
+          assetClass: originalOrder.assetClass,
           orderType: originalOrder.orderType,
           side: originalOrder.side,
           timeInForce: originalOrder.timeInForce,
@@ -202,6 +205,7 @@ export class OrdersRepository {
           orderAccount: originalOrder.orderAccount,
           orderRoute: originalOrder.orderRoute,
           brokerType: originalOrder.brokerType,
+          brokerId: originalOrder.brokerId, // Copy brokerId from original order
           commission: originalOrder.commission,
           fees: originalOrder.fees,
           tags: originalOrder.tags,
@@ -223,6 +227,7 @@ export class OrdersRepository {
           parentOrderId: originalOrder.parentOrderId,
           splitFromOrderId: originalOrder.splitFromOrderId,
           symbol: originalOrder.symbol,
+          assetClass: originalOrder.assetClass,
           orderType: originalOrder.orderType,
           side: originalOrder.side,
           timeInForce: originalOrder.timeInForce,
@@ -238,6 +243,7 @@ export class OrdersRepository {
           orderAccount: originalOrder.orderAccount,
           orderRoute: originalOrder.orderRoute,
           brokerType: originalOrder.brokerType,
+          brokerId: originalOrder.brokerId, // Copy brokerId from original order
           commission: originalOrder.commission,
           fees: originalOrder.fees,
           tags: originalOrder.tags,

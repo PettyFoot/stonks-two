@@ -6,6 +6,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 export interface OpenPosition {
   symbol: string;
   side: TradeSide;
+  brokerId: string | null; // Broker ID to ensure trades from different brokers are tracked separately
   openQuantity: number;
   totalCostBasis: number;
   openTime: Date;
@@ -158,6 +159,14 @@ export class TradeBuilder {
   }
 
   /**
+   * Generate position key that includes brokerId
+   * This ensures trades from different brokers are tracked separately
+   */
+  private getPositionKey(symbol: string, brokerId: string | null): string {
+    return brokerId ? `${symbol}-${brokerId}` : `${symbol}-unknown`;
+  }
+
+  /**
    * Main function to process user orders and create trades
    */
   async processUserOrders(userId: string): Promise<ProcessedTrade[]> {
@@ -185,13 +194,89 @@ export class TradeBuilder {
   }
 
   /**
+   * Update an existing trade with new orders from the current position
+   */
+  private async updateExistingTrade(position: OpenPosition): Promise<void> {
+    if (!position.existingTradeId) {
+      console.warn('[TRADE BUILDER] Cannot update trade: no existingTradeId');
+      return;
+    }
+
+    // Recalculate all metrics based on updated position
+    const avgEntryPrice = position.totalCostBasis / position.openQuantity;
+    const avgExitPrice = await this.calculateAvgExitPrice(position.orderIds, position.side);
+    const { openQuantity, closeQuantity } = await this.calculateOpenCloseQuantities(
+      position.orderIds,
+      position.side
+    );
+    const remainingQuantity = await this.calculateRemainingQuantity(position.orderIds, position.side);
+    const totalQuantity = await this.calculateTotalQuantity(position.orderIds);
+    const timeInTrade = this.calculateTimeInTrade(position.openTime);
+    const marketSession = this.calculateMarketSession(position.openTime);
+    const holdingPeriod = this.calculateHoldingPeriod(position.openTime, undefined);
+
+    // Determine if trade should be OPEN or CLOSED based on remaining quantity
+    const status = remainingQuantity === 0 ? TradeStatus.CLOSED : TradeStatus.OPEN;
+
+    // Calculate P&L for closed trades
+    let pnl = 0;
+    if (status === TradeStatus.CLOSED && avgExitPrice) {
+      pnl = position.side === TradeSide.LONG
+        ? Math.round(((avgExitPrice - avgEntryPrice) * closeQuantity) * 100) / 100
+        : Math.round(((avgEntryPrice - avgExitPrice) * closeQuantity) * 100) / 100;
+    }
+
+    const costBasis = avgEntryPrice * openQuantity;
+    const proceeds = avgExitPrice && closeQuantity ? avgExitPrice * closeQuantity : undefined;
+
+    // Get importBatchId from the orders in this trade
+    const orders = await ordersRepo.getOrdersByIds(position.orderIds);
+    const importBatchId = orders.find(o => o.importBatchId)?.importBatchId ?? undefined;
+
+    // Update the existing trade
+    await tradesRepo.updateTrade(position.existingTradeId, {
+      userId: '', // Not used in updateTrade
+      symbol: position.symbol,
+      side: position.side,
+      status,
+      openTime: position.openTime,
+      closeTime: status === TradeStatus.CLOSED ? new Date() : undefined,
+      avgEntryPrice: new Decimal(avgEntryPrice),
+      avgExitPrice: avgExitPrice ? new Decimal(avgExitPrice) : undefined,
+      openQuantity,
+      closeQuantity,
+      pnl,
+      ordersInTrade: position.orderIds,
+      ordersCount: position.orderIds.length,
+      executions: position.orderIds.length,
+      quantity: totalQuantity,
+      timeInTrade,
+      remainingQuantity,
+      marketSession,
+      holdingPeriod,
+      costBasis,
+      proceeds,
+      importBatchId,
+    });
+
+    // Link new orders to this trade (orders that don't have tradeId yet)
+    await ordersRepo.updateOrdersWithTradeId(position.orderIds, position.existingTradeId);
+
+    console.log(`[TRADE BUILDER] Updated existing trade ${position.existingTradeId}:`, {
+      symbol: position.symbol,
+      totalQuantity,
+      ordersCount: position.orderIds.length,
+    });
+  }
+
+  /**
    * Create trades for any remaining open positions
    */
   private async createTradesForOpenPositions(): Promise<void> {
     for (const [symbol, position] of this.openPositions.entries()) {
-      // Skip if this position already has a trade in the database
+      // Update existing trade if this position already has a trade in the database
       if (position.existingTradeId) {
-
+        await this.updateExistingTrade(position);
         continue;
       }
 
@@ -238,12 +323,13 @@ export class TradeBuilder {
    */
   private async loadExistingOpenPositions(userId: string): Promise<void> {
     const openTrades = await tradesRepo.getAllOpenTrades(userId);
-    
+
     for (const trade of openTrades) {
-      const positionKey = trade.symbol;
+      const positionKey = this.getPositionKey(trade.symbol, trade.brokerId);
       this.openPositions.set(positionKey, {
         symbol: trade.symbol,
         side: trade.side,
+        brokerId: trade.brokerId,
         openQuantity: trade.openQuantity || 0,
         totalCostBasis: Number(trade.costBasis || 0),
         openTime: trade.openTime || trade.entryDate,
@@ -267,13 +353,15 @@ export class TradeBuilder {
     const quantity = order.orderQuantity;
     const price = Number(order.limitPrice);
     const orderTime = order.orderExecutedTime;
+    const brokerId = order.brokerId; // Get brokerId from the order
 
     const tradeSide = orderSide === OrderSide.BUY ? TradeSide.LONG : TradeSide.SHORT;
-    const existingPosition = this.openPositions.get(symbol);
+    const positionKey = this.getPositionKey(symbol, brokerId);
+    const existingPosition = this.openPositions.get(positionKey);
 
     if (!existingPosition) {
       // No existing position - open new position
-      await this.openNewPosition(symbol, tradeSide, quantity, price, orderTime, order.id);
+      await this.openNewPosition(symbol, tradeSide, brokerId, quantity, price, orderTime, order.id);
     } else {
       // Existing position - check if same or opposite side
       if (existingPosition.side === tradeSide) {
@@ -281,7 +369,7 @@ export class TradeBuilder {
         this.addToPosition(existingPosition, quantity, price, order.id);
       } else {
         // Opposite side - close or reverse position
-        await this.handleOppositeOrder(existingPosition, quantity, price, orderTime, order.id);
+        await this.handleOppositeOrder(existingPosition, brokerId, quantity, price, orderTime, order.id);
       }
     }
   }
@@ -292,6 +380,7 @@ export class TradeBuilder {
   private async openNewPosition(
     symbol: string,
     side: TradeSide,
+    brokerId: string | null,
     quantity: number,
     price: number,
     openTime: Date,
@@ -300,6 +389,7 @@ export class TradeBuilder {
     const position: OpenPosition = {
       symbol,
       side,
+      brokerId,
       openQuantity: quantity,
       totalCostBasis: quantity * price,
       openTime,
@@ -307,7 +397,8 @@ export class TradeBuilder {
       // No existingTradeId since this is a new position
     };
 
-    this.openPositions.set(symbol, position);
+    const positionKey = this.getPositionKey(symbol, brokerId);
+    this.openPositions.set(positionKey, position);
 
     // Don't create trade record yet - only when position is closed or at end of processing
   }
@@ -338,6 +429,7 @@ export class TradeBuilder {
    */
   private async handleOppositeOrder(
     position: OpenPosition,
+    brokerId: string | null,
     quantity: number,
     price: number,
     orderTime: Date,
@@ -410,7 +502,8 @@ export class TradeBuilder {
       };
 
       this.newTrades.push(closedTrade);
-      this.openPositions.delete(position.symbol);
+      const positionKey = this.getPositionKey(position.symbol, position.brokerId);
+      this.openPositions.delete(positionKey);
     } else {
       // Position partially closed - update position but don't create trade yet
       position.openQuantity = remainingPositionQuantity;
@@ -430,6 +523,7 @@ export class TradeBuilder {
       const newPosition: OpenPosition = {
         symbol: position.symbol,
         side: newSide,
+        brokerId, // Use the brokerId from the incoming order
         openQuantity: remainingOrderQuantity,
         totalCostBasis: remainingOrderQuantity * price,
         openTime: orderTime,
@@ -437,7 +531,8 @@ export class TradeBuilder {
         // No existingTradeId since this is a new position from reversal
       };
 
-      this.openPositions.set(position.symbol, newPosition);
+      const newPositionKey = this.getPositionKey(position.symbol, brokerId);
+      this.openPositions.set(newPositionKey, newPosition);
     }
   }
 
@@ -454,9 +549,11 @@ export class TradeBuilder {
       const marketSession = this.calculateMarketSession(trade.openTime);
       const holdingPeriod = this.calculateHoldingPeriod(trade.openTime, trade.closeTime);
 
-      // Get importBatchId from the orders in this trade
+      // Get importBatchId, brokerId, and assetClass from the orders in this trade
       const orders = await ordersRepo.getOrdersByIds(trade.ordersInTrade);
       const importBatchId = orders.find(o => o.importBatchId)?.importBatchId ?? undefined;
+      const brokerId = orders.find(o => o.brokerId)?.brokerId ?? undefined; // Get brokerId from first order
+      const assetClass = orders.find(o => o.assetClass)?.assetClass ?? undefined; // Get assetClass from first order
 
       const tradeData: CreateTradeData = {
         userId,
@@ -478,13 +575,15 @@ export class TradeBuilder {
         remainingQuantity,
         marketSession,
         holdingPeriod,
-        costBasis: trade.avgEntryPrice && trade.openQuantity 
-          ? trade.avgEntryPrice * trade.openQuantity 
+        costBasis: trade.avgEntryPrice && trade.openQuantity
+          ? trade.avgEntryPrice * trade.openQuantity
           : undefined,
         proceeds: trade.avgExitPrice && trade.closeQuantity
           ? trade.avgExitPrice * trade.closeQuantity
           : undefined,
         importBatchId,
+        brokerId, // Add brokerId to trade data
+        assetClass, // Add assetClass to trade data
       };
 
       const savedTrade = await tradesRepo.saveTrade(tradeData);

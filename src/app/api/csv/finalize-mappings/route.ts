@@ -308,7 +308,21 @@ export async function POST(request: NextRequest) {
           user.id
         );
 
-        // Update import batch with staging results (moved from OrderStagingService to avoid conflicts)
+        // Detect or create upload session for tracking
+        const session = await ingestionService.detectOrCreateSession(
+          user.id,
+          importBatch.filename,
+          records.length
+        );
+
+        // Get session attempt count
+        const sessionAttempts = await ingestionService.getSessionAttemptCount(session.id);
+
+        // Calculate if session is complete
+        const totalValidRows = stagingResult.stagedCount;
+        const isComplete = totalValidRows >= session.expectedRowCount;
+
+        // Update import batch with staging results AND session info
         await tx.importBatch.update({
           where: { id: importBatch.id },
           data: {
@@ -316,7 +330,14 @@ export async function POST(request: NextRequest) {
             successCount: stagingResult.stagedCount,
             errorCount: stagingResult.errorCount,
             errors: stagingResult.errors.length > 0 ? stagingResult.errors : undefined,
-            userReviewRequired: true
+            userReviewRequired: true,
+            // Session tracking fields
+            uploadSessionId: session.id,
+            expectedRowCount: session.expectedRowCount,
+            completedRowCount: session.previousCompleted + stagingResult.stagedCount,
+            isSessionComplete: isComplete,
+            sessionAttempts: sessionAttempts,
+            sessionStatus: isComplete ? 'COMPLETED' : 'ACTIVE'
           }
         });
 
@@ -337,7 +358,11 @@ export async function POST(request: NextRequest) {
           estimatedApprovalTime: '1-2 business days',
           message: 'New broker format uploaded, waiting for admin review.',
           isNewFormat: true,
-          orderIds: [] // No orders created yet, they're staged
+          orderIds: [], // No orders created yet, they're staged
+          // Session tracking fields
+          sessionComplete: isComplete,
+          sessionProgress: `${totalValidRows}/${session.expectedRowCount}`,
+          sessionAttempt: sessionAttempts
         };
       } else {
         // For approved formats, process normally

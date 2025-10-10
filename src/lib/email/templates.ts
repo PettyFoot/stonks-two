@@ -57,6 +57,22 @@ export interface FormatDenialEmailData {
   assetType?: string;
 }
 
+export interface DuplicateOrdersEmailData {
+  importBatchId: string;
+  filename: string;
+  userId: string;
+  userEmail: string;
+  formatName: string;
+  brokerName: string;
+  duplicates: Array<{
+    stagingId: string;
+    existingOrderId: string;
+    symbol: string;
+    executedTime: string;
+  }>;
+  timestamp: string;
+}
+
 /**
  * Base HTML email template with logo and styling
  */
@@ -1324,5 +1340,183 @@ Professional Trading Analytics & Portfolio Management
 Dashboard: ${data.appUrl}
 Support: ${data.supportEmail}
 Contact Us: ${data.appUrl}/contact
+  `.trim();
+};
+
+/**
+ * Admin notification email for duplicate orders detected during migration
+ */
+export const getDuplicateOrdersEmailContent = (data: DuplicateOrdersEmailData): string => {
+  const duplicateList = data.duplicates.map((dup, index) => `
+    <tr style="background-color: ${index % 2 === 0 ? '#f8fafc' : '#ffffff'};">
+      <td style="padding: 12px; border: 1px solid #e2e8f0; font-family: monospace; font-size: 13px;">${dup.stagingId}</td>
+      <td style="padding: 12px; border: 1px solid #e2e8f0; font-family: monospace; font-size: 13px;">${dup.existingOrderId}</td>
+      <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: 600;">${dup.symbol}</td>
+      <td style="padding: 12px; border: 1px solid #e2e8f0; font-size: 13px;">${new Date(dup.executedTime).toLocaleString()}</td>
+    </tr>
+  `).join('');
+
+  const content = `
+    <div class="header">
+      <h1>⚠️ Duplicate Orders Detected</h1>
+    </div>
+
+    <div class="content">
+      <h2>Admin Alert: Order Migration Duplicates</h2>
+
+      <p>Duplicate orders were detected during the migration process from staging to the orders table. These records were not migrated to prevent data duplication.</p>
+
+      <div class="highlight-box" style="background-color: #fef5e7; border-left: 4px solid #f59e0b;">
+        <h3 style="margin-top: 0; color: #92400e;">Upload Details:</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; font-weight: 600; width: 140px;">Import Batch:</td>
+            <td style="padding: 8px 0; font-family: monospace;">${data.importBatchId}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: 600;">Filename:</td>
+            <td style="padding: 8px 0;">${data.filename}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: 600;">User ID:</td>
+            <td style="padding: 8px 0; font-family: monospace;">${data.userId}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: 600;">User Email:</td>
+            <td style="padding: 8px 0;">${data.userEmail}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: 600;">CSV Format:</td>
+            <td style="padding: 8px 0;">${data.formatName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: 600;">Broker:</td>
+            <td style="padding: 8px 0;">${data.brokerName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: 600;">Timestamp:</td>
+            <td style="padding: 8px 0;">${data.timestamp}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 style="color: #1a202c;">Duplicate Orders Found: ${data.duplicates.length}</h3>
+
+      <p>The following staging records matched existing orders in the database and were marked as FAILED:</p>
+
+      <div style="overflow-x: auto; margin: 20px 0;">
+        <table style="width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0;">
+          <thead>
+            <tr style="background-color: #1e293b; color: #ffffff;">
+              <th style="padding: 12px; text-align: left; font-weight: 600;">Staging ID</th>
+              <th style="padding: 12px; text-align: left; font-weight: 600;">Existing Order ID</th>
+              <th style="padding: 12px; text-align: left; font-weight: 600;">Symbol</th>
+              <th style="padding: 12px; text-align: left; font-weight: 600;">Execution Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${duplicateList}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="highlight-box" style="background-color: #eff6ff; border-left: 4px solid #3b82f6;">
+        <h3 style="margin-top: 0; color: #1e40af;">Duplicate Detection Logic:</h3>
+        <p style="margin-bottom: 0;">
+          Orders were identified as duplicates based on matching:<br>
+          • <strong>User ID</strong><br>
+          • <strong>Symbol</strong><br>
+          • <strong>Execution Time</strong><br>
+          • <strong>Broker ID</strong>
+        </p>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 style="color: #1a202c;">Recommended Actions:</h3>
+      <ul>
+        <li>Review the staging records to verify they are indeed duplicates</li>
+        <li>Check if the user needs to be notified about the duplicate entries</li>
+        <li>Investigate if this indicates a data quality issue with the CSV format</li>
+        <li>Consider if the format approval should be reviewed</li>
+      </ul>
+
+      <p style="font-style: italic; color: #718096; margin-top: 30px;">
+        This is an automated notification from the Trade Voyager Analytics migration system.<br>
+        <strong>Admin Team</strong>
+      </p>
+    </div>
+
+    <div class="footer">
+      <p><strong>Trade Voyager Analytics - Admin Notification</strong></p>
+      <p>Order Migration Duplicate Detection System</p>
+      <p style="font-size: 12px; margin-top: 20px;">
+        This email was automatically generated during the order migration process.
+      </p>
+    </div>
+  `;
+
+  return getEmailTemplate(content, 'Duplicate Orders Detected During Migration');
+};
+
+/**
+ * Generate duplicate orders admin notification email
+ */
+export const generateDuplicateOrdersEmail = (data: DuplicateOrdersEmailData) => ({
+  subject: `⚠️ Duplicate Orders Detected - ${data.formatName} (${data.duplicates.length} duplicates)`,
+  html: getDuplicateOrdersEmailContent(data),
+  text: generateDuplicateOrdersTextEmail(data)
+});
+
+/**
+ * Plain text version of duplicate orders email
+ */
+const generateDuplicateOrdersTextEmail = (data: DuplicateOrdersEmailData): string => {
+  const duplicateList = data.duplicates.map((dup, index) =>
+    `${index + 1}. Staging ID: ${dup.stagingId} → Existing Order ID: ${dup.existingOrderId}\n   Symbol: ${dup.symbol}, Execution Time: ${new Date(dup.executedTime).toLocaleString()}`
+  ).join('\n\n');
+
+  return `
+⚠️ DUPLICATE ORDERS DETECTED DURING MIGRATION
+
+Admin Alert: Order Migration Duplicates
+
+Duplicate orders were detected during the migration process from staging to the orders table. These records were not migrated to prevent data duplication.
+
+UPLOAD DETAILS:
+Import Batch: ${data.importBatchId}
+Filename: ${data.filename}
+User ID: ${data.userId}
+User Email: ${data.userEmail}
+CSV Format: ${data.formatName}
+Broker: ${data.brokerName}
+Timestamp: ${data.timestamp}
+
+DUPLICATE ORDERS FOUND: ${data.duplicates.length}
+
+The following staging records matched existing orders in the database and were marked as FAILED:
+
+${duplicateList}
+
+DUPLICATE DETECTION LOGIC:
+Orders were identified as duplicates based on matching:
+• User ID
+• Symbol
+• Execution Time
+• Broker ID
+
+RECOMMENDED ACTIONS:
+• Review the staging records to verify they are indeed duplicates
+• Check if the user needs to be notified about the duplicate entries
+• Investigate if this indicates a data quality issue with the CSV format
+• Consider if the format approval should be reviewed
+
+---
+This is an automated notification from the Trade Voyager Analytics migration system.
+
+Trade Voyager Analytics - Admin Notification
+Order Migration Duplicate Detection System
   `.trim();
 };

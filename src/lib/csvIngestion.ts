@@ -284,6 +284,48 @@ export class CsvIngestionService {
   }
 
   /**
+   * Helper method to combine multiple CSV field values into one string
+   * Used when a field mapping has combinedWith array (e.g., separate date and time columns)
+   */
+  private combineFieldValues(row: Record<string, unknown>, primaryHeader: string, mapping: any): unknown {
+    // If no combinedWith array, return the primary value as-is
+    if (!mapping.combinedWith || !Array.isArray(mapping.combinedWith) || mapping.combinedWith.length === 0) {
+      return row[primaryHeader];
+    }
+
+    // Collect all values to combine
+    const values: string[] = [];
+
+    // Add primary value
+    const primaryValue = row[primaryHeader];
+    if (primaryValue !== undefined && primaryValue !== null && primaryValue !== '') {
+      values.push(String(primaryValue).trim());
+    }
+
+    // Add combined values in order
+    for (const combinedHeader of mapping.combinedWith) {
+      const combinedValue = row[combinedHeader];
+      if (combinedValue !== undefined && combinedValue !== null && combinedValue !== '') {
+        values.push(String(combinedValue).trim());
+      }
+    }
+
+    // If we have no values, return empty
+    if (values.length === 0) {
+      return '';
+    }
+
+    // If we have only one value, return it as-is
+    if (values.length === 1) {
+      return values[0];
+    }
+
+    // Combine values with a space separator
+    // Example: "2024/07/15" + "10:14:41" = "2024/07/15 10:14:41"
+    return values.join(' ');
+  }
+
+  /**
    * Helper method to determine appropriate orderExecutedTime based on whether we have a specific execution time mapping
    */
   private getOrderExecutedTime(mappedData: Record<string, unknown>, mappings?: Record<string, any> | ColumnMapping[]): Date {
@@ -339,6 +381,7 @@ export class CsvIngestionService {
   /**
    * Check for duplicate orders before creating a new one
    * Checks across ALL imports for the user, not just the current batch
+   * Uses brokerId for more reliable duplicate detection
    */
   private async isDuplicateOrder(
     userId: string,
@@ -346,7 +389,7 @@ export class CsvIngestionService {
     symbol: string,
     orderQuantity: number,
     orderExecutedTime: Date,
-    brokerType: string,
+    brokerId: string,
     limitPrice?: number | null
   ): Promise<boolean> {
     const whereClause: any = {
@@ -354,7 +397,7 @@ export class CsvIngestionService {
       symbol,
       orderQuantity,
       orderExecutedTime,
-      brokerType: brokerType as BrokerType,
+      brokerId: brokerId,
     };
 
     // Include limitPrice in duplicate detection if it exists
@@ -810,7 +853,8 @@ export class CsvIngestionService {
 
         // Apply stored mappings (supports both single and multiple field mappings)
         for (const [csvHeader, mapping] of Object.entries(fieldMappings)) {
-          const value = (records[i] as Record<string, unknown>)[csvHeader];
+          // Use combineFieldValues to get the value (handles field combination)
+          const value = this.combineFieldValues(records[i] as Record<string, unknown>, csvHeader, mapping);
 
           if (value !== undefined && value !== null && value !== '') {
             // Handle new format with multiple fields
@@ -839,16 +883,20 @@ export class CsvIngestionService {
           }
         }
 
+        // Infer side from quantity if no explicit side indicator exists
+        this.inferSideFromQuantity(mappedData, records[i] as Record<string, unknown>, fieldMappings);
+
         // Calculate times using helper method
         const orderPlacedTime = this.parseDateSafely(mappedData.orderPlacedTime) || new Date();
         const orderExecutedTime = this.getOrderExecutedTime(mappedData, brokerDetection.format.fieldMappings as Record<string, any>);
         const symbol = String(mappedData.symbol || '');
         const orderQuantity = Number(mappedData.orderQuantity) || 0;
         const brokerType = this.getBrokerTypeFromName(brokerDetection.broker.name);
+        const brokerId = brokerDetection.format.brokerId; // Get brokerId from matched format
 
         // Check for duplicate
         const limitPrice = mappedData.limitPrice ? Number(mappedData.limitPrice) : null;
-        if (await this.isDuplicateOrder(userId, importBatch.id, symbol, orderQuantity, orderExecutedTime, brokerType, limitPrice)) {
+        if (await this.isDuplicateOrder(userId, importBatch.id, symbol, orderQuantity, orderExecutedTime, brokerId, limitPrice)) {
           duplicateCount++;
           const duplicateMessage = `Row ${i + 1}: Duplicate order ${symbol} ${orderQuantity} shares at ${orderExecutedTime.toISOString()}${limitPrice ? ` (limit: $${limitPrice})` : ''}`;
           duplicateMessages.push(duplicateMessage);
@@ -864,6 +912,7 @@ export class CsvIngestionService {
             orderId: String(mappedData.orderId || `${brokerName}-${Date.now()}-${i}`),
             parentOrderId: mappedData.parentOrderId ? String(mappedData.parentOrderId) : null,
             symbol,
+            assetClass: this.normalizeAssetClass(String(mappedData.assetClass || 'EQUITY')) as any,
             orderType: this.normalizeOrderType(String(mappedData.orderType || 'MARKET')),
             side: this.normalizeOrderSide(String(mappedData.side || 'BUY')),
             timeInForce: this.normalizeTimeInForce(String(mappedData.timeInForce || 'DAY')),
@@ -877,6 +926,7 @@ export class CsvIngestionService {
             orderAccount: mappedData.orderAccount ? String(mappedData.orderAccount) : null,
             orderRoute: mappedData.orderRoute ? String(mappedData.orderRoute) : null,
             brokerType,
+            brokerId: brokerId, // From matched BrokerCsvFormat
             brokerMetadata: Object.keys(brokerMetadata).length > 0 ? brokerMetadata as any : null,
             tags: [...accountTags, ...(mappedData.tags ? String(mappedData.tags).split(',') : [])],
           },
@@ -1199,6 +1249,12 @@ export class CsvIngestionService {
       throw new Error('No data found in CSV file');
     }
 
+    // Look up the BrokerCsvFormat to get brokerId
+    const brokerCsvFormat = await prisma.brokerCsvFormat.findUnique({
+      where: { id: detectedFormat.id },
+      select: { brokerId: true }
+    });
+
     // Detect or create upload session BEFORE creating orders
     const session = await this.detectOrCreateSession(userId, fileName, records.length);
 
@@ -1242,15 +1298,16 @@ export class CsvIngestionService {
     for (let i = 0; i < records.length; i++) {
       try {
         const normalizedOrder = this.applyDetectedFormatMapping(records[i] as Record<string, unknown>, detectedFormat, accountTags);
-        
+
         // Create order record
         const orderBrokerType = this.getBrokerTypeFromFormat(detectedFormat);
+        const brokerId = brokerCsvFormat?.brokerId || ''; // Get brokerId from format or empty string as fallback
         if (i === 0) {
 
         }
 
         // Check for duplicate
-        if (await this.isDuplicateOrder(userId, importBatch.id, normalizedOrder.symbol, normalizedOrder.orderQuantity, normalizedOrder.orderExecutedTime, orderBrokerType, normalizedOrder.limitPrice)) {
+        if (await this.isDuplicateOrder(userId, importBatch.id, normalizedOrder.symbol, normalizedOrder.orderQuantity, normalizedOrder.orderExecutedTime, brokerId, normalizedOrder.limitPrice)) {
           duplicateCount++;
           const duplicateMessage = `Row ${i + 1}: Duplicate order ${normalizedOrder.symbol} ${normalizedOrder.orderQuantity} shares at ${normalizedOrder.orderExecutedTime.toISOString()}${normalizedOrder.limitPrice ? ` (limit: $${normalizedOrder.limitPrice})` : ''}`;
           duplicateMessages.push(duplicateMessage);
@@ -1265,6 +1322,7 @@ export class CsvIngestionService {
             orderId: normalizedOrder.orderId,
             parentOrderId: normalizedOrder.parentOrderId,
             symbol: normalizedOrder.symbol,
+            assetClass: this.normalizeAssetClass(String(normalizedOrder.assetClass || 'EQUITY')) as any,
             orderType: normalizedOrder.orderType as OrderType,
             side: normalizedOrder.side,
             timeInForce: normalizedOrder.timeInForce as TimeInForce,
@@ -1278,6 +1336,7 @@ export class CsvIngestionService {
             orderAccount: normalizedOrder.orderAccount,
             orderRoute: normalizedOrder.orderRoute,
             brokerType: orderBrokerType,
+            brokerId: brokerCsvFormat?.brokerId, // From matched BrokerCsvFormat
             tags: normalizedOrder.tags,
           },
         });
@@ -1405,6 +1464,16 @@ export class CsvIngestionService {
 
     // Detect or create upload session BEFORE creating orders
     const session = await this.detectOrCreateSession(userId, fileName, records.length);
+
+    // Look up brokerId if detectedFormat is provided
+    let brokerId: string | undefined;
+    if (detectedFormat?.id) {
+      const brokerCsvFormat = await prisma.brokerCsvFormat.findUnique({
+        where: { id: detectedFormat.id },
+        select: { brokerId: true }
+      });
+      brokerId = brokerCsvFormat?.brokerId;
+    }
 
     // Create import batch with proper broker type detection
     let brokerType: BrokerType = BrokerType.GENERIC_CSV;
@@ -1581,7 +1650,10 @@ export class CsvIngestionService {
             if (skippedMappings.length > 0 && index === 0) { // Only log for first row to avoid spam
 
             }
-            
+
+            // Infer side from quantity if no explicit side indicator exists
+            this.inferSideFromQuantity(mappedData, row as Record<string, unknown>, mappingResult.mappings);
+
             // Calculate times using helper method
             const orderPlacedTime = this.parseDateSafely(mappedData.orderPlacedTime) || new Date();
             const orderExecutedTime = this.getOrderExecutedTime(mappedData, mappingResult.mappings);
@@ -1590,7 +1662,7 @@ export class CsvIngestionService {
 
             // Check for duplicate
             const limitPrice = mappedData.limitPrice ? Number(mappedData.limitPrice) : null;
-            if (await this.isDuplicateOrder(userId, importBatch.id, symbol, orderQuantity, orderExecutedTime, brokerType, limitPrice)) {
+            if (await this.isDuplicateOrder(userId, importBatch.id, symbol, orderQuantity, orderExecutedTime, brokerId || '', limitPrice)) {
               duplicateCount++;
               const duplicateMessage = `Row ${index + 1}: Duplicate order ${symbol} ${orderQuantity} shares at ${orderExecutedTime.toISOString()}${limitPrice ? ` (limit: $${limitPrice})` : ''}`;
               duplicateMessages.push(duplicateMessage);
@@ -1606,6 +1678,7 @@ export class CsvIngestionService {
                 orderId: String(mappedData.orderId || `auto-${Date.now()}-${index}`),
                 parentOrderId: mappedData.parentOrderId ? String(mappedData.parentOrderId) : null,
                 symbol,
+                assetClass: this.normalizeAssetClass(String(mappedData.assetClass || 'EQUITY')) as any,
                 orderType: this.normalizeOrderType(String(mappedData.orderType || 'MARKET')),
                 side: this.normalizeOrderSide(String(mappedData.side || 'BUY')),
                 timeInForce: this.normalizeTimeInForce(String(mappedData.timeInForce || 'DAY')),
@@ -1619,6 +1692,7 @@ export class CsvIngestionService {
                 orderAccount: mappedData.orderAccount ? String(mappedData.orderAccount) : null,
                 orderRoute: mappedData.orderRoute ? String(mappedData.orderRoute) : null,
                 brokerType,
+                brokerId, // From detected format if available
                 tags: [...accountTags, ...(mappedData.tags ? String(mappedData.tags).split(',') : [])],
               },
             });
@@ -1800,6 +1874,13 @@ export class CsvIngestionService {
     // Detect or create upload session BEFORE creating orders
     const session = await this.detectOrCreateSession(userId, fileName, records.length);
 
+    // Look up or create broker to get brokerId
+    let brokerId: string | undefined;
+    if (brokerName) {
+      const broker = await this.brokerFormatService.findOrCreateBroker(brokerName);
+      brokerId = broker.id;
+    }
+
     let importBatch: any;
     try {
       // Create import batch
@@ -1885,8 +1966,9 @@ export class CsvIngestionService {
 
           // Apply OpenAI mappings
           for (const [csvHeader, mapping] of Object.entries(aiResult.mappings)) {
-            const value = (row as Record<string, unknown>)[csvHeader];
-            
+            // Use combineFieldValues to get the value (handles field combination)
+            const value = this.combineFieldValues(row as Record<string, unknown>, csvHeader, mapping);
+
             if (value !== undefined && value !== null && value !== '') {
               if (mapping.field === 'brokerMetadata') {
                 brokerMetadata[csvHeader] = value;
@@ -1904,6 +1986,9 @@ export class CsvIngestionService {
             }
           }
 
+          // Infer side from quantity if no explicit side indicator exists
+          this.inferSideFromQuantity(mappedData, row as Record<string, unknown>, aiResult.mappings);
+
           // Calculate times using helper method
           const orderPlacedTime = this.parseDateSafely(mappedData.orderPlacedTime) || new Date();
           const orderExecutedTime = this.getOrderExecutedTime(mappedData, aiResult.mappings);
@@ -1918,7 +2003,7 @@ export class CsvIngestionService {
 
           // Check for duplicate
           const limitPrice = mappedData.limitPrice ? Number(mappedData.limitPrice) : null;
-          if (await this.isDuplicateOrder(userId, importBatch.id, symbol, orderQuantity, orderExecutedTime, brokerType, limitPrice)) {
+          if (await this.isDuplicateOrder(userId, importBatch.id, symbol, orderQuantity, orderExecutedTime, brokerId || '', limitPrice)) {
             duplicateCount++;
             const duplicateMessage = `Row ${index + 1}: Duplicate order ${symbol} ${orderQuantity} shares at ${orderExecutedTime.toISOString()}${limitPrice ? ` (limit: $${limitPrice})` : ''}`;
             duplicateMessages.push(duplicateMessage);
@@ -1934,6 +2019,7 @@ export class CsvIngestionService {
               orderId: String(mappedData.orderId || `ai-${Date.now()}-${index}`),
               parentOrderId: mappedData.parentOrderId ? String(mappedData.parentOrderId) : null,
               symbol,
+              assetClass: this.normalizeAssetClass(String(mappedData.assetClass || 'EQUITY')) as any,
               orderType: this.normalizeOrderType(String(mappedData.orderType || 'MARKET')),
               side: this.normalizeOrderSide(String(mappedData.side || 'BUY')),
               timeInForce: this.normalizeTimeInForce(String(mappedData.timeInForce || 'DAY')),
@@ -1947,6 +2033,7 @@ export class CsvIngestionService {
               orderAccount: mappedData.orderAccount ? String(mappedData.orderAccount) : null,
               orderRoute: mappedData.orderRoute ? String(mappedData.orderRoute) : null,
               brokerType,
+              brokerId, // From broker lookup if brokerName provided
               brokerMetadata: Object.keys(brokerMetadata).length > 0 ? brokerMetadata as any : null,
               tags: [...accountTags, ...(mappedData.tags ? String(mappedData.tags).split(',') : [])],
             },
@@ -2261,7 +2348,7 @@ export class CsvIngestionService {
   /**
    * Detect or create upload session for tracking partial uploads
    */
-  private async detectOrCreateSession(
+  public async detectOrCreateSession(
     userId: string,
     filename: string,
     rowCount: number
@@ -2330,7 +2417,7 @@ export class CsvIngestionService {
   /**
    * Get current session attempt count
    */
-  private async getSessionAttemptCount(sessionId: string): Promise<number> {
+  public async getSessionAttemptCount(sessionId: string): Promise<number> {
     const count = await prisma.importBatch.count({
       where: {
         uploadSessionId: sessionId,
@@ -2409,8 +2496,34 @@ export class CsvIngestionService {
       'schwab-todays-trades': BrokerType.CHARLES_SCHWAB,
       'schwab-trade-execution': BrokerType.CHARLES_SCHWAB,  // Added missing mapping!
     };
-    
+
     return brokerMap[format.id] || BrokerType.GENERIC_CSV;
+  }
+
+  private normalizeAssetClass(value: string): string {
+    if (!value) return 'EQUITY';
+    const normalized = value.toUpperCase().trim();
+
+    switch (normalized) {
+      case 'EQUITY':
+      case 'STOCK':
+      case 'STOCKS':
+        return 'EQUITY';
+      case 'OPTION':
+      case 'OPTIONS':
+        return 'OPTIONS';
+      case 'FUTURE':
+      case 'FUTURES':
+        return 'FUTURES';
+      case 'FOREX':
+      case 'FX':
+        return 'FOREX';
+      case 'CRYPTO':
+      case 'CRYPTOCURRENCY':
+        return 'CRYPTO';
+      default:
+        return 'EQUITY';
+    }
   }
 
   private applyDetectedFormatMapping(row: Record<string, unknown>, format: CsvFormat, accountTags: string[]): NormalizedOrder {
@@ -2558,6 +2671,73 @@ export class CsvIngestionService {
     return order;
   }
   
+  /**
+   * Infer order side (BUY/SELL) from quantity sign when no explicit side indicator exists
+   * @param mappedData - The mapped order data
+   * @param rawRow - The original CSV row
+   * @param fieldMappings - The field mappings used for this format
+   * @returns Updated mappedData with inferred side and absolute quantity
+   */
+  private inferSideFromQuantity(
+    mappedData: Record<string, unknown>,
+    rawRow: Record<string, unknown>,
+    fieldMappings: Record<string, any> | any[]
+  ): Record<string, unknown> {
+    // Check if side field already exists in mappedData
+    if (mappedData.side !== undefined && mappedData.side !== null && mappedData.side !== '') {
+      // Side is already present, no need to infer
+      return mappedData;
+    }
+
+    // Check if any field mapping explicitly maps to 'side'
+    const hasSideMapping = Array.isArray(fieldMappings)
+      ? fieldMappings.some((m: any) => {
+          if ('tradeVoyagerField' in m) {
+            return m.tradeVoyagerField === 'side';
+          }
+          return false;
+        })
+      : Object.values(fieldMappings).some((mapping: any) => {
+          if (typeof mapping === 'object' && mapping !== null) {
+            if ('field' in mapping && mapping.field === 'side') return true;
+            if ('fields' in mapping && Array.isArray(mapping.fields) && mapping.fields.includes('side')) return true;
+          }
+          if (typeof mapping === 'string' && mapping === 'side') return true;
+          return false;
+        });
+
+    // If there's a side mapping but the value is just empty, don't infer
+    if (hasSideMapping) {
+      return mappedData;
+    }
+
+    // No side field exists - infer from quantity
+    const quantity = Number(mappedData.orderQuantity) || Number(mappedData.quantity) || 0;
+
+    if (quantity === 0) {
+      // No quantity or zero quantity - can't infer, leave as-is
+      return mappedData;
+    }
+
+    // Infer side from quantity sign
+    if (quantity < 0) {
+      mappedData.side = 'SELL';
+      // Convert quantity to absolute value
+      if (mappedData.orderQuantity !== undefined) {
+        mappedData.orderQuantity = Math.abs(quantity);
+      }
+      if (mappedData.quantity !== undefined) {
+        mappedData.quantity = Math.abs(quantity);
+      }
+      console.log(`[Side Inference] Inferred SELL from negative quantity: ${quantity} -> ${Math.abs(quantity)}`);
+    } else {
+      mappedData.side = 'BUY';
+      console.log(`[Side Inference] Inferred BUY from positive quantity: ${quantity}`);
+    }
+
+    return mappedData;
+  }
+
   private normalizeOrderSide(side: string): 'BUY' | 'SELL' {
     const sideUpper = String(side).toUpperCase();
     const sideMap: { [key: string]: 'BUY' | 'SELL' } = {
@@ -2572,7 +2752,7 @@ export class CsvIngestionService {
       'SOLD': 'SELL',
       'YOU SOLD': 'SELL',
     };
-    
+
     return sideMap[sideUpper] || 'BUY';
   }
 
@@ -2608,10 +2788,14 @@ export class CsvIngestionService {
     // Parse Schwab format using our custom parser
     const { parseSchwabTodaysTrades } = await import('../../scripts/parseSchwabTodaysTrades');
     const schwabResult = parseSchwabTodaysTrades(fileContent);
-    
-    const totalTrades = schwabResult.workingOrders.length + 
-                       schwabResult.filledOrders.length + 
+
+    const totalTrades = schwabResult.workingOrders.length +
+                       schwabResult.filledOrders.length +
                        schwabResult.cancelledOrders.length;
+
+    // Look up or create Charles Schwab broker to get brokerId
+    const broker = await this.brokerFormatService.findOrCreateBroker('Charles Schwab');
+    const brokerId = broker.id;
 
     // Create import batch
     const importBatch = await prisma.importBatch.create({
@@ -2647,6 +2831,7 @@ export class CsvIngestionService {
             importBatchId: importBatch.id,
             orderId: `schwab-${Date.now()}-${index}`,
             symbol: order.symbol || '',
+            assetClass: 'EQUITY' as any,
             orderType: this.normalizeOrderType(order.orderType || 'Market'),
             side: this.normalizeOrderSide(order.side || 'BUY'),
             timeInForce: this.normalizeTimeInForce(order.timeInForce || 'DAY'),
@@ -2656,6 +2841,7 @@ export class CsvIngestionService {
             orderPlacedTime: order.orderExecutedTime || new Date(),
             orderExecutedTime: order.orderExecutedTime || new Date(),
             brokerType: BrokerType.CHARLES_SCHWAB,
+            brokerId, // From Charles Schwab broker
             tags: accountTags,
           },
         });
@@ -2678,6 +2864,7 @@ export class CsvIngestionService {
             importBatchId: importBatch.id,
             orderId: `schwab-working-${Date.now()}-${index}`,
             symbol: order.symbol || '',
+            assetClass: 'EQUITY' as any,
             orderType: this.normalizeOrderType(order.orderType || 'Market'),
             side: this.normalizeOrderSide(order.side || 'BUY'),
             timeInForce: this.normalizeTimeInForce(order.timeInForce || 'DAY'),
@@ -2686,6 +2873,7 @@ export class CsvIngestionService {
             orderStatus: this.normalizeOrderStatus('WORKING'), // Working orders are PENDING
             orderPlacedTime: order.orderPlacedTime || new Date(),
             brokerType: BrokerType.CHARLES_SCHWAB,
+            brokerId, // From Charles Schwab broker
             tags: accountTags,
           },
         });
@@ -2709,6 +2897,7 @@ export class CsvIngestionService {
               importBatchId: importBatch.id,
               orderId: `schwab-cancelled-${Date.now()}-${index}`,
               symbol: order.symbol,
+              assetClass: 'EQUITY' as any,
               orderType: this.normalizeOrderType(order.orderType || 'Market'),
               side: this.normalizeOrderSide(order.side || 'BUY'),
               timeInForce: this.normalizeTimeInForce(order.timeInForce || 'DAY'),
@@ -2718,6 +2907,7 @@ export class CsvIngestionService {
               orderPlacedTime: order.orderCancelledTime || new Date(),
               orderCancelledTime: order.orderCancelledTime || new Date(),
               brokerType: BrokerType.CHARLES_SCHWAB,
+              brokerId, // From Charles Schwab broker
               tags: accountTags,
             },
           });

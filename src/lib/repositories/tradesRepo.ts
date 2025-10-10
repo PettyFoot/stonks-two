@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { Trade, TradeStatus, TradeSide, MarketSession, HoldingPeriod } from '@prisma/client';
+import { Trade, TradeStatus, TradeSide, MarketSession, HoldingPeriod, AssetClass } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
 export interface CreateTradeData {
@@ -25,6 +25,8 @@ export interface CreateTradeData {
   costBasis?: number;
   proceeds?: number;
   importBatchId?: string;
+  brokerId?: string; // Reference to Broker.id - tracks which broker this trade came from
+  assetClass?: AssetClass; // Asset class from orders
 }
 
 export class TradesRepository {
@@ -62,6 +64,8 @@ export class TradesRepository {
         exitPrice: tradeData.avgExitPrice?.toNumber(),
         isCalculated: true,
         importBatchId: tradeData.importBatchId,
+        brokerId: tradeData.brokerId, // Save brokerId to trades table
+        assetClass: tradeData.assetClass, // Save assetClass to trades table
       },
     });
   }
@@ -114,6 +118,8 @@ export class TradesRepository {
         exitPrice: updateData.avgExitPrice?.toNumber(),
         exitDate: updateData.closeTime,
         date: updateData.closeTime || updateData.openTime,
+        brokerId: updateData.brokerId, // Allow brokerId updates
+        assetClass: updateData.assetClass, // Allow assetClass updates
       },
     });
   }

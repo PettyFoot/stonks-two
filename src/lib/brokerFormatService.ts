@@ -156,6 +156,14 @@ export class BrokerFormatService {
   async detectFormat(headers: string[]): Promise<FormatDetectionResult> {
     const fingerprint = this.openAiService.generateHeaderFingerprint(headers);
 
+    // DEBUG LOGGING
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('[FORMAT DETECTION] Uploaded file analysis:');
+    console.log('  Header count:', headers.length);
+    console.log('  Headers:', headers.join(', '));
+    console.log('  Fingerprint:', fingerprint.substring(0, 60) + '...');
+    console.log('═══════════════════════════════════════════════════════════');
+
     // Try exact fingerprint match first - check all formats (approved and unapproved)
     const exactMatch = await prisma.brokerCsvFormat.findFirst({
       where: {
@@ -174,37 +182,71 @@ export class BrokerFormatService {
     });
 
     if (exactMatch) {
-      // Only update usage count for approved formats
-      if (exactMatch.isApproved) {
-        await prisma.brokerCsvFormat.update({
-          where: { id: exactMatch.id },
-          data: {
-            usageCount: { increment: 1 },
-            lastUsed: new Date()
-          }
-        });
-      }
+      console.log('[FORMAT DETECTION] Found potential exact match:');
+      console.log('  Format name:', exactMatch.formatName);
+      console.log('  Format ID:', exactMatch.id);
+      console.log('  Stored header count:', exactMatch.headers.length);
+      console.log('  Stored headers:', exactMatch.headers.join(', '));
+      console.log('  Stored fingerprint:', exactMatch.headerFingerprint.substring(0, 60) + '...');
+      console.log('  Fingerprints match?', exactMatch.headerFingerprint === fingerprint);
+      console.log('  Header counts match?', exactMatch.headers.length === headers.length);
 
-      return {
-        broker: exactMatch.broker,
-        format: exactMatch,
-        confidence: 1.0, // 100% confidence for exact header matches
-        isExactMatch: true
-      };
+      // Verify header count matches to prevent false positives
+      // (fingerprints could theoretically collide, or stored format might have different column count)
+      if (exactMatch.headers.length !== headers.length) {
+        console.log('  ❌ REJECTING: Header count mismatch');
+        console.log('═══════════════════════════════════════════════════════════');
+        // Don't use this match, fall through to similarity matching
+      } else {
+        console.log('  ✅ ACCEPTING: Exact match confirmed');
+        console.log('═══════════════════════════════════════════════════════════');
+        // Only update usage count for approved formats
+        if (exactMatch.isApproved) {
+          await prisma.brokerCsvFormat.update({
+            where: { id: exactMatch.id },
+            data: {
+              usageCount: { increment: 1 },
+              lastUsed: new Date()
+            }
+          });
+        }
+
+        return {
+          broker: exactMatch.broker,
+          format: exactMatch,
+          confidence: 1.0, // 100% confidence for exact header matches
+          isExactMatch: true
+        };
+      }
     }
 
     // Try partial header matching (for similar but not identical formats)
     const similarFormats = await this.findSimilarFormats(headers);
-    
+
+    console.log('[FORMAT DETECTION] Partial matching results:');
+    console.log('  Similar formats found:', similarFormats.length);
+
     if (similarFormats.length > 0) {
       const bestMatch = similarFormats[0];
+      const calculatedConfidence = bestMatch.similarity * 0.8;
+
+      console.log('  Best match:');
+      console.log('    Format name:', bestMatch.formatName);
+      console.log('    Stored header count:', bestMatch.headers.length);
+      console.log('    Jaccard similarity:', bestMatch.similarity.toFixed(3));
+      console.log('    Final confidence:', calculatedConfidence.toFixed(3));
+      console.log('═══════════════════════════════════════════════════════════');
+
       return {
         broker: bestMatch.broker,
         format: bestMatch,
-        confidence: bestMatch.confidence * 0.8, // Reduce confidence for partial match
+        confidence: calculatedConfidence, // Use calculated similarity, not stored confidence
         isExactMatch: false
       };
     }
+
+    console.log('  ❌ No matches found (similarity threshold not met)');
+    console.log('═══════════════════════════════════════════════════════════');
 
     return {
       broker: null,
@@ -217,7 +259,7 @@ export class BrokerFormatService {
   /**
    * Find similar formats by comparing headers
    */
-  private async findSimilarFormats(headers: string[]): Promise<(BrokerCsvFormat & { broker: BrokerWithRelations })[]> {
+  private async findSimilarFormats(headers: string[]): Promise<(BrokerCsvFormat & { broker: BrokerWithRelations; similarity: number })[]> {
     // Get all formats (approved and unapproved) and calculate similarity
     const allFormats = await prisma.brokerCsvFormat.findMany({
       // Removed isApproved filter - let downstream logic handle approval routing
@@ -240,8 +282,13 @@ export class BrokerFormatService {
     });
 
     // Return formats with similarity > 0.7, sorted by similarity
+    // IMPORTANT: Reject matches where uploaded file has MORE columns than stored format
+    // This ensures files with extra unmapped columns trigger AI mapping for new format creation
     return scoredFormats
-      .filter(f => f.similarity > 0.7)
+      .filter(f => {
+        const hasExtraColumns = headers.length > f.headers.length;
+        return f.similarity > 0.7 && !hasExtraColumns;
+      })
       .sort((a, b) => b.similarity - a.similarity);
   }
 

@@ -28,7 +28,9 @@ import {
   AlertTriangle,
   Info,
   Minus,
-  CornerDownRight
+  CornerDownRight,
+  Link2,
+  X
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -48,6 +50,7 @@ interface MappingField {
   confidence?: number;
   isNew?: boolean;
   isModified?: boolean;
+  combinedWith?: string[]; // CSV headers to combine with this field
 }
 
 interface MappingPair {
@@ -109,6 +112,15 @@ export default function EnhancedMappingReviewTable({
     newField: '',
     currentMapping: { csvHeader: '', fieldIndex: -1 },
     conflictMapping: { csvHeader: '', fieldIndex: -1 }
+  });
+  const [combineDialog, setCombineDialog] = useState<{
+    isOpen: boolean;
+    csvHeader: string;
+    fieldIndex: number;
+  }>({
+    isOpen: false,
+    csvHeader: '',
+    fieldIndex: -1
   });
 
   // Convert legacy mappings to new format
@@ -315,6 +327,90 @@ export default function EnhancedMappingReviewTable({
     setSwapDialog({ isOpen: false, newField: '', currentMapping: { csvHeader: '', fieldIndex: -1 }, conflictMapping: { csvHeader: '', fieldIndex: -1 } });
   };
 
+  // Get available CSV headers for combining
+  const getAvailableHeadersForCombining = (currentCsvHeader: string, currentFieldIndex: number): string[] => {
+    if (!data) return [];
+
+    const currentMapping = currentMappings.find(m => m.csvHeader === currentCsvHeader);
+    const currentField = currentMapping?.fields[currentFieldIndex];
+    const alreadyCombined = currentField?.combinedWith || [];
+
+    // Get all CSV headers from the mappings (both mapped and unmapped)
+    const mappedHeaders = currentMappings
+      .filter(m => !m.isRemoved)
+      .map(m => m.csvHeader);
+
+    const unmappedHeaders = data.unmappedHeaders || [];
+
+    // Combine both to get all available headers
+    const allHeaders = [...new Set([...mappedHeaders, ...unmappedHeaders])];
+
+    // Return headers that are:
+    // - Not the current header
+    // - Not already combined with this field
+    const availableHeaders = allHeaders.filter(header =>
+      header !== currentCsvHeader &&
+      !alreadyCombined.includes(header)
+    );
+
+    return availableHeaders;
+  };
+
+  // Handle opening combine dialog
+  const handleOpenCombineDialog = (csvHeader: string, fieldIndex: number) => {
+    setCombineDialog({
+      isOpen: true,
+      csvHeader,
+      fieldIndex
+    });
+  };
+
+  // Handle adding a header to combine with
+  const handleAddCombination = (headerToCombine: string) => {
+    const { csvHeader, fieldIndex } = combineDialog;
+
+    const newMappings = [...currentMappings];
+    const mappingIndex = newMappings.findIndex(m => m.csvHeader === csvHeader);
+
+    if (mappingIndex >= 0) {
+      const field = newMappings[mappingIndex].fields[fieldIndex];
+
+      if (!field.combinedWith) {
+        field.combinedWith = [];
+      }
+
+      field.combinedWith.push(headerToCombine);
+      field.isModified = true;
+
+      setCurrentMappings(newMappings);
+      toast.success(`Combined "${csvHeader}" with "${headerToCombine}"`);
+    }
+
+    setCombineDialog({ isOpen: false, csvHeader: '', fieldIndex: -1 });
+  };
+
+  // Handle removing a combined header
+  const handleRemoveCombination = (csvHeader: string, fieldIndex: number, combinedHeader: string) => {
+    const newMappings = [...currentMappings];
+    const mappingIndex = newMappings.findIndex(m => m.csvHeader === csvHeader);
+
+    if (mappingIndex >= 0) {
+      const field = newMappings[mappingIndex].fields[fieldIndex];
+
+      if (field.combinedWith) {
+        field.combinedWith = field.combinedWith.filter(h => h !== combinedHeader);
+        field.isModified = true;
+
+        if (field.combinedWith.length === 0) {
+          delete field.combinedWith;
+        }
+      }
+
+      setCurrentMappings(newMappings);
+      toast.success(`Removed "${combinedHeader}" from combination`);
+    }
+  };
+
   // Add new mapping from unmapped headers
   const addNewMapping = () => {
     if (!data) return;
@@ -390,7 +486,8 @@ export default function EnhancedMappingReviewTable({
               orderField: field.orderField,
               confidence: field.confidence || 1.0,
               isNew: field.isNew || false,
-              isModified: field.isModified || false
+              isModified: field.isModified || false,
+              combinedWith: field.combinedWith || undefined
             });
           }
         });
@@ -590,63 +687,100 @@ export default function EnhancedMappingReviewTable({
 
                   <div className="space-y-2">
                     {mapping.fields.map((field, fieldIndex) => (
-                      <div key={`${mapping.csvHeader}-${fieldIndex}-${field.orderField || 'empty'}`} className="flex items-center gap-2 ml-4">
-                        <CornerDownRight className="h-4 w-4 text-gray-400" />
-                        <Select
-                          value={field.orderField || ""}
-                          onValueChange={(value) => handleFieldChange(mapping.csvHeader, fieldIndex, value)}
-                        >
-                          <SelectTrigger className="flex-1">
-                            <SelectValue placeholder="Select order field..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(ORDER_FIELDS_BY_CATEGORY).map(([category, fields]) => (
-                              <div key={category}>
-                                <div className="px-2 py-1 text-xs font-medium text-gray-500 bg-gray-50 bg-opacity-100">
-                                  {category}
-                                </div>
-                                {fields.map(orderField => {
-                                  const isUsed = getUsedOrderFields().has(orderField.value);
-                                  const isCurrentField = field.orderField === orderField.value;
-
-                                  return (
-                                    <SelectItem
-                                      key={orderField.value}
-                                      value={orderField.value}
-                                      className=""
-                                    >
-                                      <div className="flex flex-col">
-                                        <span className={isUsed && !isCurrentField && orderField.value !== 'brokerMetadata' ? 'text-orange-600' : ''}>
-                                          {orderField.label} {isUsed && !isCurrentField && orderField.value !== 'brokerMetadata' ? '(will move from other field)' : ''}
-                                        </span>
-                                        {orderField.description && (
-                                          <span className="text-xs text-gray-500">{orderField.description}</span>
-                                        )}
-                                      </div>
-                                    </SelectItem>
-                                  );
-                                })}
-                              </div>
-                            ))}
-                          </SelectContent>
-                        </Select>
-
-                        <div className="flex items-center gap-2">
-                          <Badge variant={field.confidence && field.confidence >= 0.8 ? 'default' : 'secondary'}>
-                            {Math.round((field.confidence || 0) * 100)}%
-                          </Badge>
-
-                          {field.isNew && <Badge variant="outline">New</Badge>}
-                          {field.isModified && <Badge variant="secondary">Modified</Badge>}
-
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeFieldFromMapping(mapping.csvHeader, fieldIndex)}
+                      <div key={`${mapping.csvHeader}-${fieldIndex}-${field.orderField || 'empty'}`} className="space-y-2">
+                        <div className="flex items-center gap-2 ml-4">
+                          <CornerDownRight className="h-4 w-4 text-gray-400" />
+                          <Select
+                            value={field.orderField || ""}
+                            onValueChange={(value) => handleFieldChange(mapping.csvHeader, fieldIndex, value)}
                           >
-                            <Minus className="h-4 w-4" />
-                          </Button>
+                            <SelectTrigger className="flex-1">
+                              <SelectValue placeholder="Select order field..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(ORDER_FIELDS_BY_CATEGORY).map(([category, fields]) => (
+                                <div key={category}>
+                                  <div className="px-2 py-1 text-xs font-medium text-gray-500 bg-gray-50 bg-opacity-100">
+                                    {category}
+                                  </div>
+                                  {fields.map(orderField => {
+                                    const isUsed = getUsedOrderFields().has(orderField.value);
+                                    const isCurrentField = field.orderField === orderField.value;
+
+                                    return (
+                                      <SelectItem
+                                        key={orderField.value}
+                                        value={orderField.value}
+                                        className=""
+                                      >
+                                        <div className="flex flex-col">
+                                          <span className={isUsed && !isCurrentField && orderField.value !== 'brokerMetadata' ? 'text-orange-600' : ''}>
+                                            {orderField.label} {isUsed && !isCurrentField && orderField.value !== 'brokerMetadata' ? '(will move from other field)' : ''}
+                                          </span>
+                                          {orderField.description && (
+                                            <span className="text-xs text-gray-500">{orderField.description}</span>
+                                          )}
+                                        </div>
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </div>
+                              ))}
+                            </SelectContent>
+                          </Select>
+
+                          <div className="flex items-center gap-2">
+                            <Badge variant={field.confidence && field.confidence >= 0.8 ? 'default' : 'secondary'}>
+                              {Math.round((field.confidence || 0) * 100)}%
+                            </Badge>
+
+                            {field.isNew && <Badge variant="outline">New</Badge>}
+                            {field.isModified && <Badge variant="secondary">Modified</Badge>}
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenCombineDialog(mapping.csvHeader, fieldIndex)}
+                              title="Combine with another CSV field (e.g., date + time)"
+                              disabled={getAvailableHeadersForCombining(mapping.csvHeader, fieldIndex).length === 0}
+                              className="gap-1"
+                            >
+                              <Link2 className="h-3 w-3" />
+                              <span className="text-xs">Combine</span>
+                            </Button>
+
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFieldFromMapping(mapping.csvHeader, fieldIndex)}
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
+
+                        {/* Show combined headers if any */}
+                        {field.combinedWith && field.combinedWith.length > 0 && (
+                          <div className="flex items-center gap-2 ml-12">
+                            <span className="text-sm text-gray-600">Combined with:</span>
+                            {field.combinedWith.map(combinedHeader => (
+                              <Badge
+                                key={combinedHeader}
+                                variant="outline"
+                                className="flex items-center gap-1"
+                              >
+                                <Link2 className="h-3 w-3" />
+                                {combinedHeader}
+                                <button
+                                  onClick={() => handleRemoveCombination(mapping.csvHeader, fieldIndex, combinedHeader)}
+                                  className="ml-1 hover:text-red-600"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -775,6 +909,44 @@ export default function EnhancedMappingReviewTable({
             <AlertDialogAction onClick={handleSwapConfirm}>
               Yes, Move Field
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Field Combination Dialog */}
+      <AlertDialog
+        open={combineDialog.isOpen}
+        onOpenChange={() => setCombineDialog({ isOpen: false, csvHeader: '', fieldIndex: -1 })}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Combine CSV Fields</AlertDialogTitle>
+            <AlertDialogDescription>
+              Select a CSV header to combine with "{combineDialog.csvHeader}". The values will be concatenated together when processing.
+              <br /><br />
+              <strong>Example:</strong> Combining "date" (2024/07/15) with "time" (10:14:41) creates "2024/07/15 10:14:41"
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Select
+              onValueChange={(value) => handleAddCombination(value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select header to combine..." />
+              </SelectTrigger>
+              <SelectContent>
+                {getAvailableHeadersForCombining(combineDialog.csvHeader, combineDialog.fieldIndex).map(header => (
+                  <SelectItem key={header} value={header}>
+                    {header}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setCombineDialog({ isOpen: false, csvHeader: '', fieldIndex: -1 })}>
+              Cancel
+            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
