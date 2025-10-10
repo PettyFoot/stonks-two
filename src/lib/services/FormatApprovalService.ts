@@ -368,7 +368,7 @@ export class FormatApprovalService {
         // Log detailed error information for debugging
         console.error(`[Migration] FAILED record ${record.id} (row ${record.rowIndex}):`, {
           error: errorMessage,
-          symbol: record.rawCsvRow?.symbol || 'N/A',
+          symbol: (record.rawCsvRow as any)?.symbol || 'N/A',
           rawData: record.rawCsvRow
         });
 

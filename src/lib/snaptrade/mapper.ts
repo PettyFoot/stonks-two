@@ -111,15 +111,15 @@ function mapAssetClass(description: string): AssetClass {
   }
   
   if (desc.includes('bond') || desc.includes('treasury')) {
-    return AssetClass.BOND;
+    return AssetClass.EQUITY; // Map bonds to equity since BOND asset class doesn't exist
   }
-  
+
   if (desc.includes('etf') || desc.includes('fund')) {
-    return AssetClass.ETF;
+    return AssetClass.EQUITY; // Map ETFs to equity since ETF asset class doesn't exist
   }
-  
+
   if (desc.includes('mutual')) {
-    return AssetClass.MUTUAL_FUND;
+    return AssetClass.EQUITY; // Map mutual funds to equity since MUTUAL_FUND asset class doesn't exist
   }
   
   // Default to equity

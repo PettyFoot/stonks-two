@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 const QuerySchema = z.object({
   status: z.enum(['PENDING', 'FAILED', 'MIGRATED', 'REJECTED']).optional(),
-  limit: z.string().transform(val => parseInt(val)).pipe(z.number().min(1).max(100)).optional().default('20'),
+  limit: z.string().transform(val => parseInt(val)).pipe(z.number().min(1).max(100)).optional().default(20),
   formatId: z.string().optional()
 });
 

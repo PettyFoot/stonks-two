@@ -100,13 +100,6 @@ async function calculateTradesForUser() {
       where: {
         userId,
         symbol: 'YHOO150416C00030000'
-      },
-      include: {
-        _count: {
-          select: {
-            orders: true
-          }
-        }
       }
     });
 

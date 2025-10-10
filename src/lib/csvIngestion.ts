@@ -106,6 +106,7 @@ interface NormalizedOrder {
   orderId: string;
   parentOrderId?: string | null;
   symbol: string;
+  assetClass?: string | null;
   orderType: string;
   side: 'BUY' | 'SELL';
   timeInForce: string;
