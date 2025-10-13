@@ -73,6 +73,16 @@ export interface DuplicateOrdersEmailData {
   timestamp: string;
 }
 
+export interface UploadDeletionNotificationEmailData {
+  userName: string;
+  userEmail: string;
+  supportEmail: string;
+  appUrl: string;
+  fileName: string;
+  uploadDate: string;
+  tradesAffected: number;
+}
+
 /**
  * Base HTML email template with logo and styling
  */
@@ -1518,5 +1528,187 @@ This is an automated notification from the Trade Voyager Analytics migration sys
 
 Trade Voyager Analytics - Admin Notification
 Order Migration Duplicate Detection System
+  `.trim();
+};
+
+/**
+ * Upload deletion notification email for users whose uploads were deleted due to a bug
+ */
+export const getUploadDeletionNotificationEmailContent = (data: UploadDeletionNotificationEmailData): string => {
+  const content = `
+    <div class="header">
+      <img src="${data.appUrl}/api/logo" alt="Trade Voyager Analytics Logo" class="logo">
+      <h1>Important Update About Your Upload</h1>
+    </div>
+
+    <div class="content">
+      <h2>Hi ${data.userName},</h2>
+
+      <p>We're reaching out with an important update about your recent trade upload. We discovered a bug in our software that affected the processing of your data, and we want to be completely transparent with you about what happened and how we've resolved it.</p>
+
+      <div class="highlight-box" style="background-color: #fef5e7; border-left: 4px solid #f59e0b;">
+        <h3 style="margin-top: 0; color: #92400e;">Upload Details:</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; font-weight: 600; width: 140px;">File Name:</td>
+            <td style="padding: 8px 0;">${data.fileName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: 600;">Upload Date:</td>
+            <td style="padding: 8px 0;">${data.uploadDate}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: 600;">Trades Affected:</td>
+            <td style="padding: 8px 0;">${data.tradesAffected} ${data.tradesAffected === 1 ? 'trade' : 'trades'}</td>
+          </tr>
+        </table>
+      </div>
+
+      <h3 style="color: #1a202c;">What Happened?</h3>
+      <p>We identified a software bug that caused issues with how this particular upload was processed. To ensure the accuracy and integrity of your trading data, we've had to remove this upload and its associated trades from your account.</p>
+
+      <div class="highlight-box" style="background-color: #f0fdf4; border-left: 4px solid #10b981;">
+        <h3 style="margin-top: 0; color: #065f46;">The Good News:</h3>
+        <p style="margin-bottom: 0;">
+          ✓ <strong>The bug has been fixed</strong> - We've identified and resolved the issue<br>
+          ✓ <strong>Your account is secure</strong> - No other data was affected<br>
+          ✓ <strong>Ready for re-upload</strong> - You can safely upload your file again
+        </p>
+      </div>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${data.appUrl}/dashboard" class="btn" style="font-size: 16px; padding: 16px 32px;">Re-Upload Your Trade Data</a>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 style="color: #1a202c;">Our Sincere Apologies</h3>
+      <p>We understand how frustrating it can be to have your data affected by technical issues. We take the reliability of our platform very seriously, and we're truly sorry for any inconvenience this has caused you.</p>
+
+      <p><strong>You are a valued member of our community</strong>, and we're committed to providing you with the best possible experience. We've taken immediate action to prevent this from happening again.</p>
+
+      <div class="divider"></div>
+
+      <h3 style="color: #1a202c;">How Can We Help?</h3>
+      <p><strong>Please don't hesitate to reach out if you have any questions or concerns.</strong> You can reply directly to this email, and one of our team members will personally respond to you.</p>
+
+      <div class="benefits">
+        <h3 style="margin-top: 0; color: #1a202c;">We're here to help with:</h3>
+        <ul>
+          <li>Questions about the bug or what happened</li>
+          <li>Assistance with re-uploading your trade data</li>
+          <li>Any concerns about your account</li>
+          <li>General support or technical questions</li>
+        </ul>
+      </div>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="mailto:${data.supportEmail}" class="btn" style="background: #667eea;">Contact Support</a>
+        <a href="${data.appUrl}/contact" class="btn" style="background: #718096;">Visit Help Center</a>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 style="color: #1a202c;">We Hope You're Enjoying Trade Voyager Analytics</h3>
+      <p>We'd love to hear how your experience with our app has been overall. If you have any feedback, suggestions, or just want to share your thoughts, please feel free to reply to this email. We read every message personally.</p>
+
+      <p style="margin-top: 24px;">Thank you for your understanding and patience as we work to continually improve our platform. We truly appreciate your trust in Trade Voyager Analytics.</p>
+
+      <p style="font-style: italic; color: #718096; margin-top: 30px;">
+        Thank you for being part of our community!<br>
+        <strong>The Trade Voyager Analytics Team</strong>
+      </p>
+    </div>
+
+    <div class="footer">
+      <p><strong>Trade Voyager Analytics</strong></p>
+      <p>Professional Trading Analytics & Portfolio Management</p>
+      <p>
+        <a href="${data.appUrl}">Visit Dashboard</a> •
+        <a href="mailto:${data.supportEmail}">Support</a> •
+        <a href="${data.appUrl}/contact">Contact Us</a>
+      </p>
+      <p style="font-size: 12px; margin-top: 20px;">
+        This email was sent regarding your upload to Trade Voyager Analytics.<br>
+        If you have any questions, please don't hesitate to reach out to our support team.
+      </p>
+    </div>
+  `;
+
+  return getEmailTemplate(content, 'Important Update About Your Upload');
+};
+
+/**
+ * Generate upload deletion notification email
+ */
+export const generateUploadDeletionNotificationEmail = (data: UploadDeletionNotificationEmailData) => ({
+  subject: 'Important: Update About Your Recent Trade Upload',
+  html: getUploadDeletionNotificationEmailContent(data),
+  text: generateUploadDeletionNotificationTextEmail(data)
+});
+
+/**
+ * Plain text version of upload deletion notification email
+ */
+const generateUploadDeletionNotificationTextEmail = (data: UploadDeletionNotificationEmailData): string => {
+  return `
+Important Update About Your Upload
+
+Hi ${data.userName},
+
+We're reaching out with an important update about your recent trade upload. We discovered a bug in our software that affected the processing of your data, and we want to be completely transparent with you about what happened and how we've resolved it.
+
+UPLOAD DETAILS:
+File Name: ${data.fileName}
+Upload Date: ${data.uploadDate}
+Trades Affected: ${data.tradesAffected} ${data.tradesAffected === 1 ? 'trade' : 'trades'}
+
+WHAT HAPPENED?
+
+We identified a software bug that caused issues with how this particular upload was processed. To ensure the accuracy and integrity of your trading data, we've had to remove this upload and its associated trades from your account.
+
+THE GOOD NEWS:
+
+✓ The bug has been fixed - We've identified and resolved the issue
+✓ Your account is secure - No other data was affected
+✓ Ready for re-upload - You can safely upload your file again
+
+Re-upload your trade data: ${data.appUrl}/dashboard
+
+OUR SINCERE APOLOGIES
+
+We understand how frustrating it can be to have your data affected by technical issues. We take the reliability of our platform very seriously, and we're truly sorry for any inconvenience this has caused you.
+
+You are a valued member of our community, and we're committed to providing you with the best possible experience. We've taken immediate action to prevent this from happening again.
+
+HOW CAN WE HELP?
+
+Please don't hesitate to reach out if you have any questions or concerns. You can reply directly to this email, and one of our team members will personally respond to you.
+
+We're here to help with:
+• Questions about the bug or what happened
+• Assistance with re-uploading your trade data
+• Any concerns about your account
+• General support or technical questions
+
+Contact support: ${data.supportEmail}
+Visit help center: ${data.appUrl}/contact
+
+WE HOPE YOU'RE ENJOYING TRADE VOYAGER ANALYTICS
+
+We'd love to hear how your experience with our app has been overall. If you have any feedback, suggestions, or just want to share your thoughts, please feel free to reply to this email. We read every message personally.
+
+Thank you for your understanding and patience as we work to continually improve our platform. We truly appreciate your trust in Trade Voyager Analytics.
+
+Thank you for being part of our community!
+The Trade Voyager Analytics Team
+
+---
+Trade Voyager Analytics
+Professional Trading Analytics & Portfolio Management
+
+Dashboard: ${data.appUrl}
+Support: ${data.supportEmail}
+Contact Us: ${data.appUrl}/contact
   `.trim();
 };

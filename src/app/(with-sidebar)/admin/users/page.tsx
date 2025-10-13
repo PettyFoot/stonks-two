@@ -20,6 +20,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
 import {
   Users,
@@ -41,6 +44,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import DeleteUserModal from '@/components/admin/DeleteUserModal';
 import UserActivityModal from '@/components/admin/UserActivityModal';
+import UploadDeletionModal from '@/components/admin/UploadDeletionModal';
 
 interface AdminUser {
   id: string;
@@ -76,6 +80,9 @@ export default function AdminUsersPage() {
   const [isDeletingUser, setIsDeletingUser] = useState(false);
   const [activityModalOpen, setActivityModalOpen] = useState(false);
   const [activityUser, setActivityUser] = useState<AdminUser | null>(null);
+  const [uploadDeletionModalOpen, setUploadDeletionModalOpen] = useState(false);
+  const [uploadDeletionUser, setUploadDeletionUser] = useState<AdminUser | null>(null);
+  const [sendingUploadDeletion, setSendingUploadDeletion] = useState(false);
 
   // Fetch users
   useEffect(() => {
@@ -402,6 +409,53 @@ export default function AdminUsersPage() {
     setActivityUser(null);
   };
 
+  const handleOpenUploadDeletionModal = (user: AdminUser) => {
+    setUploadDeletionUser(user);
+    setUploadDeletionModalOpen(true);
+  };
+
+  const confirmSendUploadDeletion = async (data: { fileName: string; uploadDate: string; tradesAffected: number }) => {
+    if (!uploadDeletionUser) return;
+
+    setSendingUploadDeletion(true);
+    try {
+      const response = await fetch('/api/admin/users/send-upload-deletion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: uploadDeletionUser.id,
+          fileName: data.fileName,
+          uploadDate: data.uploadDate,
+          tradesAffected: data.tradesAffected,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success(
+          `Upload deletion notification sent to ${uploadDeletionUser.name || uploadDeletionUser.email}`
+        );
+        setUploadDeletionModalOpen(false);
+        setUploadDeletionUser(null);
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send upload deletion notification');
+      }
+    } catch (error) {
+      console.error('Error sending upload deletion notification:', error);
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to send upload deletion notification'
+      );
+    } finally {
+      setSendingUploadDeletion(false);
+    }
+  };
+
+  const closeUploadDeletionModal = () => {
+    if (sendingUploadDeletion) return;
+    setUploadDeletionModalOpen(false);
+    setUploadDeletionUser(null);
+  };
+
   const getSubscriptionBadge = (tier: string, status: string) => {
     if (status === 'ACTIVE') {
       return (
@@ -598,48 +652,65 @@ export default function AdminUsersPage() {
                                 </>
                               )}
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleSendCoupon(user.id, user.name || 'User', user.email)}
-                              disabled={sendingCoupon === user.id}
-                            >
-                              <Gift className="h-4 w-4 mr-2" />
-                              {sendingCoupon === user.id ? 'Sending...' : 'Send Coupon'}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleSendWelcome(user.id, user.name || 'User', user.email)}
-                              disabled={sendingWelcome === user.id}
-                            >
-                              <Mail className="h-4 w-4 mr-2" />
-                              {sendingWelcome === user.id ? 'Sending...' : 'Send Welcome Email'}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleSendCongrats(user.id, user.name || 'User', user.email)}
-                              disabled={sendingCongrats === user.id}
-                            >
-                              <Trophy className="h-4 w-4 mr-2" />
-                              {sendingCongrats === user.id ? 'Sending...' : 'Send Premium Congrats'}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleSendFeedback(user.id, user.name || 'User', user.email)}
-                              disabled={sendingFeedback === user.id}
-                            >
-                              <MessageSquare className="h-4 w-4 mr-2" />
-                              {sendingFeedback === user.id ? 'Sending...' : 'Send Feedback Request'}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleSendOnboarding(user.id, user.name || 'User', user.email)}
-                              disabled={sendingOnboarding === user.id}
-                            >
-                              <HandHelping className="h-4 w-4 mr-2" />
-                              {sendingOnboarding === user.id ? 'Sending...' : 'Send Onboarding Check-In'}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleSendOnboardingCoupon(user.id, user.name || 'User', user.email)}
-                              disabled={sendingOnboardingCoupon === user.id}
-                            >
-                              <Gift className="h-4 w-4 mr-2" />
-                              {sendingOnboardingCoupon === user.id ? 'Sending...' : 'Send Onboarding + Coupon'}
-                            </DropdownMenuItem>
+
+                            <DropdownMenuSub>
+                              <DropdownMenuSubTrigger>
+                                <Mail className="h-4 w-4 mr-2" />
+                                Send Email
+                              </DropdownMenuSubTrigger>
+                              <DropdownMenuSubContent>
+                                <DropdownMenuItem
+                                  onClick={() => handleSendWelcome(user.id, user.name || 'User', user.email)}
+                                  disabled={sendingWelcome === user.id}
+                                >
+                                  <Mail className="h-4 w-4 mr-2" />
+                                  {sendingWelcome === user.id ? 'Sending...' : 'Welcome Email'}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleSendCongrats(user.id, user.name || 'User', user.email)}
+                                  disabled={sendingCongrats === user.id}
+                                >
+                                  <Trophy className="h-4 w-4 mr-2" />
+                                  {sendingCongrats === user.id ? 'Sending...' : 'Premium Congrats'}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleSendCoupon(user.id, user.name || 'User', user.email)}
+                                  disabled={sendingCoupon === user.id}
+                                >
+                                  <Gift className="h-4 w-4 mr-2" />
+                                  {sendingCoupon === user.id ? 'Sending...' : 'Coupon Offer'}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleSendFeedback(user.id, user.name || 'User', user.email)}
+                                  disabled={sendingFeedback === user.id}
+                                >
+                                  <MessageSquare className="h-4 w-4 mr-2" />
+                                  {sendingFeedback === user.id ? 'Sending...' : 'Feedback Request'}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleSendOnboarding(user.id, user.name || 'User', user.email)}
+                                  disabled={sendingOnboarding === user.id}
+                                >
+                                  <HandHelping className="h-4 w-4 mr-2" />
+                                  {sendingOnboarding === user.id ? 'Sending...' : 'Onboarding Check-In'}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleSendOnboardingCoupon(user.id, user.name || 'User', user.email)}
+                                  disabled={sendingOnboardingCoupon === user.id}
+                                >
+                                  <Gift className="h-4 w-4 mr-2" />
+                                  {sendingOnboardingCoupon === user.id ? 'Sending...' : 'Onboarding + Coupon'}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleOpenUploadDeletionModal(user)}
+                                  disabled={sendingUploadDeletion}
+                                >
+                                  <Mail className="h-4 w-4 mr-2" />
+                                  Upload Deletion Notice
+                                </DropdownMenuItem>
+                              </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+
                             <DropdownMenuItem
                               onClick={() => handleDeleteUser(user)}
                               disabled={(currentUser ? user.id === currentUser.id : false) || isDeletingUser}
@@ -678,6 +749,15 @@ export default function AdminUsersPage() {
           userName={activityUser.name || activityUser.email}
         />
       )}
+
+      {/* Upload Deletion Modal */}
+      <UploadDeletionModal
+        isOpen={uploadDeletionModalOpen}
+        onClose={closeUploadDeletionModal}
+        onConfirm={confirmSendUploadDeletion}
+        user={uploadDeletionUser}
+        isSending={sendingUploadDeletion}
+      />
     </div>
   );
 }

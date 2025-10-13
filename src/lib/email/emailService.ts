@@ -1,5 +1,5 @@
 import * as nodemailer from 'nodemailer';
-import { generateWelcomeEmail, WelcomeEmailData, generateSignupWelcomeEmail, SignupWelcomeEmailData, generateCouponEmail, CouponEmailData, generateFeedbackEmail, FeedbackEmailData, generateOnboardingCheckInEmail, OnboardingCheckInEmailData, generateOnboardingWithCouponEmail, OnboardingWithCouponEmailData, generateFormatDenialEmail, FormatDenialEmailData, generateDuplicateOrdersEmail, DuplicateOrdersEmailData } from './templates';
+import { generateWelcomeEmail, WelcomeEmailData, generateSignupWelcomeEmail, SignupWelcomeEmailData, generateCouponEmail, CouponEmailData, generateFeedbackEmail, FeedbackEmailData, generateOnboardingCheckInEmail, OnboardingCheckInEmailData, generateOnboardingWithCouponEmail, OnboardingWithCouponEmailData, generateFormatDenialEmail, FormatDenialEmailData, generateDuplicateOrdersEmail, DuplicateOrdersEmailData, generateUploadDeletionNotificationEmail, UploadDeletionNotificationEmailData } from './templates';
 
 export interface EmailOptions {
   to: string;
@@ -314,6 +314,38 @@ Automated notification from Trade Voyager Analytics
       console.error('Failed to send duplicate orders notification:', error);
       // Don't throw - we don't want email failures to break migration
       // Just log the error
+    }
+  }
+
+  async sendUploadDeletionNotification(data: UploadDeletionNotificationEmailData): Promise<void> {
+    try {
+      console.log(`[DEBUG] sendUploadDeletionNotification called with data:`, {
+        userEmail: data.userEmail,
+        userName: data.userName,
+        fileName: data.fileName,
+        uploadDate: data.uploadDate,
+        tradesAffected: data.tradesAffected,
+        supportEmail: data.supportEmail
+      });
+
+      const emailContent = generateUploadDeletionNotificationEmail(data);
+
+      await this.sendEmail({
+        to: data.userEmail,
+        subject: emailContent.subject,
+        text: emailContent.text,
+        html: emailContent.html,
+        replyTo: data.supportEmail,
+      });
+
+      console.log('Upload deletion notification email sent successfully:', {
+        to: data.userEmail,
+        userName: data.userName,
+        fileName: data.fileName
+      });
+    } catch (error) {
+      console.error('Failed to send upload deletion notification email:', error);
+      throw new Error('Failed to send upload deletion notification email');
     }
   }
 }
