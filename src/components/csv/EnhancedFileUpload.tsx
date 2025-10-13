@@ -444,11 +444,6 @@ export default function EnhancedFileUpload({
     }
   }, [handleFileSelect]);
 
-  const downloadTemplate = () => {
-    // Download standard template
-    window.open('/api/csv/template', '_blank');
-  };
-
   // Handle broker selection
   const handleBrokerSelected = async (broker: any, brokerName: string) => {
 
@@ -672,19 +667,7 @@ export default function EnhancedFileUpload({
                 <li>• <strong>Intelligent Detection:</strong> Automatically recognizes broker formats</li>
                 <li>• <strong>Custom Format:</strong> AI will help map unknown columns automatically</li>
                 <li>• <strong>Account Tags:</strong> Add tags to organize trades by account or strategy</li>
-                <li>• <strong>Standard Format:</strong> Use our template for instant processing</li>
               </ul>
-              <div className="mt-3">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={downloadTemplate}
-                  className="text-theme-tertiary border-theme-tertiary hover:bg-theme-tertiary hover:text-white"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Standard Template
-                </Button>
-              </div>
             </div>
           </div>
         </CardContent>
@@ -820,8 +803,7 @@ export default function EnhancedFileUpload({
                     {state.validationResult && (
                       <div className="mt-2 space-y-2">
                         <Badge variant={state.validationResult.detectedFormatInfo ? "outline" : "secondary"} className="bg-white">
-                          {state.validationResult.detectedFormatInfo?.brokerName || 
-                           (state.validationResult.isStandardFormat ? "Standard Format" : "Custom Format")}
+                          {state.validationResult.detectedFormatInfo?.brokerName || "Custom Format"}
                         </Badge>
                         {state.validationResult.detectedFormatInfo && (
                           <p className="text-xs text-theme-green">
@@ -945,8 +927,7 @@ export default function EnhancedFileUpload({
                   <div className="flex justify-between">
                     <span className="text-theme-primary-text">Format:</span>
                     <span className={state.validationResult.detectedFormatInfo ? "text-theme-primary-text" : "text-theme-warning"}>
-                      {state.validationResult.detectedFormatInfo?.name || 
-                       (state.validationResult.isStandardFormat ? "Standard" : "Custom")}
+                      {state.validationResult.detectedFormatInfo?.name || "Custom"}
                     </span>
                   </div>
                   {state.validationResult.detectedFormatInfo?.brokerName && (

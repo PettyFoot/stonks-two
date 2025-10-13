@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
-import { useUser } from '@auth0/nextjs-auth0/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { SoftwareApplicationStructuredData } from '@/components/SEO';
 import { TradingFAQStructuredData } from '@/components/SEO/FAQStructuredData';
@@ -15,7 +15,7 @@ import { InlineTriangleLoader, PageTriangleLoader } from '@/components/ui/Triang
 import { WebGLCausticsBackground } from '@/components/backgrounds';
 
 export default function LandingPageComponent() {
-  const { user, isLoading } = useUser();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
   const [isStartingDemo, setIsStartingDemo] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

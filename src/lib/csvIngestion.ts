@@ -572,9 +572,9 @@ export class CsvIngestionService {
       
       // Also try broker format detection from database
       const brokerDetection = await this.brokerFormatService.detectFormat(headers);
-      
-      // Check if it's standard format
-      const isStandardFormat = this.isStandardCsvFormat(headers);
+
+      // Standard format detection disabled - all uploads go through orders table
+      const isStandardFormat = false;
 
       return {
         isValid: true,
@@ -603,21 +603,17 @@ export class CsvIngestionService {
     }
   }
 
-  private isStandardCsvFormat(headers: string[]): boolean {
-    // Check if all required columns are present
-    const hasAllRequired = REQUIRED_COLUMNS.every(col => 
-      headers.some(header => header.trim().toLowerCase() === col.toLowerCase())
-    );
-
-    // Check if majority of standard columns are present
-    const standardColumnsPresent = STANDARD_CSV_COLUMNS.filter(col =>
-      headers.some(header => header.trim().toLowerCase() === col.toLowerCase())
-    ).length;
-
-    const standardColumnRatio = standardColumnsPresent / STANDARD_CSV_COLUMNS.length;
-
-    return hasAllRequired && standardColumnRatio >= 0.6;
-  }
+  // DISABLED: Standard format path removed - all CSVs must go through orders table
+  // private isStandardCsvFormat(headers: string[]): boolean {
+  //   const hasAllRequired = REQUIRED_COLUMNS.every(col =>
+  //     headers.some(header => header.trim().toLowerCase() === col.toLowerCase())
+  //   );
+  //   const standardColumnsPresent = STANDARD_CSV_COLUMNS.filter(col =>
+  //     headers.some(header => header.trim().toLowerCase() === col.toLowerCase())
+  //   ).length;
+  //   const standardColumnRatio = standardColumnsPresent / STANDARD_CSV_COLUMNS.length;
+  //   return hasAllRequired && standardColumnRatio >= 0.6;
+  // }
 
   async ingestCsv(
     fileContent: string,
@@ -671,16 +667,6 @@ export class CsvIngestionService {
           fileName,
           userId,
           accountTags,
-          uploadLog.id,
-          validation.fileSize
-        );
-      } else if (validation.isStandardFormat && !userMappings) {
-
-        return await this.processStandardCsv(
-          fileContent, 
-          fileName, 
-          userId, 
-          accountTags, 
           uploadLog.id,
           validation.fileSize
         );
@@ -1115,6 +1101,8 @@ export class CsvIngestionService {
     }
   }
 
+  // DISABLED: Standard format path removed - all CSVs must go through orders table first
+  // This method directly inserted into trades table, bypassing order tracking
   private async processStandardCsv(
     fileContent: string,
     fileName: string,
@@ -1123,6 +1111,7 @@ export class CsvIngestionService {
     uploadLogId: string,
     fileSize: number
   ): Promise<CsvIngestionResult> {
+    throw new Error('Standard CSV format is no longer supported. All uploads must go through order processing.');
     
     const records = parse(fileContent, {
       columns: true,

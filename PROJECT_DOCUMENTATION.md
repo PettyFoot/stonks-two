@@ -409,8 +409,6 @@ Validate CSV without importing
 #### `POST /api/csv/mapping`
 Apply user-corrected column mappings
 
-#### `GET /api/csv/template`
-Download standard CSV template
 
 ### Records Endpoints
 
@@ -856,34 +854,16 @@ export const tradeSchema = z.object({
 
 ### Architecture Overview
 
-The import system handles multiple CSV formats through a dual-path approach:
-1. **Standard Format**: Known schema, direct processing
-2. **Custom Format**: AI-powered column mapping
+The import system handles multiple CSV formats from various brokers with intelligent AI-powered column mapping.
 
-### Standard CSV Format
+**Important:** All CSV imports go through the orders table first, then are processed into trades using the trade calculation system. This ensures proper order tracking and enables accurate P&L calculations.
 
-#### Required Columns
-```csv
-Date,Time,Symbol,Buy/Sell,Shares,Price,Commission,Fees,Account
-2025-01-01,09:30:00,AAPL,BUY,100,150.00,1.00,0.50,Main Account
-2025-01-01,09:35:00,AAPL,SELL,100,151.50,1.00,0.50,Main Account
-```
-
-#### Validation Schema
-```typescript
-// lib/schemas/standardCsv.ts
-export const standardCsvSchema = z.object({
-  Date: z.string().refine(isValidDate),
-  Time: z.string().optional(),
-  Symbol: z.string().min(1).max(10),
-  'Buy/Sell': z.enum(['BUY', 'SELL', 'BOT', 'SLD', 'B', 'S']),
-  Shares: z.string().transform(Number).pipe(z.number().positive()),
-  Price: z.string().transform(Number).pipe(z.number().positive()).optional(),
-  Commission: z.string().transform(Number).pipe(z.number()).optional(),
-  Fees: z.string().transform(Number).pipe(z.number()).optional(),
-  Account: z.string().optional()
-});
-```
+### Supported Broker Formats
+- Interactive Brokers
+- TD Ameritrade
+- E*TRADE
+- Charles Schwab
+- Generic CSV (AI-powered mapping)
 
 ### AI-Powered Column Mapping
 
@@ -971,70 +951,38 @@ export async function POST(request: NextRequest) {
   // Parse CSV
   const csvText = await file.text();
   const parsed = Papa.parse(csvText, { header: true });
-  
-  // Determine processing path
-  const isStandardFormat = detectStandardFormat(parsed.meta.fields);
-  
-  if (isStandardFormat) {
-    return processStandardFormat(parsed.data, userId);
-  } else {
-    return processCustomFormat(parsed, userId);
-  }
+
+  // Process with broker format detection or AI mapping
+  return processBrokerFormat(parsed, userId);
 }
 ```
 
-#### Standard Format Processing
+#### Broker Format Processing
 ```typescript
-const processStandardFormat = async (data: any[], userId: string) => {
-  const validatedTrades: Trade[] = [];
-  const errors: string[] = [];
-  
-  for (const [index, row] of data.entries()) {
-    try {
-      const validated = standardCsvSchema.parse(row);
-      validatedTrades.push(transformToTrade(validated, userId));
-    } catch (error) {
-      errors.push(`Row ${index + 1}: ${error.message}`);
-    }
-  }
-  
-  // Bulk insert trades
-  if (validatedTrades.length > 0) {
-    await prisma.trade.createMany({
-      data: validatedTrades
-    });
-  }
-  
-  return {
-    success: true,
-    importType: 'STANDARD',
-    totalRecords: data.length,
-    successCount: validatedTrades.length,
-    errorCount: errors.length,
-    errors
-  };
-};
-```
+const processBrokerFormat = async (parsed: ParseResult, userId: string) => {
+  // Detect broker format from database or use AI mapping
+  const formatDetection = await detectBrokerFormat(parsed.meta.fields, parsed.data.slice(0, 5));
 
-#### Custom Format Processing
-```typescript
-const processCustomFormat = async (parsed: ParseResult, userId: string) => {
-  const aiMapping = analyzeColumnMapping(parsed.meta.fields, parsed.data.slice(0, 5));
-  
-  if (aiMapping.overallConfidence >= 0.8) {
-    // High confidence: auto-process
-    return applyMappingAndImport(parsed.data, aiMapping.mappings, userId);
+  if (formatDetection.confidence >= 0.7) {
+    // High confidence: auto-process through orders table
+    return createOrdersAndCalculateTrades(parsed.data, formatDetection.format, userId);
   } else {
     // Low confidence: require user review
     return {
       success: false,
       requiresUserReview: true,
-      aiMappingResult: aiMapping,
+      aiMappingResult: formatDetection.mapping,
       sampleRows: parsed.data.slice(0, 10)
     };
   }
 };
 ```
+
+**Key Point:** All CSV processing creates order records first, which are then processed into trades. This ensures:
+- Proper order → trade relationships
+- Accurate P&L calculations
+- Full analytics capabilities
+- Order-level tracking
 
 ### Error Handling and Recovery
 

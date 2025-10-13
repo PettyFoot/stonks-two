@@ -6,61 +6,34 @@ See also: [📋 Project Documentation](../PROJECT_DOCUMENTATION.md) | [🎯 Mark
 
 ## Overview
 
-The Enhanced CSV Import System provides intelligent, AI-powered data ingestion for trading applications with support for both standard and custom CSV formats. The system includes real-time validation, automated column mapping, user correction capabilities, and comprehensive audit logging.
+The Enhanced CSV Import System provides intelligent, AI-powered data ingestion for trading applications with support for custom CSV formats from various brokers. The system includes real-time validation, automated column mapping, user correction capabilities, and comprehensive audit logging.
+
+**Note:** All CSV imports go through the orders table first, then are processed into trades using the trade calculation system. This ensures proper order tracking and enables accurate P&L calculations.
 
 ## Architecture
 
 ### System Components
 
-1. **Standard CSV Schema** (`/src/lib/schemas/standardCsv.ts`)
-   - Zod-based validation schemas
-   - Normalized trade data structures
-   - Date and number parsing utilities
-   - Side mapping for different broker formats
-
-2. **AI Mapping Module** (`/src/lib/ai/csvMapper.ts`)
+1. **AI Mapping Module** (`/src/lib/ai/csvMapper.ts`)
    - Heuristic-based column detection
    - Confidence scoring system
    - Column mapping suggestions
    - User correction application
 
-3. **CSV Ingestion Service** (`/src/lib/csvIngestion.ts`)
-   - Dual-path processing (standard vs custom)
+2. **CSV Ingestion Service** (`/src/lib/csvIngestion.ts`)
+   - Multi-broker format detection and processing
    - File validation and size checking
    - Progress tracking and error handling
    - Database integration with audit logging
 
-4. **API Endpoints**
+3. **API Endpoints**
    - `/api/csv/upload` - File upload and processing
    - `/api/csv/mapping` - AI mapping and user corrections
-   - `/api/csv/template` - Standard CSV template download
 
-5. **Frontend Components**
+4. **Frontend Components**
    - `EnhancedFileUpload` - Drag-and-drop upload with validation
    - `ColumnMappingModal` - AI mapping review and correction
    - Progress tracking and real-time feedback
-
-## Standard CSV Schema
-
-### Required Columns
-- **Date**: Trade execution date (YYYY-MM-DD, MM/DD/YYYY, etc.)
-- **Symbol**: Stock ticker symbol (e.g., AAPL, TSLA)
-- **Buy/Sell**: Trade direction (BUY, SELL, BOT, SLD, B, S)
-- **Shares**: Number of shares/quantity
-
-### Optional Columns
-- **Time**: Trade execution time (HH:MM:SS)
-- **Price**: Trade execution price
-- **Commission**: Commission fees
-- **Fees**: Other trading fees
-- **Account**: Account identifier
-
-### Example Standard CSV
-```csv
-Date,Time,Symbol,Buy/Sell,Shares,Price,Commission,Fees,Account
-2025-01-01,09:30:00,AAPL,BUY,100,150.00,1.00,0.50,Main Account
-2025-01-01,09:35:00,AAPL,SELL,100,151.50,1.00,0.50,Main Account
-```
 
 ## AI Mapping System
 
@@ -86,21 +59,21 @@ Date,Time,Symbol,Buy/Sell,Shares,Price,Commission,Fees,Account
 
 ## File Processing Pipeline
 
-### Standard Format Processing
-1. Parse CSV with known schema
-2. Validate each row against Zod schema
-3. Normalize data to internal format
-4. Insert into database
-5. Update audit logs
-
-### Custom Format Processing
+### Broker Format Processing
 1. Parse CSV headers and sample data
-2. Run AI mapping analysis
-3. If high confidence: auto-process
-4. If low confidence: show mapping modal
+2. Detect broker format from database or use AI mapping
+3. If high confidence (≥70%): auto-process
+4. If low confidence: show mapping modal for user review
 5. Apply user corrections if provided
-6. Normalize and insert data
-7. Update audit logs with mapping decisions
+6. Create order records in database
+7. Process orders through trade calculation system
+8. Update audit logs with mapping decisions
+
+**Important:** All CSV uploads create order records first, which are then processed into trades. This ensures:
+- Proper order → trade relationships
+- Accurate P&L calculations
+- Full analytics capabilities
+- Order-level tracking and reporting
 
 ## Database Schema
 
@@ -288,13 +261,6 @@ Body:
 Response: ImportResult
 ```
 
-### Download Standard Template
-```typescript
-GET /api/csv/template
-
-Response: CSV file download
-```
-
 ## Frontend Integration
 
 ### Enhanced File Upload Component
@@ -346,8 +312,7 @@ Response: CSV file download
 - User authentication flows
 
 ### Test Data
-- Standard format CSV samples
-- Custom format CSV samples from major brokers
+- CSV samples from major brokers (Interactive Brokers, TD Ameritrade, Schwab, etc.)
 - Edge cases and error conditions
 - Large file performance tests
 
@@ -393,7 +358,6 @@ OPENAI_API_KEY=...  # For AI mapping (optional)
 ### Performance Optimizations
 - Redis caching for frequent operations
 - Database query optimization
-- CDN for template downloads
 - Streaming responses for large datasets
 
 ### Additional Features
