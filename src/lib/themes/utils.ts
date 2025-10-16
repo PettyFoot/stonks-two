@@ -2,13 +2,18 @@ import { Theme } from './types';
 
 export const applyThemeToDOM = (theme: Theme): void => {
   const root = document.documentElement;
-  
+
   // Apply all theme colors as CSS variables
   Object.entries(theme.colors).forEach(([key, value]) => {
     const cssVar = `--theme-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
     root.style.setProperty(cssVar, value);
   });
-  
+
+  // Also set shadcn-ui expected variables for compatibility
+  root.style.setProperty('--input', theme.colors.input);
+  root.style.setProperty('--ring', theme.colors.ring);
+  root.style.setProperty('--muted-foreground', theme.colors.mutedForeground);
+
   // Set data attribute for theme name (useful for additional CSS targeting)
   root.setAttribute('data-theme', theme.name);
 };

@@ -18,6 +18,7 @@ import { Trade, ColumnConfiguration } from '@/types';
 import { FullPageTriangleLoader } from '@/components/ui/TriangleLoader';
 import ShareButton from '@/components/ShareButton';
 import ColumnSettingsModal from '@/components/ColumnSettingsModal';
+import MonthYearPicker from '@/components/MonthYearPicker';
 
 type ViewType = 'summary' | 'year' | 'month';
 
@@ -392,7 +393,7 @@ const CalendarContent = React.memo(() => {
           <TabsContent value="month">
             {/* Modern Calendar Header */}
             <div className="flex items-center justify-center mb-8">
-              <div className="flex items-center space-x-6 bg-white/60 backdrop-blur-sm rounded-2xl px-6 py-4 shadow-lg border border-theme-border/30">
+              <div className="flex items-center space-x-6 bg-theme-surface/60 backdrop-blur-sm rounded-2xl px-6 py-4 shadow-lg border border-theme-border/30">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -402,14 +403,25 @@ const CalendarContent = React.memo(() => {
                 >
                   <ChevronLeft className="h-5 w-5 text-theme-secondary" />
                 </Button>
-                <div className="text-center min-w-[250px]">
-                  <h1 className="text-3xl font-bold text-theme-primary-text tracking-tight bg-gradient-to-r from-theme-primary-text to-theme-secondary bg-clip-text">
-                    {format(currentDate, 'MMMM')}
-                  </h1>
-                  <div className="text-xl font-normal text-theme-secondary-text mt-1">
-                    {format(currentDate, 'yyyy')}
-                  </div>
-                </div>
+                <MonthYearPicker
+                  currentMonth={currentDate.getMonth()}
+                  currentYear={currentDate.getFullYear()}
+                  onSelect={(month, year) => {
+                    if (month !== undefined) {
+                      setCurrentDate(new Date(year, month, 1));
+                      setSelectedDay(null);
+                    }
+                  }}
+                >
+                  <button className="text-center min-w-[250px] cursor-pointer hover:opacity-80 transition-opacity duration-200 bg-transparent border-none p-0">
+                    <h1 className="text-3xl font-bold text-theme-primary-text tracking-tight bg-gradient-to-r from-theme-primary-text to-theme-secondary bg-clip-text">
+                      {format(currentDate, 'MMMM')}
+                    </h1>
+                    <div className="text-xl font-normal text-theme-secondary-text mt-1">
+                      {format(currentDate, 'yyyy')}
+                    </div>
+                  </button>
+                </MonthYearPicker>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -464,7 +476,7 @@ const CalendarContent = React.memo(() => {
                       return (
                         <div
                           key={index}
-                          className="hidden lg:flex md:min-h-[120px] lg:min-h-[140px] border border-theme-border/30 rounded-2xl p-4 bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm text-center flex-col justify-center shadow-lg hover:scale-105 transition-all duration-300 relative"
+                          className="hidden lg:flex md:min-h-[120px] lg:min-h-[140px] border border-theme-border/30 rounded-2xl p-4 bg-gradient-to-br from-white/20 to-white/5 dark:from-slate-800/40 dark:to-slate-800/20 backdrop-blur-sm text-center flex-col justify-center shadow-lg hover:scale-105 transition-all duration-300 relative"
                         >
                           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent rounded-2xl"></div>
                           <div className="relative z-10">
@@ -500,10 +512,10 @@ const CalendarContent = React.memo(() => {
                               day && dayHasTradeData(day.dayStr) ?
                                 Number(day.pnl || 0) > 0 ? 'bg-theme-green hover:bg-theme-green/80 cursor-pointer text-white hover:scale-110 hover:shadow-xl hover:z-10 hover:-translate-y-2' :
                                 Number(day.pnl || 0) < 0 ? 'bg-theme-red hover:bg-theme-red/80 cursor-pointer text-white hover:scale-110 hover:shadow-xl hover:z-10 hover:-translate-y-2' :
-                                'bg-white hover:bg-theme-surface/50 cursor-pointer hover:scale-110 hover:shadow-xl hover:-translate-y-2' :
+                                'bg-theme-surface hover:bg-theme-surface/80 cursor-pointer hover:scale-110 hover:shadow-xl hover:-translate-y-2' :
                               day.isPrevMonth || day.isNextMonth ?
                                 'bg-theme-surface/10 cursor-default opacity-50 hover:opacity-60' :
-                                'bg-white hover:bg-theme-surface/30 cursor-default hover:scale-105 hover:-translate-y-1'
+                                'bg-theme-surface hover:bg-theme-surface/80 cursor-default hover:scale-105 hover:-translate-y-1'
                             }
                             ${selectedDay === day?.dayStr ? 'ring-2 ring-theme-tertiary shadow-lg scale-105' : ''}
                             focus:outline-none focus:ring-2 focus:ring-theme-tertiary
@@ -561,7 +573,7 @@ const CalendarContent = React.memo(() => {
 
             {/* Summary Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
-              <Card className="bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm border border-theme-border/20 rounded-2xl shadow-lg hover:scale-105 transition-all duration-300 relative overflow-hidden">
+              <Card className="bg-gradient-to-br from-white/20 to-white/5 dark:from-slate-800/40 dark:to-slate-800/20 backdrop-blur-sm border border-theme-border/20 rounded-2xl shadow-lg hover:scale-105 transition-all duration-300 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
                 <CardContent className="p-6 text-center relative z-10">
                   <div className="text-xs font-medium text-theme-secondary-text uppercase tracking-wide mb-2">Monthly P&L</div>
@@ -570,24 +582,24 @@ const CalendarContent = React.memo(() => {
                   </div>
                 </CardContent>
               </Card>
-              
-              <Card className="bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm border border-theme-border/20 rounded-2xl shadow-lg hover:scale-105 transition-all duration-300 relative overflow-hidden">
+
+              <Card className="bg-gradient-to-br from-white/20 to-white/5 dark:from-slate-800/40 dark:to-slate-800/20 backdrop-blur-sm border border-theme-border/20 rounded-2xl shadow-lg hover:scale-105 transition-all duration-300 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
                 <CardContent className="p-6 text-center relative z-10">
                   <div className="text-xs font-medium text-theme-secondary-text uppercase tracking-wide mb-2">Trading Days</div>
                   <div className="text-2xl font-bold text-theme-primary-text">{summaryStats.tradingDays}</div>
                 </CardContent>
               </Card>
-              
-              <Card className="bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm border border-theme-border/20 rounded-2xl shadow-lg hover:scale-105 transition-all duration-300 relative overflow-hidden">
+
+              <Card className="bg-gradient-to-br from-white/20 to-white/5 dark:from-slate-800/40 dark:to-slate-800/20 backdrop-blur-sm border border-theme-border/20 rounded-2xl shadow-lg hover:scale-105 transition-all duration-300 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
                 <CardContent className="p-6 text-center relative z-10">
                   <div className="text-xs font-medium text-theme-secondary-text uppercase tracking-wide mb-2">Total Trades</div>
                   <div className="text-2xl font-bold text-theme-primary-text">{summaryStats.totalTrades}</div>
                 </CardContent>
               </Card>
-              
-              <Card className="bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm border border-theme-border/20 rounded-2xl shadow-lg hover:scale-105 transition-all duration-300 relative overflow-hidden">
+
+              <Card className="bg-gradient-to-br from-white/20 to-white/5 dark:from-slate-800/40 dark:to-slate-800/20 backdrop-blur-sm border border-theme-border/20 rounded-2xl shadow-lg hover:scale-105 transition-all duration-300 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
                 <CardContent className="p-6 text-center relative z-10">
                   <div className="text-xs font-medium text-theme-secondary-text uppercase tracking-wide mb-2">Avg Win Rate</div>

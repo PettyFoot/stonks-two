@@ -228,8 +228,29 @@ export const useAnalyticsData = (standardTimeframe: StandardTimeframe, filters: 
   const [errorType, setErrorType] = useState<'network' | 'validation' | 'api' | 'parsing' | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
-  // Memoize the filters and timeframe to prevent unnecessary re-renders
-  const memoizedParams = useMemo(() => ({ standardTimeframe, filters }), [standardTimeframe, filters]);
+  // Create a stable dependency key based on actual filter values
+  const filterKey = useMemo(() =>
+    JSON.stringify({
+      timeframe: standardTimeframe,
+      symbol: filters.symbol,
+      tags: filters.tags,
+      side: filters.side,
+      dateFrom: filters.dateFrom,
+      dateTo: filters.dateTo,
+      customTimeRange: filters.customTimeRange,
+      predefinedTimeframe: filters.predefinedTimeframe
+    }),
+    [
+      standardTimeframe,
+      filters.symbol,
+      filters.tags,
+      filters.side,
+      filters.dateFrom,
+      filters.dateTo,
+      filters.customTimeRange,
+      filters.predefinedTimeframe
+    ]
+  );
 
   const fetchAnalyticsData = useCallback(async (isRetry: boolean = false) => {
     setLoading(true);
@@ -486,7 +507,7 @@ export const useAnalyticsData = (standardTimeframe: StandardTimeframe, filters: 
     } finally {
       setLoading(false);
     }
-  }, [standardTimeframe, filters]);
+  }, [filterKey, standardTimeframe, filters]);
 
   // Refetch function with retry logic
   const refetch = () => {
@@ -494,10 +515,10 @@ export const useAnalyticsData = (standardTimeframe: StandardTimeframe, filters: 
     fetchAnalyticsData(isRetry);
   };
 
-  // Fetch data when filters or timeframe change
+  // Fetch data when filters or timeframe change (use filterKey for stable dependency)
   useEffect(() => {
     fetchAnalyticsData();
-  }, [fetchAnalyticsData, memoizedParams]);
+  }, [filterKey, fetchAnalyticsData]);
 
   return {
     data,

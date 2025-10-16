@@ -45,7 +45,8 @@ import {
   Users,
   AlertTriangle,
   RefreshCw,
-  BookText
+  BookText,
+  Activity
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Theme } from '@/lib/themes';
@@ -63,6 +64,7 @@ const navigation = [
 
 const adminNavigation = [
   { name: 'Admin Dashboard', href: '/admin', icon: Shield },
+  { name: 'Analytics', href: '/admin/analytics', icon: Activity },
   { name: 'User Management', href: '/admin/users', icon: Users },
   { name: 'Blog Management', href: '/admin/blog', icon: BookText },
   { name: 'SnapTrade Sync', href: '/admin/snaptrade', icon: RefreshCw },
@@ -346,10 +348,19 @@ export default function Sidebar() {
                 
                 <DropdownMenuSeparator />
                 
-                <DropdownMenuItem onClick={logout} className="flex items-center">
-                  <LogOut className="h-4 w-4 mr-2" />
-                  {isDemo ? "Exit Demo Mode" : "Sign out"}
-                </DropdownMenuItem>
+                {isDemo ? (
+                  <DropdownMenuItem onClick={logout} className="flex items-center">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Exit Demo Mode
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem asChild>
+                    <Link href="/api/auth/logout" className="flex items-center">
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Sign out
+                    </Link>
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (

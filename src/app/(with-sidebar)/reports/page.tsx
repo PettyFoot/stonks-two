@@ -223,11 +223,13 @@ export default function Reports() {
 
         {/* FIRST TAB SYSTEM: Main Tabs */}
         <Tabs defaultValue="overview" className="space-y-6 mb-8">
-          <TabsList className="flex flex-wrap max-w-2xl justify-center">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="detailed">Detailed</TabsTrigger>
-            <TabsTrigger value="win-vs-loss">Win/Loss</TabsTrigger>
-          </TabsList>
+          <div className="flex justify-center">
+            <TabsList className="flex flex-wrap w-auto justify-center">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="detailed">Detailed</TabsTrigger>
+              <TabsTrigger value="win-vs-loss">Win/Loss</TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Overview Tab - Original 4 Charts */}
           <TabsContent value="overview" className="space-y-6">
@@ -300,7 +302,7 @@ export default function Reports() {
             {/* SECOND TAB SYSTEM: New Enhanced Analysis Tabs (Days/Times, Price/Volume, etc.) */}
             <Tabs defaultValue="days-times" className="space-y-4">
               <div className="flex justify-center">
-                <TabsList className="flex flex-wrap w-full max-w-2xl justify-center">
+                <TabsList className="flex flex-wrap w-auto justify-center">
                   <TabsTrigger value="days-times">Days/Times</TabsTrigger>
                   <TabsTrigger value="price-volume">Price/Volume</TabsTrigger>
                   <TabsTrigger value="instrument">Instrument</TabsTrigger>

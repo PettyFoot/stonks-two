@@ -46,6 +46,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if user should be excluded from analytics
+    const excludedUserIds = process.env.ANALYTICS_EXCLUDED_USER_IDS?.split(',').map(id => id.trim()) || [];
+    if (excludedUserIds.includes(user.id)) {
+      return NextResponse.json({ success: true, skipped: true, reason: 'excluded_user' });
+    }
+
     const body = await request.json();
     const { path, duration, sessionId, exitedAt } = body;
 

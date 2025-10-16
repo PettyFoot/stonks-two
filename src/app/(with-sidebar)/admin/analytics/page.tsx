@@ -68,17 +68,22 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState(30);
+  const [selectedReferrer, setSelectedReferrer] = useState<string>('all');
 
   useEffect(() => {
     if (isAdmin && !isLoading) {
       fetchAnalytics();
     }
-  }, [isAdmin, isLoading, timeRange]);
+  }, [isAdmin, isLoading, timeRange, selectedReferrer]);
 
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/admin/analytics?days=${timeRange}`);
+      const params = new URLSearchParams({ days: timeRange.toString() });
+      if (selectedReferrer !== 'all') {
+        params.append('referrer', selectedReferrer);
+      }
+      const response = await fetch(`/api/admin/analytics?${params.toString()}`);
       if (response.ok) {
         const analyticsData = await response.json();
         setData(analyticsData);
@@ -132,25 +137,46 @@ export default function AnalyticsPage() {
                 Track visitor behavior, UTM campaigns, and user journeys
               </p>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setTimeRange(7)}
-                className={`px-3 py-1 rounded ${timeRange === 7 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-              >
-                7 days
-              </button>
-              <button
-                onClick={() => setTimeRange(30)}
-                className={`px-3 py-1 rounded ${timeRange === 30 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-              >
-                30 days
-              </button>
-              <button
-                onClick={() => setTimeRange(90)}
-                className={`px-3 py-1 rounded ${timeRange === 90 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-              >
-                90 days
-              </button>
+            <div className="flex gap-3">
+              {/* Referrer Filter */}
+              <div className="flex items-center gap-2">
+                <label htmlFor="referrer-filter" className="text-sm text-gray-600">Referrer:</label>
+                <select
+                  id="referrer-filter"
+                  value={selectedReferrer}
+                  onChange={(e) => setSelectedReferrer(e.target.value)}
+                  className="px-3 py-1 rounded border border-gray-300 bg-white text-sm"
+                >
+                  <option value="all">All Referrers</option>
+                  {data?.referrers.map((ref, idx) => (
+                    <option key={idx} value={ref.referrer}>
+                      {ref.referrer === 'Direct' ? 'Direct Traffic' : ref.referrer}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Time Range Filter */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setTimeRange(7)}
+                  className={`px-3 py-1 rounded ${timeRange === 7 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+                >
+                  7 days
+                </button>
+                <button
+                  onClick={() => setTimeRange(30)}
+                  className={`px-3 py-1 rounded ${timeRange === 30 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+                >
+                  30 days
+                </button>
+                <button
+                  onClick={() => setTimeRange(90)}
+                  className={`px-3 py-1 rounded ${timeRange === 90 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+                >
+                  90 days
+                </button>
+              </div>
             </div>
           </div>
 
@@ -382,25 +408,6 @@ export default function AnalyticsPage() {
             </Card>
           </div>
 
-          {/* User Journey Paths */}
-          {data.journeyPaths.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Common User Journeys</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {data.journeyPaths.slice(0, 10).map((journey, idx) => (
-                    <div key={idx} className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg">
-                      <Badge variant="outline" className="mt-0.5">{journey.count}</Badge>
-                      <div className="text-sm text-gray-700 flex-1">{journey.path}</div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Recent Activity */}
           <Card>
             <CardHeader>
@@ -412,6 +419,7 @@ export default function AnalyticsPage() {
                   <thead>
                     <tr className="border-b">
                       <th className="text-left p-2">Time</th>
+                      <th className="text-left p-2">User ID</th>
                       <th className="text-left p-2">Type</th>
                       <th className="text-left p-2">Source</th>
                       <th className="text-left p-2">Campaign</th>
@@ -426,6 +434,9 @@ export default function AnalyticsPage() {
                       <tr key={idx} className="border-b hover:bg-gray-50">
                         <td className="p-2 whitespace-nowrap">
                           {format(new Date(session.firstSeenAt), 'MMM dd, HH:mm')}
+                        </td>
+                        <td className="p-2 font-mono text-xs">
+                          {session.userId || 'Anon'}
                         </td>
                         <td className="p-2">
                           {session.userId ? (
@@ -451,6 +462,25 @@ export default function AnalyticsPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* User Journey Paths */}
+          {data.journeyPaths.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Common User Journeys</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {data.journeyPaths.slice(0, 10).map((journey, idx) => (
+                    <div key={idx} className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg">
+                      <Badge variant="outline" className="mt-0.5">{journey.count}</Badge>
+                      <div className="text-sm text-gray-700 flex-1">{journey.path}</div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
         </div>
       </div>

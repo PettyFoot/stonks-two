@@ -206,24 +206,24 @@ export default function FilterPanel({
         </div>
 
         {/* From - To Date Range Section */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 px-3 py-2 bg-muted/5 rounded-md border">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-primary">From</span>
-            <Input 
-              type="date" 
-              value={filters.customDateRange?.from || ''} 
+            <Input
+              type="date"
+              value={filters.customDateRange?.from || ''}
               onChange={(e) => setCustomDateRange(e.target.value, filters.customDateRange?.to)}
-              className="w-32 sm:w-36 h-8 text-sm border-none bg-transparent"
+              className="w-32 sm:w-36 h-8 text-sm dark:hover:bg-input/50"
             />
           </div>
           <span className="text-muted hidden sm:inline">-</span>
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-primary">To</span>
-            <Input 
-              type="date" 
-              value={filters.customDateRange?.to || ''} 
+            <Input
+              type="date"
+              value={filters.customDateRange?.to || ''}
               onChange={(e) => setCustomDateRange(filters.customDateRange?.from, e.target.value)}
-              className="w-32 sm:w-36 h-8 text-sm border-none bg-transparent"
+              className="w-32 sm:w-36 h-8 text-sm dark:hover:bg-input/50"
             />
           </div>
         </div>
@@ -316,26 +316,28 @@ export default function FilterPanel({
 
       {/* Advanced Filters Panel */}
       {showAdvanced && showAdvancedPanel && (
-        <div className="mt-4">
-          <AdvancedFiltersPanel
-            filters={{
-              priceRange: filters.priceRange,
-              volumeRange: filters.volumeRange,
-              executionCountRange: filters.executionCountRange,
-              timeRange: filters.timeOfDayRange
-            }}
-            onFiltersChange={(updatedFilters) => {
-              updateFilter('priceRange', updatedFilters.priceRange);
-              updateFilter('volumeRange', updatedFilters.volumeRange);
-              updateFilter('executionCountRange', updatedFilters.executionCountRange);
-              updateFilter('timeOfDayRange', updatedFilters.timeRange);
-            }}
-            metadata={metadata ? {
-              priceRange: metadata.priceRange,
-              volumeRange: metadata.volumeRange,
-              executionCountRange: metadata.executionCountRange
-            } : undefined}
-          />
+        <div className="flex justify-start lg:justify-end mt-4">
+          <div className="w-full lg:w-2/5 xl:w-1/3">
+            <AdvancedFiltersPanel
+              filters={{
+                priceRange: filters.priceRange,
+                volumeRange: filters.volumeRange,
+                executionCountRange: filters.executionCountRange,
+                timeRange: filters.timeOfDayRange
+              }}
+              onFiltersChange={(updatedFilters) => {
+                updateFilter('priceRange', updatedFilters.priceRange);
+                updateFilter('volumeRange', updatedFilters.volumeRange);
+                updateFilter('executionCountRange', updatedFilters.executionCountRange);
+                updateFilter('timeOfDayRange', updatedFilters.timeRange);
+              }}
+              metadata={metadata ? {
+                priceRange: metadata.priceRange,
+                volumeRange: metadata.volumeRange,
+                executionCountRange: metadata.executionCountRange
+              } : undefined}
+            />
+          </div>
         </div>
       )}
       </div>

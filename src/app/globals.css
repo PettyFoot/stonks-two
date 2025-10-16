@@ -45,6 +45,11 @@
   --popover-foreground: var(--theme-primary-text);
   --accent: var(--theme-primary);
   --accent-foreground: var(--theme-primary-text);
+
+  /* Shadcn UI compatibility variables */
+  --input: var(--theme-surface);
+  --ring: var(--theme-tertiary);
+  --muted-foreground: var(--theme-muted);
 }
 
 @theme {
@@ -62,6 +67,9 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-muted-foreground: var(--muted-foreground);
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-family-sans: 'Inter', system-ui, sans-serif;
   --border-radius: 8px;

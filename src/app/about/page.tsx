@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, TrendingUp, Shield, Users, Target, Zap, Lock, PieChart } from 'lucide-react';
@@ -16,10 +17,14 @@ export default function AboutUs() {
       <nav className="p-6">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-[var(--theme-tertiary)] rounded-lg flex items-center justify-center">
-              <BarChart3 className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold text-[var(--theme-primary-text)]">Trading Analytics Platform</span>
+            <Image
+              src="/trade-voyager-logo.png"
+              alt="Trade Voyager Analytics Logo"
+              width={48}
+              height={48}
+              className="rounded-lg"
+            />
+            <span className="text-2xl font-bold text-[var(--theme-primary-text)]">Trade Voyager Analytics</span>
           </Link>
           <Link href="/">
             <Button variant="outline" className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/50">
@@ -140,16 +145,8 @@ export default function AboutUs() {
                   ensuring your information is never mixed with other users or shared with third parties.
                 </p>
 
-                <h3 className="text-xl font-semibold text-[var(--theme-primary-text)] mb-3 flex items-center">
-                  <PieChart className="h-5 w-5 mr-2 text-[var(--theme-tertiary)]" />
-                  Professional-Grade Analytics
-                </h3>
-                <p className="text-gray-700">
-                  Access the highest level of analytics available. Track everything from 
-                  basic P&L to advanced risk metrics and performance attribution analysis.
-                </p>
               </div>
-              
+
               <div>
                 <h3 className="text-xl font-semibold text-[var(--theme-primary-text)] mb-3 flex items-center">
                   <Users className="h-5 w-5 mr-2 text-[var(--theme-secondary)]" />
@@ -179,9 +176,10 @@ export default function AboutUs() {
             <Shield className="h-16 w-16 text-[var(--theme-tertiary)] mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-[var(--theme-primary-text)] mb-4">Security & Reliability</h2>
             <p className="text-gray-700 leading-relaxed max-w-3xl mx-auto mb-6">
-              We understand that your trading data is highly sensitive. That&apos;s why we&apos;ve implemented bank-level 
-              security measures including end-to-end encryption, secure hosting, regular security audits, 
-              and complete user data isolation. Your trading strategies and performance data remain confidential and secure.
+              We understand that your trading data is highly sensitive. We use industry-standard security practices
+              including encrypted data transmission (SSL/TLS), secure cloud hosting on enterprise infrastructure,
+              automated backups, and complete user data isolation. Your trading strategies and performance data remain
+              private and secure.
             </p>
             <div className="grid md:grid-cols-3 gap-6 text-center">
               <div>
@@ -207,18 +205,18 @@ export default function AboutUs() {
               Ready to Improve Your Trading Performance?
             </h2>
             <p className="text-lg text-[var(--theme-tertiary)] mb-6 max-w-2xl mx-auto">
-              Join thousands of traders who use our analytics platform to track their performance, 
-              analyze their trade metrics, and make data-driven improvements to their trading strategies.
+              Start tracking your trades with professional-grade analytics. Monitor your performance,
+              analyze your trade metrics, and make data-driven improvements to your trading strategy.
             </p>
             <div className="flex items-center justify-center space-x-4">
-              <Link href="/pricing">
+              <Link href="/login">
                 <Button size="lg" className="bg-[var(--theme-tertiary)] hover:bg-[var(--theme-tertiary)]/80 text-white">
-                  Get Started Mode
+                  Get Started
                 </Button>
               </Link>
-              <Link href="/login">
+              <Link href="/pricing">
                 <Button size="lg" variant="outline" className="border-[var(--theme-tertiary)] text-[var(--theme-tertiary)] hover:bg-[var(--theme-tertiary)]/10">
-                  Get Started Free
+                  Start Demo
                 </Button>
               </Link>
             </div>

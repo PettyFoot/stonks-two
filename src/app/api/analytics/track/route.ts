@@ -88,6 +88,12 @@ export async function POST(request: NextRequest) {
       console.debug('Analytics tracking for non-authenticated user');
     }
 
+    // Check if user should be excluded from analytics
+    const excludedUserIds = process.env.ANALYTICS_EXCLUDED_USER_IDS?.split(',').map(id => id.trim()) || [];
+    if (user && excludedUserIds.includes(user.id)) {
+      return NextResponse.json({ success: true, skipped: true, reason: 'excluded_user' });
+    }
+
     const body = await request.json();
     const {
       sessionId,

@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { Clock, AlertCircle, BarChart3, TrendingUp, TrendingDown } from 'lucide-react';
 import TradeCandlestickChart from '@/components/charts/TradeCandlestickChart';
 import ExecutionsTable, { ExecutionOrder } from '@/components/ExecutionsTable';
@@ -164,6 +165,11 @@ export default function SharedTradePage() {
                 </AlertDescription>
               </Alert>
             )}
+            <Button asChild className="mt-4">
+              <Link href="/">
+                Return to Home
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       </div>

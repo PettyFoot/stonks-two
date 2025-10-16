@@ -15,6 +15,11 @@ export interface ThemeColors {
   surface: string;
   border: string;
   muted: string;
+
+  // Input and form control colors
+  input: string;           // input background color
+  ring: string;            // focus ring color
+  mutedForeground: string; // muted text color (placeholders, etc.)
   
   // Semantic colors (mapped to main colors)
   positive: string;   // maps to green

@@ -308,7 +308,7 @@ export default function StatsSection({ stats, winLossStats }: StatsSectionProps)
         {/* Green Section - Winning Days Statistics */}
         <div style={{ boxShadow: '0 10px 25px -5px rgba(34, 197, 94, 0.3), 0 4px 6px -2px rgba(34, 197, 94, 0.05)' }}>
           <Card className="bg-theme-surface border-theme-border">
-            <CardHeader className="pb-2 bg-green-50/10">
+            <CardHeader className="pb-2">
               <CardTitle className="text-base font-medium text-green-700">
                 Winning Days Statistics
               </CardTitle>
@@ -443,7 +443,7 @@ export default function StatsSection({ stats, winLossStats }: StatsSectionProps)
         {/* Red Section - Losing Days Statistics */}
         <div style={{ boxShadow: '0 10px 25px -5px rgba(239, 68, 68, 0.3), 0 4px 6px -2px rgba(239, 68, 68, 0.05)' }}>
           <Card className="bg-theme-surface border-theme-border">
-            <CardHeader className="pb-2 bg-red-50/10">
+            <CardHeader className="pb-2">
               <CardTitle className="text-base font-medium text-red-700">
                 Losing Days Statistics
               </CardTitle>

@@ -46,11 +46,11 @@ export default function DynamicFilterDropdown({
 
   const displayValue = (): string => {
     if (multiple && Array.isArray(value)) {
-      return value.length > 0 ? `${value.length} selected` : `All ${label}`;
+      return value.length > 0 ? `${value.length} selected` : 'All';
     }
-    // For single select, show "All [Label]" when no value is selected or when value is empty
+    // For single select, show "All" when no value is selected or when value is empty
     const singleValue = typeof value === 'string' ? value : '';
-    return singleValue && singleValue !== '' ? singleValue : `All ${label}`;
+    return singleValue && singleValue !== '' ? singleValue : 'All';
   };
 
   const isSelected = (optionValue: string) => {
@@ -69,15 +69,25 @@ export default function DynamicFilterDropdown({
     );
   }
 
+  // Get the actual value to pass to Select
+  const getSelectValue = (): string => {
+    if (multiple && Array.isArray(value)) {
+      return value.length > 0 ? 'multiple' : 'all';
+    }
+    const singleValue = typeof value === 'string' ? value : '';
+    return singleValue && singleValue !== '' ? singleValue : 'all';
+  };
+
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <label className="text-sm font-medium text-primary">{label}</label>
-      <Select value={displayValue()} onValueChange={handleValueChange}>
+      <Select value={getSelectValue()} onValueChange={handleValueChange}>
         <SelectTrigger className={`${width} h-8 text-sm`}>
-          <SelectValue placeholder={placeholder} />
+          <SelectValue>{displayValue()}</SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All {label}</SelectItem>
+          {multiple && <SelectItem value="multiple" className="hidden">Multiple Selected</SelectItem>}
           {options.map((option) => (
             <SelectItem key={option.value} value={option.value}>
               <div className="flex items-center justify-between w-full">

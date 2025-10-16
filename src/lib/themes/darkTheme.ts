@@ -20,6 +20,11 @@ export const darkTheme: Theme = {
     surface: '#1E293B',     // dark surface
     border: '#374151',      // dark borders
     muted: '#6B7280',       // muted elements
+
+    // Input and form control colors
+    input: '#1E293B',       // dark input background (matches surface)
+    ring: '#3B82F6',        // blue focus ring (matches tertiary)
+    mutedForeground: '#9CA3AF', // light gray for placeholders
     
     // Semantic colors
     positive: '#10B981',    // maps to green

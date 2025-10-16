@@ -75,7 +75,7 @@ export default function Pricing() {
     },
     {
       question: "Is my trading data secure?",
-      answer: "Absolutely. We use bank-level security with complete user data isolation, encryption in transit and at rest, and regular security audits."
+      answer: "Absolutely. We use industry-standard security practices with complete user data isolation, encrypted data transmission (SSL/TLS), secure cloud hosting, and automated backups. Your data remains private and secure."
     },
     {
       question: "Can I cancel anytime?",
@@ -299,7 +299,7 @@ export default function Pricing() {
           Ready to Improve Your Trading?
         </h2>
         <p className="text-xl text-[var(--theme-primary-text)] mb-8 max-w-2xl mx-auto">
-          Join thousands of traders who use Trade Voyager Analytics to track and improve their performance. 
+          Start tracking your trades with professional-grade analytics.
           Discover all our <Link href="/features" className="text-[var(--theme-tertiary)] hover:underline">powerful features</Link> or start with our <Link href="/pricing" className="text-[var(--theme-tertiary)] hover:underline">free demo</Link>.
         </p>
         <div className="flex justify-center space-x-4">

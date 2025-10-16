@@ -79,11 +79,6 @@ export default function Features() {
             <span className="text-2xl font-bold text-[var(--theme-primary-text)]">Trade Voyager Analytics</span>
           </Link>
           <div className="flex space-x-4">
-            <Link href="/pricing">
-              <Button variant="outline" className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/10">
-                Get Started
-              </Button>
-            </Link>
             <Link href="/login">
               <Button className="bg-[var(--theme-tertiary)] hover:bg-[var(--theme-tertiary)]/80 text-white">
                 Get Started
@@ -162,7 +157,7 @@ export default function Features() {
         <div className="flex justify-center space-x-4">
           <Link href="/pricing">
             <Button size="lg" variant="outline" className="border-[var(--theme-primary)] text-[var(--theme-primary-text)] hover:bg-[var(--theme-primary)]/10 px-8 py-3 text-lg">
-              Try Free Demo
+              Try Demo
             </Button>
           </Link>
           <Link href="/login">

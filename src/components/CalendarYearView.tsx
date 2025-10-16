@@ -8,6 +8,7 @@ import { format, getDaysInMonth, getDay, startOfMonth } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useGlobalFilters } from '@/contexts/GlobalFilterContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import MonthYearPicker from '@/components/MonthYearPicker';
 
 interface DayData {
   tradeCount: number;
@@ -142,7 +143,7 @@ export default function CalendarYearView({ year: initialYear, isDemo = false }: 
   };
 
   const getDayBackground = (day: Record<string, unknown>) => {
-    if (!day || !day.hasData || !day.tradeCount) return 'bg-white';
+    if (!day || !day.hasData || !day.tradeCount) return 'bg-theme-surface';
     const pnl = Number(day.pnl || 0);
     if (pnl > 0) return 'bg-theme-green hover:bg-theme-green/80';
     if (pnl < 0) return 'bg-theme-red hover:bg-theme-red/80';
@@ -174,7 +175,7 @@ export default function CalendarYearView({ year: initialYear, isDemo = false }: 
       <div className="space-y-6">
         {/* Year Navigation - Centered */}
         <div className="flex items-center justify-center mb-2">
-        <div className="flex items-center space-x-6 bg-white/60 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg border border-theme-border/30">
+        <div className="flex items-center space-x-6 bg-theme-surface/60 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg border border-theme-border/30">
           <Button
             variant="ghost"
             size="sm"
@@ -184,7 +185,17 @@ export default function CalendarYearView({ year: initialYear, isDemo = false }: 
           >
             <ChevronLeft className="h-5 w-5 text-theme-secondary" />
           </Button>
-          <span className="text-3xl font-bold text-theme-primary-text tracking-tight bg-gradient-to-r from-theme-primary-text to-theme-secondary bg-clip-text">{year}</span>
+          <MonthYearPicker
+            currentYear={year}
+            onSelect={(_, selectedYear) => {
+              setYear(selectedYear);
+            }}
+            yearOnly={true}
+          >
+            <button className="cursor-pointer hover:opacity-80 transition-opacity duration-200 bg-transparent border-none p-0">
+              <span className="text-3xl font-bold text-theme-primary-text tracking-tight bg-gradient-to-r from-theme-primary-text to-theme-secondary bg-clip-text">{year}</span>
+            </button>
+          </MonthYearPicker>
           <Button
             variant="ghost"
             size="sm"

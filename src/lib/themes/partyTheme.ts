@@ -20,6 +20,11 @@ export const partyTheme: Theme = {
     surface: '#FFFFFF',     // white surfaces
     border: '#D1D5DB',      // light borders
     muted: '#9CA3AF',       // muted elements
+
+    // Input and form control colors
+    input: '#FFFFFF',        // white input background for party theme
+    ring: '#06B6D4',         // cyan focus ring (matches tertiary)
+    mutedForeground: '#9CA3AF', // gray for placeholders
     
     // Semantic colors
     positive: '#84CC16',    // maps to green (lime)

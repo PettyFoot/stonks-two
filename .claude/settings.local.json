@@ -116,7 +116,8 @@
       "Bash(npx dotenv -e .env.local -- psql:*)",
       "Bash(npx dotenv:*)",
       "Read(//c/Dev/AI/StonksTwo/siteImages/**)",
-      "WebFetch(domain:docs.stripe.com)"
+      "WebFetch(domain:docs.stripe.com)",
+      "WebFetch(domain:help.ctrader.com)"
     ],
     "deny": [],
     "ask": []

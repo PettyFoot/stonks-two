@@ -20,6 +20,11 @@ export const defaultTheme: Theme = {
     surface: '#FFFFFF',
     border: '#E5E7EB',
     muted: '#9CA3AF',
+
+    // Input and form control colors
+    input: '#FFFFFF',        // white input background for light theme
+    ring: '#5688C7',         // tertiary color for focus ring
+    mutedForeground: '#9CA3AF', // gray for placeholders
     
     // Semantic colors (mapped to core colors)
     positive: '#15A349',  // maps to green
